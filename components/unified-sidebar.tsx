@@ -12,7 +12,6 @@ import {
   Package2,
   RotateCcw,
   RotateCw,
-  Image as ImageIcon,
   Video,
   Play,
   Square,
@@ -57,7 +56,7 @@ export function UnifiedSidebar() {
   const products = useConfiguratorStore((state) => state.products)
   const selectedProductId = useConfiguratorStore((state) => state.selectedProductId)
   const setSelectedProduct = useConfiguratorStore((state) => state.setSelectedProduct)
-  const cameraControlsRef = useConfiguratorStore((state) => (state as any).cameraControlsRef)
+  const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef)
 
   const handleExport = () => {
     const json = exportPreset()
@@ -91,104 +90,168 @@ export function UnifiedSidebar() {
   }
 
   const handleScreenshot = () => {
-    const canvas = document.querySelector("canvas")
-    if (!canvas) return
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement
+    if (!canvas) {
+      alert("Canvas not found")
+      return
+    }
 
-    canvas.toBlob((blob) => {
-      if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.download = `model-screenshot-${Date.now()}.png`
-      link.href = url
-      link.click()
-      URL.revokeObjectURL(url)
-    })
+    try {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          alert("Failed to create image")
+          return
+        }
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.download = `model-screenshot-${Date.now()}.png`
+        link.href = url
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }, "image/png", 1.0)
+    } catch (error) {
+      console.error("Screenshot failed:", error)
+      alert("Failed to capture screenshot")
+    }
   }
 
   const handleExportHighRes = () => {
-    const canvas = document.querySelector("canvas")
-    if (!canvas) return
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement
+    if (!canvas) {
+      alert("Canvas not found")
+      return
+    }
 
-    // Create a temporary high-res canvas
-    const tempCanvas = document.createElement("canvas")
-    const scale = 2 // 2x resolution
-    tempCanvas.width = canvas.width * scale
-    tempCanvas.height = canvas.height * scale
-    const ctx = tempCanvas.getContext("2d")
-    if (!ctx) return
+    try {
+      // Create a temporary high-res canvas
+      const tempCanvas = document.createElement("canvas")
+      const scale = 2 // 2x resolution
+      tempCanvas.width = canvas.width * scale
+      tempCanvas.height = canvas.height * scale
+      const ctx = tempCanvas.getContext("2d")
+      if (!ctx) {
+        alert("Failed to create canvas context")
+        return
+      }
 
-    ctx.scale(scale, scale)
-    ctx.drawImage(canvas, 0, 0)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = "high"
+      ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height)
 
-    tempCanvas.toBlob((blob) => {
-      if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.download = `model-2x-${Date.now()}.png`
-      link.href = url
-      link.click()
-      URL.revokeObjectURL(url)
-    })
+      tempCanvas.toBlob((blob) => {
+        if (!blob) {
+          alert("Failed to create image")
+          return
+        }
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.download = `model-2x-${Date.now()}.png`
+        link.href = url
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }, "image/png", 1.0)
+    } catch (error) {
+      console.error("High-res export failed:", error)
+      alert("Failed to export high-res image")
+    }
   }
 
   const handleExport4K = () => {
-    const canvas = document.querySelector("canvas")
-    if (!canvas) return
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement
+    if (!canvas) {
+      alert("Canvas not found")
+      return
+    }
 
-    // Create a 4K resolution canvas
-    const tempCanvas = document.createElement("canvas")
-    const scale = 4 // 4x resolution
-    tempCanvas.width = canvas.width * scale
-    tempCanvas.height = canvas.height * scale
-    const ctx = tempCanvas.getContext("2d")
-    if (!ctx) return
+    try {
+      // Create a 4K resolution canvas
+      const tempCanvas = document.createElement("canvas")
+      const scale = 4 // 4x resolution
+      tempCanvas.width = canvas.width * scale
+      tempCanvas.height = canvas.height * scale
+      const ctx = tempCanvas.getContext("2d")
+      if (!ctx) {
+        alert("Failed to create canvas context")
+        return
+      }
 
-    ctx.scale(scale, scale)
-    ctx.drawImage(canvas, 0, 0)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = "high"
+      ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height)
 
-    tempCanvas.toBlob((blob) => {
-      if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.download = `model-4k-${Date.now()}.png`
-      link.href = url
-      link.click()
-      URL.revokeObjectURL(url)
-    }, "image/png", 1.0)
+      tempCanvas.toBlob((blob) => {
+        if (!blob) {
+          alert("Failed to create image")
+          return
+        }
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.download = `model-4k-${Date.now()}.png`
+        link.href = url
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }, "image/png", 1.0)
+    } catch (error) {
+      console.error("4K export failed:", error)
+      alert("Failed to export 4K image")
+    }
   }
 
   const handleRotateLeft = () => {
-    if (!cameraControlsRef) return
-    // Get current azimuthal angle and rotate left
+    if (!cameraControlsRef?.object) return
     const currentAzimuth = cameraControlsRef.getAzimuthalAngle()
-    cameraControlsRef.setAzimuthalAngle(currentAzimuth - Math.PI / 4)
+    cameraControlsRef.setAzimuthalAngle(currentAzimuth - Math.PI / 4, true)
   }
 
   const handleRotateRight = () => {
-    if (!cameraControlsRef) return
-    // Get current azimuthal angle and rotate right
+    if (!cameraControlsRef?.object) return
     const currentAzimuth = cameraControlsRef.getAzimuthalAngle()
-    cameraControlsRef.setAzimuthalAngle(currentAzimuth + Math.PI / 4)
+    cameraControlsRef.setAzimuthalAngle(currentAzimuth + Math.PI / 4, true)
   }
 
   const handleAutoRotate = () => {
     if (!cameraControlsRef) return
-    // Toggle auto-rotate
     cameraControlsRef.autoRotate = !cameraControlsRef.autoRotate
     cameraControlsRef.autoRotateSpeed = 1.0
   }
 
   const handleStartRecording = async () => {
-    const canvas = document.querySelector("canvas")
-    if (!canvas) return
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement
+    if (!canvas) {
+      alert("Canvas not found")
+      return
+    }
 
     try {
-      const stream = canvas.captureStream(30) // 30 FPS
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp9",
-        videoBitsPerSecond: 2500000,
-      })
+      // Check if captureStream is supported
+      if (!canvas.captureStream) {
+        alert("Video recording is not supported in your browser")
+        return
+      }
 
+      const stream = canvas.captureStream(30) // 30 FPS
+
+      // Try different codecs
+      let options: MediaRecorderOptions = { videoBitsPerSecond: 2500000 }
+
+      if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+        options.mimeType = "video/webm;codecs=vp9"
+      } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
+        options.mimeType = "video/webm;codecs=vp8"
+      } else if (MediaRecorder.isTypeSupported("video/webm")) {
+        options.mimeType = "video/webm"
+      } else {
+        alert("No supported video format found")
+        return
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options)
       recordedChunksRef.current = []
 
       mediaRecorder.ondataavailable = (event) => {
@@ -198,22 +261,30 @@ export function UnifiedSidebar() {
       }
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" })
+        const blob = new Blob(recordedChunksRef.current, { type: options.mimeType || "video/webm" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.download = `model-video-${Date.now()}.webm`
         link.href = url
+        document.body.appendChild(link)
         link.click()
+        document.body.removeChild(link)
         URL.revokeObjectURL(url)
         setIsRecording(false)
       }
 
-      mediaRecorder.start()
+      mediaRecorder.onerror = (event) => {
+        console.error("MediaRecorder error:", event)
+        alert("Recording failed")
+        setIsRecording(false)
+      }
+
+      mediaRecorder.start(100) // Collect data every 100ms
       mediaRecorderRef.current = mediaRecorder
       setIsRecording(true)
     } catch (error) {
       console.error("Failed to start recording:", error)
-      alert("Video recording is not supported in your browser")
+      alert(`Video recording failed: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
 
@@ -425,7 +496,7 @@ export function UnifiedSidebar() {
 }
 
 function ResetCameraButton() {
-  const cameraControlsRef = useConfiguratorStore((state) => (state as any).cameraControlsRef)
+  const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef)
 
   const handleReset = () => {
     if (cameraControlsRef) {

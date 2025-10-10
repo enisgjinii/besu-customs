@@ -55,6 +55,8 @@ interface ConfiguratorState {
   // Scene controls
   showGrid: boolean
   toggleGrid: () => void
+  cameraControlsRef: any
+  setCameraControlsRef: (ref: any) => void
   // Loading / error state for model loading
   modelLoading: boolean
   setModelLoading: (loading: boolean) => void

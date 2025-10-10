@@ -8,10 +8,10 @@ import { useConfiguratorStore } from "@/lib/store"
 
 export function Scene() {
   const showGrid = useConfiguratorStore((state) => state.showGrid)
-  const setCameraControlsRef = useConfiguratorStore((state) => (state as any).setCameraControlsRef)
+  const setCameraControlsRef = useConfiguratorStore((state) => state.setCameraControlsRef)
   const controlsRef = useRef<any>(null)
-  const modelLoading = useConfiguratorStore((state) => (state as any).modelLoading)
-  const modelError = useConfiguratorStore((state) => (state as any).modelError)
+  const modelLoading = useConfiguratorStore((state) => state.modelLoading)
+  const modelError = useConfiguratorStore((state) => state.modelError)
 
   // Store controls ref in global state
   useEffect(() => {

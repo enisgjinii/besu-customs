@@ -29,9 +29,11 @@ export function UVEditor() {
   useEffect(() => {
     if (!canvasRef.current) return
 
+    // Responsive canvas size
+    const canvasSize = Math.min(window.innerWidth - 100, 600)
     const canvas = new Canvas(canvasRef.current, {
-      width: 800,
-      height: 800,
+      width: canvasSize,
+      height: canvasSize,
       backgroundColor: "#ffffff",
     })
 
@@ -194,59 +196,59 @@ export function UVEditor() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border/50 space-y-3">
-        <h3 className="font-semibold text-sm">
-          {isCompleteView ? "Complete Model UV Map" : `UV Texture Editor: ${selectedSection?.name}`}
+      <div className="p-3 border-b border-border/50 space-y-2">
+        <h3 className="font-semibold text-xs truncate">
+          {isCompleteView ? "Complete UV Map" : `${selectedSection?.name || "UV Editor"}`}
         </h3>
 
-        <div className="grid grid-cols-3 gap-2">
-          <Button size="sm" variant="outline" onClick={addText}>
-            <Type className="w-4 h-4 mr-1.5" />
-            Text
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button size="sm" variant="outline" onClick={addText} className="h-8 px-2">
+            <Type className="w-3.5 h-3.5 mr-1" />
+            <span className="text-xs">Text</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={addImage}>
-            <ImageIcon className="w-4 h-4 mr-1.5" />
-            Image
+          <Button size="sm" variant="outline" onClick={addImage} className="h-8 px-2">
+            <ImageIcon className="w-3.5 h-3.5 mr-1" />
+            <span className="text-xs">Image</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={deleteSelected}>
-            <Trash2 className="w-4 h-4 mr-1.5" />
-            Delete
+          <Button size="sm" variant="outline" onClick={deleteSelected} className="h-8 px-2">
+            <Trash2 className="w-3.5 h-3.5 mr-1" />
+            <span className="text-xs">Delete</span>
           </Button>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          <Button size="sm" variant="outline" onClick={undo} disabled={historyStep <= 0}>
-            <Undo2 className="w-4 h-4" />
+        <div className="grid grid-cols-4 gap-1.5">
+          <Button size="sm" variant="outline" onClick={undo} disabled={historyStep <= 0} className="h-8 px-2">
+            <Undo2 className="w-3.5 h-3.5" />
           </Button>
-          <Button size="sm" variant="outline" onClick={redo} disabled={historyStep >= history.length - 1}>
-            <Redo2 className="w-4 h-4" />
+          <Button size="sm" variant="outline" onClick={redo} disabled={historyStep >= history.length - 1} className="h-8 px-2">
+            <Redo2 className="w-3.5 h-3.5" />
           </Button>
-          <Button size="sm" variant="outline" onClick={clearCanvas}>
-            <Trash2 className="w-4 h-4" />
+          <Button size="sm" variant="outline" onClick={clearCanvas} className="h-8 px-2">
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
-          <Button size="sm" variant="outline" onClick={exportTexture}>
-            <Download className="w-4 h-4" />
+          <Button size="sm" variant="outline" onClick={exportTexture} className="h-8 px-2">
+            <Download className="w-3.5 h-3.5" />
           </Button>
         </div>
 
         {!isCompleteView && (
-          <Button size="sm" onClick={applyToModel} className="w-full">
-            Apply to 3D Model
+          <Button size="sm" onClick={applyToModel} className="w-full h-8 text-xs">
+            Apply to Model
           </Button>
         )}
 
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
       </div>
 
-      <div className="flex-1 overflow-auto p-4 bg-secondary/10">
+      <div className="flex-1 overflow-auto p-2 bg-secondary/10">
         <div className="flex items-center justify-center min-h-full">
           {uvMapUrl ? (
-            <canvas ref={canvasRef} className="shadow-lg rounded-sm border-2 border-border" />
+            <canvas ref={canvasRef} className="shadow-md rounded-sm border border-border max-w-full h-auto" />
           ) : (
-            <div className="text-center text-muted-foreground">
-              <Layers className="w-16 h-16 mx-auto mb-4 opacity-30" />
-              <p className="text-sm">
-                {sections.length === 0 ? "Load a 3D model to see UV map" : "Select a material section or wait for UV extraction"}
+            <div className="text-center text-muted-foreground px-4">
+              <Layers className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="text-xs">
+                {sections.length === 0 ? "Load a 3D model" : "Select a material or wait for UV extraction"}
               </p>
             </div>
           )}
@@ -254,14 +256,14 @@ export function UVEditor() {
       </div>
 
       {!uvMapUrl && !isCompleteView && (
-        <div className="p-3 bg-muted/30 text-xs text-muted-foreground border-t border-border/50">
-          {completeUVMap ? "Select a material section to edit its texture" : "UV map will be extracted automatically when the model is loaded"}
+        <div className="p-2 bg-muted/30 text-[10px] text-muted-foreground border-t border-border/50">
+          {completeUVMap ? "Select a material to edit" : "UV map will be extracted automatically"}
         </div>
       )}
 
       {isCompleteView && (
-        <div className="p-3 bg-blue-500/10 text-xs text-blue-600 dark:text-blue-400 border-t border-border/50">
-          This is the complete UV map of your entire 3D model. Select a material section to edit specific textures.
+        <div className="p-2 bg-blue-500/10 text-[10px] text-blue-600 dark:text-blue-400 border-t border-border/50">
+          Complete UV map. Select a material to edit specific textures.
         </div>
       )}
     </div>
