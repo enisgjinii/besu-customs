@@ -1,0 +1,443 @@
+"use client"
+
+import { useState, useRef } from "react"
+import { useConfiguratorStore } from "@/lib/store"
+import {
+  Grid3x3,
+  Save,
+  Download,
+  Palette,
+  Paintbrush,
+  Camera,
+  Package2,
+  RotateCcw,
+  RotateCw,
+  Image as ImageIcon,
+  Video,
+  Play,
+  Square,
+  Maximize2,
+  ChevronDown,
+  FileImage,
+  Film,
+} from "lucide-react"
+import { MaterialEditor } from "./material-editor"
+import { UVEditor } from "./uv-editor"
+import { Button } from "./ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+
+export function UnifiedSidebar() {
+  const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">("materials")
+  const [isRecording, setIsRecording] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(true)
+  const [sceneOpen, setSceneOpen] = useState(true)
+  const [imageOpen, setImageOpen] = useState(true)
+  const [videoOpen, setVideoOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = useRef<Blob[]>([])
+
+  const showGrid = useConfiguratorStore((state) => state.showGrid)
+  const toggleGrid = useConfiguratorStore((state) => state.toggleGrid)
+  const exportPreset = useConfiguratorStore((state) => state.exportPreset)
+  const importPreset = useConfiguratorStore((state) => state.importPreset)
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl)
+  const products = useConfiguratorStore((state) => state.products)
+  const selectedProductId = useConfiguratorStore((state) => state.selectedProductId)
+  const setSelectedProduct = useConfiguratorStore((state) => state.setSelectedProduct)
+  const cameraControlsRef = useConfiguratorStore((state) => (state as any).cameraControlsRef)
+
+  const handleExport = () => {
+    const json = exportPreset()
+    const blob = new Blob([json], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "preset.json"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const json = event.target?.result as string
+        importPreset(json)
+      }
+      reader.readAsText(file)
+    }
+  }
+
+  const handleExportModel = () => {
+    if (!currentModelUrl) return
+    const link = document.createElement("a")
+    link.download = "configured-model.glb"
+    link.href = currentModelUrl
+    link.click()
+  }
+
+  const handleScreenshot = () => {
+    const canvas = document.querySelector("canvas")
+    if (!canvas) return
+
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.download = `model-screenshot-${Date.now()}.png`
+      link.href = url
+      link.click()
+      URL.revokeObjectURL(url)
+    })
+  }
+
+  const handleExportHighRes = () => {
+    const canvas = document.querySelector("canvas")
+    if (!canvas) return
+
+    // Create a temporary high-res canvas
+    const tempCanvas = document.createElement("canvas")
+    const scale = 2 // 2x resolution
+    tempCanvas.width = canvas.width * scale
+    tempCanvas.height = canvas.height * scale
+    const ctx = tempCanvas.getContext("2d")
+    if (!ctx) return
+
+    ctx.scale(scale, scale)
+    ctx.drawImage(canvas, 0, 0)
+
+    tempCanvas.toBlob((blob) => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.download = `model-2x-${Date.now()}.png`
+      link.href = url
+      link.click()
+      URL.revokeObjectURL(url)
+    })
+  }
+
+  const handleExport4K = () => {
+    const canvas = document.querySelector("canvas")
+    if (!canvas) return
+
+    // Create a 4K resolution canvas
+    const tempCanvas = document.createElement("canvas")
+    const scale = 4 // 4x resolution
+    tempCanvas.width = canvas.width * scale
+    tempCanvas.height = canvas.height * scale
+    const ctx = tempCanvas.getContext("2d")
+    if (!ctx) return
+
+    ctx.scale(scale, scale)
+    ctx.drawImage(canvas, 0, 0)
+
+    tempCanvas.toBlob((blob) => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.download = `model-4k-${Date.now()}.png`
+      link.href = url
+      link.click()
+      URL.revokeObjectURL(url)
+    }, "image/png", 1.0)
+  }
+
+  const handleRotateLeft = () => {
+    if (!cameraControlsRef) return
+    // Get current azimuthal angle and rotate left
+    const currentAzimuth = cameraControlsRef.getAzimuthalAngle()
+    cameraControlsRef.setAzimuthalAngle(currentAzimuth - Math.PI / 4)
+  }
+
+  const handleRotateRight = () => {
+    if (!cameraControlsRef) return
+    // Get current azimuthal angle and rotate right
+    const currentAzimuth = cameraControlsRef.getAzimuthalAngle()
+    cameraControlsRef.setAzimuthalAngle(currentAzimuth + Math.PI / 4)
+  }
+
+  const handleAutoRotate = () => {
+    if (!cameraControlsRef) return
+    // Toggle auto-rotate
+    cameraControlsRef.autoRotate = !cameraControlsRef.autoRotate
+    cameraControlsRef.autoRotateSpeed = 1.0
+  }
+
+  const handleStartRecording = async () => {
+    const canvas = document.querySelector("canvas")
+    if (!canvas) return
+
+    try {
+      const stream = canvas.captureStream(30) // 30 FPS
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "video/webm;codecs=vp9",
+        videoBitsPerSecond: 2500000,
+      })
+
+      recordedChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data)
+        }
+      }
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.download = `model-video-${Date.now()}.webm`
+        link.href = url
+        link.click()
+        URL.revokeObjectURL(url)
+        setIsRecording(false)
+      }
+
+      mediaRecorder.start()
+      mediaRecorderRef.current = mediaRecorder
+      setIsRecording(true)
+    } catch (error) {
+      console.error("Failed to start recording:", error)
+      alert("Video recording is not supported in your browser")
+    }
+  }
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+    }
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-card w-full">
+      {/* Header with Model Selector */}
+      <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
+        <div>
+          <h2 className="text-lg font-semibold">3D Configurator</h2>
+          <p className="text-xs text-muted-foreground mt-1">Customize your model</p>
+        </div>
+
+        {/* Model Dropdown */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Model</label>
+          <Select value={selectedProductId || undefined} onValueChange={setSelectedProduct}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Choose a model..." />
+            </SelectTrigger>
+            <SelectContent>
+              {products.map((product) => (
+                <SelectItem key={product.id} value={product.id}>
+                  {product.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button
+            variant={activeTab === "materials" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("materials")}
+            className="w-full transition-all flex-col h-auto py-2"
+          >
+            <Palette className="w-4 h-4 mb-1" />
+            <span className="text-xs">Materials</span>
+          </Button>
+          <Button
+            variant={activeTab === "texture" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("texture")}
+            className="w-full transition-all flex-col h-auto py-2"
+          >
+            <Paintbrush className="w-4 h-4 mb-1" />
+            <span className="text-xs">Texture</span>
+          </Button>
+          <Button
+            variant={activeTab === "view" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("view")}
+            className="w-full transition-all flex-col h-auto py-2"
+          >
+            <Camera className="w-4 h-4 mb-1" />
+            <span className="text-xs">Export</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === "materials" && (
+          <div className="p-4">
+            <MaterialEditor />
+          </div>
+        )}
+        {activeTab === "texture" && <UVEditor />}
+        {activeTab === "view" && (
+          <div className="p-4 space-y-3">
+            {/* Camera Controls */}
+            <Collapsible open={cameraOpen} onOpenChange={setCameraOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  Camera Controls
+                </h3>
+                <ChevronDown className={`w-4 h-4 transition-transform ${cameraOpen ? "rotate-180" : ""}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" onClick={handleRotateLeft} className="w-full justify-center">
+                    <RotateCcw className="w-4 h-4 mr-1" />
+                    Left
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleRotateRight} className="w-full justify-center">
+                    <RotateCw className="w-4 h-4 mr-1" />
+                    Right
+                  </Button>
+                </div>
+                <ResetCameraButton />
+                <Button variant="outline" size="sm" onClick={handleAutoRotate} className="w-full justify-start">
+                  <Play className="w-4 h-4 mr-2" />
+                  Toggle Auto-Rotate
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Scene Options */}
+            <Collapsible open={sceneOpen} onOpenChange={setSceneOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Grid3x3 className="w-4 h-4" />
+                  Scene Options
+                </h3>
+                <ChevronDown className={`w-4 h-4 transition-transform ${sceneOpen ? "rotate-180" : ""}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-2">
+                <Button variant="outline" size="sm" onClick={toggleGrid} className="w-full justify-start">
+                  <Grid3x3 className="w-4 h-4 mr-2" />
+                  {showGrid ? "Hide Grid" : "Show Grid"}
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Image Export */}
+            <Collapsible open={imageOpen} onOpenChange={setImageOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <FileImage className="w-4 h-4" />
+                  Export Images
+                </h3>
+                <ChevronDown className={`w-4 h-4 transition-transform ${imageOpen ? "rotate-180" : ""}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-2">
+                <Button variant="outline" size="sm" onClick={handleScreenshot} className="w-full justify-start">
+                  <Camera className="w-4 h-4 mr-2" />
+                  Screenshot (PNG)
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportHighRes} className="w-full justify-start">
+                  <Maximize2 className="w-4 h-4 mr-2" />
+                  High-Res (2x)
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExport4K} className="w-full justify-start">
+                  <Maximize2 className="w-4 h-4 mr-2" />
+                  Ultra HD (4x)
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Video Export */}
+            <Collapsible open={videoOpen} onOpenChange={setVideoOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Film className="w-4 h-4" />
+                  Export Video
+                </h3>
+                <ChevronDown className={`w-4 h-4 transition-transform ${videoOpen ? "rotate-180" : ""}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-2">
+                {!isRecording ? (
+                  <Button variant="outline" size="sm" onClick={handleStartRecording} className="w-full justify-start">
+                    <Video className="w-4 h-4 mr-2" />
+                    Start Recording
+                  </Button>
+                ) : (
+                  <Button variant="destructive" size="sm" onClick={handleStopRecording} className="w-full justify-start">
+                    <Square className="w-4 h-4 mr-2" />
+                    Stop Recording
+                  </Button>
+                )}
+                {isRecording && (
+                  <div className="text-xs text-muted-foreground p-2 bg-red-500/10 rounded-md">
+                    🔴 Recording in progress...
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Model Export */}
+            <Collapsible open={exportOpen} onOpenChange={setExportOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Package2 className="w-4 h-4" />
+                  Export Model
+                </h3>
+                <ChevronDown className={`w-4 h-4 transition-transform ${exportOpen ? "rotate-180" : ""}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-2">
+                <Button variant="outline" size="sm" onClick={handleExport} className="w-full justify-start">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Preset (JSON)
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportModel} className="w-full justify-start">
+                  <Package2 className="w-4 h-4 mr-2" />
+                  Export Model (GLB)
+                </Button>
+                <label className="block">
+                  <Button variant="outline" size="sm" className="w-full justify-start cursor-pointer">
+                    <Save className="w-4 h-4 mr-2" />
+                    Import Preset
+                  </Button>
+                  <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                </label>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ResetCameraButton() {
+  const cameraControlsRef = useConfiguratorStore((state) => (state as any).cameraControlsRef)
+
+  const handleReset = () => {
+    if (cameraControlsRef) {
+      // Reset to default position
+      cameraControlsRef.reset(true)
+    }
+  }
+
+  return (
+    <Button variant="outline" size="sm" onClick={handleReset} className="w-full justify-start">
+      <RotateCcw className="w-4 h-4 mr-2" />
+      Reset View
+    </Button>
+  )
+}

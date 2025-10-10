@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, Suspense } from "react"
+import { useRef, Suspense, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, Grid, Environment, PerspectiveCamera } from "@react-three/drei"
 import { ModelLoader } from "./model-loader"
@@ -14,9 +14,11 @@ export function Scene() {
   const modelError = useConfiguratorStore((state) => (state as any).modelError)
 
   // Store controls ref in global state
-  if (controlsRef.current && !(useConfiguratorStore.getState() as any).cameraControlsRef) {
-    setCameraControlsRef(controlsRef.current)
-  }
+  useEffect(() => {
+    if (controlsRef.current) {
+      setCameraControlsRef(controlsRef.current)
+    }
+  }, [setCameraControlsRef])
 
   return (
     <div className="w-full h-full relative">
@@ -50,12 +52,18 @@ export function Scene() {
       </Canvas>
 
       {modelLoading && (
-        <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-2 rounded-md text-sm backdrop-blur-sm">
-          Loading model...
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-sm font-medium text-foreground">Loading 3D model...</p>
+          </div>
         </div>
       )}
       {modelError && (
-        <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-2 rounded-md text-sm">
+        <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-2 rounded-md text-sm shadow-lg">
           Error: {modelError}
         </div>
       )}

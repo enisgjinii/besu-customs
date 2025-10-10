@@ -173,17 +173,12 @@ export function extractUVMapForMaterial(
  * Extract UV map from the entire 3D model (all meshes combined)
  */
 export function extractCompleteUVMap(scene: THREE.Group, width = 1024, height = 1024): string | null {
-  console.log("🔍 Extracting complete UV map from scene...")
-
   const canvas = document.createElement("canvas")
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext("2d")
 
-  if (!ctx) {
-    console.error("❌ Failed to get canvas context")
-    return null
-  }
+  if (!ctx) return null
 
   // Fill with white background
   ctx.fillStyle = "#ffffff"
@@ -195,20 +190,16 @@ export function extractCompleteUVMap(scene: THREE.Group, width = 1024, height = 
   const materialColors = new Map<string, string>()
 
   let hasUVs = false
-  let meshCount = 0
-  let triangleCount = 0
 
   // Traverse all meshes in the scene
   scene.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
-      meshCount++
       const materials = Array.isArray(child.material) ? child.material : [child.material]
 
       materials.forEach((material) => {
         const geometry = child.geometry
 
         if (!geometry.attributes.uv) {
-          console.warn(`⚠️ Mesh "${child.name}" has no UV coordinates`)
           return
         }
 
@@ -217,7 +208,6 @@ export function extractCompleteUVMap(scene: THREE.Group, width = 1024, height = 
         // Assign a color to this material if not already assigned
         if (!materialColors.has(material.uuid)) {
           materialColors.set(material.uuid, colors[colorIndex % colors.length])
-          console.log(`🎨 Material ${colorIndex}: ${material.name || "unnamed"} -> ${colors[colorIndex % colors.length]}`)
           colorIndex++
         }
 
@@ -229,8 +219,6 @@ export function extractCompleteUVMap(scene: THREE.Group, width = 1024, height = 
 
         if (indexAttribute) {
           // Indexed geometry
-          const triCount = indexAttribute.count / 3
-          triangleCount += triCount
           for (let i = 0; i < indexAttribute.count; i += 3) {
             const i1 = indexAttribute.getX(i)
             const i2 = indexAttribute.getX(i + 1)
@@ -252,8 +240,6 @@ export function extractCompleteUVMap(scene: THREE.Group, width = 1024, height = 
           }
         } else {
           // Non-indexed geometry
-          const triCount = uvAttribute.count / 3
-          triangleCount += triCount
           for (let i = 0; i < uvAttribute.count; i += 3) {
             const u1 = uvAttribute.getX(i) * width
             const v1 = (1 - uvAttribute.getY(i)) * height
@@ -274,17 +260,11 @@ export function extractCompleteUVMap(scene: THREE.Group, width = 1024, height = 
     }
   })
 
-  console.log(`📊 UV Extraction Stats:`)
-  console.log(`   - Meshes processed: ${meshCount}`)
-  console.log(`   - Triangles drawn: ${triangleCount}`)
-  console.log(`   - Materials found: ${materialColors.size}`)
-
   if (!hasUVs) {
-    console.error("❌ No UV coordinates found in the model")
+    console.warn("No UV coordinates found in the model")
     return null
   }
 
-  console.log("✅ UV map extracted successfully!")
   return canvas.toDataURL("image/png")
 }
 

@@ -8,19 +8,7 @@ import { extractUVMapForMaterial, extractCompleteUVMap } from "@/lib/uv-utils"
 import * as THREE from "three"
 
 export function ModelLoader({ controlsRef }: { controlsRef?: any }) {
-  const uploadedModel = useConfiguratorStore((state) => state.uploadedModel)
   const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl)
-  const setCurrentModelUrl = useConfiguratorStore((state) => state.setCurrentModelUrl)
-
-  // Handle uploaded file
-  useEffect(() => {
-    if (uploadedModel) {
-      const url = URL.createObjectURL(uploadedModel)
-      setCurrentModelUrl(url)
-
-      return () => URL.revokeObjectURL(url)
-    }
-  }, [uploadedModel, setCurrentModelUrl])
 
   // Use placeholder cube if no model
   const effectiveUrl = currentModelUrl || "/placeholder-model.glb"
@@ -57,13 +45,9 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: any }) {
       setSections(newSections)
 
       // Extract complete UV map from entire model
-      console.log("📦 Extracting complete UV map for placeholder...")
       const completeUV = extractCompleteUVMap(groupRef.current)
       if (completeUV) {
-        console.log("✅ Complete UV map extracted, setting in store")
         setCompleteUVMap(completeUV)
-      } else {
-        console.warn("⚠️ No complete UV map extracted")
       }
 
       // Extract UV maps for each material section
@@ -108,13 +92,9 @@ function LoadedModel({ url, controlsRef }: { url: string; controlsRef?: any }) {
       setSections(newSections)
 
       // Extract complete UV map from entire model
-      console.log("📦 Extracting complete UV map for loaded model...")
       const completeUV = extractCompleteUVMap(clonedScene.current)
       if (completeUV) {
-        console.log("✅ Complete UV map extracted, setting in store")
         setCompleteUVMap(completeUV)
-      } else {
-        console.warn("⚠️ No complete UV map extracted")
       }
 
       // Extract UV maps for each material section from all meshes

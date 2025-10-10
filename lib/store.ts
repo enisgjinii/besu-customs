@@ -36,9 +36,7 @@ interface ConfiguratorState {
   setSelectedProduct: (id: string) => void
 
   // Model
-  uploadedModel: File | null
   currentModelUrl: string | null
-  setUploadedModel: (file: File | null) => void
   setCurrentModelUrl: (url: string | null) => void
 
   // Sections
@@ -71,26 +69,57 @@ interface ConfiguratorState {
   importPreset: (json: string) => void
 }
 
-// Generate 34 placeholder products
-const generatePlaceholderProducts = (): Product[] => {
-  return Array.from({ length: 34 }, (_, i) => ({
-    id: `product-${i + 1}`,
-    title: `Product ${i + 1}`,
-    modelUrl: undefined,
-  }))
+// Real products with 3D models
+const generateProducts = (): Product[] => {
+  return [
+    { id: "baseball-caps", title: "Baseball Caps", modelUrl: "/models/Baseball caps.glb" },
+    { id: "baseball-pants", title: "Baseball Pants", modelUrl: "/models/Baseball pants.glb" },
+    { id: "basketball-jersey-long", title: "Basketball Jersey Top Long Pants", modelUrl: "/models/Basketball jersey top long pants.glb" },
+    { id: "basketball-jersey", title: "Basketball Jersey", modelUrl: "/models/Basketball jersey.glb" },
+    { id: "basketball-shirt-long", title: "Basketball Shooting Shirt Long Sleeve", modelUrl: "/models/basketball shooting shirt long sleeve without hoodie.glb" },
+    { id: "basketball-shirt-hoodie", title: "Basketball Shooting Shirt with Hoodie", modelUrl: "/models/basketball shooting shirt short sleeve with hoodie.glb" },
+    { id: "basketball-shirt-short", title: "Basketball Shooting Shirt Short Sleeve", modelUrl: "/models/basketball shooting shirt, short sleeve without a hoodie.glb" },
+    { id: "duffle-bag-01", title: "Duffle Bag 01", modelUrl: "/models/Duffle bag_01.glb" },
+    { id: "duffle-bag", title: "Duffle Bag", modelUrl: "/models/Duffle Bag.glb" },
+    { id: "flag-football-hoodie", title: "Flag Football Top with Hoodie", modelUrl: "/models/Flag football top with hoodie.glb" },
+    { id: "half-short", title: "Half Short", modelUrl: "/models/Half short.glb" },
+    { id: "hoodie", title: "Hoodie", modelUrl: "/models/Hoodie.glb" },
+    { id: "long-pants", title: "Long Pants", modelUrl: "/models/long pants.glb" },
+    { id: "polo-long", title: "Polo Shirts Long Sleeve", modelUrl: "/models/Polo shirts long sleeve.glb" },
+    { id: "polo-short", title: "Polo Shirts Short Sleeve", modelUrl: "/models/Polo shirts short sleeve.glb" },
+    { id: "soccer-crew", title: "Soccer Jersey Crew Neck", modelUrl: "/models/Soccer jersey crew neck.glb" },
+    { id: "soccer-vneck", title: "Soccer Jersey V-Neck", modelUrl: "/models/Soccer jersey v-neck.glb" },
+    { id: "standard-bottom", title: "Standard Bottom Cut Cuffed", modelUrl: "/models/Standard bottom cut, cuffed.glb" },
+    { id: "track-compression", title: "Track & Field Compression Shorts", modelUrl: "/models/Track and field compression shorts.glb" },
+    { id: "track-mid-shorts", title: "Track & Field Mid-Length Shorts", modelUrl: "/models/Track and field mid-len gth shorts.glb" },
+    { id: "track-split-shorts", title: "Track & Field Split Shorts", modelUrl: "/models/Track and field split shorts.glb" },
+    { id: "track-crop", title: "Track & Field Crop Top", modelUrl: "/models/Track and field top crop top.glb" },
+    { id: "track-short-sleeve", title: "Track & Field Short Sleeve", modelUrl: "/models/Track and field top short sleeve.glb" },
+    { id: "track-tank", title: "Track & Field Tank Top", modelUrl: "/models/Track and field top tank top.glb" },
+    { id: "volleyball-long", title: "Volleyball Long Sleeve Tops", modelUrl: "/models/Volleyball long sleeve tops.glb" },
+    { id: "volleyball-short", title: "Volleyball Short Sleeve Tops", modelUrl: "/models/Volleyball short sleeve tops.glb" },
+    { id: "volleyball-spandex-4", title: "Volleyball Shorts Spandex 4", modelUrl: "/models/Volleyball shorts spandex 4.glb" },
+    { id: "volleyball-spandex-shorts", title: "Volleyball Shorts Spandex", modelUrl: "/models/Volleyball shorts spandex.glb" },
+    { id: "volleyball-spandex", title: "Volleyball Spandex", modelUrl: "/models/Volleyball spandex.glb" },
+  ]
 }
+
+const products = generateProducts()
 
 export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   // Products
-  products: generatePlaceholderProducts(),
-  selectedProductId: null,
-  setSelectedProduct: (id) => set({ selectedProductId: id }),
+  products,
+  selectedProductId: products[0]?.id || null,
+  setSelectedProduct: (id) => {
+    const product = get().products.find((p) => p.id === id)
+    if (product?.modelUrl) {
+      set({ selectedProductId: id, currentModelUrl: product.modelUrl })
+    }
+  },
 
   // Model
-  uploadedModel: null,
-  currentModelUrl: null,
-  setUploadedModel: (file) => set({ uploadedModel: file, currentModelUrl: null }),
-  setCurrentModelUrl: (url) => set({ currentModelUrl: url, uploadedModel: null }),
+  currentModelUrl: products[0]?.modelUrl || null,
+  setCurrentModelUrl: (url) => set({ currentModelUrl: url }),
 
   // Sections
   sections: [],

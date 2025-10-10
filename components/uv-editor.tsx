@@ -25,17 +25,6 @@ export function UVEditor() {
   // Use complete UV map if no section is selected, otherwise use section-specific UV map
   const uvMapUrl = selectedSectionId ? uvMaps.get(selectedSectionId) : completeUVMap
 
-  // Debug logging
-  useEffect(() => {
-    console.log("🎯 UV Editor State:", {
-      selectedSectionId,
-      hasCompleteUVMap: !!completeUVMap,
-      hasSectionUVMap: selectedSectionId ? !!uvMaps.get(selectedSectionId) : false,
-      uvMapUrl: uvMapUrl ? "present" : "missing",
-      sectionsCount: sections.length,
-    })
-  }, [selectedSectionId, completeUVMap, uvMaps, uvMapUrl, sections.length])
-
   // Initialize Fabric.js canvas
   useEffect(() => {
     if (!canvasRef.current) return
@@ -59,44 +48,32 @@ export function UVEditor() {
 
   // Load UV map as background when available
   useEffect(() => {
-    if (!fabricCanvasRef.current || !uvMapUrl) {
-      console.log("🖼️ UV Editor: No UV map to display", { hasCanvas: !!fabricCanvasRef.current, hasUVMap: !!uvMapUrl })
-      return
-    }
-
-    console.log("🖼️ UV Editor: Loading UV map as background...")
+    if (!fabricCanvasRef.current || !uvMapUrl) return
 
     // Clear any existing background first
     fabricCanvasRef.current.backgroundImage = undefined
     fabricCanvasRef.current.renderAll()
 
-    FabricImage.fromURL(
-      uvMapUrl,
-      {
-        crossOrigin: "anonymous",
-      },
-    ).then((img) => {
-      if (!fabricCanvasRef.current) {
-        console.error("❌ Canvas ref lost during image load")
-        return
-      }
-
-      console.log("✅ UV map image loaded successfully", { width: img.width, height: img.height })
-
-      img.set({
-        selectable: false,
-        evented: false,
-        opacity: 1,
-        scaleX: fabricCanvasRef.current.width! / (img.width || 1),
-        scaleY: fabricCanvasRef.current.height! / (img.height || 1),
-      })
-
-      fabricCanvasRef.current.backgroundImage = img
-      fabricCanvasRef.current.renderAll()
-      console.log("🎨 Background image set and canvas rendered")
-    }).catch((err) => {
-      console.error("❌ Failed to load UV map image:", err)
+    FabricImage.fromURL(uvMapUrl, {
+      crossOrigin: "anonymous",
     })
+      .then((img) => {
+        if (!fabricCanvasRef.current) return
+
+        img.set({
+          selectable: false,
+          evented: false,
+          opacity: 1,
+          scaleX: fabricCanvasRef.current.width! / (img.width || 1),
+          scaleY: fabricCanvasRef.current.height! / (img.height || 1),
+        })
+
+        fabricCanvasRef.current.backgroundImage = img
+        fabricCanvasRef.current.renderAll()
+      })
+      .catch((err) => {
+        console.error("Failed to load UV map:", err)
+      })
   }, [uvMapUrl])
 
   const saveState = () => {
