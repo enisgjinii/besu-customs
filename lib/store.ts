@@ -51,6 +51,8 @@ interface ConfiguratorState {
   // UV map state
   uvMaps: Map<string, string> // sectionId -> base64 UV map image
   setUVMap: (sectionId: string, uvMapUrl: string) => void
+  completeUVMap: string | null // Complete UV map of entire model
+  setCompleteUVMap: (uvMapUrl: string | null) => void
 
   // Scene controls
   showGrid: boolean
@@ -114,6 +116,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       newMaps.set(sectionId, uvMapUrl)
       return { uvMaps: newMaps }
     }),
+  completeUVMap: null,
+  setCompleteUVMap: (uvMapUrl) => set({ completeUVMap: uvMapUrl }),
 
   // Scene controls
   showGrid: false,

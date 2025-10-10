@@ -19,9 +19,22 @@ export function UVEditor() {
   const sections = useConfiguratorStore((state) => state.sections)
   const updateSection = useConfiguratorStore((state) => state.updateSection)
   const uvMaps = useConfiguratorStore((state) => state.uvMaps)
+  const completeUVMap = useConfiguratorStore((state) => (state as any).completeUVMap)
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId)
-  const uvMapUrl = selectedSectionId ? uvMaps.get(selectedSectionId) : null
+  // Use complete UV map if no section is selected, otherwise use section-specific UV map
+  const uvMapUrl = selectedSectionId ? uvMaps.get(selectedSectionId) : completeUVMap
+
+  // Debug logging
+  useEffect(() => {
+    console.log("🎯 UV Editor State:", {
+      selectedSectionId,
+      hasCompleteUVMap: !!completeUVMap,
+      hasSectionUVMap: selectedSectionId ? !!uvMaps.get(selectedSectionId) : false,
+      uvMapUrl: uvMapUrl ? "present" : "missing",
+      sectionsCount: sections.length,
+    })
+  }, [selectedSectionId, completeUVMap, uvMaps, uvMapUrl, sections.length])
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -46,22 +59,43 @@ export function UVEditor() {
 
   // Load UV map as background when available
   useEffect(() => {
-    if (!fabricCanvasRef.current || !uvMapUrl) return
+    if (!fabricCanvasRef.current || !uvMapUrl) {
+      console.log("🖼️ UV Editor: No UV map to display", { hasCanvas: !!fabricCanvasRef.current, hasUVMap: !!uvMapUrl })
+      return
+    }
 
-  ;(FabricImage as any).fromURL(uvMapUrl, (img: any) => {
-      if (!fabricCanvasRef.current) return
+    console.log("🖼️ UV Editor: Loading UV map as background...")
+
+    // Clear any existing background first
+    fabricCanvasRef.current.backgroundImage = undefined
+    fabricCanvasRef.current.renderAll()
+
+    FabricImage.fromURL(
+      uvMapUrl,
+      {
+        crossOrigin: "anonymous",
+      },
+    ).then((img) => {
+      if (!fabricCanvasRef.current) {
+        console.error("❌ Canvas ref lost during image load")
+        return
+      }
+
+      console.log("✅ UV map image loaded successfully", { width: img.width, height: img.height })
 
       img.set({
         selectable: false,
         evented: false,
-        opacity: 0.3,
-      })
-
-      // cast to any to satisfy types from fabric
-      (fabricCanvasRef.current as any).setBackgroundImage(img, fabricCanvasRef.current.renderAll.bind(fabricCanvasRef.current), {
+        opacity: 1,
         scaleX: fabricCanvasRef.current.width! / (img.width || 1),
         scaleY: fabricCanvasRef.current.height! / (img.height || 1),
       })
+
+      fabricCanvasRef.current.backgroundImage = img
+      fabricCanvasRef.current.renderAll()
+      console.log("🎨 Background image set and canvas rendered")
+    }).catch((err) => {
+      console.error("❌ Failed to load UV map image:", err)
     })
   }, [uvMapUrl])
 
@@ -178,21 +212,15 @@ export function UVEditor() {
     }
   }
 
-  if (!selectedSection) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm p-8 text-center">
-        <div>
-          <Layers className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Select a material section to edit its texture</p>
-        </div>
-      </div>
-    )
-  }
+  // Show complete UV map if no section is selected
+  const isCompleteView = !selectedSection && completeUVMap
 
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border/50 space-y-3">
-        <h3 className="font-semibold text-sm">UV Texture Editor: {selectedSection.name}</h3>
+        <h3 className="font-semibold text-sm">
+          {isCompleteView ? "Complete Model UV Map" : `UV Texture Editor: ${selectedSection?.name}`}
+        </h3>
 
         <div className="grid grid-cols-3 gap-2">
           <Button size="sm" variant="outline" onClick={addText}>
@@ -224,22 +252,39 @@ export function UVEditor() {
           </Button>
         </div>
 
-        <Button size="sm" onClick={applyToModel} className="w-full">
-          Apply to 3D Model
-        </Button>
+        {!isCompleteView && (
+          <Button size="sm" onClick={applyToModel} className="w-full">
+            Apply to 3D Model
+          </Button>
+        )}
 
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
       </div>
 
       <div className="flex-1 overflow-auto p-4 bg-secondary/10">
         <div className="flex items-center justify-center min-h-full">
-          <canvas ref={canvasRef} className="shadow-lg rounded-sm" />
+          {uvMapUrl ? (
+            <canvas ref={canvasRef} className="shadow-lg rounded-sm border-2 border-border" />
+          ) : (
+            <div className="text-center text-muted-foreground">
+              <Layers className="w-16 h-16 mx-auto mb-4 opacity-30" />
+              <p className="text-sm">
+                {sections.length === 0 ? "Load a 3D model to see UV map" : "Select a material section or wait for UV extraction"}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      {!uvMapUrl && (
+      {!uvMapUrl && !isCompleteView && (
         <div className="p-3 bg-muted/30 text-xs text-muted-foreground border-t border-border/50">
-          UV map will be extracted automatically when the model is loaded
+          {completeUVMap ? "Select a material section to edit its texture" : "UV map will be extracted automatically when the model is loaded"}
+        </div>
+      )}
+
+      {isCompleteView && (
+        <div className="p-3 bg-blue-500/10 text-xs text-blue-600 dark:text-blue-400 border-t border-border/50">
+          This is the complete UV map of your entire 3D model. Select a material section to edit specific textures.
         </div>
       )}
     </div>

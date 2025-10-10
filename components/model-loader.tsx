@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react"
 import { useGLTF } from "@react-three/drei"
 import { useConfiguratorStore } from "@/lib/store"
-import { extractSections, applyMaterialUpdates, getMeshByMaterialId } from "@/lib/model-utils"
-import { extractUVMap } from "@/lib/uv-utils"
+import { extractSections, applyMaterialUpdates } from "@/lib/model-utils"
+import { extractUVMapForMaterial, extractCompleteUVMap } from "@/lib/uv-utils"
 import * as THREE from "three"
 
 export function ModelLoader({ controlsRef }: { controlsRef?: any }) {
@@ -32,6 +32,7 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: any }) {
   const sections = useConfiguratorStore((state) => state.sections)
   const setSections = useConfiguratorStore((state) => state.setSections)
   const setUVMap = useConfiguratorStore((state) => state.setUVMap)
+  const setCompleteUVMap = useConfiguratorStore((state) => (state as any).setCompleteUVMap)
   const groupRef = useRef<THREE.Group>(null)
 
   // Load placeholder cube if URL doesn't exist
@@ -55,17 +56,25 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: any }) {
       const newSections = extractSections(groupRef.current)
       setSections(newSections)
 
+      // Extract complete UV map from entire model
+      console.log("📦 Extracting complete UV map for placeholder...")
+      const completeUV = extractCompleteUVMap(groupRef.current)
+      if (completeUV) {
+        console.log("✅ Complete UV map extracted, setting in store")
+        setCompleteUVMap(completeUV)
+      } else {
+        console.warn("⚠️ No complete UV map extracted")
+      }
+
+      // Extract UV maps for each material section
       newSections.forEach((section) => {
-        const mesh = getMeshByMaterialId(groupRef.current!, section.id)
-        if (mesh) {
-          const uvMapUrl = extractUVMap(mesh)
-          if (uvMapUrl) {
-            setUVMap(section.id, uvMapUrl)
-          }
+        const uvMapUrl = extractUVMapForMaterial(groupRef.current!, section.id)
+        if (uvMapUrl) {
+          setUVMap(section.id, uvMapUrl)
         }
       })
     }
-  }, [isPlaceholder, setSections, setUVMap])
+  }, [isPlaceholder, setSections, setUVMap, setCompleteUVMap])
 
   if (isPlaceholder) {
     return <group ref={groupRef} />
@@ -79,6 +88,7 @@ function LoadedModel({ url, controlsRef }: { url: string; controlsRef?: any }) {
   const sections = useConfiguratorStore((state) => state.sections)
   const setSections = useConfiguratorStore((state) => state.setSections)
   const setUVMap = useConfiguratorStore((state) => state.setUVMap)
+  const setCompleteUVMap = useConfiguratorStore((state) => (state as any).setCompleteUVMap)
   const setModelLoading = useConfiguratorStore((state) => (state as any).setModelLoading)
   const setModelError = useConfiguratorStore((state) => (state as any).setModelError)
   const clonedScene = useRef(scene.clone())
@@ -97,13 +107,21 @@ function LoadedModel({ url, controlsRef }: { url: string; controlsRef?: any }) {
       const newSections = extractSections(clonedScene.current)
       setSections(newSections)
 
+      // Extract complete UV map from entire model
+      console.log("📦 Extracting complete UV map for loaded model...")
+      const completeUV = extractCompleteUVMap(clonedScene.current)
+      if (completeUV) {
+        console.log("✅ Complete UV map extracted, setting in store")
+        setCompleteUVMap(completeUV)
+      } else {
+        console.warn("⚠️ No complete UV map extracted")
+      }
+
+      // Extract UV maps for each material section from all meshes
       newSections.forEach((section) => {
-        const mesh = getMeshByMaterialId(clonedScene.current, section.id)
-        if (mesh) {
-          const uvMapUrl = extractUVMap(mesh)
-          if (uvMapUrl) {
-            setUVMap(section.id, uvMapUrl)
-          }
+        const uvMapUrl = extractUVMapForMaterial(clonedScene.current, section.id)
+        if (uvMapUrl) {
+          setUVMap(section.id, uvMapUrl)
         }
       })
 
@@ -148,7 +166,7 @@ function LoadedModel({ url, controlsRef }: { url: string; controlsRef?: any }) {
       setModelError(err instanceof Error ? err.message : "Failed to load model")
       setModelLoading(false)
     }
-  }, [url, setSections, setUVMap, controlsRef, setModelLoading, setModelError])
+  }, [url, setSections, setUVMap, setCompleteUVMap, controlsRef, setModelLoading, setModelError])
 
   // Apply material updates
   useEffect(() => {
