@@ -9,6 +9,7 @@ import { useConfiguratorStore } from "@/lib/store"
 export function Scene() {
   const showGrid = useConfiguratorStore((state) => state.showGrid)
   const setCameraControlsRef = useConfiguratorStore((state) => state.setCameraControlsRef)
+  const setGlRef = useConfiguratorStore((state) => state.setGlRef)
   const autoRotate = useConfiguratorStore((state) => state.autoRotate)
   const controlsRef = useRef<any>(null)
   const modelLoading = useConfiguratorStore((state) => state.modelLoading)
@@ -23,7 +24,11 @@ export function Scene() {
 
   return (
     <div className="w-full h-full relative">
-      <Canvas shadows>
+      <Canvas 
+      shadows 
+      gl={{ preserveDrawingBuffer: true, antialias: true }}
+      onCreated={({ gl }) => setGlRef(gl)}
+    >
         <PerspectiveCamera makeDefault position={[3, 2, 5]} />
         <OrbitControls
           ref={controlsRef}

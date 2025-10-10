@@ -59,6 +59,8 @@ interface ConfiguratorState {
   setCameraControlsRef: (ref: any) => void
   autoRotate: boolean
   setAutoRotate: (enabled: boolean) => void
+  glRef: any
+  setGlRef: (ref: any) => void
   // Loading / error state for model loading
   modelLoading: boolean
   setModelLoading: (loading: boolean) => void
@@ -159,6 +161,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   setCameraControlsRef: (ref: any) => set({ cameraControlsRef: ref }),
   autoRotate: false,
   setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
+  glRef: null,
+  setGlRef: (ref: any) => set({ glRef: ref }),
   modelLoading: false,
   setModelLoading: (loading: boolean) => set({ modelLoading: loading }),
   modelError: null,

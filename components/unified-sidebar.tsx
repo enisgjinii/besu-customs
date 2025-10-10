@@ -21,7 +21,6 @@ import {
   Film,
 } from "lucide-react"
 import { MaterialEditor } from "./material-editor"
-import { UVEditor } from "./uv-editor"
 import { Button } from "./ui/button"
 import {
   Select,
@@ -59,6 +58,7 @@ export function UnifiedSidebar() {
   const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef)
   const autoRotate = useConfiguratorStore((state) => state.autoRotate)
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate)
+  const glRef = useConfiguratorStore((state) => state.glRef)
 
   const handleExport = () => {
     const json = exportPreset()
@@ -92,27 +92,31 @@ export function UnifiedSidebar() {
   }
 
   const handleScreenshot = () => {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement
-    if (!canvas) {
-      alert("Canvas not found")
+    if (!glRef) {
+      alert("WebGL renderer not available")
       return
     }
 
     try {
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          alert("Failed to create image")
+      // Force a render and then capture
+      requestAnimationFrame(() => {
+        const canvas = glRef.domElement
+        if (!canvas) {
+          alert("Canvas not found")
           return
         }
-        const url = URL.createObjectURL(blob)
+
+        // Ensure the canvas is up to date
+        glRef.render()
+
+        const dataURL = canvas.toDataURL("image/png", 1.0)
         const link = document.createElement("a")
         link.download = `model-screenshot-${Date.now()}.png`
-        link.href = url
+        link.href = dataURL
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-      }, "image/png", 1.0)
+      })
     } catch (error) {
       console.error("Screenshot failed:", error)
       alert("Failed to capture screenshot")
@@ -120,42 +124,50 @@ export function UnifiedSidebar() {
   }
 
   const handleExportHighRes = () => {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement
-    if (!canvas) {
-      alert("Canvas not found")
+    if (!glRef) {
+      alert("WebGL renderer not available")
       return
     }
 
     try {
-      // Create a temporary high-res canvas
-      const tempCanvas = document.createElement("canvas")
-      const scale = 2 // 2x resolution
-      tempCanvas.width = canvas.width * scale
-      tempCanvas.height = canvas.height * scale
-      const ctx = tempCanvas.getContext("2d")
-      if (!ctx) {
-        alert("Failed to create canvas context")
-        return
-      }
-
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = "high"
-      ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height)
-
-      tempCanvas.toBlob((blob) => {
-        if (!blob) {
-          alert("Failed to create image")
+      requestAnimationFrame(() => {
+        const canvas = glRef.domElement
+        if (!canvas) {
+          alert("Canvas not found")
           return
         }
-        const url = URL.createObjectURL(blob)
+
+        // Force render
+        glRef.render()
+
+        // Create a temporary high-res canvas
+        const tempCanvas = document.createElement("canvas")
+        const scale = 2 // 2x resolution
+        const originalWidth = canvas.width
+        const originalHeight = canvas.height
+
+        tempCanvas.width = originalWidth * scale
+        tempCanvas.height = originalHeight * scale
+
+        const ctx = tempCanvas.getContext("2d")
+        if (!ctx) {
+          alert("Failed to create canvas context")
+          return
+        }
+
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = "high"
+        ctx.scale(scale, scale)
+        ctx.drawImage(canvas, 0, 0)
+
+        const dataURL = tempCanvas.toDataURL("image/png", 1.0)
         const link = document.createElement("a")
         link.download = `model-2x-${Date.now()}.png`
-        link.href = url
+        link.href = dataURL
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-      }, "image/png", 1.0)
+      })
     } catch (error) {
       console.error("High-res export failed:", error)
       alert("Failed to export high-res image")
@@ -163,42 +175,50 @@ export function UnifiedSidebar() {
   }
 
   const handleExport4K = () => {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement
-    if (!canvas) {
-      alert("Canvas not found")
+    if (!glRef) {
+      alert("WebGL renderer not available")
       return
     }
 
     try {
-      // Create a 4K resolution canvas
-      const tempCanvas = document.createElement("canvas")
-      const scale = 4 // 4x resolution
-      tempCanvas.width = canvas.width * scale
-      tempCanvas.height = canvas.height * scale
-      const ctx = tempCanvas.getContext("2d")
-      if (!ctx) {
-        alert("Failed to create canvas context")
-        return
-      }
-
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = "high"
-      ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height)
-
-      tempCanvas.toBlob((blob) => {
-        if (!blob) {
-          alert("Failed to create image")
+      requestAnimationFrame(() => {
+        const canvas = glRef.domElement
+        if (!canvas) {
+          alert("Canvas not found")
           return
         }
-        const url = URL.createObjectURL(blob)
+
+        // Force render
+        glRef.render()
+
+        // Create a 4K resolution canvas
+        const tempCanvas = document.createElement("canvas")
+        const scale = 4 // 4x resolution
+        const originalWidth = canvas.width
+        const originalHeight = canvas.height
+
+        tempCanvas.width = originalWidth * scale
+        tempCanvas.height = originalHeight * scale
+
+        const ctx = tempCanvas.getContext("2d")
+        if (!ctx) {
+          alert("Failed to create canvas context")
+          return
+        }
+
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = "high"
+        ctx.scale(scale, scale)
+        ctx.drawImage(canvas, 0, 0)
+
+        const dataURL = tempCanvas.toDataURL("image/png", 1.0)
         const link = document.createElement("a")
         link.download = `model-4k-${Date.now()}.png`
-        link.href = url
+        link.href = dataURL
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-      }, "image/png", 1.0)
+      })
     } catch (error) {
       console.error("4K export failed:", error)
       alert("Failed to export 4K image")
@@ -221,7 +241,7 @@ export function UnifiedSidebar() {
     setAutoRotate(!autoRotate)
   }
 
-  const handleStartRecording = async () => {
+  const handleStartRecording = async (format: "webm" | "mp4") => {
     const canvas = document.querySelector("canvas") as HTMLCanvasElement
     if (!canvas) {
       alert("Canvas not found")
@@ -229,26 +249,41 @@ export function UnifiedSidebar() {
     }
 
     try {
-      // Check if captureStream is supported
       if (!canvas.captureStream) {
         alert("Video recording is not supported in your browser")
         return
       }
 
       const stream = canvas.captureStream(30) // 30 FPS
-
-      // Try different codecs
       let options: MediaRecorderOptions = { videoBitsPerSecond: 2500000 }
+      let fileExtension = "webm"
 
-      if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
-        options.mimeType = "video/webm;codecs=vp9"
-      } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
-        options.mimeType = "video/webm;codecs=vp8"
-      } else if (MediaRecorder.isTypeSupported("video/webm")) {
-        options.mimeType = "video/webm"
-      } else {
-        alert("No supported video format found")
-        return
+      if (format === "mp4") {
+        // Try MP4 formats
+        if (MediaRecorder.isTypeSupported("video/mp4")) {
+          options.mimeType = "video/mp4"
+          fileExtension = "mp4"
+        } else if (MediaRecorder.isTypeSupported("video/webm;codecs=h264")) {
+          options.mimeType = "video/webm;codecs=h264"
+          fileExtension = "mp4"
+        } else {
+          alert("MP4 format not supported. Using WebM instead.")
+          format = "webm"
+        }
+      }
+
+      if (format === "webm") {
+        if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+          options.mimeType = "video/webm;codecs=vp9"
+        } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
+          options.mimeType = "video/webm;codecs=vp8"
+        } else if (MediaRecorder.isTypeSupported("video/webm")) {
+          options.mimeType = "video/webm"
+        } else {
+          alert("No supported video format found")
+          return
+        }
+        fileExtension = "webm"
       }
 
       const mediaRecorder = new MediaRecorder(stream, options)
@@ -264,7 +299,7 @@ export function UnifiedSidebar() {
         const blob = new Blob(recordedChunksRef.current, { type: options.mimeType || "video/webm" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
-        link.download = `model-video-${Date.now()}.webm`
+        link.download = `model-video-${Date.now()}.${fileExtension}`
         link.href = url
         document.body.appendChild(link)
         link.click()
@@ -279,7 +314,7 @@ export function UnifiedSidebar() {
         setIsRecording(false)
       }
 
-      mediaRecorder.start(100) // Collect data every 100ms
+      mediaRecorder.start(100)
       mediaRecorderRef.current = mediaRecorder
       setIsRecording(true)
     } catch (error) {
@@ -292,6 +327,21 @@ export function UnifiedSidebar() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
     }
+  }
+
+  const handleDownloadUVMap = () => {
+    const completeUVMap = useConfiguratorStore.getState().completeUVMap
+    if (!completeUVMap) {
+      alert("UV Map not available yet")
+      return
+    }
+
+    const link = document.createElement("a")
+    link.download = `uv-map-${Date.now()}.png`
+    link.href = completeUVMap
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
@@ -359,7 +409,44 @@ export function UnifiedSidebar() {
             <MaterialEditor />
           </div>
         )}
-        {activeTab === "texture" && <UVEditor />}
+        {activeTab === "texture" && (
+          <div className="p-4 space-y-4">
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                </span>
+                BETA - Phase 2
+              </div>
+              <h3 className="font-semibold text-lg">UV Map Export</h3>
+              <p className="text-sm text-muted-foreground">
+                Download the complete UV map of your 3D model
+              </p>
+            </div>
+
+            <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Paintbrush className="w-4 h-4" />
+                <span>UV texture mapping will be available in Phase 2</span>
+              </div>
+              <Button onClick={handleDownloadUVMap} className="w-full" size="lg">
+                <Download className="w-4 h-4 mr-2" />
+                Download UV Map
+              </Button>
+            </div>
+
+            <div className="border border-border/50 rounded-lg p-4 space-y-2">
+              <h4 className="font-medium text-sm">Coming in Phase 2:</h4>
+              <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
+                <li>Custom texture painting</li>
+                <li>Logo and text placement</li>
+                <li>Pattern overlays</li>
+                <li>Advanced UV editing tools</li>
+              </ul>
+            </div>
+          </div>
+        )}
         {activeTab === "view" && (
           <div className="p-4 space-y-3">
             {/* Camera Controls */}
@@ -383,10 +470,10 @@ export function UnifiedSidebar() {
                   </Button>
                 </div>
                 <ResetCameraButton />
-                <Button 
-                  variant={autoRotate ? "default" : "outline"} 
-                  size="sm" 
-                  onClick={handleAutoRotate} 
+                <Button
+                  variant={autoRotate ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleAutoRotate}
                   className="w-full justify-start"
                 >
                   <Play className="w-4 h-4 mr-2" />
@@ -409,6 +496,9 @@ export function UnifiedSidebar() {
                   <Grid3x3 className="w-4 h-4 mr-2" />
                   {showGrid ? "Hide Grid" : "Show Grid"}
                 </Button>
+                <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
+                  More scene options coming in Phase 2
+                </div>
               </CollapsibleContent>
             </Collapsible>
 
@@ -448,10 +538,26 @@ export function UnifiedSidebar() {
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
                 {!isRecording ? (
-                  <Button variant="outline" size="sm" onClick={handleStartRecording} className="w-full justify-start">
-                    <Video className="w-4 h-4 mr-2" />
-                    Start Recording
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStartRecording("webm")}
+                      className="w-full justify-start"
+                    >
+                      <Video className="w-4 h-4 mr-2" />
+                      Record WebM
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStartRecording("mp4")}
+                      className="w-full justify-start"
+                    >
+                      <Video className="w-4 h-4 mr-2" />
+                      Record MP4
+                    </Button>
+                  </>
                 ) : (
                   <Button variant="destructive" size="sm" onClick={handleStopRecording} className="w-full justify-start">
                     <Square className="w-4 h-4 mr-2" />
@@ -471,7 +577,7 @@ export function UnifiedSidebar() {
               <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <Package2 className="w-4 h-4" />
-                  Export Model
+                  Export Model & Presets
                 </h3>
                 <ChevronDown className={`w-4 h-4 transition-transform ${exportOpen ? "rotate-180" : ""}`} />
               </CollapsibleTrigger>
@@ -491,6 +597,9 @@ export function UnifiedSidebar() {
                   </Button>
                   <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                 </label>
+                <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
+                  Additional formats (OBJ, FBX, GLTF) coming in Phase 2
+                </div>
               </CollapsibleContent>
             </Collapsible>
           </div>
