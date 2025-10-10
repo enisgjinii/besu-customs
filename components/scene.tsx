@@ -8,6 +8,7 @@ import {
   Environment,
   PerspectiveCamera,
 } from "@react-three/drei";
+import * as THREE from "three";
 import { ModelLoader } from "./model-loader";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -41,7 +42,7 @@ export function Scene() {
           ref={controlsRef}
           makeDefault
           target={[0, 0, 0]}
-          enablePan={false}
+          enablePan={true}
           enableDamping={true}
           dampingFactor={0.05}
           maxDistance={8}
@@ -53,8 +54,8 @@ export function Scene() {
           autoRotate={autoRotate}
           autoRotateSpeed={1.0}
           touches={{
-            ONE: 2, // TOUCH.ROTATE
-            TWO: 1, // TOUCH.DOLLY_PAN
+            ONE: THREE.TOUCH.ROTATE,
+            TWO: THREE.TOUCH.DOLLY_PAN,
           }}
         />
 
