@@ -57,6 +57,8 @@ export function UnifiedSidebar() {
   const selectedProductId = useConfiguratorStore((state) => state.selectedProductId)
   const setSelectedProduct = useConfiguratorStore((state) => state.setSelectedProduct)
   const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef)
+  const autoRotate = useConfiguratorStore((state) => state.autoRotate)
+  const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate)
 
   const handleExport = () => {
     const json = exportPreset()
@@ -216,9 +218,7 @@ export function UnifiedSidebar() {
   }
 
   const handleAutoRotate = () => {
-    if (!cameraControlsRef) return
-    cameraControlsRef.autoRotate = !cameraControlsRef.autoRotate
-    cameraControlsRef.autoRotateSpeed = 1.0
+    setAutoRotate(!autoRotate)
   }
 
   const handleStartRecording = async () => {
@@ -383,9 +383,14 @@ export function UnifiedSidebar() {
                   </Button>
                 </div>
                 <ResetCameraButton />
-                <Button variant="outline" size="sm" onClick={handleAutoRotate} className="w-full justify-start">
+                <Button 
+                  variant={autoRotate ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={handleAutoRotate} 
+                  className="w-full justify-start"
+                >
                   <Play className="w-4 h-4 mr-2" />
-                  Toggle Auto-Rotate
+                  {autoRotate ? "Stop Auto-Rotate" : "Start Auto-Rotate"}
                 </Button>
               </CollapsibleContent>
             </Collapsible>

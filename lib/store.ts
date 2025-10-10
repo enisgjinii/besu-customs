@@ -57,6 +57,8 @@ interface ConfiguratorState {
   toggleGrid: () => void
   cameraControlsRef: any
   setCameraControlsRef: (ref: any) => void
+  autoRotate: boolean
+  setAutoRotate: (enabled: boolean) => void
   // Loading / error state for model loading
   modelLoading: boolean
   setModelLoading: (loading: boolean) => void
@@ -155,6 +157,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   cameraControlsRef: null,
   setCameraControlsRef: (ref: any) => set({ cameraControlsRef: ref }),
+  autoRotate: false,
+  setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
   modelLoading: false,
   setModelLoading: (loading: boolean) => set({ modelLoading: loading }),
   modelError: null,

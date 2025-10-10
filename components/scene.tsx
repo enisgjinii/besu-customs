@@ -9,6 +9,7 @@ import { useConfiguratorStore } from "@/lib/store"
 export function Scene() {
   const showGrid = useConfiguratorStore((state) => state.showGrid)
   const setCameraControlsRef = useConfiguratorStore((state) => state.setCameraControlsRef)
+  const autoRotate = useConfiguratorStore((state) => state.autoRotate)
   const controlsRef = useRef<any>(null)
   const modelLoading = useConfiguratorStore((state) => state.modelLoading)
   const modelError = useConfiguratorStore((state) => state.modelError)
@@ -37,6 +38,8 @@ export function Scene() {
           minPolarAngle={0.05}
           rotateSpeed={0.5}
           zoomSpeed={0.8}
+          autoRotate={autoRotate}
+          autoRotateSpeed={1.0}
         />
 
         <ambientLight intensity={0.5} />
