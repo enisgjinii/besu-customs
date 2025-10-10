@@ -7,12 +7,18 @@ import { Button } from "@/components/ui/button"
 
 export default function AdminPage() {
   const products = useConfiguratorStore((state) => state.products)
+  const updateProduct = useConfiguratorStore((state) => (state as any).updateProduct)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [modelUrl, setModelUrl] = useState("")
 
   const handleSave = (productId: string) => {
-    // In a real app, this would update the product in the store
-    console.log(`Saving model URL for ${productId}:`, modelUrl)
+    // Persist model URL to store
+    if (updateProduct) {
+      updateProduct(productId, { modelUrl: modelUrl || undefined })
+    } else {
+      console.log(`Saving model URL for ${productId}:`, modelUrl)
+    }
+
     setEditingId(null)
     setModelUrl("")
   }

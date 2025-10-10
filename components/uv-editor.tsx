@@ -48,7 +48,7 @@ export function UVEditor() {
   useEffect(() => {
     if (!fabricCanvasRef.current || !uvMapUrl) return
 
-    FabricImage.fromURL(uvMapUrl, (img) => {
+  ;(FabricImage as any).fromURL(uvMapUrl, (img: any) => {
       if (!fabricCanvasRef.current) return
 
       img.set({
@@ -57,7 +57,8 @@ export function UVEditor() {
         opacity: 0.3,
       })
 
-      fabricCanvasRef.current.setBackgroundImage(img, fabricCanvasRef.current.renderAll.bind(fabricCanvasRef.current), {
+      // cast to any to satisfy types from fabric
+      (fabricCanvasRef.current as any).setBackgroundImage(img, fabricCanvasRef.current.renderAll.bind(fabricCanvasRef.current), {
         scaleX: fabricCanvasRef.current.width! / (img.width || 1),
         scaleY: fabricCanvasRef.current.height! / (img.height || 1),
       })
@@ -117,7 +118,7 @@ export function UVEditor() {
     reader.onload = (event) => {
       const imgUrl = event.target?.result as string
 
-      FabricImage.fromURL(imgUrl, (img) => {
+  ;(FabricImage as any).fromURL(imgUrl, (img: any) => {
         if (!fabricCanvasRef.current) return
 
         img.scaleToWidth(200)
@@ -144,7 +145,8 @@ export function UVEditor() {
   const applyToModel = () => {
     if (!fabricCanvasRef.current || !selectedSectionId) return
 
-    const dataUrl = fabricCanvasRef.current.toDataURL({
+    const dataUrl = (fabricCanvasRef.current as any).toDataURL({
+      multiplier: 1,
       format: "png",
       quality: 1,
     })
@@ -155,7 +157,8 @@ export function UVEditor() {
   const exportTexture = () => {
     if (!fabricCanvasRef.current) return
 
-    const dataUrl = fabricCanvasRef.current.toDataURL({
+    const dataUrl = (fabricCanvasRef.current as any).toDataURL({
+      multiplier: 1,
       format: "png",
       quality: 1,
     })

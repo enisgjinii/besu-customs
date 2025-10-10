@@ -55,6 +55,11 @@ interface ConfiguratorState {
   // Scene controls
   showGrid: boolean
   toggleGrid: () => void
+  // Loading / error state for model loading
+  modelLoading: boolean
+  setModelLoading: (loading: boolean) => void
+  modelError: string | null
+  setModelError: (err: string | null) => void
 
   // Presets
   presets: ConfigPreset[]
@@ -95,6 +100,12 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     })),
   setSelectedSection: (id) => set({ selectedSectionId: id }),
 
+  // Product updates
+  updateProduct: (id: string, updates: Partial<Product>) =>
+    set((state) => ({
+      products: state.products.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    })),
+
   // UV map management
   uvMaps: new Map(),
   setUVMap: (sectionId, uvMapUrl) =>
@@ -105,8 +116,14 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     }),
 
   // Scene controls
-  showGrid: true,
+  showGrid: false,
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+  cameraControlsRef: null,
+  setCameraControlsRef: (ref: any) => set({ cameraControlsRef: ref }),
+  modelLoading: false,
+  setModelLoading: (loading: boolean) => set({ modelLoading: loading }),
+  modelError: null,
+  setModelError: (err: string | null) => set({ modelError: err }),
 
   // Presets
   presets: [],

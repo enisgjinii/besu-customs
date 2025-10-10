@@ -4,19 +4,19 @@ import type React from "react"
 
 import { useState } from "react"
 import { useConfiguratorStore } from "@/lib/store"
-import { Grid3x3, Save, UploadIcon, Download, Palette, Paintbrush, Camera, Package2 } from "lucide-react"
+import { Grid3x3, Save, UploadIcon, Download, Palette, Paintbrush, Camera, Package2, RotateCcw } from "lucide-react"
 import { MaterialEditor } from "./material-editor"
 import { UploadPanel } from "./upload-panel"
 import { UVEditor } from "./uv-editor"
 import { Button } from "./ui/button"
 
 export function ControlsPanel() {
-  const [activeTab, setActiveTab] = useState<"upload" | "materials" | "texture" | "export">("upload")
+  const [activeTab, setActiveTab] = useState<"upload" | "materials" | "texture" | "view" | "export">("upload")
   const showGrid = useConfiguratorStore((state) => state.showGrid)
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid)
   const exportPreset = useConfiguratorStore((state) => state.exportPreset)
   const importPreset = useConfiguratorStore((state) => state.importPreset)
-  const currentModel = useConfiguratorStore((state) => state.currentModel)
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl)
 
   const handleExport = () => {
     const json = exportPreset()
@@ -42,11 +42,11 @@ export function ControlsPanel() {
   }
 
   const handleExportModel = () => {
-    if (!currentModel) return
+    if (!currentModelUrl) return
     // Export the modified model with textures
     const link = document.createElement("a")
     link.download = "configured-model.glb"
-    link.href = useConfiguratorStore.getState().currentModelUrl || ""
+    link.href = currentModelUrl
     link.click()
   }
 
@@ -67,16 +67,19 @@ export function ControlsPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-card">
-      <div className="p-4 border-b border-border/50 space-y-3">
-        <h2 className="text-lg font-semibold">Controls</h2>
+    <div className="h-full flex flex-col bg-card w-full">
+      <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
+        <div>
+          <h2 className="text-lg font-semibold">Controls</h2>
+          <p className="text-xs text-muted-foreground mt-1">Customize your 3D model</p>
+        </div>
 
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant={activeTab === "upload" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("upload")}
-            className="w-full"
+            className="w-full transition-all"
           >
             <UploadIcon className="w-4 h-4 mr-2" />
             Upload
@@ -85,7 +88,7 @@ export function ControlsPanel() {
             variant={activeTab === "materials" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("materials")}
-            className="w-full"
+            className="w-full transition-all"
           >
             <Palette className="w-4 h-4 mr-2" />
             Materials
@@ -94,16 +97,25 @@ export function ControlsPanel() {
             variant={activeTab === "texture" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("texture")}
-            className="w-full"
+            className="w-full transition-all"
           >
             <Paintbrush className="w-4 h-4 mr-2" />
             Texture
           </Button>
           <Button
+            variant={activeTab === "view" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("view")}
+            className="w-full transition-all"
+          >
+            <Camera className="w-4 h-4 mr-2" />
+            View
+          </Button>
+          <Button
             variant={activeTab === "export" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("export")}
-            className="w-full"
+            className="w-full transition-all col-span-2"
           >
             <Package2 className="w-4 h-4 mr-2" />
             Export
@@ -137,6 +149,7 @@ export function ControlsPanel() {
                   <Grid3x3 className="w-4 h-4 mr-2" />
                   {showGrid ? "Hide Grid" : "Show Grid"}
                 </Button>
+                <ResetCameraButton />
                 <Button
                   variant="outline"
                   size="sm"
@@ -183,5 +196,27 @@ export function ControlsPanel() {
         )}
       </div>
     </div>
+  )
+}
+
+function ResetCameraButton() {
+  const cameraControlsRef = useConfiguratorStore((state) => (state as any).cameraControlsRef)
+
+  const handleReset = () => {
+    if (cameraControlsRef) {
+      cameraControlsRef.reset()
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleReset}
+      className="w-full justify-start bg-transparent"
+    >
+      <RotateCcw className="w-4 h-4 mr-2" />
+      Reset Camera
+    </Button>
   )
 }
