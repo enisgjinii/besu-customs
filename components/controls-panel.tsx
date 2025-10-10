@@ -1,77 +1,93 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useConfiguratorStore } from "@/lib/store"
-import { Grid3x3, Save, UploadIcon, Download, Palette, Paintbrush, Camera, Package2, RotateCcw } from "lucide-react"
-import { MaterialEditor } from "./material-editor"
-import { UploadPanel } from "./upload-panel"
-import { UVEditor } from "./uv-editor"
-import { Button } from "./ui/button"
+import { useState } from "react";
+import { useConfiguratorStore } from "@/lib/store";
+import {
+  Grid3x3,
+  Save,
+  UploadIcon,
+  Download,
+  Palette,
+  Paintbrush,
+  Camera,
+  Package2,
+  RotateCcw,
+} from "lucide-react";
+import { MaterialEditor } from "./material-editor";
+import { UploadPanel } from "./upload-panel";
+import { UVEditor } from "./uv-editor";
+import { Button } from "./ui/button";
 
 export function ControlsPanel() {
-  const [activeTab, setActiveTab] = useState<"upload" | "materials" | "texture" | "view" | "export">("upload")
-  const showGrid = useConfiguratorStore((state) => state.showGrid)
-  const toggleGrid = useConfiguratorStore((state) => state.toggleGrid)
-  const exportPreset = useConfiguratorStore((state) => state.exportPreset)
-  const importPreset = useConfiguratorStore((state) => state.importPreset)
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl)
+  const [activeTab, setActiveTab] = useState<
+    "upload" | "materials" | "texture" | "view" | "export"
+  >("upload");
+  const showGrid = useConfiguratorStore((state) => state.showGrid);
+  const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
+  const exportPreset = useConfiguratorStore((state) => state.exportPreset);
+  const importPreset = useConfiguratorStore((state) => state.importPreset);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
 
   const handleExport = () => {
-    const json = exportPreset()
-    const blob = new Blob([json], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "preset.json"
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+    const json = exportPreset();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "preset.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (event) => {
-        const json = event.target?.result as string
-        importPreset(json)
-      }
-      reader.readAsText(file)
+        const json = event.target?.result as string;
+        importPreset(json);
+      };
+      reader.readAsText(file);
     }
-  }
+  };
 
   const handleExportModel = () => {
-    if (!currentModelUrl) return
+    if (!currentModelUrl) return;
     // Export the modified model with textures
-    const link = document.createElement("a")
-    link.download = "configured-model.glb"
-    link.href = currentModelUrl
-    link.click()
-  }
+    const link = document.createElement("a");
+    link.download = "configured-model.glb";
+    link.href = currentModelUrl;
+    link.click();
+  };
 
   const handleScreenshot = () => {
     // Trigger screenshot from the 3D scene
-    const canvas = document.querySelector("canvas")
-    if (!canvas) return
+    const canvas = document.querySelector("canvas");
+    if (!canvas) return;
 
     canvas.toBlob((blob) => {
-      if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.download = "screenshot.png"
-      link.href = url
-      link.click()
-      URL.revokeObjectURL(url)
-    })
-  }
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = "screenshot.png";
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  };
 
   return (
     <div className="h-full flex flex-col bg-card w-full">
       <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
         <div>
           <h2 className="text-lg font-semibold">Controls</h2>
-          <p className="text-xs text-muted-foreground mt-1">Customize your 3D model</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Customize your 3D model
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -184,11 +200,20 @@ export function ControlsPanel() {
                   Export Model (GLB)
                 </Button>
                 <label className="block">
-                  <Button variant="outline" size="sm" className="w-full justify-start cursor-pointer bg-transparent">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start cursor-pointer bg-transparent"
+                  >
                     <Save className="w-4 h-4 mr-2" />
                     Import Preset
                   </Button>
-                  <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
                 </label>
               </div>
             </div>
@@ -196,17 +221,19 @@ export function ControlsPanel() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function ResetCameraButton() {
-  const cameraControlsRef = useConfiguratorStore((state) => (state as any).cameraControlsRef)
+  const cameraControlsRef = useConfiguratorStore(
+    (state) => state.cameraControlsRef,
+  ) as { reset: () => void } | null;
 
   const handleReset = () => {
     if (cameraControlsRef) {
-      cameraControlsRef.reset()
+      cameraControlsRef.reset();
     }
-  }
+  };
 
   return (
     <Button
@@ -218,5 +245,5 @@ function ResetCameraButton() {
       <RotateCcw className="w-4 h-4 mr-2" />
       Reset Camera
     </Button>
-  )
+  );
 }

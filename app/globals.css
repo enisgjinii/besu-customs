@@ -122,3 +122,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    /* Prevent pull-to-refresh on mobile */
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* Smooth scrolling for mobile panels */
+    .mobile-panel {
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Prevent text selection during touch interactions */
+    canvas {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  }
+
+  /* Safe area insets for notched devices */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .mobile-bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}

@@ -1,62 +1,57 @@
-"use client"
+"use client";
 
-import { useConfiguratorStore } from "@/lib/store"
-import { Package } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useConfiguratorStore } from "@/lib/store";
+import { Package } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function ProductSidebar() {
-  const products = useConfiguratorStore((state) => state.products)
-  const selectedProductId = useConfiguratorStore((state) => state.selectedProductId)
-  const setSelectedProduct = useConfiguratorStore((state) => state.setSelectedProduct)
-  const setCurrentModelUrl = useConfiguratorStore((state) => state.setCurrentModelUrl)
-  const [models, setModels] = useState<{ name: string; url: string }[]>([])
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl)
+  const setCurrentModelUrl = useConfiguratorStore(
+    (state) => state.setCurrentModelUrl,
+  );
+  const [models, setModels] = useState<{ name: string; url: string }[]>([]);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
 
   function prettyName(filename: string) {
     // Remove extension
-    let name = filename.replace(/\.glb$/i, "")
+    let name = filename.replace(/\.glb$/i, "");
     // Replace underscores, multiple spaces, dashes with single space
-    name = name.replace(/[_.\-]+/g, " ")
-    name = name.replace(/\s+/g, " ").trim()
+    name = name.replace(/[_.\-]+/g, " ");
+    name = name.replace(/\s+/g, " ").trim();
     // Title case (simple)
     name = name
       .split(" ")
       .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : ""))
-      .join(" ")
-    return name
+      .join(" ");
+    return name;
   }
 
   useEffect(() => {
-    let canceled = false
+    let canceled = false;
     fetch("/api/models")
       .then((res) => res.json())
       .then((data) => {
         if (!canceled && Array.isArray(data)) {
           // sort and set
-          const sorted = data.slice().sort((a: any, b: any) => {
-            const na = prettyName(a.name).toLowerCase()
-            const nb = prettyName(b.name).toLowerCase()
-            return na < nb ? -1 : na > nb ? 1 : 0
-          })
-          setModels(sorted)
+          const sorted = data
+            .slice()
+            .sort((a: { name: string }, b: { name: string }) => {
+              const na = prettyName(a.name).toLowerCase();
+              const nb = prettyName(b.name).toLowerCase();
+              return na < nb ? -1 : na > nb ? 1 : 0;
+            });
+          setModels(sorted);
         }
       })
       .catch((err) => {
-        console.error("Failed to fetch models:", err)
-      })
+        console.error("Failed to fetch models:", err);
+      });
 
     return () => {
-      canceled = true
-    }
-  }, [])
-
-  const handleProductClick = (productId: string) => {
-    setSelectedProduct(productId)
-    const product = products.find((p) => p.id === productId)
-    if (product?.modelUrl) {
-      setCurrentModelUrl(product.modelUrl)
-    }
-  }
+      canceled = true;
+    };
+  }, []);
 
   return (
     <div className="h-full flex flex-col bg-card w-full">
@@ -65,19 +60,21 @@ export function ProductSidebar() {
           <Package className="w-5 h-5 text-primary" />
           Models
         </h2>
-        <p className="text-xs text-muted-foreground mt-1">Select a 3D model to customize</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Select a 3D model to customize
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3">
         {models.length > 0 ? (
           <div className="space-y-1.5">
             {models.map((m) => {
-              const display = prettyName(m.name)
-              const isSelected = currentModelUrl === m.url
+              const display = prettyName(m.name);
+              const isSelected = currentModelUrl === m.url;
               const handleModelClick = () => {
-                console.log("ProductSidebar: loading model URL", m.url)
-                setCurrentModelUrl(m.url)
-              }
+                console.log("ProductSidebar: loading model URL", m.url);
+                setCurrentModelUrl(m.url);
+              };
 
               return (
                 <button
@@ -92,10 +89,12 @@ export function ProductSidebar() {
                 >
                   <span className="truncate block">{display}</span>
                   {isSelected && (
-                    <span className="text-xs opacity-80 mt-0.5 block">Currently loaded</span>
+                    <span className="text-xs opacity-80 mt-0.5 block">
+                      Currently loaded
+                    </span>
                   )}
                 </button>
-              )
+              );
             })}
           </div>
         ) : (
@@ -107,5 +106,5 @@ export function ProductSidebar() {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,34 +1,41 @@
-"use client"
+"use client";
 
-import { useRef, Suspense, useEffect } from "react"
-import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Grid, Environment, PerspectiveCamera } from "@react-three/drei"
-import { ModelLoader } from "./model-loader"
-import { useConfiguratorStore } from "@/lib/store"
+import { useRef, Suspense, useEffect } from "react";
+import { Canvas } from "@react-three/fiber";
+import {
+  OrbitControls,
+  Grid,
+  Environment,
+  PerspectiveCamera,
+} from "@react-three/drei";
+import { ModelLoader } from "./model-loader";
+import { useConfiguratorStore } from "@/lib/store";
 
 export function Scene() {
-  const showGrid = useConfiguratorStore((state) => state.showGrid)
-  const setCameraControlsRef = useConfiguratorStore((state) => state.setCameraControlsRef)
-  const setGlRef = useConfiguratorStore((state) => state.setGlRef)
-  const autoRotate = useConfiguratorStore((state) => state.autoRotate)
-  const controlsRef = useRef<any>(null)
-  const modelLoading = useConfiguratorStore((state) => state.modelLoading)
-  const modelError = useConfiguratorStore((state) => state.modelError)
+  const showGrid = useConfiguratorStore((state) => state.showGrid);
+  const setCameraControlsRef = useConfiguratorStore(
+    (state) => state.setCameraControlsRef,
+  );
+  const setGlRef = useConfiguratorStore((state) => state.setGlRef);
+  const autoRotate = useConfiguratorStore((state) => state.autoRotate);
+  const controlsRef = useRef(null);
+  const modelLoading = useConfiguratorStore((state) => state.modelLoading);
+  const modelError = useConfiguratorStore((state) => state.modelError);
 
   // Store controls ref in global state
   useEffect(() => {
     if (controlsRef.current) {
-      setCameraControlsRef(controlsRef.current)
+      setCameraControlsRef(controlsRef.current);
     }
-  }, [setCameraControlsRef])
+  }, [setCameraControlsRef]);
 
   return (
     <div className="w-full h-full relative">
-      <Canvas 
-      shadows 
-      gl={{ preserveDrawingBuffer: true, antialias: true }}
-      onCreated={({ gl }) => setGlRef(gl)}
-    >
+      <Canvas
+        shadows
+        gl={{ preserveDrawingBuffer: true, antialias: true }}
+        onCreated={({ gl }) => setGlRef(gl)}
+      >
         <PerspectiveCamera makeDefault position={[3, 2, 5]} />
         <OrbitControls
           ref={controlsRef}
@@ -45,6 +52,10 @@ export function Scene() {
           zoomSpeed={0.8}
           autoRotate={autoRotate}
           autoRotateSpeed={1.0}
+          touches={{
+            ONE: 2, // TOUCH.ROTATE
+            TWO: 1, // TOUCH.DOLLY_PAN
+          }}
         />
 
         <ambientLight intensity={0.5} />
@@ -52,7 +63,9 @@ export function Scene() {
 
         <Environment preset="studio" />
 
-        {showGrid && <Grid args={[20, 20]} cellColor="#6b7280" sectionColor="#374151" />}
+        {showGrid && (
+          <Grid args={[20, 20]} cellColor="#6b7280" sectionColor="#374151" />
+        )}
 
         <Suspense fallback={null}>
           <ModelLoader controlsRef={controlsRef} />
@@ -66,7 +79,9 @@ export function Scene() {
               <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
               <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <p className="text-sm font-medium text-foreground">Loading 3D model...</p>
+            <p className="text-sm font-medium text-foreground">
+              Loading 3D model...
+            </p>
           </div>
         </div>
       )}
@@ -76,5 +91,5 @@ export function Scene() {
         </div>
       )}
     </div>
-  )
+  );
 }

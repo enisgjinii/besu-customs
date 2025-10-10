@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import { useConfiguratorStore } from "@/lib/store"
+import { useState, useRef } from "react";
+import { useConfiguratorStore } from "@/lib/store";
 import {
   Grid3x3,
   Save,
@@ -19,330 +19,366 @@ import {
   ChevronDown,
   FileImage,
   Film,
-} from "lucide-react"
-import { MaterialEditor } from "./material-editor"
-import { Button } from "./ui/button"
+} from "lucide-react";
+import { MaterialEditor } from "./material-editor";
+import { Button } from "./ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 
 export function UnifiedSidebar() {
-  const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">("materials")
-  const [isRecording, setIsRecording] = useState(false)
-  const [cameraOpen, setCameraOpen] = useState(true)
-  const [sceneOpen, setSceneOpen] = useState(true)
-  const [imageOpen, setImageOpen] = useState(true)
-  const [videoOpen, setVideoOpen] = useState(false)
-  const [exportOpen, setExportOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
+    "materials",
+  );
+  const [isRecording, setIsRecording] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(true);
+  const [sceneOpen, setSceneOpen] = useState(true);
+  const [imageOpen, setImageOpen] = useState(true);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const recordedChunksRef = useRef<Blob[]>([])
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
-  const showGrid = useConfiguratorStore((state) => state.showGrid)
-  const toggleGrid = useConfiguratorStore((state) => state.toggleGrid)
-  const exportPreset = useConfiguratorStore((state) => state.exportPreset)
-  const importPreset = useConfiguratorStore((state) => state.importPreset)
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl)
-  const products = useConfiguratorStore((state) => state.products)
-  const selectedProductId = useConfiguratorStore((state) => state.selectedProductId)
-  const setSelectedProduct = useConfiguratorStore((state) => state.setSelectedProduct)
-  const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef)
-  const autoRotate = useConfiguratorStore((state) => state.autoRotate)
-  const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate)
-  const glRef = useConfiguratorStore((state) => state.glRef)
+  const showGrid = useConfiguratorStore((state) => state.showGrid);
+  const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
+  const exportPreset = useConfiguratorStore((state) => state.exportPreset);
+  const importPreset = useConfiguratorStore((state) => state.importPreset);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
+  const products = useConfiguratorStore((state) => state.products);
+  const selectedProductId = useConfiguratorStore(
+    (state) => state.selectedProductId,
+  );
+  const setSelectedProduct = useConfiguratorStore(
+    (state) => state.setSelectedProduct,
+  );
+  const cameraControlsRef = useConfiguratorStore(
+    (state) => state.cameraControlsRef,
+  );
+  const autoRotate = useConfiguratorStore((state) => state.autoRotate);
+  const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
+  const glRef = useConfiguratorStore((state) => state.glRef);
 
   const handleExport = () => {
-    const json = exportPreset()
-    const blob = new Blob([json], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "preset.json"
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+    const json = exportPreset();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "preset.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (event) => {
-        const json = event.target?.result as string
-        importPreset(json)
-      }
-      reader.readAsText(file)
+        const json = event.target?.result as string;
+        importPreset(json);
+      };
+      reader.readAsText(file);
     }
-  }
+  };
 
   const handleExportModel = () => {
-    if (!currentModelUrl) return
-    const link = document.createElement("a")
-    link.download = "configured-model.glb"
-    link.href = currentModelUrl
-    link.click()
-  }
+    if (!currentModelUrl) return;
+    const link = document.createElement("a");
+    link.download = "configured-model.glb";
+    link.href = currentModelUrl;
+    link.click();
+  };
 
   const handleScreenshot = () => {
-    if (!glRef) {
-      alert("WebGL renderer not available")
-      return
+    const renderer = glRef as {
+      domElement: HTMLCanvasElement;
+      render: () => void;
+    } | null;
+    if (!renderer) {
+      alert("WebGL renderer not available");
+      return;
     }
 
     try {
       // Force a render and then capture
       requestAnimationFrame(() => {
-        const canvas = glRef.domElement
+        const canvas = renderer.domElement;
         if (!canvas) {
-          alert("Canvas not found")
-          return
+          alert("Canvas not found");
+          return;
         }
 
         // Ensure the canvas is up to date
-        glRef.render()
+        renderer.render();
 
-        const dataURL = canvas.toDataURL("image/png", 1.0)
-        const link = document.createElement("a")
-        link.download = `model-screenshot-${Date.now()}.png`
-        link.href = dataURL
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-      })
+        const dataURL = canvas.toDataURL("image/png", 1.0);
+        const link = document.createElement("a");
+        link.download = `model-screenshot-${Date.now()}.png`;
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
     } catch (error) {
-      console.error("Screenshot failed:", error)
-      alert("Failed to capture screenshot")
+      console.error("Screenshot failed:", error);
+      alert("Failed to capture screenshot");
     }
-  }
+  };
 
   const handleExportHighRes = () => {
-    if (!glRef) {
-      alert("WebGL renderer not available")
-      return
+    const renderer = glRef as {
+      domElement: HTMLCanvasElement;
+      render: () => void;
+    } | null;
+    if (!renderer) {
+      alert("WebGL renderer not available");
+      return;
     }
 
     try {
       requestAnimationFrame(() => {
-        const canvas = glRef.domElement
+        const canvas = renderer.domElement;
         if (!canvas) {
-          alert("Canvas not found")
-          return
+          alert("Canvas not found");
+          return;
         }
 
         // Force render
-        glRef.render()
+        renderer.render();
 
         // Create a temporary high-res canvas
-        const tempCanvas = document.createElement("canvas")
-        const scale = 2 // 2x resolution
-        const originalWidth = canvas.width
-        const originalHeight = canvas.height
+        const tempCanvas = document.createElement("canvas");
+        const scale = 2; // 2x resolution
+        const originalWidth = canvas.width;
+        const originalHeight = canvas.height;
 
-        tempCanvas.width = originalWidth * scale
-        tempCanvas.height = originalHeight * scale
+        tempCanvas.width = originalWidth * scale;
+        tempCanvas.height = originalHeight * scale;
 
-        const ctx = tempCanvas.getContext("2d")
+        const ctx = tempCanvas.getContext("2d");
         if (!ctx) {
-          alert("Failed to create canvas context")
-          return
+          alert("Failed to create canvas context");
+          return;
         }
 
-        ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = "high"
-        ctx.scale(scale, scale)
-        ctx.drawImage(canvas, 0, 0)
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.scale(scale, scale);
+        ctx.drawImage(canvas, 0, 0);
 
-        const dataURL = tempCanvas.toDataURL("image/png", 1.0)
-        const link = document.createElement("a")
-        link.download = `model-2x-${Date.now()}.png`
-        link.href = dataURL
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-      })
+        const dataURL = tempCanvas.toDataURL("image/png", 1.0);
+        const link = document.createElement("a");
+        link.download = `model-2x-${Date.now()}.png`;
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
     } catch (error) {
-      console.error("High-res export failed:", error)
-      alert("Failed to export high-res image")
+      console.error("High-res export failed:", error);
+      alert("Failed to export high-res image");
     }
-  }
+  };
 
   const handleExport4K = () => {
-    if (!glRef) {
-      alert("WebGL renderer not available")
-      return
+    const renderer = glRef as {
+      domElement: HTMLCanvasElement;
+      render: () => void;
+    } | null;
+    if (!renderer) {
+      alert("WebGL renderer not available");
+      return;
     }
 
     try {
       requestAnimationFrame(() => {
-        const canvas = glRef.domElement
+        const canvas = renderer.domElement;
         if (!canvas) {
-          alert("Canvas not found")
-          return
+          alert("Canvas not found");
+          return;
         }
 
         // Force render
-        glRef.render()
+        renderer.render();
 
         // Create a 4K resolution canvas
-        const tempCanvas = document.createElement("canvas")
-        const scale = 4 // 4x resolution
-        const originalWidth = canvas.width
-        const originalHeight = canvas.height
+        const tempCanvas = document.createElement("canvas");
+        const scale = 4; // 4x resolution
+        const originalWidth = canvas.width;
+        const originalHeight = canvas.height;
 
-        tempCanvas.width = originalWidth * scale
-        tempCanvas.height = originalHeight * scale
+        tempCanvas.width = originalWidth * scale;
+        tempCanvas.height = originalHeight * scale;
 
-        const ctx = tempCanvas.getContext("2d")
+        const ctx = tempCanvas.getContext("2d");
         if (!ctx) {
-          alert("Failed to create canvas context")
-          return
+          alert("Failed to create canvas context");
+          return;
         }
 
-        ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = "high"
-        ctx.scale(scale, scale)
-        ctx.drawImage(canvas, 0, 0)
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.scale(scale, scale);
+        ctx.drawImage(canvas, 0, 0);
 
-        const dataURL = tempCanvas.toDataURL("image/png", 1.0)
-        const link = document.createElement("a")
-        link.download = `model-4k-${Date.now()}.png`
-        link.href = dataURL
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-      })
+        const dataURL = tempCanvas.toDataURL("image/png", 1.0);
+        const link = document.createElement("a");
+        link.download = `model-4k-${Date.now()}.png`;
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
     } catch (error) {
-      console.error("4K export failed:", error)
-      alert("Failed to export 4K image")
+      console.error("4K export failed:", error);
+      alert("Failed to export 4K image");
     }
-  }
+  };
 
   const handleRotateLeft = () => {
-    if (!cameraControlsRef?.object) return
-    const currentAzimuth = cameraControlsRef.getAzimuthalAngle()
-    cameraControlsRef.setAzimuthalAngle(currentAzimuth - Math.PI / 4, true)
-  }
+    const controls = cameraControlsRef as {
+      object?: unknown;
+      getAzimuthalAngle: () => number;
+      setAzimuthalAngle: (angle: number, enableTransition: boolean) => void;
+    } | null;
+    if (!controls?.object) return;
+    const currentAzimuth = controls.getAzimuthalAngle();
+    controls.setAzimuthalAngle(currentAzimuth - Math.PI / 4, true);
+  };
 
   const handleRotateRight = () => {
-    if (!cameraControlsRef?.object) return
-    const currentAzimuth = cameraControlsRef.getAzimuthalAngle()
-    cameraControlsRef.setAzimuthalAngle(currentAzimuth + Math.PI / 4, true)
-  }
+    const controls = cameraControlsRef as {
+      object?: unknown;
+      getAzimuthalAngle: () => number;
+      setAzimuthalAngle: (angle: number, enableTransition: boolean) => void;
+    } | null;
+    if (!controls?.object) return;
+    const currentAzimuth = controls.getAzimuthalAngle();
+    controls.setAzimuthalAngle(currentAzimuth + Math.PI / 4, true);
+  };
 
   const handleAutoRotate = () => {
-    setAutoRotate(!autoRotate)
-  }
+    setAutoRotate(!autoRotate);
+  };
 
   const handleStartRecording = async (format: "webm" | "mp4") => {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
     if (!canvas) {
-      alert("Canvas not found")
-      return
+      alert("Canvas not found");
+      return;
     }
 
     try {
       if (!canvas.captureStream) {
-        alert("Video recording is not supported in your browser")
-        return
+        alert("Video recording is not supported in your browser");
+        return;
       }
 
-      const stream = canvas.captureStream(30) // 30 FPS
-      let options: MediaRecorderOptions = { videoBitsPerSecond: 2500000 }
-      let fileExtension = "webm"
+      const stream = canvas.captureStream(30); // 30 FPS
+      const options: MediaRecorderOptions = { videoBitsPerSecond: 2500000 };
+      let fileExtension = "webm";
 
       if (format === "mp4") {
         // Try MP4 formats
         if (MediaRecorder.isTypeSupported("video/mp4")) {
-          options.mimeType = "video/mp4"
-          fileExtension = "mp4"
+          options.mimeType = "video/mp4";
+          fileExtension = "mp4";
         } else if (MediaRecorder.isTypeSupported("video/webm;codecs=h264")) {
-          options.mimeType = "video/webm;codecs=h264"
-          fileExtension = "mp4"
+          options.mimeType = "video/webm;codecs=h264";
+          fileExtension = "mp4";
         } else {
-          alert("MP4 format not supported. Using WebM instead.")
-          format = "webm"
+          alert("MP4 format not supported. Using WebM instead.");
+          format = "webm";
         }
       }
 
       if (format === "webm") {
         if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
-          options.mimeType = "video/webm;codecs=vp9"
+          options.mimeType = "video/webm;codecs=vp9";
         } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
-          options.mimeType = "video/webm;codecs=vp8"
+          options.mimeType = "video/webm;codecs=vp8";
         } else if (MediaRecorder.isTypeSupported("video/webm")) {
-          options.mimeType = "video/webm"
+          options.mimeType = "video/webm";
         } else {
-          alert("No supported video format found")
-          return
+          alert("No supported video format found");
+          return;
         }
-        fileExtension = "webm"
+        fileExtension = "webm";
       }
 
-      const mediaRecorder = new MediaRecorder(stream, options)
-      recordedChunksRef.current = []
+      const mediaRecorder = new MediaRecorder(stream, options);
+      recordedChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data)
+          recordedChunksRef.current.push(event.data);
         }
-      }
+      };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: options.mimeType || "video/webm" })
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement("a")
-        link.download = `model-video-${Date.now()}.${fileExtension}`
-        link.href = url
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-        setIsRecording(false)
-      }
+        const blob = new Blob(recordedChunksRef.current, {
+          type: options.mimeType || "video/webm",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = `model-video-${Date.now()}.${fileExtension}`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setIsRecording(false);
+      };
 
       mediaRecorder.onerror = (event) => {
-        console.error("MediaRecorder error:", event)
-        alert("Recording failed")
-        setIsRecording(false)
-      }
+        console.error("MediaRecorder error:", event);
+        alert("Recording failed");
+        setIsRecording(false);
+      };
 
-      mediaRecorder.start(100)
-      mediaRecorderRef.current = mediaRecorder
-      setIsRecording(true)
+      mediaRecorder.start(100);
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
     } catch (error) {
-      console.error("Failed to start recording:", error)
-      alert(`Video recording failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+      console.error("Failed to start recording:", error);
+      alert(
+        `Video recording failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
-  }
+  };
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
+      mediaRecorderRef.current.stop();
     }
-  }
+  };
 
   const handleDownloadUVMap = () => {
-    const completeUVMap = useConfiguratorStore.getState().completeUVMap
+    const completeUVMap = useConfiguratorStore.getState().completeUVMap;
     if (!completeUVMap) {
-      alert("UV Map not available yet")
-      return
+      alert("UV Map not available yet");
+      return;
     }
 
-    const link = document.createElement("a")
-    link.download = `uv-map-${Date.now()}.png`
-    link.href = completeUVMap
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const link = document.createElement("a");
+    link.download = `uv-map-${Date.now()}.png`;
+    link.href = completeUVMap;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="h-full flex flex-col bg-card w-full">
@@ -350,13 +386,20 @@ export function UnifiedSidebar() {
       <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
         <div>
           <h2 className="text-lg font-semibold">3D Configurator</h2>
-          <p className="text-xs text-muted-foreground mt-1">Customize your model</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Customize your model
+          </p>
         </div>
 
         {/* Model Dropdown */}
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Model</label>
-          <Select value={selectedProductId || undefined} onValueChange={setSelectedProduct}>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+            Select Model
+          </label>
+          <Select
+            value={selectedProductId || undefined}
+            onValueChange={setSelectedProduct}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose a model..." />
             </SelectTrigger>
@@ -430,7 +473,11 @@ export function UnifiedSidebar() {
                 <Paintbrush className="w-4 h-4" />
                 <span>UV texture mapping will be available in Phase 2</span>
               </div>
-              <Button onClick={handleDownloadUVMap} className="w-full" size="lg">
+              <Button
+                onClick={handleDownloadUVMap}
+                className="w-full"
+                size="lg"
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Download UV Map
               </Button>
@@ -456,15 +503,27 @@ export function UnifiedSidebar() {
                   <Camera className="w-4 h-4" />
                   Camera Controls
                 </h3>
-                <ChevronDown className={`w-4 h-4 transition-transform ${cameraOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${cameraOpen ? "rotate-180" : ""}`}
+                />
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" onClick={handleRotateLeft} className="w-full justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRotateLeft}
+                    className="w-full justify-center"
+                  >
                     <RotateCcw className="w-4 h-4 mr-1" />
                     Left
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleRotateRight} className="w-full justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRotateRight}
+                    className="w-full justify-center"
+                  >
                     <RotateCw className="w-4 h-4 mr-1" />
                     Right
                   </Button>
@@ -489,10 +548,17 @@ export function UnifiedSidebar() {
                   <Grid3x3 className="w-4 h-4" />
                   Scene Options
                 </h3>
-                <ChevronDown className={`w-4 h-4 transition-transform ${sceneOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${sceneOpen ? "rotate-180" : ""}`}
+                />
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
-                <Button variant="outline" size="sm" onClick={toggleGrid} className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleGrid}
+                  className="w-full justify-start"
+                >
                   <Grid3x3 className="w-4 h-4 mr-2" />
                   {showGrid ? "Hide Grid" : "Show Grid"}
                 </Button>
@@ -509,18 +575,35 @@ export function UnifiedSidebar() {
                   <FileImage className="w-4 h-4" />
                   Export Images
                 </h3>
-                <ChevronDown className={`w-4 h-4 transition-transform ${imageOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${imageOpen ? "rotate-180" : ""}`}
+                />
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
-                <Button variant="outline" size="sm" onClick={handleScreenshot} className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleScreenshot}
+                  className="w-full justify-start"
+                >
                   <Camera className="w-4 h-4 mr-2" />
                   Screenshot (PNG)
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportHighRes} className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportHighRes}
+                  className="w-full justify-start"
+                >
                   <Maximize2 className="w-4 h-4 mr-2" />
                   High-Res (2x)
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExport4K} className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport4K}
+                  className="w-full justify-start"
+                >
                   <Maximize2 className="w-4 h-4 mr-2" />
                   Ultra HD (4x)
                 </Button>
@@ -534,7 +617,9 @@ export function UnifiedSidebar() {
                   <Film className="w-4 h-4" />
                   Export Video
                 </h3>
-                <ChevronDown className={`w-4 h-4 transition-transform ${videoOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${videoOpen ? "rotate-180" : ""}`}
+                />
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
                 {!isRecording ? (
@@ -559,7 +644,12 @@ export function UnifiedSidebar() {
                     </Button>
                   </>
                 ) : (
-                  <Button variant="destructive" size="sm" onClick={handleStopRecording} className="w-full justify-start">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleStopRecording}
+                    className="w-full justify-start"
+                  >
                     <Square className="w-4 h-4 mr-2" />
                     Stop Recording
                   </Button>
@@ -579,23 +669,44 @@ export function UnifiedSidebar() {
                   <Package2 className="w-4 h-4" />
                   Export Model & Presets
                 </h3>
-                <ChevronDown className={`w-4 h-4 transition-transform ${exportOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${exportOpen ? "rotate-180" : ""}`}
+                />
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
-                <Button variant="outline" size="sm" onClick={handleExport} className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  className="w-full justify-start"
+                >
                   <Download className="w-4 h-4 mr-2" />
                   Export Preset (JSON)
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportModel} className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportModel}
+                  className="w-full justify-start"
+                >
                   <Package2 className="w-4 h-4 mr-2" />
                   Export Model (GLB)
                 </Button>
                 <label className="block">
-                  <Button variant="outline" size="sm" className="w-full justify-start cursor-pointer">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start cursor-pointer"
+                  >
                     <Save className="w-4 h-4 mr-2" />
                     Import Preset
                   </Button>
-                  <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
                 </label>
                 <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
                   Additional formats (OBJ, FBX, GLTF) coming in Phase 2
@@ -606,23 +717,33 @@ export function UnifiedSidebar() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function ResetCameraButton() {
-  const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef)
+  const cameraControlsRef = useConfiguratorStore(
+    (state) => state.cameraControlsRef,
+  );
 
   const handleReset = () => {
-    if (cameraControlsRef) {
+    const controls = cameraControlsRef as {
+      reset: (enableTransition: boolean) => void;
+    } | null;
+    if (controls) {
       // Reset to default position
-      cameraControlsRef.reset(true)
+      controls.reset(true);
     }
-  }
+  };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleReset} className="w-full justify-start">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleReset}
+      className="w-full justify-start"
+    >
       <RotateCcw className="w-4 h-4 mr-2" />
       Reset View
     </Button>
-  )
+  );
 }

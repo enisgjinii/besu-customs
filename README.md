@@ -32,6 +32,7 @@ A minimal React + Three.js configurator app for uploading and customizing 3D mod
 ### Section Detection
 
 When a model is loaded, the app automatically:
+
 1. Traverses the scene graph to find all meshes
 2. Extracts unique materials (MeshStandardMaterial)
 3. Categorizes materials based on naming conventions:
