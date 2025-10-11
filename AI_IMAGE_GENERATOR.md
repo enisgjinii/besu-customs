@@ -14,7 +14,9 @@ This feature integrates Runware AI for generating images directly within the 3D 
 ## Features
 
 - Generate AI images using text prompts
+- **Apply generated images directly to 3D model materials** - See changes instantly!
 - Download generated images
+- Select which material section to apply the texture to
 - Integrated into the unified sidebar under the "Export" tab
 - Real-time generation with loading states
 - Error handling with user-friendly notifications
@@ -25,7 +27,11 @@ This feature integrates Runware AI for generating images directly within the 3D 
 2. Expand the **AI Image Generator** section
 3. Enter a descriptive prompt (e.g., "a futuristic sports car in neon colors")
 4. Click **Generate Image**
-5. Once generated, hover over the image and click **Download** to save it
+5. Once generated:
+   - **Select a material section** from the dropdown to apply the texture to
+   - Hover over the image to reveal action buttons:
+     - Click **Apply** to instantly apply the texture to the selected material section
+     - Click **Download** to save the image to your device
 
 ## API Endpoint
 

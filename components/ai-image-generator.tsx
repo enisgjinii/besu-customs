@@ -4,13 +4,25 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, Download } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Sparkles, Download, Paintbrush } from "lucide-react";
 import { toast } from "sonner";
+import { useConfiguratorStore } from "@/lib/store";
 
 export function AIImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<Array<{ imageURL: string; imageUUID: string }>>([]);
+  const [selectedSection, setSelectedSection] = useState<string>("");
+  
+  const sections = useConfiguratorStore((state) => state.sections);
+  const updateSection = useConfiguratorStore((state) => state.updateSection);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -67,6 +79,31 @@ export function AIImageGenerator() {
     }
   };
 
+  const handleApplyToModel = async (imageURL: string) => {
+    if (!selectedSection) {
+      toast.error("Please select a material section first");
+      return;
+    }
+
+    try {
+      // Convert image URL to base64
+      const response = await fetch(imageURL);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        updateSection(selectedSection, { customTexture: base64data });
+        toast.success("Texture applied to model!");
+      };
+      
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error("Error applying texture:", error);
+      toast.error("Failed to apply texture");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -109,6 +146,26 @@ export function AIImageGenerator() {
       {generatedImages.length > 0 && (
         <div className="space-y-3">
           <Label>Generated Images</Label>
+          
+          {/* Material Section Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="material-section" className="text-xs">
+              Apply to Material Section
+            </Label>
+            <Select value={selectedSection} onValueChange={setSelectedSection}>
+              <SelectTrigger id="material-section">
+                <SelectValue placeholder="Select a section..." />
+              </SelectTrigger>
+              <SelectContent>
+                {sections.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid gap-3">
             {generatedImages.map((image, index) => (
               <div
@@ -120,7 +177,16 @@ export function AIImageGenerator() {
                   alt={`Generated ${index + 1}`}
                   className="w-full h-auto"
                 />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleApplyToModel(image.imageURL)}
+                    disabled={!selectedSection}
+                  >
+                    <Paintbrush className="w-4 h-4 mr-2" />
+                    Apply
+                  </Button>
                   <Button
                     size="sm"
                     variant="secondary"
