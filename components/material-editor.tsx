@@ -1,7 +1,7 @@
 "use client";
 
 import { useConfiguratorStore } from "@/lib/store";
-import { Palette, Sliders } from "lucide-react";
+import { Palette, Sliders, Link2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function MaterialEditor() {
@@ -13,6 +13,9 @@ export function MaterialEditor() {
     (state) => state.setSelectedSection,
   );
   const updateSection = useConfiguratorStore((state) => state.updateSection);
+  const linkedSections = useConfiguratorStore((state) => state.linkedSections);
+  const toggleSectionLink = useConfiguratorStore((state) => state.toggleSectionLink);
+  const clearSectionLinks = useConfiguratorStore((state) => state.clearSectionLinks);
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
@@ -31,10 +34,32 @@ export function MaterialEditor() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Palette className="w-4 h-4" />
-          Material Sections
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Palette className="w-4 h-4" />
+            Material Sections
+          </h3>
+          {linkedSections.size > 0 && (
+            <button
+              onClick={clearSectionLinks}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Unlink className="w-3 h-3" />
+              Clear Links
+            </button>
+          )}
+        </div>
+
+        {selectedSectionId && linkedSections.size > 0 && (
+          <div className="mb-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                <span className="font-medium">{linkedSections.size} linked</span> - edits apply to all
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           {Object.entries(groupedSections).map(
@@ -43,27 +68,56 @@ export function MaterialEditor() {
                 <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
                   {category}
                 </h4>
-                <div className="space-y-1">
-                  {categorySections.map((section) => (
-                    <button
-                      key={section.id}
-                      onClick={() => setSelectedSection(section.id)}
-                      className={`w-full text-left px-3 py-2.5 text-sm rounded-md transition-all ${selectedSectionId === section.id
-                        ? "bg-accent text-accent-foreground shadow-sm"
-                        : "bg-secondary/30 hover:bg-secondary/50"
-                        }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-4 h-4 rounded flex-shrink-0 ring-1 ring-border/50"
-                          style={{ backgroundColor: section.color }}
-                        />
-                        <span className="truncate font-medium">
-                          {section.name}
-                        </span>
+                <div className="space-y-1.5">
+                  {categorySections.map((section) => {
+                    const isSelected = selectedSectionId === section.id;
+                    const isLinked = linkedSections.has(section.id);
+
+                    return (
+                      <div
+                        key={section.id}
+                        className={`group relative rounded-lg transition-all ${isLinked ? "ring-2 ring-blue-500/50" : ""
+                          }`}
+                      >
+                        <button
+                          onClick={() => setSelectedSection(section.id)}
+                          className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${isSelected
+                              ? "bg-accent text-accent-foreground shadow-sm"
+                              : "bg-secondary/30 hover:bg-secondary/50"
+                            }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className="w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-border/50 shadow-sm"
+                              style={{ backgroundColor: section.color }}
+                            />
+                            <span className="truncate font-medium flex-1">
+                              {section.name}
+                            </span>
+                            {isLinked && (
+                              <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                        {selectedSectionId && selectedSectionId !== section.id && (
+                          <button
+                            onClick={() => toggleSectionLink(section.id)}
+                            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${isLinked
+                                ? "bg-blue-500 text-white shadow-sm"
+                                : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
+                              }`}
+                            title={isLinked ? "Click to unlink" : "Click to link with selected"}
+                          >
+                            {isLinked ? (
+                              <Link2 className="w-3.5 h-3.5" />
+                            ) : (
+                              <Link2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
                       </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ),
@@ -75,7 +129,7 @@ export function MaterialEditor() {
         <div className="border-t border-border/50 pt-6">
           <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
             <Sliders className="w-4 h-4" />
-            Edit: {selectedSection.name}
+            Editing: {selectedSection.name}
           </h3>
 
           <div className="space-y-4">

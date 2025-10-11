@@ -49,9 +49,12 @@ interface ConfiguratorState {
   // Sections
   sections: MaterialSection[];
   selectedSectionId: string | null;
+  linkedSections: Set<string>; // IDs of sections linked to the selected section
   setSections: (sections: MaterialSection[]) => void;
   updateSection: (id: string, updates: Partial<MaterialSection>) => void;
   setSelectedSection: (id: string | null) => void;
+  toggleSectionLink: (sectionId: string) => void;
+  clearSectionLinks: () => void;
 
   // UV map state
   uvMaps: Map<string, string>; // sectionId -> base64 UV map image
@@ -252,14 +255,32 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   // Sections
   sections: [],
   selectedSectionId: null,
+  linkedSections: new Set(),
   setSections: (sections) => set({ sections }),
   updateSection: (id, updates) =>
-    set((state) => ({
-      sections: state.sections.map((s) =>
-        s.id === id ? { ...s, ...updates } : s,
-      ),
-    })),
+    set((state) => {
+      const idsToUpdate = state.linkedSections.has(id) 
+        ? [id, ...Array.from(state.linkedSections)]
+        : [id];
+      
+      return {
+        sections: state.sections.map((s) =>
+          idsToUpdate.includes(s.id) ? { ...s, ...updates } : s,
+        ),
+      };
+    }),
   setSelectedSection: (id) => set({ selectedSectionId: id }),
+  toggleSectionLink: (sectionId) =>
+    set((state) => {
+      const newLinked = new Set(state.linkedSections);
+      if (newLinked.has(sectionId)) {
+        newLinked.delete(sectionId);
+      } else {
+        newLinked.add(sectionId);
+      }
+      return { linkedSections: newLinked };
+    }),
+  clearSectionLinks: () => set({ linkedSections: new Set() }),
 
   // Product updates
   updateProduct: (id: string, updates: Partial<Product>) =>
