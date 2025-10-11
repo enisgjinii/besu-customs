@@ -65,6 +65,43 @@ function categorizeMaterial(name: string): MaterialSection["category"] {
   return "Other";
 }
 
+function createGradientTexture(gradient: MaterialSection["gradient"]): THREE.CanvasTexture | null {
+  if (!gradient?.enabled) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  let gradientObj: CanvasGradient;
+
+  if (gradient.type === "linear") {
+    const angle = (gradient.angle || 90) * (Math.PI / 180);
+    const x1 = 256 + Math.cos(angle) * 256;
+    const y1 = 256 + Math.sin(angle) * 256;
+    const x2 = 256 - Math.cos(angle) * 256;
+    const y2 = 256 - Math.sin(angle) * 256;
+    gradientObj = ctx.createLinearGradient(x1, y1, x2, y2);
+  } else {
+    gradientObj = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
+  }
+
+  const stops = gradient.stops || gradient.colors.map((_, i) => i / (gradient.colors.length - 1));
+  gradient.colors.forEach((color, i) => {
+    gradientObj.addColorStop(stops[i] || i / (gradient.colors.length - 1), color);
+  });
+
+  ctx.fillStyle = gradientObj;
+  ctx.fillRect(0, 0, 512, 512);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+
+  return texture;
+}
+
 export function applyMaterialUpdates(
   scene: THREE.Group,
   sections: MaterialSection[],
@@ -91,8 +128,16 @@ export function applyMaterialUpdates(
                 material.map = texture;
                 material.needsUpdate = true;
               });
+            } else if (section.gradient?.enabled) {
+              // Apply gradient texture
+              const gradientTexture = createGradientTexture(section.gradient);
+              if (gradientTexture) {
+                material.map = gradientTexture;
+                material.color.set("#ffffff"); // Set to white to show texture properly
+                material.needsUpdate = true;
+              }
             } else {
-              // Use base color if no texture
+              // Use base color if no texture or gradient
               material.map = null;
               material.color.set(section.color);
             }

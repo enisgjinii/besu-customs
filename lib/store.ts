@@ -10,6 +10,13 @@ export interface MaterialSection {
   metalness: number;
   wireframe: boolean;
   customTexture?: string; // base64 data URL
+  gradient?: {
+    enabled: boolean;
+    type: "linear" | "radial";
+    colors: string[];
+    angle?: number; // for linear gradients (0-360)
+    stops?: number[]; // color stop positions (0-1)
+  };
 }
 
 export interface Product {
