@@ -19,8 +19,10 @@ import {
   ChevronDown,
   FileImage,
   Film,
+  Sparkles,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
+import { AIImageGenerator } from "./ai-image-generator";
 import { Button } from "./ui/button";
 import {
   Select,
@@ -45,6 +47,7 @@ export function UnifiedSidebar() {
   const [imageOpen, setImageOpen] = useState(true);
   const [videoOpen, setVideoOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [aiImageOpen, setAiImageOpen] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -565,6 +568,22 @@ export function UnifiedSidebar() {
                 <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
                   More scene options coming in Phase 2
                 </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* AI Image Generator */}
+            <Collapsible open={aiImageOpen} onOpenChange={setAiImageOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  AI Image Generator
+                </h3>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${aiImageOpen ? "rotate-180" : ""}`}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <AIImageGenerator />
               </CollapsibleContent>
             </Collapsible>
 
