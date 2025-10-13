@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +76,7 @@ export function AIImageGenerator() {
       document.body.removeChild(a);
       toast.success("Image downloaded!");
     } catch (error) {
+      console.error("Error downloading image:", error);
       toast.error("Failed to download image");
     }
   };
@@ -172,9 +174,11 @@ export function AIImageGenerator() {
                 key={image.imageUUID}
                 className="relative group rounded-lg overflow-hidden border bg-card"
               >
-                <img
+                <Image
                   src={image.imageURL}
                   alt={`Generated ${index + 1}`}
+                  width={512}
+                  height={512}
                   className="w-full h-auto"
                 />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

@@ -1,13 +1,13 @@
 "use client";
 
 import { useConfiguratorStore } from "@/lib/store";
-import { Palette, Sliders, Link2, Unlink, Eye, EyeOff } from "lucide-react";
+import { Palette, Sliders, Link2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-function getSectionBadge(section: any) {
+function getSectionBadge(section: { name: string; originalName?: string }) {
   // Use the user-friendly name instead of original name for badge detection
-  const name = section.name.toLowerCase();
+  const name = section.originalName?.toLowerCase() || section.name.toLowerCase();
 
   if (name.includes("front") && !name.includes("back")) {
     return { text: "Front", variant: "default" as const };
@@ -266,11 +266,13 @@ export function MaterialEditor() {
             <div className="border-t border-border/50 pt-4">
               <div className="flex items-center justify-between mb-3">
                 <label className="text-xs font-medium">Gradient</label>
-                <input
-                  type="checkbox"
-                  checked={selectedSection.gradient?.enabled || false}
-                  onChange={(e) => {
-                    const enabled = e.target.checked;
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selectedSection.gradient?.enabled || false}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const enabled = !selectedSection.gradient?.enabled;
                     updateSection(selectedSection.id, {
                       gradient: enabled
                         ? {
@@ -283,9 +285,21 @@ export function MaterialEditor() {
                         : undefined,
                     });
                   }}
-                  className="w-4 h-4 rounded border-input"
                   disabled={!!selectedSection.customTexture}
-                />
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    selectedSection.gradient?.enabled 
+                      ? "bg-primary" 
+                      : "bg-input"
+                  } ${
+                    selectedSection.customTexture ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                      selectedSection.gradient?.enabled ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
               </div>
 
               {selectedSection.gradient?.enabled && (
