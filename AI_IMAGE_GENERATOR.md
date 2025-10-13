@@ -5,6 +5,7 @@ This feature integrates Runware AI for generating images directly within the 3D 
 ## Setup
 
 1. **API Key**: The Runware API key is already configured in `.env`:
+
    ```
    RUNWARE_AI=abcDG49ByKT5gDU1tY68vlD7jTY9H9lQ
    ```
@@ -56,6 +57,7 @@ This feature integrates Runware AI for generating images directly within the 3D 
 ## Customization
 
 You can modify the default parameters in `components/ai-image-generator.tsx`:
+
 - Image dimensions (width/height)
 - Number of results
 - Model selection (currently using `runware:100@1`)

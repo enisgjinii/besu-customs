@@ -39,7 +39,7 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: unknown }) {
     if (isPlaceholder && groupRef.current) {
       setModelLoading(true);
       setModelError(null);
-      
+
       try {
         // Create a simple cube as placeholder
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -65,7 +65,10 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: unknown }) {
 
         // Extract UV maps for each material section
         newSections.forEach((section) => {
-          const uvMapUrl = extractUVMapForMaterial(groupRef.current!, section.id);
+          const uvMapUrl = extractUVMapForMaterial(
+            groupRef.current!,
+            section.id,
+          );
           if (uvMapUrl) {
             setUVMap(section.id, uvMapUrl);
           }
@@ -73,13 +76,22 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: unknown }) {
       } catch (err) {
         console.warn("Placeholder model creation failed:", err);
         setModelError(
-          err instanceof Error ? err.message : "Failed to create placeholder model",
+          err instanceof Error
+            ? err.message
+            : "Failed to create placeholder model",
         );
       } finally {
         setModelLoading(false);
       }
     }
-  }, [isPlaceholder, setSections, setUVMap, setCompleteUVMap, setModelLoading, setModelError]);
+  }, [
+    isPlaceholder,
+    setSections,
+    setUVMap,
+    setCompleteUVMap,
+    setModelLoading,
+    setModelError,
+  ]);
 
   if (isPlaceholder) {
     return <group ref={groupRef} />;
@@ -99,20 +111,20 @@ function LoadedModel({
     (state) => state.setModelLoading,
   );
   const setModelError = useConfiguratorStore((state) => state.setModelError);
-  
+
   // Set loading state immediately when component mounts
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   useEffect(() => {
     setModelLoading(true);
     setModelError(null);
-    
+
     // Safety timeout to prevent stuck loading
     timeoutRef.current = setTimeout(() => {
       console.warn("Model loading timeout - forcing loading to false");
       setModelLoading(false);
     }, 10000); // 10 second timeout
-    
+
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -217,7 +229,6 @@ function LoadedModel({
         controls.maxDistance = 8;
         controls.update();
       }
-
     } catch (err) {
       console.warn("Fit-to-view failed:", err);
       setModelError(

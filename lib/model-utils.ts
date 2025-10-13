@@ -18,7 +18,8 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
           if (!processedMaterials.has(materialId)) {
             processedMaterials.add(materialId);
 
-            const originalName = material.name || `Material ${sections.length + 1}`;
+            const originalName =
+              material.name || `Material ${sections.length + 1}`;
             const name = getUserFriendlyName(originalName);
             const category = categorizeMaterial(originalName);
 
@@ -46,34 +47,45 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
 
 export function getUserFriendlyName(name: string): string {
   // Remove all numbers and underscores, then clean up extra spaces
-  let cleanedName = name.replace(/[_\d]+/g, ' ').trim();
+  let cleanedName = name.replace(/[_\d]+/g, " ").trim();
   // Replace multiple spaces with single space
-  cleanedName = cleanedName.replace(/\s+/g, ' ').trim();
-  
+  cleanedName = cleanedName.replace(/\s+/g, " ").trim();
+
   const lowerCleanedName = cleanedName.toLowerCase();
 
   // Specific matching for common clothing terms - prioritize these
   if (lowerCleanedName.includes("topstitch")) {
     return "Topstitch";
   }
-  if (lowerCleanedName.includes("strap") && !lowerCleanedName.includes("strapless")) {
+  if (
+    lowerCleanedName.includes("strap") &&
+    !lowerCleanedName.includes("strapless")
+  ) {
     return "Strap";
   }
   if (lowerCleanedName.includes("brim")) {
     return "Brim";
   }
-  if (lowerCleanedName.includes("button") && !lowerCleanedName.includes("buttonless")) {
+  if (
+    lowerCleanedName.includes("button") &&
+    !lowerCleanedName.includes("buttonless")
+  ) {
     // More specific button matching
     if (lowerCleanedName.includes("buttonhole")) {
       return "Buttonhole";
     }
     return "Button";
   }
-  if ((lowerCleanedName.includes("main") && lowerCleanedName.includes("body")) || 
-      lowerCleanedName.includes("main body")) {
+  if (
+    (lowerCleanedName.includes("main") && lowerCleanedName.includes("body")) ||
+    lowerCleanedName.includes("main body")
+  ) {
     return "Main Body";
   }
-  if (lowerCleanedName.includes("front") && lowerCleanedName.includes("panel")) {
+  if (
+    lowerCleanedName.includes("front") &&
+    lowerCleanedName.includes("panel")
+  ) {
     return "Front Panel";
   }
   if (lowerCleanedName.includes("back") && lowerCleanedName.includes("panel")) {
@@ -94,16 +106,25 @@ export function getUserFriendlyName(name: string): string {
   if (lowerCleanedName.includes("main")) {
     return "Main";
   }
-  if (lowerCleanedName.includes("trim") || lowerCleanedName.includes("piping")) {
+  if (
+    lowerCleanedName.includes("trim") ||
+    lowerCleanedName.includes("piping")
+  ) {
     return "Trim";
   }
-  if (lowerCleanedName.includes("logo") || lowerCleanedName.includes("emblem")) {
+  if (
+    lowerCleanedName.includes("logo") ||
+    lowerCleanedName.includes("emblem")
+  ) {
     return "Logo";
   }
   if (lowerCleanedName.includes("pocket")) {
     return "Pocket";
   }
-  if (lowerCleanedName.includes("collar") || lowerCleanedName.includes("neck")) {
+  if (
+    lowerCleanedName.includes("collar") ||
+    lowerCleanedName.includes("neck")
+  ) {
     return "Collar";
   }
   if (lowerCleanedName.includes("sleeve")) {
@@ -112,7 +133,10 @@ export function getUserFriendlyName(name: string): string {
   if (lowerCleanedName.includes("hood")) {
     return "Hood";
   }
-  if (lowerCleanedName.includes("stripe") || lowerCleanedName.includes("strip")) {
+  if (
+    lowerCleanedName.includes("stripe") ||
+    lowerCleanedName.includes("strip")
+  ) {
     return "Stripe";
   }
   if (lowerCleanedName.includes("number") || lowerCleanedName.includes("num")) {
@@ -124,22 +148,30 @@ export function getUserFriendlyName(name: string): string {
     // If it's not too long, clean it up and use it
     if (cleanedName.length <= 25) {
       // Remove common prefixes
-      cleanedName = cleanedName.replace(/^default\s+/i, '');
-      cleanedName = cleanedName.replace(/^cap\s+/i, '');
-      cleanedName = cleanedName.replace(/^special\s+/i, '');
-      cleanedName = cleanedName.replace(/^simple\s+/i, '');
-      cleanedName = cleanedName.replace(/^basic\s+/i, '');
-      
+      cleanedName = cleanedName.replace(/^default\s+/i, "");
+      cleanedName = cleanedName.replace(/^cap\s+/i, "");
+      cleanedName = cleanedName.replace(/^special\s+/i, "");
+      cleanedName = cleanedName.replace(/^simple\s+/i, "");
+      cleanedName = cleanedName.replace(/^basic\s+/i, "");
+
       // Capitalize first letter of each word
-      return cleanedName.replace(/\b\w/g, char => char.toUpperCase()).trim() || "Material";
+      return (
+        cleanedName.replace(/\b\w/g, (char) => char.toUpperCase()).trim() ||
+        "Material"
+      );
     }
     // For longer names, try to extract key words
-    const words = cleanedName.split(' ');
+    const words = cleanedName.split(" ");
     if (words.length > 1) {
       // Take the last significant word
       for (let i = words.length - 1; i >= 0; i--) {
         const word = words[i].toLowerCase();
-        if (word.length > 2 && !['the', 'and', 'for', 'with', 'part', 'detail', 'design'].includes(word)) {
+        if (
+          word.length > 2 &&
+          !["the", "and", "for", "with", "part", "detail", "design"].includes(
+            word,
+          )
+        ) {
           return word.charAt(0).toUpperCase() + word.slice(1);
         }
       }
@@ -152,7 +184,7 @@ export function getUserFriendlyName(name: string): string {
 
 export function categorizeMaterial(name: string): MaterialSection["category"] {
   // Remove trailing numbers and any text that follows them for categorization
-  const cleanedName = name.replace(/_\d+.*$/, '').trim();
+  const cleanedName = name.replace(/_\d+.*$/, "").trim();
   const lowerName = cleanedName.toLowerCase();
 
   // Front/Back categorization
@@ -160,7 +192,12 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
     return "Body";
   }
 
-  if (lowerName.includes("body") || lowerName.includes("main") || lowerName.includes("chest") || lowerName.includes("torso")) {
+  if (
+    lowerName.includes("body") ||
+    lowerName.includes("main") ||
+    lowerName.includes("chest") ||
+    lowerName.includes("torso")
+  ) {
     return "Body";
   }
   if (
@@ -190,7 +227,9 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
   return "Other";
 }
 
-function createGradientTexture(gradient: MaterialSection["gradient"]): THREE.CanvasTexture | null {
+function createGradientTexture(
+  gradient: MaterialSection["gradient"],
+): THREE.CanvasTexture | null {
   if (!gradient?.enabled) return null;
 
   const canvas = document.createElement("canvas");
@@ -212,9 +251,14 @@ function createGradientTexture(gradient: MaterialSection["gradient"]): THREE.Can
     gradientObj = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
   }
 
-  const stops = gradient.stops || gradient.colors.map((_, i) => i / (gradient.colors.length - 1));
+  const stops =
+    gradient.stops ||
+    gradient.colors.map((_, i) => i / (gradient.colors.length - 1));
   gradient.colors.forEach((color, i) => {
-    gradientObj.addColorStop(stops[i] || i / (gradient.colors.length - 1), color);
+    gradientObj.addColorStop(
+      stops[i] || i / (gradient.colors.length - 1),
+      color,
+    );
   });
 
   ctx.fillStyle = gradientObj;

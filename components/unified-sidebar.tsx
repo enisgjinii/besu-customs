@@ -44,9 +44,12 @@ interface UnifiedSidebarProps {
   onToggleSidebar?: (open: boolean) => void;
 }
 
-export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedSidebarProps) {
+export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
     "materials",
+  );
+  const [activeExportTab, setActiveExportTab] = useState<"presets" | "model" | "import">(
+    "presets",
   );
   const [isRecording, setIsRecording] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(true);
@@ -533,7 +536,10 @@ export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedS
                 />
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
-                <div className="grid grid-cols-2 gap-2" data-tour="camera-angles">
+                <div
+                  className="grid grid-cols-2 gap-2"
+                  data-tour="camera-angles"
+                >
                   <Button
                     variant="outline"
                     size="sm"
@@ -715,101 +721,128 @@ export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedS
                   className={`w-4 h-4 transition-transform ${exportOpen ? "rotate-180" : ""}`}
                 />
               </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2 space-y-2">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">
-                      Export your current configuration or download the configured
-                      model. You can preview or copy the preset JSON before
-                      downloading.
-                    </p>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          try {
-                            const json = exportPreset();
-                            navigator.clipboard?.writeText(json);
-                            // temporary visual feedback via alert for now
-                            // kept small to avoid introducing new toast dependency
-                            alert("Preset JSON copied to clipboard");
-                          } catch (err) {
-                            console.error("Copy failed:", err);
-                            alert("Failed to copy preset JSON");
-                          }
-                        }}
-                        className="w-full justify-center col-span-1"
-                      >
-                        Copy
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // open a new window with pretty JSON preview
-                          try {
-                            const json = exportPreset();
-                            const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
-                            window.open(preview, "_blank");
-                          } catch (err) {
-                            console.error("Preview failed:", err);
-                            alert("Failed to open preview");
-                          }
-                        }}
-                        className="w-full justify-center col-span-1"
-                      >
-                        Preview
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExport}
-                        className="w-full justify-center col-span-1"
-                        data-tour="export-options"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant={currentModelUrl ? "outline" : "ghost"}
-                    size="sm"
-                    onClick={handleExportModel}
-                    className="w-full justify-start"
-                    disabled={!currentModelUrl}
-                    title={currentModelUrl ? "Download configured model" : "No model loaded"}
+              <CollapsibleContent className="mt-2 space-y-2">
+                {/* Simple Tabs for Export Options */}
+                <div className="flex border-b border-border">
+                  <button
+                    className={`flex-1 py-2 text-xs font-medium ${activeExportTab === 'presets' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveExportTab('presets')}
                   >
-                    <Package2 className="w-4 h-4 mr-2" />
-                    Export Model (GLB)
-                  </Button>
+                    Presets
+                  </button>
+                  <button
+                    className={`flex-1 py-2 text-xs font-medium ${activeExportTab === 'model' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveExportTab('model')}
+                  >
+                    Model
+                  </button>
+                  <button
+                    className={`flex-1 py-2 text-xs font-medium ${activeExportTab === 'import' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveExportTab('import')}
+                  >
+                    Import
+                  </button>
+                </div>
 
-                  <label className="block">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start cursor-pointer"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Import Preset
-                    </Button>
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={handleImport}
-                      className="hidden"
-                    />
-                  </label>
+                {/* Tab Content */}
+                <div className="pt-2">
+                  {activeExportTab === 'presets' && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Export your current configuration. You can preview or copy the preset JSON before downloading.
+                      </p>
+                      <div className="grid grid-cols-3 gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            try {
+                              const json = exportPreset();
+                              navigator.clipboard?.writeText(json);
+                              alert("Preset JSON copied to clipboard");
+                            } catch (err) {
+                              console.error("Copy failed:", err);
+                              alert("Failed to copy preset JSON");
+                            }
+                          }}
+                          className="w-full justify-center text-xs h-8"
+                        >
+                          Copy
+                        </Button>
 
-                  <div className="text-[11px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                    Additional formats (OBJ, FBX) planned — contact us if you need a specific
-                    export.
-                  </div>
-                </CollapsibleContent>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            try {
+                              const json = exportPreset();
+                              const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
+                              window.open(preview, "_blank");
+                            } catch (err) {
+                              console.error("Preview failed:", err);
+                              alert("Failed to open preview");
+                            }
+                          }}
+                          className="w-full justify-center text-xs h-8"
+                        >
+                          Preview
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExport}
+                          className="w-full justify-center text-xs h-8"
+                          data-tour="export-options"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeExportTab === 'model' && (
+                    <div className="space-y-2">
+                      <Button
+                        variant={currentModelUrl ? "outline" : "ghost"}
+                        size="sm"
+                        onClick={handleExportModel}
+                        className="w-full justify-start text-xs h-8"
+                        disabled={!currentModelUrl}
+                        title={currentModelUrl ? "Download configured model" : "No model loaded"}
+                      >
+                        <Package2 className="w-3 h-3 mr-2" />
+                        Export Model (GLB)
+                      </Button>
+                      <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
+                        Additional formats (OBJ, FBX) planned — contact us if you need a specific export.
+                      </div>
+                    </div>
+                  )}
+
+                  {activeExportTab === 'import' && (
+                    <div className="space-y-2">
+                      <label className="block">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start text-xs h-8 cursor-pointer"
+                        >
+                          <Save className="w-3 h-3 mr-2" />
+                          Import Preset
+                        </Button>
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleImport}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
             </Collapsible>
           </div>
         )}

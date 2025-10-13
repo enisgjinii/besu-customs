@@ -18,11 +18,11 @@ function LoadingFallback() {
   return (
     <mesh position={[0, 0, 0]}>
       <boxGeometry args={[0.5, 0.5, 0.5]} />
-      <meshStandardMaterial 
-        color="#3b82f6" 
-        transparent 
+      <meshStandardMaterial
+        color="#3b82f6"
+        transparent
         opacity={0.3}
-        wireframe 
+        wireframe
       />
     </mesh>
   );
@@ -101,16 +101,25 @@ export function Scene() {
           <div className="flex flex-col items-center gap-6">
             {/* Shadcn spinner */}
             <Spinner className="size-12 text-primary" />
-            
+
             {/* Loading text with animation */}
             <div className="text-center">
               <p className="text-lg font-semibold text-foreground mb-2">
                 Loading 3D Model
               </p>
               <div className="flex items-center justify-center gap-1">
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></div>
               </div>
             </div>
           </div>

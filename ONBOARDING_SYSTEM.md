@@ -7,12 +7,14 @@ Besu Customs now features a comprehensive, interactive onboarding system designe
 ## ✨ Key Features
 
 ### 🚀 Personalized Welcome Experience
+
 - **User Type Detection**: Automatically adapts content based on user type (Beginner, Designer, Business, Developer)
 - **Interactive Preview**: Shows relevant features before starting the tour
 - **Animated Transitions**: Smooth, engaging animations that enhance the user experience
 - **Smart Timing**: Appears at the optimal moment for new users
 
 ### 🎮 Advanced Interactive Tour
+
 - **Smart Positioning**: Tooltips automatically position themselves optimally
 - **Progress Tracking**: Visual progress bar and completion percentage
 - **Enhanced Tooltips**: Rich content with tips, shortcuts, and category badges
@@ -22,6 +24,7 @@ Besu Customs now features a comprehensive, interactive onboarding system designe
 - **Conflict Detection**: Automatically pauses when other modals are open
 
 ### 📊 Analytics & Preferences
+
 - **User Analytics**: Track completion rates, average time per step, drop-off points
 - **Personal Preferences**: Customizable experience settings
 - **Accessibility Options**: Reduce motion, voice narration (coming soon)
@@ -29,6 +32,7 @@ Besu Customs now features a comprehensive, interactive onboarding system designe
 - **Progress Export**: Share progress with team members
 
 ### 🛠️ Advanced Help System
+
 - **Contextual Help**: Always-accessible help button with progress ring
 - **Tabbed Interface**: Organized help, progress, and resources
 - **Quick Tips**: Immediately useful keyboard shortcuts and tips
@@ -46,6 +50,7 @@ Besu Customs now features a comprehensive, interactive onboarding system designe
 ## 🔧 Technical Implementation
 
 ### Store Architecture
+
 ```typescript
 // Advanced state management with Zustand
 - User preferences and settings
@@ -56,6 +61,7 @@ Besu Customs now features a comprehensive, interactive onboarding system designe
 ```
 
 ### Component Structure
+
 ```
 onboarding-welcome.tsx     # Personalized welcome experience
 onboarding-tour.tsx        # Interactive tour with advanced features
@@ -65,7 +71,9 @@ onboarding-store.ts        # Centralized state management
 ```
 
 ### Key Data Attributes
+
 All tour targets use `data-tour` attributes for reliable element targeting:
+
 - `data-tour="sidebar"` - Navigation sidebar
 - `data-tour="model-loader"` - 3D model selection
 - `data-tour="material-editor"` - Material customization
@@ -78,12 +86,14 @@ All tour targets use `data-tour` attributes for reliable element targeting:
 ## 🎯 User Experience Flow
 
 ### 1. First Visit
+
 - Smart welcome modal appears after 1.5 seconds
 - User type selection with feature preview
 - Personalized tour content based on selection
 - Estimated time and feature highlights
 
 ### 2. During Tour
+
 - Step-by-step guidance with rich tooltips
 - Progress tracking with visual indicators
 - Auto-advance option with customizable timing
@@ -91,6 +101,7 @@ All tour targets use `data-tour` attributes for reliable element targeting:
 - Bookmark important steps
 
 ### 3. Post-Completion
+
 - Completion celebration with statistics
 - Always-accessible help button with progress ring
 - Ability to restart or jump to specific sections
@@ -99,10 +110,12 @@ All tour targets use `data-tour` attributes for reliable element targeting:
 ## ⌨️ Keyboard Shortcuts
 
 ### Global Shortcuts
+
 - `?` or `Ctrl+H` - Start/Open help system
 - `Esc` - Close tour or help panels
 
 ### During Tour
+
 - `←/→` - Navigate between steps
 - `Space` - Pause/Resume auto-play
 - `Esc` - Exit tour
@@ -112,6 +125,7 @@ All tour targets use `data-tour` attributes for reliable element targeting:
 ## 🎨 Customization Options
 
 ### User Preferences
+
 - **Tour Mode**: Guided, Free Explore, or Interactive
 - **Visual Settings**: Animations, reduced motion, dark mode
 - **Auto-Advance**: Automatic or manual progression
@@ -119,18 +133,19 @@ All tour targets use `data-tour` attributes for reliable element targeting:
 - **Voice Narration**: Audio guidance (coming soon)
 
 ### Developer Customization
+
 ```typescript
 // Add custom steps
 const customStep: OnboardingStep = {
-  id: 'custom-feature',
-  title: 'Custom Feature',
-  description: 'Description of your custom feature',
+  id: "custom-feature",
+  title: "Custom Feature",
+  description: "Description of your custom feature",
   target: '[data-tour="custom-element"]',
-  position: 'bottom',
-  category: 'advanced',
+  position: "bottom",
+  category: "advanced",
   estimatedTime: 30,
-  tips: ['Helpful tip 1', 'Helpful tip 2'],
-  shortcuts: [{ key: 'Ctrl+X', description: 'Custom shortcut' }]
+  tips: ["Helpful tip 1", "Helpful tip 2"],
+  shortcuts: [{ key: "Ctrl+X", description: "Custom shortcut" }],
 };
 
 // Add to store
@@ -140,6 +155,7 @@ useOnboardingStore.getState().addCustomStep(customStep);
 ## 📈 Analytics Tracking
 
 The system automatically tracks:
+
 - Tours started vs completed
 - Average time per step
 - Common drop-off points
@@ -175,6 +191,7 @@ The system automatically tracks:
 ## 🔄 Version History
 
 ### v2.0.0 (Current)
+
 - Complete rewrite with advanced features
 - Personalized user experience
 - Analytics and preferences
@@ -182,6 +199,7 @@ The system automatically tracks:
 - Mobile optimization
 
 ### v1.0.0 (Previous)
+
 - Basic step-by-step tour
 - Simple tooltip system
 - Limited customization

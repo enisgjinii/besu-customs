@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useOnboardingStore } from '@/lib/onboarding-store';
-import { OnboardingPreferencesModal } from '@/components/onboarding-preferences';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from "react";
+import { useOnboardingStore } from "@/lib/onboarding-store";
+import { OnboardingPreferencesModal } from "@/components/onboarding-preferences";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Info,
   HelpCircle,
@@ -19,33 +19,29 @@ import {
   MessageCircle,
   ExternalLink,
   CheckCircle,
-  Clock,
-  Star,
-  Download,
-  Share
-} from 'lucide-react';
+} from "lucide-react";
 
 export function OnboardingInfoButton() {
-  const { 
-    isCompleted, 
-    startOnboarding, 
-    resetOnboarding, 
-    restartOnboarding, 
+  const {
+    isCompleted,
+    startOnboarding,
+    restartOnboarding,
     getProgress,
     analytics,
-    bookmarks
+    bookmarks,
   } = useOnboardingStore();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [activeTab, setActiveTab] = useState<'help' | 'progress' | 'resources'>('help');
+  const [activeTab, setActiveTab] = useState<"help" | "progress" | "resources">(
+    "help",
+  );
 
   // Show tooltip on first visit if not completed
   useEffect(() => {
     if (!isCompleted) {
       const timer = setTimeout(() => {
-        setShowTooltip(true);
-        setTimeout(() => setShowTooltip(false), 3000);
+        // setShowTooltip(true);
+        setTimeout(() => {}, 3000);
       }, 2000);
 
       return () => clearTimeout(timer);
@@ -54,14 +50,14 @@ export function OnboardingInfoButton() {
 
   const handleRestartTour = () => {
     setIsExpanded(false);
-    setShowTooltip(false);
+    // setShowTooltip(false);
     // Use the new restart function that properly handles completed state
     restartOnboarding();
   };
 
   const handleStartTour = () => {
     setIsExpanded(false);
-    setShowTooltip(false);
+    // setShowTooltip(false);
     startOnboarding();
   };
 
@@ -71,15 +67,40 @@ export function OnboardingInfoButton() {
     "Right-click models for context menus",
     "Drag and drop textures onto materials",
     "Use mousewheel to zoom in the 3D scene",
-    "Save your work frequently with Ctrl+S"
+    "Save your work frequently with Ctrl+S",
   ];
 
   const resources = [
-    { title: "Video Tutorials", icon: Play, url: "/tutorials", desc: "Step-by-step video guides" },
-    { title: "Documentation", icon: BookOpen, url: "/docs", desc: "Comprehensive user manual" },
-    { title: "Community Forum", icon: Users, url: "/community", desc: "Get help from other users" },
-    { title: "Feature Requests", icon: MessageCircle, url: "/feedback", desc: "Suggest new features" },
-    { title: "Keyboard Shortcuts", icon: Zap, url: "/shortcuts", desc: "Speed up your workflow" }
+    {
+      title: "Video Tutorials",
+      icon: Play,
+      url: "/tutorials",
+      desc: "Step-by-step video guides",
+    },
+    {
+      title: "Documentation",
+      icon: BookOpen,
+      url: "/docs",
+      desc: "Comprehensive user manual",
+    },
+    {
+      title: "Community Forum",
+      icon: Users,
+      url: "/community",
+      desc: "Get help from other users",
+    },
+    {
+      title: "Feature Requests",
+      icon: MessageCircle,
+      url: "/feedback",
+      desc: "Suggest new features",
+    },
+    {
+      title: "Keyboard Shortcuts",
+      icon: Zap,
+      url: "/shortcuts",
+      desc: "Speed up your workflow",
+    },
   ];
 
   return (
@@ -95,10 +116,14 @@ export function OnboardingInfoButton() {
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className={`h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all duration-200 ${
-            isExpanded ? 'bg-primary text-primary-foreground border-primary' : ''
-          } ${!isCompleted ? 'animate-pulse' : ''}`}
+            isExpanded
+              ? "bg-primary text-primary-foreground border-primary"
+              : ""
+          } ${!isCompleted ? "animate-pulse" : ""}`}
         >
-          <Info className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+          <Info
+            className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+          />
         </button>
 
         {/* Notification Badge */}
@@ -119,7 +144,9 @@ export function OnboardingInfoButton() {
                 </div>
                 <div>
                   <h3 className="font-medium text-xs">Help</h3>
-                  <p className="text-[10px] text-muted-foreground">Quick access</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Quick access
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -145,17 +172,19 @@ export function OnboardingInfoButton() {
             {/* Compact Tab Navigation */}
             <div className="flex border-b bg-secondary/20">
               {[
-                { id: 'help', label: 'Help', icon: HelpCircle },
-                { id: 'progress', label: 'Progress', icon: CheckCircle },
-                { id: 'resources', label: 'Links', icon: BookOpen }
-              ].map(tab => (
+                { id: "help", label: "Help", icon: HelpCircle },
+                { id: "progress", label: "Progress", icon: CheckCircle },
+                { id: "resources", label: "Links", icon: BookOpen },
+              ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() =>
+                    setActiveTab(tab.id as "help" | "progress" | "resources")
+                  }
                   className={`flex-1 flex items-center justify-center gap-1 p-1.5 text-[10px] font-medium transition-colors ${
                     activeTab === tab.id
-                      ? 'text-primary bg-background border-b-2 border-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                      ? "text-primary bg-background border-b-2 border-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                   }`}
                 >
                   <tab.icon className="w-2.5 h-2.5" />
@@ -167,17 +196,25 @@ export function OnboardingInfoButton() {
             {/* Compact Tab Content */}
             <div className="p-2 max-h-56 overflow-y-auto">
               {/* Quick Help Tab */}
-              {activeTab === 'help' && (
+              {activeTab === "help" && (
                 <div className="space-y-2">
                   {/* Main Actions */}
                   <div className="space-y-1">
                     {isCompleted ? (
-                      <Button onClick={handleRestartTour} size="sm" className="w-full justify-start h-7 text-xs">
+                      <Button
+                        onClick={handleRestartTour}
+                        size="sm"
+                        className="w-full justify-start h-7 text-xs"
+                      >
                         <RotateCcw className="w-2.5 h-2.5 mr-1.5" />
                         <span className="text-xs">Restart Tour</span>
                       </Button>
                     ) : (
-                      <Button onClick={handleStartTour} size="sm" className="w-full justify-start h-7 text-xs">
+                      <Button
+                        onClick={handleStartTour}
+                        size="sm"
+                        className="w-full justify-start h-7 text-xs"
+                      >
                         <Play className="w-2.5 h-2.5 mr-1.5" />
                         <span className="text-xs">Start Tour</span>
                       </Button>
@@ -192,7 +229,10 @@ export function OnboardingInfoButton() {
                     </h4>
                     <div className="space-y-0.5">
                       {quickTips.slice(0, 2).map((tip, index) => (
-                        <div key={index} className="text-[10px] p-1.5 bg-secondary/30 rounded">
+                        <div
+                          key={index}
+                          className="text-[10px] p-1.5 bg-secondary/30 rounded"
+                        >
                           <div className="w-1 h-1 bg-primary rounded-full mr-1.5 inline-block" />
                           {tip}
                         </div>
@@ -203,11 +243,15 @@ export function OnboardingInfoButton() {
               )}
 
               {/* Progress Tab */}
-              {activeTab === 'progress' && (
+              {activeTab === "progress" && (
                 <div className="space-y-2">
                   <div className="text-center p-2 bg-secondary/20 rounded">
-                    <div className="text-sm font-bold text-primary">{progress.percentage}%</div>
-                    <div className="text-[10px] text-muted-foreground">Complete</div>
+                    <div className="text-sm font-bold text-primary">
+                      {progress.percentage}%
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Complete
+                    </div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
                       {progress.completed}/{progress.total}
                     </div>
@@ -216,11 +260,17 @@ export function OnboardingInfoButton() {
                   {/* Tour Stats */}
                   <div className="grid grid-cols-2 gap-1">
                     <div className="text-center p-1.5 bg-blue-50 dark:bg-blue-950/20 rounded">
-                      <div className="text-xs font-semibold text-blue-600">{analytics.tourStarted}</div>
-                      <div className="text-[10px] text-blue-600/80">Started</div>
+                      <div className="text-xs font-semibold text-blue-600">
+                        {analytics.tourStarted}
+                      </div>
+                      <div className="text-[10px] text-blue-600/80">
+                        Started
+                      </div>
                     </div>
                     <div className="text-center p-1.5 bg-green-50 dark:bg-green-950/20 rounded">
-                      <div className="text-xs font-semibold text-green-600">{analytics.tourCompleted}</div>
+                      <div className="text-xs font-semibold text-green-600">
+                        {analytics.tourCompleted}
+                      </div>
                       <div className="text-[10px] text-green-600/80">Done</div>
                     </div>
                   </div>
@@ -229,7 +279,7 @@ export function OnboardingInfoButton() {
                   {bookmarks.length > 0 && (
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-medium flex items-center gap-1">
-                        <Star className="w-2.5 h-2.5" />
+                        <CheckCircle className="w-2.5 h-2.5" />
                         Bookmarks ({bookmarks.length})
                       </h4>
                       <div className="space-y-0.5">
@@ -252,20 +302,24 @@ export function OnboardingInfoButton() {
               )}
 
               {/* Resources Tab */}
-              {activeTab === 'resources' && (
+              {activeTab === "resources" && (
                 <div className="space-y-1">
                   {resources.slice(0, 3).map((resource, index) => (
                     <button
                       key={index}
-                      onClick={() => window.open(resource.url, '_blank')}
+                      onClick={() => window.open(resource.url, "_blank")}
                       className="w-full flex items-center gap-2 p-1.5 text-left hover:bg-secondary/30 rounded transition-colors group"
                     >
                       <div className="w-4 h-4 bg-primary/10 rounded flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                         <resource.icon className="w-2.5 h-2.5 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <div className="text-[10px] font-medium">{resource.title}</div>
-                        <div className="text-[10px] text-muted-foreground">{resource.desc}</div>
+                        <div className="text-[10px] font-medium">
+                          {resource.title}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {resource.desc}
+                        </div>
                       </div>
                       <ExternalLink className="w-2.5 h-2.5 text-muted-foreground group-hover:text-foreground" />
                     </button>
@@ -277,7 +331,11 @@ export function OnboardingInfoButton() {
             {/* Compact Footer */}
             <div className="p-1.5 bg-secondary/10 border-t text-center">
               <div className="text-[10px] text-muted-foreground">
-                💡 Use <Badge variant="outline" className="text-[10px] mx-0.5">?</Badge> key for help
+                💡 Use{" "}
+                <Badge variant="outline" className="text-[10px] mx-0.5">
+                  ?
+                </Badge>{" "}
+                key for help
               </div>
             </div>
           </Card>

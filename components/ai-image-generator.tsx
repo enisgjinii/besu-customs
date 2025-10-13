@@ -13,19 +13,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Sparkles, Download, Paintbrush, Key, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  Download,
+  Paintbrush,
+  Key,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useConfiguratorStore } from "@/lib/store";
 
 export function AIImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<Array<{ imageURL: string; imageUUID: string }>>([]);
+  const [generatedImages, setGeneratedImages] = useState<
+    Array<{ imageURL: string; imageUUID: string }>
+  >([]);
   const [selectedSection, setSelectedSection] = useState<string>("");
-  const [usage, setUsage] = useState<{ limit: number; used: number; remaining: number } | null>(null);
+  const [usage, setUsage] = useState<{
+    limit: number;
+    used: number;
+    remaining: number;
+  } | null>(null);
   const [userApiMode, setUserApiMode] = useState(false);
   const [userApiKey, setUserApiKey] = useState("");
-  
+
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
 
@@ -76,7 +89,9 @@ export function AIImageGenerator() {
       toast.success("Image generated successfully!");
     } catch (error) {
       console.error("Error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate image");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate image",
+      );
     } finally {
       setLoading(false);
     }
@@ -112,13 +127,13 @@ export function AIImageGenerator() {
       const response = await fetch(imageURL);
       const blob = await response.blob();
       const reader = new FileReader();
-      
+
       reader.onloadend = () => {
         const base64data = reader.result as string;
         updateSection(selectedSection, { customTexture: base64data });
         toast.success("Texture applied to model!");
       };
-      
+
       reader.readAsDataURL(blob);
     } catch (error) {
       console.error("Error applying texture:", error);
@@ -186,11 +201,13 @@ export function AIImageGenerator() {
 
       {/* Usage Information */}
       {usage && (
-        <div className={`text-xs p-2 rounded-md ${
-          usage.remaining === 0
-            ? 'text-destructive bg-destructive/10 border border-destructive/20'
-            : 'text-muted-foreground bg-secondary/20'
-        }`}>
+        <div
+          className={`text-xs p-2 rounded-md ${
+            usage.remaining === 0
+              ? "text-destructive bg-destructive/10 border border-destructive/20"
+              : "text-muted-foreground bg-secondary/20"
+          }`}
+        >
           <div className="flex items-center gap-1 mb-1">
             {usage.remaining === 0 ? (
               <AlertCircle className="w-3 h-3" />
@@ -198,7 +215,7 @@ export function AIImageGenerator() {
               <Sparkles className="w-3 h-3" />
             )}
             <span className="font-medium">
-              {userApiMode ? 'Your API Usage' : 'System API Usage'}
+              {userApiMode ? "Your API Usage" : "System API Usage"}
             </span>
           </div>
           <div>
@@ -214,7 +231,12 @@ export function AIImageGenerator() {
 
       <Button
         onClick={handleGenerate}
-        disabled={loading || !prompt.trim() || (userApiMode && !userApiKey.trim()) || (usage?.remaining === 0 && userApiMode)}
+        disabled={
+          loading ||
+          !prompt.trim() ||
+          (userApiMode && !userApiKey.trim()) ||
+          (usage?.remaining === 0 && userApiMode)
+        }
         className="w-full"
         data-tour="ai-generate"
       >
@@ -234,7 +256,7 @@ export function AIImageGenerator() {
       {generatedImages.length > 0 && (
         <div className="space-y-3">
           <Label>Generated Images</Label>
-          
+
           {/* Material Section Selector */}
           <div className="space-y-2">
             <Label htmlFor="material-section" className="text-xs">

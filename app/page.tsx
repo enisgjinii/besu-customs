@@ -3,17 +3,16 @@
 import { Scene } from "@/components/scene";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { 
-  PanelLeft, 
-  Camera, 
-  Download, 
-  Video, 
-  Square, 
-  Save, 
-  Share2 
+import {
+  PanelLeft,
+  Camera,
+  Download,
+  Video,
+  Square,
+  Save,
+  Share2,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
 export default function Home() {
@@ -24,12 +23,13 @@ export default function Home() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  
-  const glRef = useConfiguratorStore((state) => state.glRef);
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
   const exportPreset = useConfiguratorStore((state) => state.exportPreset);
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
-  
+
   // For testing purposes - add a button to trigger the tour
 
   // Handle mouse events for resizing
@@ -38,35 +38,40 @@ export default function Home() {
     setIsResizing(true);
   };
 
-  const stopResizing = () => {
+  const stopResizing = useCallback(() => {
     setIsResizing(false);
-  };
+  }, []);
 
-  const resize = (e: MouseEvent) => {
-    if (isResizing && sidebarRef.current) {
-      const newWidth = e.clientX - sidebarRef.current.getBoundingClientRect().left;
-      if (newWidth > 300 && newWidth < 800) { // Min 300px, max 800px
-        setSidebarWidth(newWidth);
+  const resize = useCallback(
+    (e: MouseEvent) => {
+      if (isResizing && sidebarRef.current) {
+        const newWidth =
+          e.clientX - sidebarRef.current.getBoundingClientRect().left;
+        if (newWidth > 300 && newWidth < 800) {
+          // Min 300px, max 800px
+          setSidebarWidth(newWidth);
+        }
       }
-    }
-  };
+    },
+    [isResizing],
+  );
 
   // Add event listeners for resizing
   useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', resize);
-      document.addEventListener('mouseup', stopResizing);
+      document.addEventListener("mousemove", resize);
+      document.addEventListener("mouseup", stopResizing);
     }
-    
+
     return () => {
-      document.removeEventListener('mousemove', resize);
-      document.removeEventListener('mouseup', stopResizing);
+      document.removeEventListener("mousemove", resize);
+      document.removeEventListener("mouseup", stopResizing);
     };
-  }, [isResizing]);
+  }, [isResizing, resize, stopResizing]);
 
   const handleScreenshot = () => {
     // Use the canvas element directly instead of calling renderer.render()
-    const canvas = document.querySelector('canvas');
+    const canvas = document.querySelector("canvas");
     if (!canvas) {
       alert("Canvas not found");
       return;
@@ -100,7 +105,7 @@ export default function Home() {
   const handleStartRecording = async () => {
     // Enable auto-rotation when recording starts
     setAutoRotate(true);
-    
+
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
     if (!canvas) {
       alert("Canvas not found");
@@ -115,7 +120,7 @@ export default function Home() {
 
       const stream = canvas.captureStream(30); // 30 FPS
       const options: MediaRecorderOptions = { videoBitsPerSecond: 2500000 };
-      let fileExtension = "webm";
+      const fileExtension = "webm";
 
       // Try WebM format
       if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
@@ -205,14 +210,17 @@ export default function Home() {
       const json = exportPreset();
       const base64 = btoa(encodeURIComponent(json));
       const shareUrl = `${window.location.origin}?preset=${base64}`;
-      
+
       // Copy to clipboard
-      navigator.clipboard?.writeText(shareUrl).then(() => {
-        alert("Share link copied to clipboard!");
-      }).catch(() => {
-        // Fallback: show in alert
-        alert(`Share this link:\n${shareUrl}`);
-      });
+      navigator.clipboard
+        ?.writeText(shareUrl)
+        .then(() => {
+          alert("Share link copied to clipboard!");
+        })
+        .catch(() => {
+          // Fallback: show in alert
+          alert(`Share this link:\n${shareUrl}`);
+        });
     } catch (error) {
       console.error("Failed to generate share link:", error);
       alert("Failed to generate share link");
@@ -227,14 +235,17 @@ export default function Home() {
           className={`flex-col h-full border-r border-border/50 bg-card transition-all duration-300 ease-in-out ${
             sidebarOpen ? "opacity-100" : "opacity-0 w-0"
           }`}
-          style={{ width: sidebarOpen ? `${sidebarWidth}px` : '0px' }}
+          style={{ width: sidebarOpen ? `${sidebarWidth}px` : "0px" }}
           data-tour="sidebar"
         >
           <div className={`h-full ${sidebarOpen ? "block" : "hidden"}`}>
-            <UnifiedSidebar sidebarOpen={sidebarOpen} onToggleSidebar={setSidebarOpen} />
+            <UnifiedSidebar
+              sidebarOpen={sidebarOpen}
+              onToggleSidebar={setSidebarOpen}
+            />
           </div>
         </aside>
-        
+
         {/* Resizable Handle */}
         {sidebarOpen && (
           <div
@@ -256,7 +267,7 @@ export default function Home() {
           >
             <PanelLeft className="w-4 h-4" />
           </button>
-          
+
           {/* Additional buttons when sidebar is collapsed */}
           <button
             onClick={handleScreenshot}
@@ -265,7 +276,7 @@ export default function Home() {
           >
             <Camera className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={handleExportModel}
             className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
@@ -273,7 +284,7 @@ export default function Home() {
           >
             <Download className="w-4 h-4" />
           </button>
-          
+
           {!isRecording ? (
             <button
               onClick={handleStartRecording}
@@ -291,7 +302,7 @@ export default function Home() {
               <Square className="w-4 h-4" />
             </button>
           )}
-          
+
           <button
             onClick={handleSaveAsJSON}
             className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
@@ -299,7 +310,7 @@ export default function Home() {
           >
             <Save className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={handleShareLink}
             className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
@@ -319,7 +330,6 @@ export default function Home() {
       <MobileBottomNav />
 
       {/* Mobile Navigation Tour Target */}
-
     </div>
   );
 }

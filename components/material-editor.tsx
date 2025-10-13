@@ -9,7 +9,8 @@ import { ColorPickerModal } from "./color-picker-modal";
 
 function getSectionBadge(section: { name: string; originalName?: string }) {
   // Use the user-friendly name instead of original name for badge detection
-  const name = section.originalName?.toLowerCase() || section.name.toLowerCase();
+  const name =
+    section.originalName?.toLowerCase() || section.name.toLowerCase();
 
   if (name.includes("front") && !name.includes("back")) {
     return { text: "Front", variant: "default" as const };
@@ -39,19 +40,23 @@ export function MaterialEditor() {
   );
   const updateSection = useConfiguratorStore((state) => state.updateSection);
   const linkedSections = useConfiguratorStore((state) => state.linkedSections);
-  const toggleSectionLink = useConfiguratorStore((state) => state.toggleSectionLink);
-  const clearSectionLinks = useConfiguratorStore((state) => state.clearSectionLinks);
+  const toggleSectionLink = useConfiguratorStore(
+    (state) => state.toggleSectionLink,
+  );
+  const clearSectionLinks = useConfiguratorStore(
+    (state) => state.clearSectionLinks,
+  );
   const recentColors = useConfiguratorStore((state) => state.recentColors);
   const addRecentColor = useConfiguratorStore((state) => state.addRecentColor);
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
   // Add tour targets
-  const tourTargets = {
+  /* const tourTargets = {
     'material-editor': true,
     'color-picker': 'material-color-picker',
     'texture-upload': 'material-texture-upload',
-  };
+  }; */
 
   // Group sections by category
   const groupedSections = sections.reduce(
@@ -66,13 +71,15 @@ export function MaterialEditor() {
   );
 
   // Get front/back sections for quick toggle
-  const frontSections = sections.filter(section =>
-    section.name.toLowerCase().includes("front") &&
-    !section.name.toLowerCase().includes("back")
+  const frontSections = sections.filter(
+    (section) =>
+      section.name.toLowerCase().includes("front") &&
+      !section.name.toLowerCase().includes("back"),
   );
-  const backSections = sections.filter(section =>
-    section.name.toLowerCase().includes("back") &&
-    !section.name.toLowerCase().includes("front")
+  const backSections = sections.filter(
+    (section) =>
+      section.name.toLowerCase().includes("back") &&
+      !section.name.toLowerCase().includes("front"),
   );
 
   return (
@@ -98,13 +105,19 @@ export function MaterialEditor() {
         {(frontSections.length > 0 || backSections.length > 0) && (
           <div className="mb-4 p-3 bg-secondary/20 rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Quick Select:</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                Quick Select:
+              </span>
             </div>
             <div className="flex gap-2">
               {frontSections.length > 0 && (
                 <Button
                   size="sm"
-                  variant={frontSections.some(s => s.id === selectedSectionId) ? "default" : "outline"}
+                  variant={
+                    frontSections.some((s) => s.id === selectedSectionId)
+                      ? "default"
+                      : "outline"
+                  }
                   onClick={() => {
                     // Select the first front section if multiple
                     const frontSection = frontSections[0];
@@ -118,7 +131,11 @@ export function MaterialEditor() {
               {backSections.length > 0 && (
                 <Button
                   size="sm"
-                  variant={backSections.some(s => s.id === selectedSectionId) ? "default" : "outline"}
+                  variant={
+                    backSections.some((s) => s.id === selectedSectionId)
+                      ? "default"
+                      : "outline"
+                  }
                   onClick={() => {
                     // Select the first back section if multiple
                     const backSection = backSections[0];
@@ -138,7 +155,10 @@ export function MaterialEditor() {
             <div className="flex items-center gap-2">
               <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
               <p className="text-xs text-blue-700 dark:text-blue-300">
-                <span className="font-medium">{linkedSections.size} linked</span> - edits apply to all
+                <span className="font-medium">
+                  {linkedSections.size} linked
+                </span>{" "}
+                - edits apply to all
               </p>
             </div>
           </div>
@@ -160,15 +180,17 @@ export function MaterialEditor() {
                     return (
                       <div
                         key={section.id}
-                        className={`group relative rounded-lg transition-all ${isLinked ? "ring-2 ring-blue-500/50" : ""
-                          }`}
+                        className={`group relative rounded-lg transition-all ${
+                          isLinked ? "ring-2 ring-blue-500/50" : ""
+                        }`}
                       >
                         <button
                           onClick={() => setSelectedSection(section.id)}
-                          className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${isSelected
+                          className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
+                            isSelected
                               ? "bg-accent text-accent-foreground shadow-sm"
                               : "bg-secondary/30 hover:bg-secondary/50"
-                            }`}
+                          }`}
                         >
                           <div className="flex items-center justify-start gap-2.5">
                             <div
@@ -195,22 +217,28 @@ export function MaterialEditor() {
                             )}
                           </div>
                         </button>
-                        {selectedSectionId && selectedSectionId !== section.id && (
-                          <button
-                            onClick={() => toggleSectionLink(section.id)}
-                            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${isLinked
-                                ? "bg-blue-500 text-white shadow-sm"
-                                : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
+                        {selectedSectionId &&
+                          selectedSectionId !== section.id && (
+                            <button
+                              onClick={() => toggleSectionLink(section.id)}
+                              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${
+                                isLinked
+                                  ? "bg-blue-500 text-white shadow-sm"
+                                  : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
                               }`}
-                            title={isLinked ? "Click to unlink" : "Click to link with selected"}
-                          >
-                            {isLinked ? (
-                              <Link2 className="w-3.5 h-3.5" />
-                            ) : (
-                              <Link2 className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        )}
+                              title={
+                                isLinked
+                                  ? "Click to unlink"
+                                  : "Click to link with selected"
+                              }
+                            >
+                              {isLinked ? (
+                                <Link2 className="w-3.5 h-3.5" />
+                              ) : (
+                                <Link2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          )}
                       </div>
                     );
                   })}
@@ -264,7 +292,10 @@ export function MaterialEditor() {
                 />
                 <Button
                   onClick={() => setColorPickerOpen(true)}
-                  disabled={!!selectedSection.customTexture || !!selectedSection.gradient?.enabled}
+                  disabled={
+                    !!selectedSection.customTexture ||
+                    !!selectedSection.gradient?.enabled
+                  }
                   variant="outline"
                   className="flex-1 justify-start"
                   data-tour="color-picker"
@@ -303,27 +334,31 @@ export function MaterialEditor() {
                     updateSection(selectedSection.id, {
                       gradient: enabled
                         ? {
-                          enabled: true,
-                          type: "linear",
-                          colors: [selectedSection.color, "#ffffff"],
-                          angle: 90,
-                          stops: [0, 1],
-                        }
+                            enabled: true,
+                            type: "linear",
+                            colors: [selectedSection.color, "#ffffff"],
+                            angle: 90,
+                            stops: [0, 1],
+                          }
                         : undefined,
                     });
                   }}
                   disabled={!!selectedSection.customTexture}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    selectedSection.gradient?.enabled 
-                      ? "bg-primary" 
+                    selectedSection.gradient?.enabled
+                      ? "bg-primary"
                       : "bg-input"
                   } ${
-                    selectedSection.customTexture ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                    selectedSection.customTexture
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
                   }`}
                 >
                   <span
                     className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                      selectedSection.gradient?.enabled ? "translate-x-4" : "translate-x-0.5"
+                      selectedSection.gradient?.enabled
+                        ? "translate-x-4"
+                        : "translate-x-0.5"
                     }`}
                   />
                 </button>
@@ -427,7 +462,9 @@ export function MaterialEditor() {
                         type="color"
                         value={selectedSection.gradient.colors[2]}
                         onChange={(e) => {
-                          const newColors = [...selectedSection.gradient!.colors];
+                          const newColors = [
+                            ...selectedSection.gradient!.colors,
+                          ];
                           newColors[2] = e.target.value;
                           updateSection(selectedSection.id, {
                             gradient: {
@@ -447,8 +484,13 @@ export function MaterialEditor() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const newColors = [...selectedSection.gradient!.colors, "#ffffff"];
-                          const newStops = [...(selectedSection.gradient!.stops || [])];
+                          const newColors = [
+                            ...selectedSection.gradient!.colors,
+                            "#ffffff",
+                          ];
+                          const newStops = [
+                            ...(selectedSection.gradient!.stops || []),
+                          ];
                           newStops.push(1);
                           updateSection(selectedSection.id, {
                             gradient: {
@@ -468,8 +510,10 @@ export function MaterialEditor() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const newColors = selectedSection.gradient!.colors.slice(0, -1);
-                          const newStops = selectedSection.gradient!.stops?.slice(0, -1);
+                          const newColors =
+                            selectedSection.gradient!.colors.slice(0, -1);
+                          const newStops =
+                            selectedSection.gradient!.stops?.slice(0, -1);
                           updateSection(selectedSection.id, {
                             gradient: {
                               ...selectedSection.gradient!,
@@ -500,7 +544,6 @@ export function MaterialEditor() {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       )}
@@ -511,13 +554,17 @@ export function MaterialEditor() {
           isOpen={colorPickerOpen}
           onClose={() => setColorPickerOpen(false)}
           currentColor={selectedSection.color}
-          onColorChange={(color) => updateSection(selectedSection.id, { color })}
-          disabled={!!selectedSection.customTexture || !!selectedSection.gradient?.enabled}
+          onColorChange={(color) =>
+            updateSection(selectedSection.id, { color })
+          }
+          disabled={
+            !!selectedSection.customTexture ||
+            !!selectedSection.gradient?.enabled
+          }
           recentColors={recentColors}
           onAddRecentColor={addRecentColor}
         />
       )}
-
     </div>
   );
 }

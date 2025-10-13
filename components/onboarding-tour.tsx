@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useOnboardingStore } from '@/lib/onboarding-store';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,16 +12,11 @@ import {
   Pause,
   RotateCcw,
   CheckCircle,
-  AlertCircle,
-  Clock,
-  Sparkles,
-  MousePointer,
-  Trophy,
-  Star
+  AlertCircle
 } from 'lucide-react';
 
 interface TooltipProps {
-  step: any;
+  step: { target?: string; position?: string; category?: string; title: string; description: string; tips?: string[]; shortcuts?: { key: string; description: string }[]; delay?: number; autoAdvance?: boolean; action?: () => void; id?: string };
   onNext: () => void;
   onPrevious: () => void;
   onSkip: () => void;
@@ -47,80 +41,79 @@ function Tooltip({
   // For desktop only, position at bottom right
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   
-  if (isMobile) {
-    // Use existing tooltip for mobile
-    const [position, setPosition] = useState({ top: 0, left: 0, transform: '' });
-    const [arrowPosition, setArrowPosition] = useState('');
-    const [showTips, setShowTips] = useState(false);
-    const [showShortcuts, setShowShortcuts] = useState(false);
+  // Move hooks outside conditional to comply with React rules
+  const [position, setPosition] = useState({ top: 0, left: 0, transform: '' });
+  const [arrowPosition, setArrowPosition] = useState('');
+  const [showTips, setShowTips] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
-    useEffect(() => {
-      if (step.target) {
-        const element = document.querySelector(step.target);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          const tooltipHeight = 220; // Approximate tooltip height
-          const tooltipWidth = 320; // Approximate tooltip width
-          const margin = 16; // Margin from viewport edges
+  useEffect(() => {
+    if (isMobile && step.target) {
+      const element = document.querySelector(step.target);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const tooltipHeight = 220; // Approximate tooltip height
+        const tooltipWidth = 320; // Approximate tooltip width
+        const margin = 16; // Margin from viewport edges
 
-          let top = 0;
-          let left = 0;
-          let transform = '';
-          let arrowPos = '';
+        let top = 0;
+        let left = 0;
+        let transform = '';
+        let arrowPos = '';
 
-          switch (step.position) {
-            case 'top':
-              top = rect.top - tooltipHeight - margin;
-              left = rect.left + rect.width / 2;
-              transform = 'translateX(-50%)';
-              arrowPos = 'bottom-[-6px] left-1/2 transform -translate-x-1/2 border-t-card border-l-transparent border-r-transparent border-b-transparent';
-              break;
-            case 'bottom':
-              top = rect.bottom + margin;
-              left = rect.left + rect.width / 2;
-              transform = 'translateX(-50%)';
-              arrowPos = 'top-[-6px] left-1/2 transform -translate-x-1/2 border-b-card border-l-transparent border-r-transparent border-t-transparent';
-              break;
-            case 'left':
-              top = rect.top + rect.height / 2;
-              left = rect.left - tooltipWidth - margin;
-              transform = 'translateY(-50%)';
-              arrowPos = 'right-[-6px] top-1/2 transform -translate-y-1/2 border-l-card border-t-transparent border-b-transparent border-r-transparent';
-              break;
-            case 'right':
-              top = rect.top + rect.height / 2;
-              left = rect.right + margin;
-              transform = 'translateY(-50%)';
-              arrowPos = 'left-[-6px] top-1/2 transform -translate-y-1/2 border-r-card border-t-transparent border-b-transparent border-l-transparent';
-              break;
-            case 'center':
-            default:
-              top = window.innerHeight / 2;
-              left = window.innerWidth / 2;
-              transform = 'translate(-50%, -50%)';
-              arrowPos = '';
-              break;
-          }
-
-          // Keep tooltip within viewport bounds with better calculations
-          const actualTop = Math.max(margin, Math.min(top, window.innerHeight - tooltipHeight - margin));
-          const actualLeft = Math.max(margin, Math.min(left, window.innerWidth - tooltipWidth - margin));
-
-          setPosition({ top: actualTop, left: actualLeft, transform });
-          setArrowPosition(arrowPos);
+        switch (step.position) {
+          case 'top':
+            top = rect.top - tooltipHeight - margin;
+            left = rect.left + rect.width / 2;
+            transform = 'translateX(-50%)';
+            arrowPos = 'bottom-[-6px] left-1/2 transform -translate-x-1/2 border-t-card border-l-transparent border-r-transparent border-b-transparent';
+            break;
+          case 'bottom':
+            top = rect.bottom + margin;
+            left = rect.left + rect.width / 2;
+            transform = 'translateX(-50%)';
+            arrowPos = 'top-[-6px] left-1/2 transform -translate-x-1/2 border-b-card border-l-transparent border-r-transparent border-t-transparent';
+            break;
+          case 'left':
+            top = rect.top + rect.height / 2;
+            left = rect.left - tooltipWidth - margin;
+            transform = 'translateY(-50%)';
+            arrowPos = 'right-[-6px] top-1/2 transform -translate-y-1/2 border-l-card border-t-transparent border-b-transparent border-r-transparent';
+            break;
+          case 'right':
+            top = rect.top + rect.height / 2;
+            left = rect.right + margin;
+            transform = 'translateY(-50%)';
+            arrowPos = 'left-[-6px] top-1/2 transform -translate-y-1/2 border-r-card border-t-transparent border-b-transparent border-l-transparent';
+            break;
+          case 'center':
+          default:
+            top = window.innerHeight / 2;
+            left = window.innerWidth / 2;
+            transform = 'translate(-50%, -50%)';
+            arrowPos = '';
+            break;
         }
-      } else {
-        // Center position for non-target steps
-        setPosition({
-          top: window.innerHeight / 2,
-          left: window.innerWidth / 2,
-          transform: 'translate(-50%, -50%)'
-        });
-        setArrowPosition('');
-      }
-    }, [step]);
 
-    return (
+        // Keep tooltip within viewport bounds with better calculations
+        const actualTop = Math.max(margin, Math.min(top, window.innerHeight - tooltipHeight - margin));
+        const actualLeft = Math.max(margin, Math.min(left, window.innerWidth - tooltipWidth - margin));
+
+        setPosition({ top: actualTop, left: actualLeft, transform });
+        setArrowPosition(arrowPos);
+      }
+    } else if (isMobile) {
+      // Center position for non-target steps
+      setPosition({
+        top: window.innerHeight / 2,
+        left: window.innerWidth / 2,
+        transform: 'translate(-50%, -50%)'
+      });
+      setArrowPosition('');
+    }
+  }, [step, isMobile]);
+
+  if (isMobile) {
       <div
         className="fixed z-50 animate-in zoom-in-95 duration-500"
         style={{
@@ -158,13 +151,10 @@ function Tooltip({
                     {currentStep + 1}/{totalSteps}
                   </span>
                 </div>
-                {step.category && (
-                  <Badge 
-                    variant="outline" 
-                    className="text-xs px-2 py-0.5 border-primary/30 text-primary/80 font-medium"
-                  >
+                                {step.category && (
+                  <span className="text-xs px-2 py-0.5 border border-primary/30 text-primary/80 font-medium rounded">
                     {step.category}
-                  </Badge>
+                  </span>
                 )}
               </div>
               
@@ -195,7 +185,7 @@ function Tooltip({
                   onClick={() => setShowTips(!showTips)}
                   className="flex items-center space-x-2 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 group"
                 >
-                  <Sparkles className="w-3 h-3 group-hover:text-primary transition-colors" />
+                                    <ChevronRight className="w-3 h-3 group-hover:text-primary transition-colors" />
                   <span className="font-medium">Advanced Tips</span>
                   <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${showTips ? 'rotate-90' : ''}`} />
                 </button>
@@ -220,7 +210,7 @@ function Tooltip({
                   onClick={() => setShowShortcuts(!showShortcuts)}
                   className="flex items-center space-x-2 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 group"
                 >
-                  <MousePointer className="w-3 h-3 group-hover:text-primary transition-colors" />
+                                    <ChevronRight className="w-3 h-3 group-hover:text-primary transition-colors" />
                   <span className="font-medium">Shortcuts</span>
                   <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${showShortcuts ? 'rotate-90' : ''}`} />
                 </button>
@@ -230,9 +220,9 @@ function Tooltip({
                     {step.shortcuts.map((shortcut: { key: string; description: string }, index: number) => (
                       <div key={index} className="flex items-center justify-between text-xs bg-muted/20 px-3 py-2.5 rounded-lg border border-muted/40">
                         <span className="text-muted-foreground/80">{shortcut.description}</span>
-                        <Badge variant="outline" className="text-xs font-mono border-primary/30 text-primary/80">
+                        <span className="text-xs font-mono border border-primary/30 text-primary/80 px-1.5 py-0.5 rounded">
                           {shortcut.key}
-                        </Badge>
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -291,12 +281,10 @@ function Tooltip({
           </div>
         </Card>
       </div>
-    );
   }
 
   // Simplified desktop version - bottom right
-  const [showTips, setShowTips] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  // State variables are now declared at the top to comply with React rules
 
   // Function to switch tabs
   const switchTab = (tab: string) => {
@@ -726,6 +714,9 @@ export function OnboardingTour() {
   const [autoPlay, setAutoPlay] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const autoPlayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Move state declarations to the top to comply with React rules
+  const [showTips, setShowTips] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const currentStepData = steps[currentStep];
   const isFirst = currentStep === 0;
@@ -973,7 +964,7 @@ export function OnboardingTour() {
             disabled={isTransitioning}
             title="Bookmark step"
           >
-            <Star className="w-4 h-4" />
+                                    <CheckCircle className="w-4 h-4" />
           </Button>
         </div>
       </div>

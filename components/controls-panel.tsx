@@ -182,8 +182,8 @@ export function ControlsPanel() {
               <h3 className="font-semibold mb-3">Export Options</h3>
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Preview or copy your preset JSON before downloading. Model export
-                  will be disabled until a model is loaded.
+                  Preview or copy your preset JSON before downloading. Model
+                  export will be disabled until a model is loaded.
                 </p>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -240,7 +240,11 @@ export function ControlsPanel() {
                   onClick={handleExportModel}
                   className="w-full justify-start bg-transparent"
                   disabled={!currentModelUrl}
-                  title={currentModelUrl ? "Download configured model" : "No model loaded"}
+                  title={
+                    currentModelUrl
+                      ? "Download configured model"
+                      : "No model loaded"
+                  }
                 >
                   <Package2 className="w-4 h-4 mr-2" />
                   Export Model (GLB)

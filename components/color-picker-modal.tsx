@@ -30,10 +30,27 @@ const TEAM_COLORS = [
 ];
 
 const BASIC_COLORS = [
-  "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
-  "#FFA500", "#800080", "#FFC0CB", "#A52A2A", "#808080", "#000080",
-  "#008000", "#FF4500", "#FFD700", "#C0C0C0", "#800000", "#808000",
-  "#008080", "#ADFF2F", "#FF69B4"
+  "#FF0000",
+  "#00FF00",
+  "#0000FF",
+  "#FFFF00",
+  "#FF00FF",
+  "#00FFFF",
+  "#FFA500",
+  "#800080",
+  "#FFC0CB",
+  "#A52A2A",
+  "#808080",
+  "#000080",
+  "#008000",
+  "#FF4500",
+  "#FFD700",
+  "#C0C0C0",
+  "#800000",
+  "#808000",
+  "#008080",
+  "#ADFF2F",
+  "#FF69B4",
 ];
 
 export function ColorPickerModal({
@@ -105,9 +122,9 @@ export function ColorPickerModal({
                   disabled={disabled}
                   className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
                     currentColor.toLowerCase() === color.toLowerCase()
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-secondary/50'
-                  } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50 hover:bg-secondary/50"
+                  } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <div
                     className="w-8 h-8 rounded-md border border-border/50 shadow-sm flex-shrink-0"
@@ -130,8 +147,10 @@ export function ColorPickerModal({
                     onClick={() => handleColorSelect(color)}
                     disabled={disabled}
                     className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${
-                      currentColor.toLowerCase() === color.toLowerCase() ? 'ring-2 ring-primary' : ''
-                    } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`}
+                      currentColor.toLowerCase() === color.toLowerCase()
+                        ? "ring-2 ring-primary"
+                        : ""
+                    } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
                     style={{ backgroundColor: color }}
                     title={color}
                   />
@@ -150,8 +169,10 @@ export function ColorPickerModal({
                   onClick={() => handleColorSelect(color)}
                   disabled={disabled}
                   className={`w-10 h-10 rounded-lg border-2 border-border/50 hover:border-primary transition-all ${
-                    currentColor.toLowerCase() === color.toLowerCase() ? 'ring-2 ring-primary' : ''
-                  } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`}
+                    currentColor.toLowerCase() === color.toLowerCase()
+                      ? "ring-2 ring-primary"
+                      : ""
+                  } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
                   style={{ backgroundColor: color }}
                   title={color}
                 />
@@ -185,11 +206,7 @@ export function ColorPickerModal({
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
+            <Button variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
             <Button

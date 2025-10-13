@@ -263,10 +263,10 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   setSections: (sections) => set({ sections }),
   updateSection: (id, updates) =>
     set((state) => {
-      const idsToUpdate = state.linkedSections.has(id) 
+      const idsToUpdate = state.linkedSections.has(id)
         ? [id, ...Array.from(state.linkedSections)]
         : [id];
-      
+
       return {
         sections: state.sections.map((s) =>
           idsToUpdate.includes(s.id) ? { ...s, ...updates } : s,
@@ -323,7 +323,9 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   recentColors: [],
   addRecentColor: (color) =>
     set((state) => {
-      const filtered = state.recentColors.filter(c => c.toLowerCase() !== color.toLowerCase());
+      const filtered = state.recentColors.filter(
+        (c) => c.toLowerCase() !== color.toLowerCase(),
+      );
       const newRecent = [color, ...filtered].slice(0, 8); // Keep only 8 most recent
       return { recentColors: newRecent };
     }),
