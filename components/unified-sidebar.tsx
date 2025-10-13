@@ -20,6 +20,7 @@ import {
   FileImage,
   Film,
   Sparkles,
+  PanelLeftClose,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import { AIImageGenerator } from "./ai-image-generator";
@@ -38,7 +39,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-export function UnifiedSidebar() {
+interface UnifiedSidebarProps {
+  sidebarOpen?: boolean;
+  onToggleSidebar?: (open: boolean) => void;
+}
+
+export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedSidebarProps) {
   const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
     "materials",
   );
@@ -395,7 +401,16 @@ export function UnifiedSidebar() {
               Customize your model
             </p>
           </div>
-          <OnboardingInfoButton />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onToggleSidebar?.(false)}
+              className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+            <OnboardingInfoButton />
+          </div>
         </div>
 
         {/* Model Dropdown */}
@@ -697,46 +712,101 @@ export function UnifiedSidebar() {
                   className={`w-4 h-4 transition-transform ${exportOpen ? "rotate-180" : ""}`}
                 />
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  className="w-full justify-start"
-                  data-tour="export-options"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Preset (JSON)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportModel}
-                  className="w-full justify-start"
-                >
-                  <Package2 className="w-4 h-4 mr-2" />
-                  Export Model (GLB)
-                </Button>
-                <label className="block">
+                <CollapsibleContent className="mt-2 space-y-2">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      Export your current configuration or download the configured
+                      model. You can preview or copy the preset JSON before
+                      downloading.
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          try {
+                            const json = exportPreset();
+                            navigator.clipboard?.writeText(json);
+                            // temporary visual feedback via alert for now
+                            // kept small to avoid introducing new toast dependency
+                            alert("Preset JSON copied to clipboard");
+                          } catch (err) {
+                            console.error("Copy failed:", err);
+                            alert("Failed to copy preset JSON");
+                          }
+                        }}
+                        className="w-full justify-center col-span-1"
+                      >
+                        Copy
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // open a new window with pretty JSON preview
+                          try {
+                            const json = exportPreset();
+                            const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
+                            window.open(preview, "_blank");
+                          } catch (err) {
+                            console.error("Preview failed:", err);
+                            alert("Failed to open preview");
+                          }
+                        }}
+                        className="w-full justify-center col-span-1"
+                      >
+                        Preview
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExport}
+                        className="w-full justify-center col-span-1"
+                        data-tour="export-options"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+
                   <Button
-                    variant="outline"
+                    variant={currentModelUrl ? "outline" : "ghost"}
                     size="sm"
-                    className="w-full justify-start cursor-pointer"
+                    onClick={handleExportModel}
+                    className="w-full justify-start"
+                    disabled={!currentModelUrl}
+                    title={currentModelUrl ? "Download configured model" : "No model loaded"}
                   >
-                    <Save className="w-4 h-4 mr-2" />
-                    Import Preset
+                    <Package2 className="w-4 h-4 mr-2" />
+                    Export Model (GLB)
                   </Button>
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImport}
-                    className="hidden"
-                  />
-                </label>
-                <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                  Additional formats (OBJ, FBX, GLTF) coming in Phase 2
-                </div>
-              </CollapsibleContent>
+
+                  <label className="block">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start cursor-pointer"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Import Preset
+                    </Button>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImport}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <div className="text-[11px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
+                    Additional formats (OBJ, FBX) planned — contact us if you need a specific
+                    export.
+                  </div>
+                </CollapsibleContent>
             </Collapsible>
           </div>
         )}

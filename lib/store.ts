@@ -77,6 +77,10 @@ interface ConfiguratorState {
   modelError: string | null;
   setModelError: (err: string | null) => void;
 
+  // Recent colors
+  recentColors: string[];
+  addRecentColor: (color: string) => void;
+
   // Presets
   presets: ConfigPreset[];
   savePreset: (name: string, camera?: CameraPreset) => void;
@@ -314,6 +318,15 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   setModelLoading: (loading: boolean) => set({ modelLoading: loading }),
   modelError: null,
   setModelError: (err: string | null) => set({ modelError: err }),
+
+  // Recent colors
+  recentColors: [],
+  addRecentColor: (color) =>
+    set((state) => {
+      const filtered = state.recentColors.filter(c => c.toLowerCase() !== color.toLowerCase());
+      const newRecent = [color, ...filtered].slice(0, 8); // Keep only 8 most recent
+      return { recentColors: newRecent };
+    }),
 
   // Presets
   presets: [],

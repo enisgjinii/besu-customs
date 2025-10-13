@@ -181,24 +181,71 @@ export function ControlsPanel() {
             <div className="border-t border-border/50 pt-4">
               <h3 className="font-semibold mb-3">Export Options</h3>
               <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Preview or copy your preset JSON before downloading. Model export
+                  will be disabled until a model is loaded.
+                </p>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      try {
+                        const json = exportPreset();
+                        navigator.clipboard?.writeText(json);
+                        alert("Preset JSON copied to clipboard");
+                      } catch (err) {
+                        console.error("Copy failed:", err);
+                        alert("Failed to copy preset JSON");
+                      }
+                    }}
+                    className="w-full justify-center col-span-1"
+                  >
+                    Copy
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      try {
+                        const json = exportPreset();
+                        const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
+                        window.open(preview, "_blank");
+                      } catch (err) {
+                        console.error("Preview failed:", err);
+                        alert("Failed to open preview");
+                      }
+                    }}
+                    className="w-full justify-center col-span-1"
+                  >
+                    Preview
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                    className="w-full justify-center col-span-1"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  className="w-full justify-start bg-transparent"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Preset (JSON)
-                </Button>
-                <Button
-                  variant="outline"
+                  variant={currentModelUrl ? "outline" : "ghost"}
                   size="sm"
                   onClick={handleExportModel}
                   className="w-full justify-start bg-transparent"
+                  disabled={!currentModelUrl}
+                  title={currentModelUrl ? "Download configured model" : "No model loaded"}
                 >
                   <Package2 className="w-4 h-4 mr-2" />
                   Export Model (GLB)
                 </Button>
+
                 <label className="block">
                   <Button
                     variant="outline"

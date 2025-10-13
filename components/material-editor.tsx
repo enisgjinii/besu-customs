@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import { Palette, Sliders, Link2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ColorPickerModal } from "./color-picker-modal";
 
 function getSectionBadge(section: { name: string; originalName?: string }) {
   // Use the user-friendly name instead of original name for badge detection
@@ -26,6 +28,8 @@ function getSectionBadge(section: { name: string; originalName?: string }) {
 }
 
 export function MaterialEditor() {
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+
   const sections = useConfiguratorStore((state) => state.sections);
   const selectedSectionId = useConfiguratorStore(
     (state) => state.selectedSectionId,
@@ -37,6 +41,8 @@ export function MaterialEditor() {
   const linkedSections = useConfiguratorStore((state) => state.linkedSections);
   const toggleSectionLink = useConfiguratorStore((state) => state.toggleSectionLink);
   const clearSectionLinks = useConfiguratorStore((state) => state.clearSectionLinks);
+  const recentColors = useConfiguratorStore((state) => state.recentColors);
+  const addRecentColor = useConfiguratorStore((state) => state.addRecentColor);
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
@@ -246,27 +252,40 @@ export function MaterialEditor() {
             )}
 
             <div>
-              <label className="block text-xs font-medium mb-2">
+              <label className="block text-xs font-medium mb-3">
                 Base Color
               </label>
-              <input
-                type="color"
-                value={selectedSection.color}
-                onChange={(e) =>
-                  updateSection(selectedSection.id, { color: e.target.value })
-                }
-                className="w-full h-10 rounded-md border border-input cursor-pointer"
-                disabled={!!selectedSection.customTexture || !!selectedSection.gradient?.enabled}
-                data-tour="color-picker"
-              />
+
+              {/* Color Preview and Picker Button */}
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-12 h-12 rounded-lg border-2 border-border shadow-sm flex-shrink-0"
+                  style={{ backgroundColor: selectedSection.color }}
+                />
+                <Button
+                  onClick={() => setColorPickerOpen(true)}
+                  disabled={!!selectedSection.customTexture || !!selectedSection.gradient?.enabled}
+                  variant="outline"
+                  className="flex-1 justify-start"
+                  data-tour="color-picker"
+                >
+                  <Palette className="w-4 h-4 mr-2" />
+                  Choose Color
+                </Button>
+              </div>
+
+              <div className="text-sm text-muted-foreground font-mono bg-secondary/30 px-3 py-2 rounded-md">
+                {selectedSection.color.toUpperCase()}
+              </div>
+
               {selectedSection.customTexture && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Disabled when texture is applied
+                <p className="text-xs text-muted-foreground mt-2">
+                  Color picker disabled when texture is applied
                 </p>
               )}
               {selectedSection.gradient?.enabled && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Disabled when gradient is enabled
+                <p className="text-xs text-muted-foreground mt-2">
+                  Color picker disabled when gradient is enabled
                 </p>
               )}
             </div>
@@ -484,6 +503,19 @@ export function MaterialEditor() {
 
           </div>
         </div>
+      )}
+
+      {/* Color Picker Modal */}
+      {selectedSection && (
+        <ColorPickerModal
+          isOpen={colorPickerOpen}
+          onClose={() => setColorPickerOpen(false)}
+          currentColor={selectedSection.color}
+          onColorChange={(color) => updateSection(selectedSection.id, { color })}
+          disabled={!!selectedSection.customTexture || !!selectedSection.gradient?.enabled}
+          recentColors={recentColors}
+          onAddRecentColor={addRecentColor}
+        />
       )}
 
     </div>

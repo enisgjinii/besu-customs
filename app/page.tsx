@@ -5,6 +5,7 @@ import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ChevronRight, PanelLeftClose } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -20,26 +21,20 @@ export default function Home() {
         data-tour="sidebar"
       >
         <div className={`w-[420px] h-full ${sidebarOpen ? "block" : "hidden"}`}>
-          <UnifiedSidebar />
+          <UnifiedSidebar sidebarOpen={sidebarOpen} onToggleSidebar={setSidebarOpen} />
         </div>
       </aside>
 
-      {/* Desktop: Sidebar toggle button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="hidden md:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 z-50 bg-card/95 backdrop-blur-sm border border-border/50 hover:border-primary/50 rounded-r-lg p-2.5 hover:bg-secondary/80 transition-all duration-300 shadow-lg hover:shadow-xl group"
-        style={{
-          left: sidebarOpen ? "420px" : "0px",
-          transition: "left 300ms ease-in-out",
-        }}
-        title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-      >
-        {sidebarOpen ? (
-          <PanelLeftClose className="w-4 h-4 group-hover:scale-110 transition-transform" />
-        ) : (
-          <ChevronRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
-        )}
-      </button>
+      {/* Expand sidebar button when collapsed */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="hidden md:flex items-center justify-center absolute top-4 left-4 z-50 h-6 w-6 text-muted-foreground hover:text-foreground"
+          title="Show sidebar"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
 
       {/* Main 3D Viewer */}
       <main className="flex-1 relative min-w-0 pb-20 md:pb-0">
