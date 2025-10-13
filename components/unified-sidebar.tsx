@@ -404,7 +404,7 @@ export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedS
           <div className="flex items-center gap-2">
             <button
               onClick={() => onToggleSidebar?.(false)}
-              className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground"
+              className="h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background"
               title="Collapse sidebar"
             >
               <PanelLeftClose className="w-4 h-4" />

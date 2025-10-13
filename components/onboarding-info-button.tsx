@@ -92,16 +92,14 @@ export function OnboardingInfoButton() {
 
       {/* Compact Help Button */}
       <div className="relative">
-        <Button
+        <button
           onClick={() => setIsExpanded(!isExpanded)}
-          variant={isExpanded ? "default" : "outline"}
-          size="sm"
-          className={`h-8 w-8 rounded-md transition-all duration-200 ${
-            isExpanded ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/10'
+          className={`h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-all duration-200 ${
+            isExpanded ? 'bg-primary text-primary-foreground border-primary' : ''
           } ${!isCompleted ? 'animate-pulse' : ''}`}
         >
           <Info className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-        </Button>
+        </button>
 
         {/* Notification Badge */}
         {bookmarks.length > 0 && (

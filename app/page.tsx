@@ -3,7 +3,7 @@
 import { Scene } from "@/components/scene";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { ChevronRight, PanelLeftClose } from "lucide-react";
+import { ChevronRight, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -29,10 +29,10 @@ export default function Home() {
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="hidden md:flex items-center justify-center absolute top-4 left-4 z-50 h-6 w-6 text-muted-foreground hover:text-foreground"
+          className="hidden md:flex items-center justify-center absolute top-4 left-4 z-50 h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
           title="Show sidebar"
         >
-          <ChevronRight className="w-4 h-4" />
+          <PanelLeft className="w-4 h-4" />
         </button>
       )}
 
