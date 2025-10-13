@@ -42,78 +42,118 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
   return sections;
 }
 
-function getUserFriendlyName(name: string): string {
+export function getUserFriendlyName(name: string): string {
   const lowerName = name.toLowerCase();
 
+  // Remove trailing numbers and any text that follows them (like _2473, _2456_Name, etc.)
+  // This regex matches underscore followed by 1 or more digits, optionally followed by anything until end of string
+  let cleanedName = name.replace(/_\d+.*$/, '').trim();
+  
+  // Also handle cases where there might be spaces before numbers
+  cleanedName = cleanedName.replace(/\s+\d+.*$/, '').trim();
+  
+  const lowerCleanedName = cleanedName.toLowerCase();
+
   // Front/Back detection
-  if (lowerName.includes("front") && !lowerName.includes("back")) {
+  if (lowerCleanedName.includes("front") && !lowerCleanedName.includes("back")) {
     return "Front Panel";
   }
-  if (lowerName.includes("back") && !lowerName.includes("front")) {
+  if (lowerCleanedName.includes("back") && !lowerCleanedName.includes("front")) {
     return "Back Panel";
   }
-  if (lowerName.includes("left") && !lowerName.includes("right")) {
+  if (lowerCleanedName.includes("left") && !lowerCleanedName.includes("right")) {
     return "Left Side";
   }
-  if (lowerName.includes("right") && !lowerName.includes("left")) {
+  if (lowerCleanedName.includes("right") && !lowerCleanedName.includes("left")) {
     return "Right Side";
   }
 
-  // Common clothing terms
-  if (lowerName.includes("sleeve")) {
+  // Common clothing terms - be more specific with matching
+  if (lowerCleanedName.includes("sleeve") && !lowerCleanedName.includes("sleeveless")) {
     return "Sleeve";
   }
-  if (lowerName.includes("collar") || lowerName.includes("neck")) {
+  if ((lowerCleanedName.includes("collar") || lowerCleanedName.includes("neck")) && 
+      !lowerCleanedName.includes("collar stay") && !lowerCleanedName.includes("collarbone")) {
     return "Collar/Neck";
   }
-  if (lowerName.includes("hood")) {
+  if (lowerCleanedName.includes("hood") && !lowerCleanedName.includes("hooded")) {
     return "Hood";
   }
-  if (lowerName.includes("pocket")) {
+  if (lowerCleanedName.includes("pocket") && !lowerCleanedName.includes("pocketless")) {
     return "Pocket";
   }
-  if (lowerName.includes("logo") || lowerName.includes("emblem")) {
+  if (lowerCleanedName.includes("logo") || lowerCleanedName.includes("emblem")) {
     return "Logo/Emblem";
   }
-  if (lowerName.includes("number") || lowerName.includes("num")) {
+  if ((lowerCleanedName.includes("number") || lowerCleanedName.includes("num")) && 
+      !lowerCleanedName.includes("numberless")) {
     return "Number";
   }
-  if (lowerName.includes("stripe") || lowerName.includes("strip")) {
+  if (lowerCleanedName.includes("stripe") || lowerCleanedName.includes("strip")) {
     return "Stripe";
   }
-  if (lowerName.includes("trim") || lowerName.includes("piping")) {
+  if (lowerCleanedName.includes("trim") || lowerCleanedName.includes("piping")) {
     return "Trim/Piping";
+  }
+  if (lowerCleanedName.includes("button") && !lowerCleanedName.includes("buttonless")) {
+    // More specific button matching
+    if (lowerCleanedName.includes("buttonhole")) {
+      return "Buttonhole";
+    }
+    return "Button";
+  }
+  if (lowerCleanedName.includes("topstitch")) {
+    return "Topstitch";
+  }
+  if (lowerCleanedName.includes("strap")) {
+    return "Strap";
+  }
+  if (lowerCleanedName.includes("brim")) {
+    return "Brim";
   }
 
   // Body parts
-  if (lowerName.includes("body") || lowerName.includes("main")) {
-    return "Main Body";
+  if ((lowerCleanedName.includes("body") || lowerCleanedName.includes("main")) && 
+      !lowerCleanedName.includes("bodyless") && !lowerCleanedName.includes("mainly")) {
+    // More specific body matching
+    if (lowerCleanedName.includes("main body")) {
+      return "Main Body";
+    }
+    if (lowerCleanedName.includes("body")) {
+      return "Body";
+    }
+    return "Main";
   }
-  if (lowerName.includes("chest") || lowerName.includes("torso")) {
+  if ((lowerCleanedName.includes("chest") || lowerCleanedName.includes("torso")) && 
+      !lowerCleanedName.includes("chest pocket")) {
     return "Chest/Torso";
   }
-  if (lowerName.includes("arm")) {
+  if (lowerCleanedName.includes("arm") && !lowerCleanedName.includes("armor")) {
     return "Arm";
   }
-  if (lowerName.includes("leg") || lowerName.includes("pant")) {
+  if ((lowerCleanedName.includes("leg") || lowerCleanedName.includes("pant")) && 
+      !lowerCleanedName.includes("legend")) {
     return "Leg/Pant";
   }
 
   // Generic fallbacks
-  if (lowerName.includes("panel")) {
+  if (lowerCleanedName.includes("panel") && !lowerCleanedName.includes("paneling")) {
     return "Panel";
   }
-  if (lowerName.includes("part") || lowerName.includes("section")) {
+  if ((lowerCleanedName.includes("part") || lowerCleanedName.includes("section")) && 
+      !lowerCleanedName.includes("partial")) {
     return "Section";
   }
 
   // If we can't determine a better name, use a cleaner version
-  const cleaned = name.replace(/^Material\s+\d+/i, "").trim();
-  return cleaned || `Material ${name}`;
+  const finalCleaned = cleanedName.replace(/^Material\s+\d+/i, "").trim();
+  return finalCleaned || `Material ${cleanedName}`;
 }
 
-function categorizeMaterial(name: string): MaterialSection["category"] {
-  const lowerName = name.toLowerCase();
+export function categorizeMaterial(name: string): MaterialSection["category"] {
+  // Remove trailing numbers and any text that follows them for categorization
+  const cleanedName = name.replace(/_\d+.*$/, '').trim();
+  const lowerName = cleanedName.toLowerCase();
 
   // Front/Back categorization
   if (lowerName.includes("front") || lowerName.includes("back")) {

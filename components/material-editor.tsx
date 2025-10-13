@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 function getSectionBadge(section: any) {
-  const name = section.originalName?.toLowerCase() || section.name.toLowerCase();
+  // Use the user-friendly name instead of original name for badge detection
+  const name = section.name.toLowerCase();
 
   if (name.includes("front") && !name.includes("back")) {
     return { text: "Front", variant: "default" as const };
@@ -53,12 +54,12 @@ export function MaterialEditor() {
 
   // Get front/back sections for quick toggle
   const frontSections = sections.filter(section =>
-    (section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("front") &&
-    !(section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("back")
+    section.name.toLowerCase().includes("front") &&
+    !section.name.toLowerCase().includes("back")
   );
   const backSections = sections.filter(section =>
-    (section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("back") &&
-    !(section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("front")
+    section.name.toLowerCase().includes("back") &&
+    !section.name.toLowerCase().includes("front")
   );
 
   return (
