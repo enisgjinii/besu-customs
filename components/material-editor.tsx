@@ -1,8 +1,28 @@
 "use client";
 
 import { useConfiguratorStore } from "@/lib/store";
-import { Palette, Sliders, Link2, Unlink } from "lucide-react";
+import { Palette, Sliders, Link2, Unlink, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+function getSectionBadge(section: any) {
+  const name = section.originalName?.toLowerCase() || section.name.toLowerCase();
+
+  if (name.includes("front") && !name.includes("back")) {
+    return { text: "Front", variant: "default" as const };
+  }
+  if (name.includes("back") && !name.includes("front")) {
+    return { text: "Back", variant: "secondary" as const };
+  }
+  if (name.includes("left") && !name.includes("right")) {
+    return { text: "Left", variant: "outline" as const };
+  }
+  if (name.includes("right") && !name.includes("left")) {
+    return { text: "Right", variant: "outline" as const };
+  }
+
+  return null;
+}
 
 export function MaterialEditor() {
   const sections = useConfiguratorStore((state) => state.sections);
@@ -31,6 +51,16 @@ export function MaterialEditor() {
     {} as Record<string, typeof sections>,
   );
 
+  // Get front/back sections for quick toggle
+  const frontSections = sections.filter(section =>
+    (section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("front") &&
+    !(section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("back")
+  );
+  const backSections = sections.filter(section =>
+    (section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("back") &&
+    !(section.originalName?.toLowerCase() || section.name.toLowerCase()).includes("front")
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -49,6 +79,45 @@ export function MaterialEditor() {
             </button>
           )}
         </div>
+
+        {/* Front/Back Quick Toggle */}
+        {(frontSections.length > 0 || backSections.length > 0) && (
+          <div className="mb-4 p-3 bg-secondary/20 rounded-lg">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Quick Select:</span>
+            </div>
+            <div className="flex gap-2">
+              {frontSections.length > 0 && (
+                <Button
+                  size="sm"
+                  variant={frontSections.some(s => s.id === selectedSectionId) ? "default" : "outline"}
+                  onClick={() => {
+                    // Select the first front section if multiple
+                    const frontSection = frontSections[0];
+                    if (frontSection) setSelectedSection(frontSection.id);
+                  }}
+                  className="flex-1 text-xs"
+                >
+                  Front Panel
+                </Button>
+              )}
+              {backSections.length > 0 && (
+                <Button
+                  size="sm"
+                  variant={backSections.some(s => s.id === selectedSectionId) ? "default" : "outline"}
+                  onClick={() => {
+                    // Select the first back section if multiple
+                    const backSection = backSections[0];
+                    if (backSection) setSelectedSection(backSection.id);
+                  }}
+                  className="flex-1 text-xs"
+                >
+                  Back Panel
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         {selectedSectionId && linkedSections.size > 0 && (
           <div className="mb-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
@@ -72,6 +141,7 @@ export function MaterialEditor() {
                   {categorySections.map((section) => {
                     const isSelected = selectedSectionId === section.id;
                     const isLinked = linkedSections.has(section.id);
+                    const badge = getSectionBadge(section);
 
                     return (
                       <div
@@ -86,14 +156,31 @@ export function MaterialEditor() {
                               : "bg-secondary/30 hover:bg-secondary/50"
                             }`}
                         >
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center justify-start gap-2.5">
                             <div
                               className="w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-border/50 shadow-sm"
                               style={{ backgroundColor: section.color }}
                             />
-                            <span className="truncate font-medium flex-1">
-                              {section.name}
-                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate font-medium">
+                                  {section.name}
+                                </span>
+                                {badge && (
+                                  <Badge
+                                    variant={badge.variant}
+                                    className="text-xs px-1.5 py-0.5 flex-shrink-0"
+                                  >
+                                    {badge.text}
+                                  </Badge>
+                                )}
+                              </div>
+                              {section.originalName !== section.name && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {section.originalName}
+                                </div>
+                              )}
+                            </div>
                             {isLinked && (
                               <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                             )}
@@ -127,10 +214,17 @@ export function MaterialEditor() {
 
       {selectedSection && (
         <div className="border-t border-border/50 pt-6">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <Sliders className="w-4 h-4" />
-            Editing: {selectedSection.name}
-          </h3>
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Sliders className="w-4 h-4" />
+              Editing: {selectedSection.name}
+            </h3>
+            {selectedSection.originalName !== selectedSection.name && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Original material: {selectedSection.originalName}
+              </p>
+            )}
+          </div>
 
           <div className="space-y-4">
             {selectedSection.customTexture && (
@@ -435,6 +529,22 @@ export function MaterialEditor() {
           </div>
         </div>
       )}
+
+      {/* Help Section */}
+      <div className="border-t border-border/50 pt-4">
+        <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+          <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">
+            💡 How to Use
+          </h4>
+          <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
+            <li>• Click on any material section to select and edit it</li>
+            <li>• Use the "Front Panel" / "Back Panel" buttons for quick switching</li>
+            <li>• Front/Back badges show which side each section controls</li>
+            <li>• Link sections together to edit them simultaneously</li>
+            <li>• Upload custom textures in the UV Editor tab</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
