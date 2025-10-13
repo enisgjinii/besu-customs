@@ -87,6 +87,10 @@ export interface OnboardingState {
   getFilteredSteps: () => OnboardingStep[];
   getProgress: () => { completed: number; total: number; percentage: number };
   getEstimatedTimeRemaining: () => number;
+  
+  // New automatic functions
+  autoCompleteSteps: () => void;
+  autoSwitchTabs: () => void;
 }
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -125,6 +129,45 @@ export const useOnboardingStore = create<OnboardingState>()(
       customSteps: [],
       currentStepTime: 0,
       totalEstimatedTime: 0,
+      
+      // Add a new function to automatically complete steps 8-19
+      autoCompleteSteps: async () => {
+        const { steps, goToStep, nextStep } = get();
+        
+        // Start from step 8 (index 7) and go through step 19 (index 18)
+        for (let i = 7; i <= 18 && i < steps.length; i++) {
+          // Go to the step
+          goToStep(i);
+          
+          // Execute the step's action if it exists
+          if (steps[i].action) {
+            steps[i].action!();
+          }
+          
+          // Wait for the step to complete
+          await new Promise(resolve => setTimeout(resolve, steps[i].delay || 2000));
+          
+          // Move to next step
+          nextStep();
+        }
+      },
+      
+      // Add a function to automatically switch tabs
+      autoSwitchTabs: async () => {
+        const tabs = ['materials', 'texture', 'view'];
+        
+        for (const tab of tabs) {
+          // Find and click the tab button
+          const tabButton = document.querySelector(`[data-tab="${tab}"]`);
+          if (tabButton) {
+            (tabButton as HTMLElement).click();
+          }
+          
+          // Wait before switching to next tab
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      },
+      
       steps: [
         {
           id: 'welcome',
@@ -180,6 +223,30 @@ export const useOnboardingStore = create<OnboardingState>()(
           estimatedTime: 30,
           tips: ['Each material part can be customized independently', 'Use the color picker for precise colors', 'Save your favorite materials'],
           userTypes: ['beginner', 'designer', 'business'],
+          action: () => {
+            // Switch to materials tab and select the first material
+            setTimeout(() => {
+              // Find and click the materials tab
+              const materialsTab = document.querySelector('[data-tab="materials"]');
+              if (materialsTab) {
+                (materialsTab as HTMLElement).click();
+              }
+              
+              // Wait for tab to switch and then select first material
+              setTimeout(() => {
+                const materialButtons = document.querySelectorAll('[data-tour="material-editor"] button');
+                if (materialButtons.length > 0) {
+                  // Click the first material section button
+                  const firstMaterialButton = Array.from(materialButtons).find(button => 
+                    button.textContent && !button.textContent.includes('Panel')
+                  );
+                  if (firstMaterialButton) {
+                    (firstMaterialButton as HTMLElement).click();
+                  }
+                }
+              }, 500);
+            }, 500);
+          }
         },
         {
           id: 'color-picker',
@@ -187,6 +254,44 @@ export const useOnboardingStore = create<OnboardingState>()(
           description: 'Pick colors from the palette or use the color picker for precise color matching.',
           target: '[data-tour="color-picker"]',
           position: 'top',
+          action: () => {
+            // Automatically open the color picker, select a color, and close the modal
+            setTimeout(() => {
+              const colorPickerButton = document.querySelector('[data-tour="color-picker"]');
+              if (colorPickerButton) {
+                (colorPickerButton as HTMLElement).click();
+                
+                // Wait for the color picker modal to open and select a random color
+                setTimeout(() => {
+                  // Try to select a team color first
+                  const teamColorButtons = document.querySelectorAll('.team-colors button, [data-tour="color-picker-modal"] .grid button');
+                  if (teamColorButtons.length > 0) {
+                    // Select a random team color
+                    const randomIndex = Math.floor(Math.random() * Math.min(3, teamColorButtons.length));
+                    (teamColorButtons[randomIndex] as HTMLElement).click();
+                  } else {
+                    // Fallback to basic colors
+                    const basicColorButtons = document.querySelectorAll('.basic-colors button, .grid button');
+                    if (basicColorButtons.length > 0) {
+                      const randomIndex = Math.floor(Math.random() * Math.min(5, basicColorButtons.length));
+                      (basicColorButtons[randomIndex] as HTMLElement).click();
+                    }
+                  }
+                  
+                  // The modal should close automatically after color selection
+                  // But just in case, try to close it explicitly
+                  setTimeout(() => {
+                    const closeButtons = document.querySelectorAll(
+                      '[data-tour="color-picker-modal"] .close-button, [data-tour="color-picker-modal"] .h-8.w-8, [aria-label="Close"]'
+                    );
+                    if (closeButtons.length > 0) {
+                      (closeButtons[0] as HTMLElement).click();
+                    }
+                  }, 300);
+                }, 500);
+              }
+            }, 500);
+          }
         },
         {
           id: 'texture-upload',
@@ -194,6 +299,15 @@ export const useOnboardingStore = create<OnboardingState>()(
           description: 'Upload your own textures and images to apply custom designs to your models.',
           target: '[data-tour="texture-upload"]',
           position: 'top',
+          action: () => {
+            // Switch to the texture tab
+            setTimeout(() => {
+              const textureTab = document.querySelector('[data-tab="texture"]');
+              if (textureTab) {
+                (textureTab as HTMLElement).click();
+              }
+            }, 500);
+          }
         },
         {
           id: 'ai-generator',
@@ -205,27 +319,80 @@ export const useOnboardingStore = create<OnboardingState>()(
           estimatedTime: 45,
           tips: ['Be descriptive in your prompts', 'Try different styles like "watercolor", "metallic", "fabric"', 'Generated images can be saved for later use'],
           userTypes: ['designer', 'business'],
+          action: () => {
+            // Switch to the texture tab for AI generator
+            setTimeout(() => {
+              const textureTab = document.querySelector('[data-tab="texture"]');
+              if (textureTab) {
+                (textureTab as HTMLElement).click();
+              }
+            }, 500);
+          }
         },
         {
-          id: 'ai-prompt',
-          title: '✍️ Craft Your Vision',
-          description: 'Describe your ideal texture! Be specific about colors, patterns, materials, and styles. Example: "Blue denim with silver threads"',
-          target: '[data-tour="ai-prompt"]',
-          position: 'bottom',
-          category: 'advanced',
-          estimatedTime: 20,
-          tips: ['Include colors, materials, and patterns', 'Try adding style keywords like "vintage", "modern", "grunge"', 'Experiment with lighting terms like "glossy", "matte", "metallic"'],
-          shortcuts: [{ key: 'Enter', description: 'Generate image' }],
-        },
-        {
-          id: 'ai-generate',
-          title: '🎯 Generate & Apply Magic',
-          description: 'Hit generate to create your AI masterpiece, then drag and drop it onto any material section to see it come to life!',
-          target: '[data-tour="ai-generate"]',
+          id: 'link-materials',
+          title: '🔗 Link Materials',
+          description: 'Link multiple material sections to apply the same changes to all of them simultaneously.',
+          target: '[data-tour="material-editor"] .absolute.right-2.top-1\\/2',
           position: 'top',
-          category: 'advanced',
-          estimatedTime: 25,
-          tips: ['Generation takes 10-30 seconds', 'You can generate multiple variations', 'Generated textures work on all material types'],
+          action: () => {
+            // Automatically link materials
+            setTimeout(() => {
+              // Find the first link button and click it
+              const linkButtons = document.querySelectorAll('[data-tour="material-editor"] .absolute.right-2.top-1\\/2');
+              if (linkButtons.length > 0) {
+                (linkButtons[0] as HTMLElement).click();
+              }
+            }, 500);
+          }
+        },
+        {
+          id: 'save-preset',
+          title: '💾 Save Your Work',
+          description: 'Save your current configuration as a preset for future use or sharing.',
+          target: '[data-tour="export-options"] .save-preset-button',
+          position: 'top',
+          action: () => {
+            // Automatically open save preset modal
+            setTimeout(() => {
+              const saveButton = document.querySelector('[data-tour="export-options"] .save-preset-button');
+              if (saveButton) {
+                (saveButton as HTMLElement).click();
+              }
+            }, 500);
+          }
+        },
+        {
+          id: 'export-model',
+          title: '📤 Export Your Creation',
+          description: 'Export your customized model in various formats for 3D printing or further editing.',
+          target: '[data-tour="export-options"] .export-button',
+          position: 'top',
+          action: () => {
+            // Automatically show export options
+            setTimeout(() => {
+              const exportButton = document.querySelector('[data-tour="export-options"] .export-button');
+              if (exportButton) {
+                (exportButton as HTMLElement).click();
+              }
+            }, 500);
+          }
+        },
+        {
+          id: 'export-options',
+          title: 'Export & Download',
+          description: 'Save your configuration or export images of your customized model.',
+          target: '[data-tour="export-options"]',
+          position: 'top',
+          action: () => {
+            // Switch to the view tab for export options
+            setTimeout(() => {
+              const viewTab = document.querySelector('[data-tab="view"]');
+              if (viewTab) {
+                (viewTab as HTMLElement).click();
+              }
+            }, 500);
+          }
         },
         {
           id: 'scene-controls',
@@ -233,6 +400,15 @@ export const useOnboardingStore = create<OnboardingState>()(
           description: 'Use these controls to rotate, zoom, and pan around your 3D model.',
           target: '[data-tour="scene-controls"]',
           position: 'bottom',
+          action: () => {
+            // Switch to the view tab for scene controls
+            setTimeout(() => {
+              const viewTab = document.querySelector('[data-tab="view"]');
+              if (viewTab) {
+                (viewTab as HTMLElement).click();
+              }
+            }, 500);
+          }
         },
         {
           id: 'camera-angles',
@@ -240,6 +416,15 @@ export const useOnboardingStore = create<OnboardingState>()(
           description: 'Quick camera angles to view your model from different perspectives.',
           target: '[data-tour="camera-angles"]',
           position: 'left',
+          action: () => {
+            // Switch to the view tab for camera angles
+            setTimeout(() => {
+              const viewTab = document.querySelector('[data-tab="view"]');
+              if (viewTab) {
+                (viewTab as HTMLElement).click();
+              }
+            }, 500);
+          }
         },
         {
           id: 'lighting-controls',
@@ -247,6 +432,15 @@ export const useOnboardingStore = create<OnboardingState>()(
           description: 'Adjust lighting intensity, color, and environment for better visualization.',
           target: '[data-tour="lighting-controls"]',
           position: 'top',
+          action: () => {
+            // Switch to the view tab for lighting controls
+            setTimeout(() => {
+              const viewTab = document.querySelector('[data-tab="view"]');
+              if (viewTab) {
+                (viewTab as HTMLElement).click();
+              }
+            }, 500);
+          }
         },
         {
           id: 'export-options',
@@ -261,6 +455,10 @@ export const useOnboardingStore = create<OnboardingState>()(
           description: 'On mobile devices, use this bottom navigation to quickly access main features.',
           target: '[data-tour="mobile-nav"]',
           position: 'top',
+          action: () => {
+            // Show mobile navigation (no tab switching needed)
+            console.log('Showing mobile navigation');
+          }
         },
         {
           id: 'responsive-design',
@@ -269,6 +467,32 @@ export const useOnboardingStore = create<OnboardingState>()(
           position: 'center',
           autoAdvance: true,
           delay: 1500,
+        },
+        {
+          id: 'auto-complete',
+          title: 'Auto Complete Tour',
+          description: 'Automatically complete the remaining steps of the tour.',
+          position: 'center',
+          action: () => {
+            // Automatically complete steps 8-19
+            setTimeout(() => {
+              const state = useOnboardingStore.getState();
+              state.autoCompleteSteps();
+            }, 500);
+          }
+        },
+        {
+          id: 'auto-tabs',
+          title: 'Auto Tab Switching',
+          description: 'Automatically switch between different tabs to explore the interface.',
+          position: 'center',
+          action: () => {
+            // Automatically switch tabs
+            setTimeout(() => {
+              const state = useOnboardingStore.getState();
+              state.autoSwitchTabs();
+            }, 500);
+          }
         },
         {
           id: 'final-tips',
@@ -288,7 +512,14 @@ export const useOnboardingStore = create<OnboardingState>()(
           shortcuts: [
             { key: 'Ctrl+S', description: 'Save project' },
             { key: 'Ctrl+E', description: 'Export image' }
-          ]
+          ],
+          action: () => {
+            // Automatically complete the onboarding when this step is reached
+            setTimeout(() => {
+              const state = useOnboardingStore.getState();
+              state.completeOnboarding();
+            }, 3500);
+          }
         },
       ],
 

@@ -35,6 +35,7 @@ export function Scene() {
   );
   const setGlRef = useConfiguratorStore((state) => state.setGlRef);
   const autoRotate = useConfiguratorStore((state) => state.autoRotate);
+  const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
   const controlsRef = useRef(null);
   const modelLoading = useConfiguratorStore((state) => state.modelLoading);
   const modelError = useConfiguratorStore((state) => state.modelError);
@@ -45,6 +46,12 @@ export function Scene() {
       setCameraControlsRef(controlsRef.current);
     }
   }, [setCameraControlsRef]);
+
+  // Ensure auto-rotation is disabled on initial load
+  useEffect(() => {
+    // Explicitly disable auto-rotation on component mount to ensure default behavior
+    setAutoRotate(false);
+  }, [setAutoRotate]);
 
   return (
     <div className="w-full h-full relative" data-tour="scene-controls">
@@ -68,7 +75,7 @@ export function Scene() {
           rotateSpeed={0.5}
           zoomSpeed={0.8}
           autoRotate={autoRotate}
-          autoRotateSpeed={2.0} // Increased rotation speed
+          autoRotateSpeed={2.0}
           touches={{
             ONE: THREE.TOUCH.ROTATE,
             TWO: THREE.TOUCH.DOLLY_PAN,

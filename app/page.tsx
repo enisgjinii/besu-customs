@@ -12,16 +12,18 @@ import {
   Save, 
   Share2 
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useConfiguratorStore } from "@/lib/store";
-import { useOnboardingStore } from "@/lib/onboarding-store"; // Correct import
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(420);
+  const [isResizing, setIsResizing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   
   const glRef = useConfiguratorStore((state) => state.glRef);
   const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
@@ -29,7 +31,38 @@ export default function Home() {
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
   
   // For testing purposes - add a button to trigger the tour
-  const { startOnboarding } = useOnboardingStore();
+
+  // Handle mouse events for resizing
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+  };
+
+  const resize = (e: MouseEvent) => {
+    if (isResizing && sidebarRef.current) {
+      const newWidth = e.clientX - sidebarRef.current.getBoundingClientRect().left;
+      if (newWidth > 300 && newWidth < 800) { // Min 300px, max 800px
+        setSidebarWidth(newWidth);
+      }
+    }
+  };
+
+  // Add event listeners for resizing
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', resize);
+      document.addEventListener('mouseup', stopResizing);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', resize);
+      document.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing]);
 
   const handleScreenshot = () => {
     // Use the canvas element directly instead of calling renderer.render()
@@ -188,28 +221,30 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden">
-      {/* Test button for triggering onboarding - REMOVE IN PRODUCTION */}
-      <div className="fixed top-20 right-4 z-50">
-        <Button 
-          onClick={() => startOnboarding()} 
-          className="bg-purple-600 hover:bg-purple-700 text-white"
+      {/* Desktop: Unified Left Sidebar with Resizable Handle */}
+      <div className="hidden md:flex h-full" ref={sidebarRef}>
+        <aside
+          className={`flex-col h-full border-r border-border/50 bg-card transition-all duration-300 ease-in-out ${
+            sidebarOpen ? "opacity-100" : "opacity-0 w-0"
+          }`}
+          style={{ width: sidebarOpen ? `${sidebarWidth}px` : '0px' }}
+          data-tour="sidebar"
         >
-          Start Tour
-        </Button>
+          <div className={`h-full ${sidebarOpen ? "block" : "hidden"}`}>
+            <UnifiedSidebar sidebarOpen={sidebarOpen} onToggleSidebar={setSidebarOpen} />
+          </div>
+        </aside>
+        
+        {/* Resizable Handle */}
+        {sidebarOpen && (
+          <div
+            className="w-2 cursor-col-resize bg-border/30 hover:bg-primary/30 transition-colors flex items-center justify-center"
+            onMouseDown={startResizing}
+          >
+            <div className="w-0.5 h-8 bg-border/50 rounded-full"></div>
+          </div>
+        )}
       </div>
-      
-      {/* Desktop: Unified Left Sidebar */}
-      <aside
-        className={`hidden md:flex flex-col h-full border-r border-border/50 bg-card transition-all duration-300 ease-in-out ${
-          sidebarOpen ? "w-[420px] opacity-100" : "w-0 opacity-0"
-        }`}
-        style={{ minWidth: sidebarOpen ? "420px" : "0px" }}
-        data-tour="sidebar"
-      >
-        <div className={`w-[420px] h-full ${sidebarOpen ? "block" : "hidden"}`}>
-          <UnifiedSidebar sidebarOpen={sidebarOpen} onToggleSidebar={setSidebarOpen} />
-        </div>
-      </aside>
 
       {/* Expand sidebar button when collapsed */}
       {!sidebarOpen && (

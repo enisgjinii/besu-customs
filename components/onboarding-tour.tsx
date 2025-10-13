@@ -323,6 +323,99 @@ function Tooltip({
     }
   };
 
+  // Function to automatically select a material
+  const selectMaterial = () => {
+    // Wait a bit for the model to load and materials to be available
+    setTimeout(() => {
+      // Try to find the first material section button
+      const materialButtons = document.querySelectorAll('[data-tour="material-editor"] button');
+      if (materialButtons.length > 0) {
+        // Click the first material section button (not the quick select buttons)
+        const firstMaterialButton = Array.from(materialButtons).find(button => 
+          button.textContent && !button.textContent.includes('Panel')
+        );
+        if (firstMaterialButton) {
+          (firstMaterialButton as HTMLElement).click();
+        } else {
+          // Fallback: click the first button if no specific one found
+          (materialButtons[0] as HTMLElement).click();
+        }
+      }
+    }, 1000);
+  };
+
+  // Function to apply a sample texture
+  const applySampleTexture = () => {
+    // This would simulate applying a sample texture
+    console.log('Applying sample texture...');
+    
+    // In a real implementation, this would:
+    // 1. Open the texture upload panel
+    // 2. Select a sample texture
+    // 3. Apply it to the selected material
+    
+    // For now, we'll just show a message
+    alert('In a real implementation, this would apply a sample texture to the selected material.');
+  };
+
+  // Function to automatically select a color and close the modal
+  const autoSelectColor = () => {
+    // Open the color picker modal
+    const colorPickerButton = document.querySelector('[data-tour="color-picker"]');
+    if (colorPickerButton) {
+      (colorPickerButton as HTMLElement).click();
+      
+      // Wait for modal to open and select a color
+      setTimeout(() => {
+        // Try to select a team color first
+        const teamColorButtons = document.querySelectorAll('.team-colors button, [data-tour="color-picker-modal"] .grid button');
+        if (teamColorButtons.length > 0) {
+          // Select a random team color
+          const randomIndex = Math.floor(Math.random() * Math.min(3, teamColorButtons.length));
+          (teamColorButtons[randomIndex] as HTMLElement).click();
+        } else {
+          // Fallback to basic colors
+          const basicColorButtons = document.querySelectorAll('.basic-colors button, .grid button');
+          if (basicColorButtons.length > 0) {
+            const randomIndex = Math.floor(Math.random() * Math.min(5, basicColorButtons.length));
+            (basicColorButtons[randomIndex] as HTMLElement).click();
+          }
+        }
+        
+        // The modal should close automatically after color selection
+        // But just in case, try to close it explicitly
+        setTimeout(() => {
+          const closeButtons = document.querySelectorAll(
+            '[data-tour="color-picker-modal"] .close-button, [data-tour="color-picker-modal"] .h-8.w-8, [aria-label="Close"]'
+          );
+          if (closeButtons.length > 0) {
+            (closeButtons[0] as HTMLElement).click();
+          }
+        }, 300);
+      }, 500);
+    }
+  };
+
+  // Function to automatically switch tabs
+  const autoSwitchTabs = () => {
+    const tabs = ['materials', 'texture', 'view'];
+    
+    tabs.forEach((tab, index) => {
+      setTimeout(() => {
+        const tabButton = document.querySelector(`[data-tab="${tab}"]`);
+        if (tabButton) {
+          (tabButton as HTMLElement).click();
+        }
+      }, index * 1500);
+    });
+  };
+
+  // Function to automatically complete steps 8-19
+  const autoCompleteSteps = () => {
+    const store = useOnboardingStore.getState();
+    store.autoCompleteSteps();
+  };
+
   return (
     <div className="fixed bottom-4 right-4 z-50 w-80 animate-in slide-in-from-bottom-4 duration-300">
       <Card className="shadow-lg border border-primary/20 bg-background/95 backdrop-blur-lg overflow-hidden">
@@ -393,6 +486,121 @@ function Tooltip({
               onClick={selectModel}
             >
               Load Sample Model
+            </Button>
+          )}
+
+          {step.id === 'material-editor' && (
+            <Button 
+              size="sm" 
+              className="w-full text-xs h-7"
+              onClick={selectMaterial}
+            >
+              Select First Material
+            </Button>
+          )}
+
+          {step.id === 'color-picker' && (
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                className="flex-1 text-xs h-7"
+                onClick={autoSelectColor}
+              >
+                Auto Select Color
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="text-xs h-7"
+                onClick={() => {
+                  // Just open the color picker modal
+                  const colorPickerButton = document.querySelector('[data-tour="color-picker"]');
+                  if (colorPickerButton) {
+                    (colorPickerButton as HTMLElement).click();
+                  }
+                }}
+              >
+                Open Picker
+              </Button>
+            </div>
+          )}
+
+          {step.id === 'texture-upload' && (
+            <Button 
+              size="sm" 
+              className="w-full text-xs h-7"
+              onClick={applySampleTexture}
+            >
+              Apply Sample Texture
+            </Button>
+          )}
+
+          {step.id === 'link-materials' && (
+            <Button 
+              size="sm" 
+              className="w-full text-xs h-7"
+              onClick={() => {
+                // Link materials
+                // Fixed the CSS selector by escaping the forward slash or using a different approach
+                const linkButtons = document.querySelectorAll('[data-tour="material-editor"] .absolute.right-2.top-1\\/2');
+                if (linkButtons.length > 0) {
+                  (linkButtons[0] as HTMLElement).click();
+                }
+              }}
+            >
+              Link First Two Materials
+            </Button>
+          )}
+
+          {step.id === 'auto-complete' && (
+            <Button 
+              size="sm" 
+              className="w-full text-xs h-7"
+              onClick={autoCompleteSteps}
+            >
+              Auto Complete Steps 8-19
+            </Button>
+          )}
+
+          {step.id === 'auto-tabs' && (
+            <Button 
+              size="sm" 
+              className="w-full text-xs h-7"
+              onClick={autoSwitchTabs}
+            >
+              Auto Switch Tabs
+            </Button>
+          )}
+
+          {step.id === 'save-preset' && (
+            <Button 
+              size="sm" 
+              className="w-full text-xs h-7"
+              onClick={() => {
+                // Save preset
+                const saveButton = document.querySelector('[data-tour="export-options"] .save-preset-button');
+                if (saveButton) {
+                  (saveButton as HTMLElement).click();
+                }
+              }}
+            >
+              Save Preset
+            </Button>
+          )}
+
+          {step.id === 'export-model' && (
+            <Button 
+              size="sm" 
+              className="w-full text-xs h-7"
+              onClick={() => {
+                // Export model
+                const exportButton = document.querySelector('[data-tour="export-options"] .export-button');
+                if (exportButton) {
+                  (exportButton as HTMLElement).click();
+                }
+              }}
+            >
+              Export Model
             </Button>
           )}
 
@@ -604,7 +812,7 @@ export function OnboardingTour() {
     }, 1000); // Check every second
 
     return () => clearInterval(conflictCheckInterval);
-  }, [isActive, isTransitioning, checkModalConflicts, hasModalConflict]);
+  }, [ isActive, isTransitioning, checkModalConflicts, hasModalConflict]);
 
   // Enhanced keyboard and interaction handling
   useEffect(() => {
@@ -771,6 +979,20 @@ export function OnboardingTour() {
       </div>
 
       {/* Advanced Progress Navigator */}
+      {/* Step text - Moved outside and made bigger */}
+      <div className={`fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="text-center">
+          <div className="text-lg font-bold text-foreground">
+            Step {currentStep + 1} of {steps.length}
+          </div>
+          {currentStepData?.title && (
+            <div className="text-sm text-muted-foreground mt-1 max-w-md">
+              {currentStepData.title}
+            </div>
+          )}
+        </div>
+      </div>
+      
       <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <div className="bg-background/95 backdrop-blur-xl rounded-xl px-4 py-3 shadow-xl border border-muted/30">
           <div className="flex items-center gap-3">
@@ -800,7 +1022,7 @@ export function OnboardingTour() {
                     className={`relative transition-all duration-200 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/30 ${
                       isCurrent
                         ? 'w-2.5 h-2.5 bg-primary shadow-md scale-125'
-                        : isCompleted
+                      : isCompleted
                         ? 'w-2 h-2 bg-emerald-500 hover:scale-110'
                         : 'w-2 h-2 bg-muted-foreground/40 hover:bg-muted-foreground/60 hover:scale-110'
                     } ${
