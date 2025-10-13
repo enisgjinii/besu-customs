@@ -40,6 +40,13 @@ export function MaterialEditor() {
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
+  // Add tour targets
+  const tourTargets = {
+    'material-editor': true,
+    'color-picker': 'material-color-picker',
+    'texture-upload': 'material-texture-upload',
+  };
+
   // Group sections by category
   const groupedSections = sections.reduce(
     (acc, section) => {
@@ -63,7 +70,7 @@ export function MaterialEditor() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="material-editor">
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -250,6 +257,7 @@ export function MaterialEditor() {
                 }
                 className="w-full h-10 rounded-md border border-input cursor-pointer"
                 disabled={!!selectedSection.customTexture || !!selectedSection.gradient?.enabled}
+                data-tour="color-picker"
               />
               {selectedSection.customTexture && (
                 <p className="text-xs text-muted-foreground mt-1">

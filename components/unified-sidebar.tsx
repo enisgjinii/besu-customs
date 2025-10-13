@@ -395,7 +395,7 @@ export function UnifiedSidebar() {
         </div>
 
         {/* Model Dropdown */}
-        <div>
+        <div data-tour="model-loader">
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
             Select Model
           </label>
@@ -511,7 +511,7 @@ export function UnifiedSidebar() {
                 />
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 space-y-2">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2" data-tour="camera-angles">
                   <Button
                     variant="outline"
                     size="sm"
@@ -561,6 +561,7 @@ export function UnifiedSidebar() {
                   size="sm"
                   onClick={toggleGrid}
                   className="w-full justify-start"
+                  data-tour="lighting-controls"
                 >
                   <Grid3x3 className="w-4 h-4 mr-2" />
                   {showGrid ? "Hide Grid" : "Show Grid"}
@@ -698,6 +699,7 @@ export function UnifiedSidebar() {
                   size="sm"
                   onClick={handleExport}
                   className="w-full justify-start"
+                  data-tour="export-options"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export Preset (JSON)

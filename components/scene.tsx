@@ -31,7 +31,7 @@ export function Scene() {
   }, [setCameraControlsRef]);
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative" data-tour="scene-controls">
       <Canvas
         shadows
         gl={{ preserveDrawingBuffer: true, antialias: true }}

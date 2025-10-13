@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, Download, Paintbrush } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Sparkles, Download, Paintbrush, Key, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -22,6 +23,8 @@ export function AIImageGenerator() {
   const [generatedImages, setGeneratedImages] = useState<Array<{ imageURL: string; imageUUID: string }>>([]);
   const [selectedSection, setSelectedSection] = useState<string>("");
   const [usage, setUsage] = useState<{ limit: number; used: number; remaining: number } | null>(null);
+  const [userApiMode, setUserApiMode] = useState(false);
+  const [userApiKey, setUserApiKey] = useState("");
   
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
@@ -32,13 +35,24 @@ export function AIImageGenerator() {
       return;
     }
 
+    if (userApiMode && !userApiKey.trim()) {
+      toast.error("Please enter your API key");
+      return;
+    }
+
     setLoading(true);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (userApiMode && userApiKey.trim()) {
+        headers["x-user-api-key"] = userApiKey.trim();
+      }
+
       const response = await fetch("/api/generate-image", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           prompt,
           width: 512,
@@ -56,6 +70,8 @@ export function AIImageGenerator() {
       setGeneratedImages(data.images);
       if (data.usage) {
         setUsage(data.usage);
+      } else {
+        setUsage(null);
       }
       toast.success("Image generated successfully!");
     } catch (error) {
@@ -111,7 +127,7 @@ export function AIImageGenerator() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="ai-generator">
       <div className="space-y-2">
         <Label htmlFor="ai-prompt" className="flex items-center gap-2">
           <Sparkles className="w-4 h-4" />
@@ -128,20 +144,79 @@ export function AIImageGenerator() {
             }
           }}
           disabled={loading}
+          data-tour="ai-prompt"
         />
       </div>
 
+      {/* User API Mode Toggle */}
+      <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+        <div className="flex items-center gap-2">
+          <Key className="w-4 h-4" />
+          <Label htmlFor="user-api-mode" className="text-sm font-medium">
+            Use My API Key
+          </Label>
+        </div>
+        <Switch
+          id="user-api-mode"
+          checked={userApiMode}
+          onCheckedChange={setUserApiMode}
+        />
+      </div>
+
+      {/* User API Key Input */}
+      {userApiMode && (
+        <div className="space-y-2">
+          <Label htmlFor="user-api-key" className="flex items-center gap-2">
+            <Key className="w-4 h-4" />
+            Your Runware API Key
+          </Label>
+          <Input
+            id="user-api-key"
+            type="password"
+            placeholder="Enter your Runware API key..."
+            value={userApiKey}
+            onChange={(e) => setUserApiKey(e.target.value)}
+            disabled={loading}
+          />
+          <p className="text-xs text-muted-foreground">
+            Your API key will be used for image generation (3 uses per day)
+          </p>
+        </div>
+      )}
+
       {/* Usage Information */}
       {usage && (
-        <div className="text-xs text-muted-foreground bg-secondary/20 p-2 rounded-md">
-          API Usage: {usage.used}/{usage.limit} calls used ({usage.remaining} remaining)
+        <div className={`text-xs p-2 rounded-md ${
+          usage.remaining === 0
+            ? 'text-destructive bg-destructive/10 border border-destructive/20'
+            : 'text-muted-foreground bg-secondary/20'
+        }`}>
+          <div className="flex items-center gap-1 mb-1">
+            {usage.remaining === 0 ? (
+              <AlertCircle className="w-3 h-3" />
+            ) : (
+              <Sparkles className="w-3 h-3" />
+            )}
+            <span className="font-medium">
+              {userApiMode ? 'Your API Usage' : 'System API Usage'}
+            </span>
+          </div>
+          <div>
+            {usage.used}/{usage.limit} calls used ({usage.remaining} remaining)
+          </div>
+          {usage.remaining === 0 && (
+            <div className="text-xs text-destructive mt-1">
+              Limit reached! Switch to system API or wait until tomorrow.
+            </div>
+          )}
         </div>
       )}
 
       <Button
         onClick={handleGenerate}
-        disabled={loading || !prompt.trim() || (usage?.remaining === 0)}
+        disabled={loading || !prompt.trim() || (userApiMode && !userApiKey.trim()) || (usage?.remaining === 0 && userApiMode)}
         className="w-full"
+        data-tour="ai-generate"
       >
         {loading ? (
           <>

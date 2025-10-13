@@ -60,7 +60,7 @@ export function UploadPanel() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="texture-upload">
       <div
         onDragOver={(e) => {
           e.preventDefault();

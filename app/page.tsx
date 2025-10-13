@@ -17,6 +17,7 @@ export default function Home() {
           sidebarOpen ? "w-[420px] opacity-100" : "w-0 opacity-0"
         }`}
         style={{ minWidth: sidebarOpen ? "420px" : "0px" }}
+        data-tour="sidebar"
       >
         <div className={`w-[420px] h-full ${sidebarOpen ? "block" : "hidden"}`}>
           <UnifiedSidebar />
@@ -47,6 +48,9 @@ export default function Home() {
 
       {/* Mobile: Bottom Navigation */}
       <MobileBottomNav />
+
+      {/* Mobile Navigation Tour Target */}
+
     </div>
   );
 }

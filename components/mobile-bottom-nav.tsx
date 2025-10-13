@@ -120,7 +120,7 @@ export function MobileBottomNav() {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50" data-tour="mobile-nav">
       {/* Expanded Panel */}
       <div
         className={`bg-card border-t border-border/50 transition-all duration-300 ease-in-out overflow-hidden ${
