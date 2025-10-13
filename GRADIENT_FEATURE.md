@@ -46,19 +46,5 @@ gradient?: {
 - Add/Remove color buttons
 - Live gradient preview
 
-#### Model Utils (`lib/model-utils.ts`)
-- `createGradientTexture()`: Generates canvas-based gradient texture
-- Updated `applyMaterialUpdates()`: Applies gradient textures to 3D materials
-- Converts gradient to THREE.CanvasTexture for rendering
-
-### Usage Notes
-- Gradients are disabled when custom textures are applied
-- Base color is disabled when gradient is enabled
-- Gradient textures are generated at 512x512 resolution
-- Gradients work with all material properties (roughness, metalness, wireframe)
-
-### Future Enhancements
-- Custom color stop positions
-- Gradient presets
-- Export/import gradient configurations
-- More gradient types (conic, diamond)
+#### Note
+Roughness and metalness properties are fixed at 0.5 since their UI controls were removed to simplify the interface.

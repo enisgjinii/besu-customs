@@ -6,7 +6,7 @@ A minimal React + Three.js configurator app for uploading and customizing 3D mod
 
 - **Upload GLB/GLTF models** via drag-and-drop or file input
 - **3D Viewer** with orbit controls, HDRI lighting, and grid toggle
-- **Material Editor** with color pickers, roughness/metalness sliders, and wireframe mode
+- **Material Editor** with color pickers and gradient support
 - **Auto-detection** of mesh materials organized into categories (Body, Panels, Piping/Trim)
 - **34 Placeholder Products** for product management
 - **Preset System** to save and load configurations as JSON
@@ -50,24 +50,10 @@ When a model is loaded, the app automatically:
 
 The model will be associated with that product and load when selected from the sidebar.
 
-### Saving/Loading Presets
-
-- **Export**: Click "Export" to download current configuration as JSON
-- **Import**: Click "Import" and select a previously saved JSON file
-
-Presets include all material settings (colors, roughness, metalness, wireframe).
-
-## Development
-
-\`\`\`bash
-npm install
-npm run dev
-\`\`\`
-
 ## Acceptance Criteria
 
 ✅ Upload GLB files with orbit controls  
-✅ Click material sections and edit color/roughness/metalness live  
+✅ Click material sections and edit color live  
 ✅ Switch between 34 placeholder products  
 ✅ Save/load presets as JSON  
 ✅ Responsive layout (desktop and mobile)  

@@ -28,9 +28,11 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
               originalName,
               category,
               color: `#${material.color.getHexString()}`,
-              roughness: material.roughness,
-              metalness: material.metalness,
-              wireframe: material.wireframe,
+              // Use fixed values for roughness and metalness since we removed the UI controls
+              roughness: 0.5,
+              metalness: 0.5,
+              // Set wireframe to false since we removed the UI control
+              wireframe: false,
               customTexture: undefined,
             });
           }
@@ -43,57 +45,22 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
 }
 
 export function getUserFriendlyName(name: string): string {
-  const lowerName = name.toLowerCase();
-
-  // Remove trailing numbers and any text that follows them (like _2473, _2456_Name, etc.)
-  // This regex matches underscore followed by 1 or more digits, optionally followed by anything until end of string
-  let cleanedName = name.replace(/_\d+.*$/, '').trim();
-  
-  // Also handle cases where there might be spaces before numbers
-  cleanedName = cleanedName.replace(/\s+\d+.*$/, '').trim();
+  // Remove all numbers and underscores, then clean up extra spaces
+  let cleanedName = name.replace(/[_\d]+/g, ' ').trim();
+  // Replace multiple spaces with single space
+  cleanedName = cleanedName.replace(/\s+/g, ' ').trim();
   
   const lowerCleanedName = cleanedName.toLowerCase();
 
-  // Front/Back detection
-  if (lowerCleanedName.includes("front") && !lowerCleanedName.includes("back")) {
-    return "Front Panel";
+  // Specific matching for common clothing terms - prioritize these
+  if (lowerCleanedName.includes("topstitch")) {
+    return "Topstitch";
   }
-  if (lowerCleanedName.includes("back") && !lowerCleanedName.includes("front")) {
-    return "Back Panel";
+  if (lowerCleanedName.includes("strap") && !lowerCleanedName.includes("strapless")) {
+    return "Strap";
   }
-  if (lowerCleanedName.includes("left") && !lowerCleanedName.includes("right")) {
-    return "Left Side";
-  }
-  if (lowerCleanedName.includes("right") && !lowerCleanedName.includes("left")) {
-    return "Right Side";
-  }
-
-  // Common clothing terms - be more specific with matching
-  if (lowerCleanedName.includes("sleeve") && !lowerCleanedName.includes("sleeveless")) {
-    return "Sleeve";
-  }
-  if ((lowerCleanedName.includes("collar") || lowerCleanedName.includes("neck")) && 
-      !lowerCleanedName.includes("collar stay") && !lowerCleanedName.includes("collarbone")) {
-    return "Collar/Neck";
-  }
-  if (lowerCleanedName.includes("hood") && !lowerCleanedName.includes("hooded")) {
-    return "Hood";
-  }
-  if (lowerCleanedName.includes("pocket") && !lowerCleanedName.includes("pocketless")) {
-    return "Pocket";
-  }
-  if (lowerCleanedName.includes("logo") || lowerCleanedName.includes("emblem")) {
-    return "Logo/Emblem";
-  }
-  if ((lowerCleanedName.includes("number") || lowerCleanedName.includes("num")) && 
-      !lowerCleanedName.includes("numberless")) {
-    return "Number";
-  }
-  if (lowerCleanedName.includes("stripe") || lowerCleanedName.includes("strip")) {
-    return "Stripe";
-  }
-  if (lowerCleanedName.includes("trim") || lowerCleanedName.includes("piping")) {
-    return "Trim/Piping";
+  if (lowerCleanedName.includes("brim")) {
+    return "Brim";
   }
   if (lowerCleanedName.includes("button") && !lowerCleanedName.includes("buttonless")) {
     // More specific button matching
@@ -102,52 +69,85 @@ export function getUserFriendlyName(name: string): string {
     }
     return "Button";
   }
-  if (lowerCleanedName.includes("topstitch")) {
-    return "Topstitch";
+  if ((lowerCleanedName.includes("main") && lowerCleanedName.includes("body")) || 
+      lowerCleanedName.includes("main body")) {
+    return "Main Body";
   }
-  if (lowerCleanedName.includes("strap")) {
-    return "Strap";
+  if (lowerCleanedName.includes("front") && lowerCleanedName.includes("panel")) {
+    return "Front Panel";
   }
-  if (lowerCleanedName.includes("brim")) {
-    return "Brim";
+  if (lowerCleanedName.includes("back") && lowerCleanedName.includes("panel")) {
+    return "Back Panel";
   }
-
-  // Body parts
-  if ((lowerCleanedName.includes("body") || lowerCleanedName.includes("main")) && 
-      !lowerCleanedName.includes("bodyless") && !lowerCleanedName.includes("mainly")) {
-    // More specific body matching
-    if (lowerCleanedName.includes("main body")) {
-      return "Main Body";
-    }
-    if (lowerCleanedName.includes("body")) {
-      return "Body";
-    }
-    return "Main";
+  if (lowerCleanedName.includes("front")) {
+    return "Front";
   }
-  if ((lowerCleanedName.includes("chest") || lowerCleanedName.includes("torso")) && 
-      !lowerCleanedName.includes("chest pocket")) {
-    return "Chest/Torso";
+  if (lowerCleanedName.includes("back")) {
+    return "Back";
   }
-  if (lowerCleanedName.includes("arm") && !lowerCleanedName.includes("armor")) {
-    return "Arm";
-  }
-  if ((lowerCleanedName.includes("leg") || lowerCleanedName.includes("pant")) && 
-      !lowerCleanedName.includes("legend")) {
-    return "Leg/Pant";
-  }
-
-  // Generic fallbacks
-  if (lowerCleanedName.includes("panel") && !lowerCleanedName.includes("paneling")) {
+  if (lowerCleanedName.includes("panel")) {
     return "Panel";
   }
-  if ((lowerCleanedName.includes("part") || lowerCleanedName.includes("section")) && 
-      !lowerCleanedName.includes("partial")) {
-    return "Section";
+  if (lowerCleanedName.includes("body")) {
+    return "Body";
+  }
+  if (lowerCleanedName.includes("main")) {
+    return "Main";
+  }
+  if (lowerCleanedName.includes("trim") || lowerCleanedName.includes("piping")) {
+    return "Trim";
+  }
+  if (lowerCleanedName.includes("logo") || lowerCleanedName.includes("emblem")) {
+    return "Logo";
+  }
+  if (lowerCleanedName.includes("pocket")) {
+    return "Pocket";
+  }
+  if (lowerCleanedName.includes("collar") || lowerCleanedName.includes("neck")) {
+    return "Collar";
+  }
+  if (lowerCleanedName.includes("sleeve")) {
+    return "Sleeve";
+  }
+  if (lowerCleanedName.includes("hood")) {
+    return "Hood";
+  }
+  if (lowerCleanedName.includes("stripe") || lowerCleanedName.includes("strip")) {
+    return "Stripe";
+  }
+  if (lowerCleanedName.includes("number") || lowerCleanedName.includes("num")) {
+    return "Number";
   }
 
-  // If we can't determine a better name, use a cleaner version
-  const finalCleaned = cleanedName.replace(/^Material\s+\d+/i, "").trim();
-  return finalCleaned || `Material ${cleanedName}`;
+  // If we still have a reasonable name, use it (but make it more presentable)
+  if (cleanedName.length > 0) {
+    // If it's not too long, clean it up and use it
+    if (cleanedName.length <= 25) {
+      // Remove common prefixes
+      cleanedName = cleanedName.replace(/^default\s+/i, '');
+      cleanedName = cleanedName.replace(/^cap\s+/i, '');
+      cleanedName = cleanedName.replace(/^special\s+/i, '');
+      cleanedName = cleanedName.replace(/^simple\s+/i, '');
+      cleanedName = cleanedName.replace(/^basic\s+/i, '');
+      
+      // Capitalize first letter of each word
+      return cleanedName.replace(/\b\w/g, char => char.toUpperCase()).trim() || "Material";
+    }
+    // For longer names, try to extract key words
+    const words = cleanedName.split(' ');
+    if (words.length > 1) {
+      // Take the last significant word
+      for (let i = words.length - 1; i >= 0; i--) {
+        const word = words[i].toLowerCase();
+        if (word.length > 2 && !['the', 'and', 'for', 'with', 'part', 'detail', 'design'].includes(word)) {
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+      }
+    }
+  }
+
+  // Fallback
+  return "Material";
 }
 
 export function categorizeMaterial(name: string): MaterialSection["category"] {
@@ -267,9 +267,10 @@ export function applyMaterialUpdates(
               material.color.set(section.color);
             }
 
-            material.roughness = section.roughness;
-            material.metalness = section.metalness;
-            material.wireframe = section.wireframe;
+            material.roughness = section.roughness ?? 0.5;
+            material.metalness = section.metalness ?? 0.5;
+            // Always set wireframe to false since we removed the UI control
+            material.wireframe = false;
             material.needsUpdate = true;
           }
         }

@@ -176,11 +176,6 @@ export function MaterialEditor() {
                                   </Badge>
                                 )}
                               </div>
-                              {section.originalName !== section.name && (
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {section.originalName}
-                                </div>
-                              )}
                             </div>
                             {isLinked && (
                               <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
@@ -220,11 +215,6 @@ export function MaterialEditor() {
               <Sliders className="w-4 h-4" />
               Editing: {selectedSection.name}
             </h3>
-            {selectedSection.originalName !== selectedSection.name && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Original material: {selectedSection.originalName}
-              </p>
-            )}
           </div>
 
           <div className="space-y-4">
@@ -470,82 +460,10 @@ export function MaterialEditor() {
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-medium mb-2">
-                Roughness: {selectedSection.roughness.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={selectedSection.roughness}
-                onChange={(e) =>
-                  updateSection(selectedSection.id, {
-                    roughness: Number.parseFloat(e.target.value),
-                  })
-                }
-                className="w-full accent-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium mb-2">
-                Metalness: {selectedSection.metalness.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={selectedSection.metalness}
-                onChange={(e) =>
-                  updateSection(selectedSection.id, {
-                    metalness: Number.parseFloat(e.target.value),
-                  })
-                }
-                className="w-full accent-primary"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 pt-2">
-              <input
-                type="checkbox"
-                id="wireframe"
-                checked={selectedSection.wireframe}
-                onChange={(e) =>
-                  updateSection(selectedSection.id, {
-                    wireframe: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 rounded border-input"
-              />
-              <label
-                htmlFor="wireframe"
-                className="text-xs font-medium cursor-pointer"
-              >
-                Wireframe Mode
-              </label>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Help Section */}
-      <div className="border-t border-border/50 pt-4">
-        <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-          <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">
-            💡 How to Use
-          </h4>
-          <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
-            <li>• Click on any material section to select and edit it</li>
-            <li>• Use the "Front Panel" / "Back Panel" buttons for quick switching</li>
-            <li>• Front/Back badges show which side each section controls</li>
-            <li>• Link sections together to edit them simultaneously</li>
-            <li>• Upload custom textures in the UV Editor tab</li>
-          </ul>
-        </div>
-      </div>
     </div>
   );
 }
