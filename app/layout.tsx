@@ -5,7 +5,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
 import { OnboardingWelcome } from "@/components/onboarding-welcome";
 import { OnboardingTour } from "@/components/onboarding-tour";
-import { OnboardingInfoButton } from "@/components/onboarding-info-button";
 import { OnboardingKeyboardHandler } from "@/components/onboarding-keyboard-handler";
 import "./globals.css";
 
@@ -27,7 +26,6 @@ export default function RootLayout({
         <Toaster />
         <OnboardingWelcome />
         <OnboardingTour />
-        <OnboardingInfoButton />
         <OnboardingKeyboardHandler />
         <Analytics />
       </body>

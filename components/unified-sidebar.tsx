@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import { AIImageGenerator } from "./ai-image-generator";
+import { OnboardingInfoButton } from "./onboarding-info-button";
 import { Button } from "./ui/button";
 import {
   Select,
@@ -387,11 +388,14 @@ export function UnifiedSidebar() {
     <div className="h-full flex flex-col bg-card w-full">
       {/* Header with Model Selector */}
       <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
-        <div>
-          <h2 className="text-lg font-semibold">3D Configurator</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Customize your model
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">3D Configurator</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Customize your model
+            </p>
+          </div>
+          <OnboardingInfoButton />
         </div>
 
         {/* Model Dropdown */}
