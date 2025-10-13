@@ -11,6 +11,22 @@ import {
 import * as THREE from "three";
 import { ModelLoader } from "./model-loader";
 import { useConfiguratorStore } from "@/lib/store";
+import { Spinner } from "@/components/ui/spinner";
+
+// Loading fallback component for Suspense
+function LoadingFallback() {
+  return (
+    <mesh position={[0, 0, 0]}>
+      <boxGeometry args={[0.5, 0.5, 0.5]} />
+      <meshStandardMaterial 
+        color="#3b82f6" 
+        transparent 
+        opacity={0.3}
+        wireframe 
+      />
+    </mesh>
+  );
+}
 
 export function Scene() {
   const showGrid = useConfiguratorStore((state) => state.showGrid);
@@ -68,27 +84,38 @@ export function Scene() {
           <Grid args={[20, 20]} cellColor="#6b7280" sectionColor="#374151" />
         )}
 
-        <Suspense fallback={null}>
+        <Suspense fallback={<LoadingFallback />}>
           <ModelLoader controlsRef={controlsRef} />
         </Suspense>
       </Canvas>
 
       {modelLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm z-10">
+          <div className="flex flex-col items-center gap-6">
+            {/* Shadcn spinner */}
+            <Spinner className="size-12 text-primary" />
+            
+            {/* Loading text with animation */}
+            <div className="text-center">
+              <p className="text-lg font-semibold text-foreground mb-2">
+                Loading 3D Model
+              </p>
+              <div className="flex items-center justify-center gap-1">
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
             </div>
-            <p className="text-sm font-medium text-foreground">
-              Loading 3D model...
-            </p>
           </div>
         </div>
       )}
       {modelError && (
-        <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-2 rounded-md text-sm shadow-lg">
-          Error: {modelError}
+        <div className="absolute top-4 right-4 bg-red-500/90 backdrop-blur-sm text-white px-4 py-3 rounded-lg text-sm shadow-lg border border-red-400/20">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-300 rounded-full animate-pulse"></div>
+            <span className="font-medium">Model Loading Error</span>
+          </div>
+          <p className="mt-1 text-red-100">{modelError}</p>
         </div>
       )}
     </div>

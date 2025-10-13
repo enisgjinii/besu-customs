@@ -26,6 +26,10 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: unknown }) {
       (state as unknown as { setCompleteUVMap: (url: string | null) => void })
         .setCompleteUVMap,
   );
+  const setModelLoading = useConfiguratorStore(
+    (state) => state.setModelLoading,
+  );
+  const setModelError = useConfiguratorStore((state) => state.setModelError);
   const groupRef = useRef<THREE.Group>(null);
 
   // Load placeholder cube if URL doesn't exist
@@ -33,37 +37,49 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: unknown }) {
 
   useEffect(() => {
     if (isPlaceholder && groupRef.current) {
-      // Create a simple cube as placeholder
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
-      const material = new THREE.MeshStandardMaterial({
-        color: "#3b82f6",
-        roughness: 0.5,
-        metalness: 0.5,
-      });
-      const cube = new THREE.Mesh(geometry, material);
+      setModelLoading(true);
+      setModelError(null);
+      
+      try {
+        // Create a simple cube as placeholder
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshStandardMaterial({
+          color: "#3b82f6",
+          roughness: 0.5,
+          metalness: 0.5,
+        });
+        const cube = new THREE.Mesh(geometry, material);
 
-      groupRef.current.clear();
-      groupRef.current.add(cube);
+        groupRef.current.clear();
+        groupRef.current.add(cube);
 
-      // Extract sections from placeholder
-      const newSections = extractSections(groupRef.current);
-      setSections(newSections);
+        // Extract sections from placeholder
+        const newSections = extractSections(groupRef.current);
+        setSections(newSections);
 
-      // Extract complete UV map from entire model
-      const completeUV = extractCompleteUVMap(groupRef.current);
-      if (completeUV) {
-        setCompleteUVMap(completeUV);
-      }
-
-      // Extract UV maps for each material section
-      newSections.forEach((section) => {
-        const uvMapUrl = extractUVMapForMaterial(groupRef.current!, section.id);
-        if (uvMapUrl) {
-          setUVMap(section.id, uvMapUrl);
+        // Extract complete UV map from entire model
+        const completeUV = extractCompleteUVMap(groupRef.current);
+        if (completeUV) {
+          setCompleteUVMap(completeUV);
         }
-      });
+
+        // Extract UV maps for each material section
+        newSections.forEach((section) => {
+          const uvMapUrl = extractUVMapForMaterial(groupRef.current!, section.id);
+          if (uvMapUrl) {
+            setUVMap(section.id, uvMapUrl);
+          }
+        });
+      } catch (err) {
+        console.warn("Placeholder model creation failed:", err);
+        setModelError(
+          err instanceof Error ? err.message : "Failed to create placeholder model",
+        );
+      } finally {
+        setModelLoading(false);
+      }
     }
-  }, [isPlaceholder, setSections, setUVMap, setCompleteUVMap]);
+  }, [isPlaceholder, setSections, setUVMap, setCompleteUVMap, setModelLoading, setModelError]);
 
   if (isPlaceholder) {
     return <group ref={groupRef} />;
@@ -79,6 +95,33 @@ function LoadedModel({
   url: string;
   controlsRef?: unknown;
 }) {
+  const setModelLoading = useConfiguratorStore(
+    (state) => state.setModelLoading,
+  );
+  const setModelError = useConfiguratorStore((state) => state.setModelError);
+  
+  // Set loading state immediately when component mounts
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    setModelLoading(true);
+    setModelError(null);
+    
+    // Safety timeout to prevent stuck loading
+    timeoutRef.current = setTimeout(() => {
+      console.warn("Model loading timeout - forcing loading to false");
+      setModelLoading(false);
+    }, 10000); // 10 second timeout
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setModelLoading(false);
+    };
+  }, [url, setModelLoading, setModelError]);
+
   const { scene } = useGLTF(url);
   const sections = useConfiguratorStore((state) => state.sections);
   const setSections = useConfiguratorStore((state) => state.setSections);
@@ -88,10 +131,6 @@ function LoadedModel({
       (state as unknown as { setCompleteUVMap: (url: string | null) => void })
         .setCompleteUVMap,
   );
-  const setModelLoading = useConfiguratorStore(
-    (state) => state.setModelLoading,
-  );
-  const setModelError = useConfiguratorStore((state) => state.setModelError);
   const clonedScene = useRef(scene.clone());
 
   useEffect(() => {
@@ -101,9 +140,6 @@ function LoadedModel({
 
   // Extract sections on load and fit model to view
   useEffect(() => {
-    setModelLoading(true);
-    setModelError(null);
-
     try {
       const newSections = extractSections(clonedScene.current);
       setSections(newSections);
@@ -182,12 +218,17 @@ function LoadedModel({
         controls.update();
       }
 
-      setModelLoading(false);
     } catch (err) {
       console.warn("Fit-to-view failed:", err);
       setModelError(
         err instanceof Error ? err.message : "Failed to load model",
       );
+    } finally {
+      // Clear timeout since loading is complete
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       setModelLoading(false);
     }
   }, [
