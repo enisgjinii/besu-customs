@@ -21,6 +21,7 @@ export function AIImageGenerator() {
   const [loading, setLoading] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<Array<{ imageURL: string; imageUUID: string }>>([]);
   const [selectedSection, setSelectedSection] = useState<string>("");
+  const [usage, setUsage] = useState<{ limit: number; used: number; remaining: number } | null>(null);
   
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
@@ -53,6 +54,9 @@ export function AIImageGenerator() {
       }
 
       setGeneratedImages(data.images);
+      if (data.usage) {
+        setUsage(data.usage);
+      }
       toast.success("Image generated successfully!");
     } catch (error) {
       console.error("Error:", error);
@@ -127,9 +131,16 @@ export function AIImageGenerator() {
         />
       </div>
 
+      {/* Usage Information */}
+      {usage && (
+        <div className="text-xs text-muted-foreground bg-secondary/20 p-2 rounded-md">
+          API Usage: {usage.used}/{usage.limit} calls used ({usage.remaining} remaining)
+        </div>
+      )}
+
       <Button
         onClick={handleGenerate}
-        disabled={loading || !prompt.trim()}
+        disabled={loading || !prompt.trim() || (usage?.remaining === 0)}
         className="w-full"
       >
         {loading ? (
