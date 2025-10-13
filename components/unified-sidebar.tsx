@@ -442,6 +442,7 @@ export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedS
             size="sm"
             onClick={() => setActiveTab("materials")}
             className="w-full transition-all flex-col h-auto py-2"
+            data-tab="materials"
           >
             <Palette className="w-4 h-4 mb-1" />
             <span className="text-xs">Materials</span>
@@ -451,6 +452,7 @@ export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedS
             size="sm"
             onClick={() => setActiveTab("texture")}
             className="w-full transition-all flex-col h-auto py-2"
+            data-tab="texture"
           >
             <Paintbrush className="w-4 h-4 mb-1" />
             <span className="text-xs">Texture</span>
@@ -460,6 +462,7 @@ export function UnifiedSidebar({ sidebarOpen = true, onToggleSidebar }: UnifiedS
             size="sm"
             onClick={() => setActiveTab("view")}
             className="w-full transition-all flex-col h-auto py-2"
+            data-tab="view"
           >
             <Camera className="w-4 h-4 mb-1" />
             <span className="text-xs">Export</span>

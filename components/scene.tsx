@@ -68,7 +68,7 @@ export function Scene() {
           rotateSpeed={0.5}
           zoomSpeed={0.8}
           autoRotate={autoRotate}
-          autoRotateSpeed={1.0}
+          autoRotateSpeed={2.0} // Increased rotation speed
           touches={{
             ONE: THREE.TOUCH.ROTATE,
             TWO: THREE.TOUCH.DOLLY_PAN,

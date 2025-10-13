@@ -310,7 +310,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   cameraControlsRef: null,
   setCameraControlsRef: (ref: unknown) => set({ cameraControlsRef: ref }),
-  autoRotate: false,
+  autoRotate: false, // Changed from true to false - model should not auto-rotate by default
   setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
   glRef: null,
   setGlRef: (ref: unknown) => set({ glRef: ref }),
