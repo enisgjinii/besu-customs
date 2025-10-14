@@ -53,6 +53,27 @@ const BASIC_COLORS = [
   "#FF69B4",
 ];
 
+const PALETTE_COLORS = [
+  "#FFFFFF", // White
+  "#000000", // Black
+  "#FF0000", // Red
+  "#00FF00", // Green
+  "#0000FF", // Blue
+  "#FFFF00", // Yellow
+  "#FF00FF", // Magenta
+  "#00FFFF", // Cyan
+  "#FFA500", // Orange
+  "#800080", // Purple
+];
+
+const GRADIENT_COLORS = [
+  "linear-gradient(45deg, #ff0000, #0000ff)", // Red to Blue
+  "linear-gradient(45deg, #00ff00, #ff0000)", // Green to Red
+  "linear-gradient(45deg, #0000ff, #00ff00)", // Blue to Green
+  "linear-gradient(45deg, #ffff00, #ff00ff)", // Yellow to Magenta
+  "linear-gradient(45deg, #00ffff, #ffff00)", // Cyan to Yellow
+];
+
 export function ColorPickerModal({
   isOpen,
   onClose,
@@ -159,11 +180,11 @@ export function ColorPickerModal({
             </div>
           )}
 
-          {/* Basic Colors */}
+          {/* Palette Colors */}
           <div className="mb-6">
-            <h4 className="text-sm font-medium mb-3">Basic Colors</h4>
-            <div className="grid grid-cols-6 gap-2">
-              {BASIC_COLORS.map((color) => (
+            <h4 className="text-sm font-medium mb-3">Palette Colors</h4>
+            <div className="grid grid-cols-5 gap-2">
+              {PALETTE_COLORS.map((color) => (
                 <button
                   key={color}
                   onClick={() => handleColorSelect(color)}

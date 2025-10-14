@@ -65,6 +65,14 @@ interface ConfiguratorState {
   // Scene controls
   showGrid: boolean;
   toggleGrid: () => void;
+  backgroundColor: string;
+  setBackgroundColor: (color: string) => void;
+  backgroundImage: string | null;
+  setBackgroundImage: (image: string | null) => void;
+  backgroundVideo: string | null;
+  setBackgroundVideo: (video: string | null) => void;
+  isVideoPlaying: boolean;
+  setIsVideoPlaying: (playing: boolean) => void;
   cameraControlsRef: unknown;
   setCameraControlsRef: (ref: unknown) => void;
   autoRotate: boolean;
@@ -308,6 +316,14 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   // Scene controls
   showGrid: false,
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+  backgroundColor: '#f0f0f0',
+  setBackgroundColor: (color: string) => set({ backgroundColor: color }),
+  backgroundImage: null as string | null,
+  setBackgroundImage: (image: string | null) => set({ backgroundImage: image }),
+  backgroundVideo: null as string | null,
+  setBackgroundVideo: (video: string | null) => set({ backgroundVideo: video }),
+  isVideoPlaying: false,
+  setIsVideoPlaying: (playing: boolean) => set({ isVideoPlaying: playing }),
   cameraControlsRef: null,
   setCameraControlsRef: (ref: unknown) => set({ cameraControlsRef: ref }),
   autoRotate: false, // Changed from true to false - model should not auto-rotate by default

@@ -33,11 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { ColorPickerModal } from "./color-picker-modal";
 
 interface UnifiedSidebarProps {
   sidebarOpen?: boolean;
@@ -48,24 +45,26 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
     "materials",
   );
-  const [activeExportTab, setActiveExportTab] = useState<"presets" | "model" | "import">(
-    "presets",
-  );
   const [isRecording, setIsRecording] = useState(false);
-  const [cameraOpen, setCameraOpen] = useState(true);
-  const [sceneOpen, setSceneOpen] = useState(true);
-  const [imageOpen, setImageOpen] = useState(true);
-  const [videoOpen, setVideoOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [aiImageOpen, setAiImageOpen] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
+  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
+  const backgroundColor = useConfiguratorStore((state) => state.backgroundColor);
+  const setBackgroundColor = useConfiguratorStore((state) => state.setBackgroundColor);
+  const backgroundImage = useConfiguratorStore((state) => state.backgroundImage);
+  const setBackgroundImage = useConfiguratorStore((state) => state.setBackgroundImage);
+  const backgroundVideo = useConfiguratorStore((state) => state.backgroundVideo);
+  const setBackgroundVideo = useConfiguratorStore((state) => state.setBackgroundVideo);
+  const isVideoPlaying = useConfiguratorStore((state) => state.isVideoPlaying);
+  const setIsVideoPlaying = useConfiguratorStore((state) => state.setIsVideoPlaying);
   const exportPreset = useConfiguratorStore((state) => state.exportPreset);
   const importPreset = useConfiguratorStore((state) => state.importPreset);
+
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
@@ -393,6 +392,51 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
     document.body.removeChild(link);
   };
 
+  const handleBackgroundImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setBackgroundImage(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBackgroundVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setBackgroundVideo(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBackgroundImageUrlChange = () => {
+    const url = prompt('Enter image URL:', backgroundImageUrl);
+    if (url !== null) {
+      setBackgroundImageUrl(url);
+      setBackgroundImage(url);
+    }
+  };
+
+  const handleBackgroundVideoUrlChange = () => {
+    const url = prompt('Enter video URL:', backgroundVideoUrl);
+    if (url !== null) {
+      setBackgroundVideoUrl(url);
+      setBackgroundVideo(url);
+    }
+  };
+
+  const handleApplyBackgroundColor = (color: string) => {
+    setBackgroundColor(color);
+    setIsColorPickerOpen(false);
+  };
+
   return (
     <div className="h-full flex flex-col bg-card w-full">
       {/* Header with Model Selector */}
@@ -524,230 +568,326 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
         )}
         {activeTab === "view" && (
           <div className="p-4 space-y-3">
-            {/* Camera Controls */}
-            <Collapsible open={cameraOpen} onOpenChange={setCameraOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
+            <Tabs defaultValue="view">
+              <TabsList className="grid w-full grid-cols-4 h-auto">
+                <TabsTrigger value="view" className="flex flex-col items-center gap-1 text-xs py-3">
                   <Camera className="w-4 h-4" />
-                  Camera Controls
-                </h3>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${cameraOpen ? "rotate-180" : ""}`}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2">
-                <div
-                  className="grid grid-cols-2 gap-2"
-                  data-tour="camera-angles"
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRotateLeft}
-                    className="w-full justify-center"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" />
-                    Left
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRotateRight}
-                    className="w-full justify-center"
-                  >
-                    <RotateCw className="w-4 h-4 mr-1" />
-                    Right
-                  </Button>
+                  <span>View</span>
+                </TabsTrigger>
+                <TabsTrigger value="media" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <FileImage className="w-4 h-4" />
+                  <span>Media</span>
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Sparkles className="w-4 h-4" />
+                  <span>AI</span>
+                </TabsTrigger>
+                <TabsTrigger value="export" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Package2 className="w-4 h-4" />
+                  <span>Export</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="view" className="mt-4 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                    <Camera className="w-4 h-4" />
+                    Camera Controls
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2" data-tour="camera-angles">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRotateLeft}
+                      className="w-full justify-center"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-1" />
+                      Left
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRotateRight}
+                      className="w-full justify-center"
+                    >
+                      <RotateCw className="w-4 h-4 mr-1" />
+                      Right
+                    </Button>
+                  </div>
+                  <div className="mt-2">
+                    <ResetCameraButton />
+                  </div>
+                  <div className="mt-2">
+                    <Button
+                      variant={autoRotate ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleAutoRotate}
+                      className="w-full justify-start"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      {autoRotate ? "Stop Auto-Rotate" : "Start Auto-Rotate"}
+                    </Button>
+                  </div>
                 </div>
-                <ResetCameraButton />
-                <Button
-                  variant={autoRotate ? "default" : "outline"}
-                  size="sm"
-                  onClick={handleAutoRotate}
-                  className="w-full justify-start"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  {autoRotate ? "Stop Auto-Rotate" : "Start Auto-Rotate"}
-                </Button>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Scene Options */}
-            <Collapsible open={sceneOpen} onOpenChange={setSceneOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Grid3x3 className="w-4 h-4" />
-                  Scene Options
-                </h3>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${sceneOpen ? "rotate-180" : ""}`}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleGrid}
-                  className="w-full justify-start"
-                  data-tour="lighting-controls"
-                >
-                  <Grid3x3 className="w-4 h-4 mr-2" />
-                  {showGrid ? "Hide Grid" : "Show Grid"}
-                </Button>
-                <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                  More scene options coming in Phase 2
+                
+                <div>
+                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                    <Grid3x3 className="w-4 h-4" />
+                    Scene Options
+                  </h3>
+                  <div className="space-y-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleGrid}
+                      className="w-full justify-start"
+                      data-tour="lighting-controls"
+                    >
+                      <Grid3x3 className="w-4 h-4 mr-2" />
+                      {showGrid ? "Hide Grid" : "Show Grid"}
+                    </Button>
+                    
+                    {/* Background Environment Options */}
+                    <div className="space-y-2 pt-2 border-t border-border/50">
+                      <h4 className="text-xs font-medium text-muted-foreground">Background Environment</h4>
+                      
+                      {/* Background Color Picker */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded border border-border" style={{ backgroundColor: backgroundColor }}></div>
+                        <span className="text-xs">Background Color</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="ml-auto text-xs h-6 px-2"
+                          onClick={() => setIsColorPickerOpen(true)}
+                        >
+                          Change
+                        </Button>
+                      </div>
+                      
+                      {/* Background Image Options */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded border border-border bg-gray-200 flex items-center justify-center">
+                            <FileImage className="w-2 h-2" />
+                          </div>
+                          <span className="text-xs">Background Image</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 ml-6">
+                          <label className="cursor-pointer">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs h-8 w-full"
+                            >
+                              Upload
+                            </Button>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleBackgroundImageUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8"
+                            onClick={handleBackgroundImageUrlChange}
+                          >
+                            URL
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Background Video Options */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded border border-border bg-gray-200 flex items-center justify-center">
+                            <Film className="w-2 h-2" />
+                          </div>
+                          <span className="text-xs">Background Video</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 ml-6">
+                          <label className="cursor-pointer">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs h-8 w-full"
+                            >
+                              Upload
+                            </Button>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={handleBackgroundVideoUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8"
+                            onClick={handleBackgroundVideoUrlChange}
+                          >
+                            URL
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Video Controls */}
+                      {backgroundVideo && (
+                        <div className="flex gap-1 mt-1 ml-6">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-6 px-2 flex-1"
+                            onClick={() => setIsVideoPlaying(true)}
+                            disabled={isVideoPlaying}
+                          >
+                            <Play className="w-3 h-3 mr-1" />
+                            Play
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-6 px-2 flex-1"
+                            onClick={() => setIsVideoPlaying(false)}
+                            disabled={!isVideoPlaying}
+                          >
+                            <Square className="w-3 h-3 mr-1" />
+                            Stop
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded mt-2">
+                    More scene options coming in Phase 2
+                  </div>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* AI Image Generator */}
-            <Collapsible open={aiImageOpen} onOpenChange={setAiImageOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
+              </TabsContent>
+              
+              <TabsContent value="media" className="mt-4 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                    <FileImage className="w-4 h-4" />
+                    Export Images
+                  </h3>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleScreenshot}
+                      className="w-full justify-start"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Screenshot (PNG)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportHighRes}
+                      className="w-full justify-start"
+                    >
+                      <Maximize2 className="w-4 h-4 mr-2" />
+                      High-Res (2x)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExport4K}
+                      className="w-full justify-start"
+                    >
+                      <Maximize2 className="w-4 h-4 mr-2" />
+                      Ultra HD (4x)
+                    </Button>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                    <Film className="w-4 h-4" />
+                    Export Video
+                  </h3>
+                  <div className="space-y-2">
+                    {! (!isRecording) ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStartRecording("webm")}
+                          className="w-full justify-start"
+                        >
+                          <Video className="w-4 h-4 mr-2" />
+                          Record WebM
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStartRecording("mp4")}
+                          className="w-full justify-start"
+                        >
+                          <Video className="w-4 h-4 mr-2" />
+                          Record MP4
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleStopRecording}
+                        className="w-full justify-start"
+                      >
+                        <Square className="w-4 h-4 mr-2" />
+                        Stop Recording
+                      </Button>
+                    )}
+                    {isRecording && (
+                      <div className="text-xs text-muted-foreground p-2 bg-red-500/10 rounded-md">
+                        🔴 Recording in progress...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="ai" className="mt-4">
+                <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
                   <Sparkles className="w-4 h-4" />
                   AI Image Generator
                 </h3>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${aiImageOpen ? "rotate-180" : ""}`}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <AIImageGenerator />
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Image Export */}
-            <Collapsible open={imageOpen} onOpenChange={setImageOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <FileImage className="w-4 h-4" />
-                  Export Images
-                </h3>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${imageOpen ? "rotate-180" : ""}`}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleScreenshot}
-                  className="w-full justify-start"
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Screenshot (PNG)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportHighRes}
-                  className="w-full justify-start"
-                >
-                  <Maximize2 className="w-4 h-4 mr-2" />
-                  High-Res (2x)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport4K}
-                  className="w-full justify-start"
-                >
-                  <Maximize2 className="w-4 h-4 mr-2" />
-                  Ultra HD (4x)
-                </Button>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Video Export */}
-            <Collapsible open={videoOpen} onOpenChange={setVideoOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Film className="w-4 h-4" />
-                  Export Video
-                </h3>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${videoOpen ? "rotate-180" : ""}`}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2">
-                {!isRecording ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStartRecording("webm")}
-                      className="w-full justify-start"
-                    >
-                      <Video className="w-4 h-4 mr-2" />
-                      Record WebM
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStartRecording("mp4")}
-                      className="w-full justify-start"
-                    >
-                      <Video className="w-4 h-4 mr-2" />
-                      Record MP4
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleStopRecording}
-                    className="w-full justify-start"
-                  >
-                    <Square className="w-4 h-4 mr-2" />
-                    Stop Recording
-                  </Button>
-                )}
-                {isRecording && (
-                  <div className="text-xs text-muted-foreground p-2 bg-red-500/10 rounded-md">
-                    🔴 Recording in progress...
-                  </div>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Model Export */}
-            <Collapsible open={exportOpen} onOpenChange={setExportOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded-md transition-colors">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Package2 className="w-4 h-4" />
-                  Export Model & Presets
-                </h3>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${exportOpen ? "rotate-180" : ""}`}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2">
-                {/* Simple Tabs for Export Options */}
-                <div className="flex border-b border-border">
-                  <button
-                    className={`flex-1 py-2 text-xs font-medium ${activeExportTab === 'presets' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
-                    onClick={() => setActiveExportTab('presets')}
-                  >
-                    Presets
-                  </button>
-                  <button
-                    className={`flex-1 py-2 text-xs font-medium ${activeExportTab === 'model' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
-                    onClick={() => setActiveExportTab('model')}
-                  >
-                    Model
-                  </button>
-                  <button
-                    className={`flex-1 py-2 text-xs font-medium ${activeExportTab === 'import' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
-                    onClick={() => setActiveExportTab('import')}
-                  >
-                    Import
-                  </button>
+                <div className="bg-secondary/20 rounded-lg p-3">
+                  <AIImageGenerator />
                 </div>
-
-                {/* Tab Content */}
-                <div className="pt-2">
-                  {activeExportTab === 'presets' && (
-                    <div className="space-y-2">
+              </TabsContent>
+              
+              <TabsContent value="export" className="mt-4 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                    <Package2 className="w-4 h-4" />
+                    Export Model & Presets
+                  </h3>
+                  
+                  {/* Nested Tabs for Export Options */}
+                  <Tabs defaultValue="presets">
+                    <TabsList className="grid w-full grid-cols-3 h-auto">
+                      <TabsTrigger value="presets" className="text-xs py-2">
+                        Presets
+                      </TabsTrigger>
+                      <TabsTrigger value="model" className="text-xs py-2">
+                        Model
+                      </TabsTrigger>
+                      <TabsTrigger value="import" className="text-xs py-2">
+                        Import
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="presets" className="mt-3 space-y-2">
                       <p className="text-xs text-muted-foreground">
                         Export your current configuration. You can preview or copy the preset JSON before downloading.
                       </p>
@@ -799,11 +939,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                           Download
                         </Button>
                       </div>
-                    </div>
-                  )}
-
-                  {activeExportTab === 'model' && (
-                    <div className="space-y-2">
+                    </TabsContent>
+                    
+                    <TabsContent value="model" className="mt-3 space-y-2">
                       <Button
                         variant={currentModelUrl ? "outline" : "ghost"}
                         size="sm"
@@ -818,11 +956,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                       <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
                         Additional formats (OBJ, FBX) planned — contact us if you need a specific export.
                       </div>
-                    </div>
-                  )}
-
-                  {activeExportTab === 'import' && (
-                    <div className="space-y-2">
+                    </TabsContent>
+                    
+                    <TabsContent value="import" className="mt-3 space-y-2">
                       <label className="block">
                         <Button
                           variant="outline"
@@ -839,13 +975,19 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                           className="hidden"
                         />
                       </label>
-                    </div>
-                  )}
+                    </TabsContent>
+                  </Tabs>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
+        <ColorPickerModal
+          isOpen={isColorPickerOpen}
+          onClose={() => setIsColorPickerOpen(false)}
+          currentColor={backgroundColor}
+          onColorChange={handleApplyBackgroundColor}
+        />
       </div>
     </div>
   );

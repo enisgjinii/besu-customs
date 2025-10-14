@@ -14,16 +14,26 @@ import {
   Camera,
   Package2,
   RotateCcw,
+  FileJson,
+  Image,
+  Video,
+  Bot,
+  Aperture,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import { UploadPanel } from "./upload-panel";
 import { UVEditor } from "./uv-editor";
 import { Button } from "./ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { AIImageGenerator } from "./ai-image-generator";
 
 export function ControlsPanel() {
   const [activeTab, setActiveTab] = useState<
     "upload" | "materials" | "texture" | "view" | "export"
   >("upload");
+  const [exportSubTab, setExportSubTab] = useState<
+    "camera" | "scene" | "ai" | "images" | "video" | "model"
+  >("camera");
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
   const exportPreset = useConfiguratorStore((state) => state.exportPreset);
@@ -31,6 +41,7 @@ export function ControlsPanel() {
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
+  const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
 
   const handleExport = () => {
     const json = exportPreset();
@@ -78,6 +89,90 @@ export function ControlsPanel() {
       link.click();
       URL.revokeObjectURL(url);
     });
+  };
+
+  const handleStartRecording = async () => {
+    // Enable auto-rotation when recording starts
+    setAutoRotate(true);
+
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    if (!canvas) {
+      alert("Canvas not found");
+      return;
+    }
+
+    try {
+      if (!canvas.captureStream) {
+        alert("Video recording is not supported in your browser");
+        return;
+      }
+
+      const stream = canvas.captureStream(30); // 30 FPS
+      const options: MediaRecorderOptions = { videoBitsPerSecond: 2500000 };
+      const fileExtension = "webm";
+
+      // Try WebM format
+      if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+        options.mimeType = "video/webm;codecs=vp9";
+      } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
+        options.mimeType = "video/webm;codecs=vp8";
+      } else if (MediaRecorder.isTypeSupported("video/webm")) {
+        options.mimeType = "video/webm";
+      } else {
+        alert("No supported video format found");
+        return;
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
+      const recordedChunks: Blob[] = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, {
+          type: options.mimeType || "video/webm",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = `model-video-${Date.now()}.${fileExtension}`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        // Disable auto-rotation when recording stops
+        setAutoRotate(false);
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error("MediaRecorder error:", event);
+        alert("Recording failed");
+        // Disable auto-rotation if recording fails
+        setAutoRotate(false);
+      };
+
+      mediaRecorder.start(100);
+      // Store reference to stop recording later
+      (window as any).mediaRecorder = mediaRecorder;
+    } catch (error) {
+      console.error("Failed to start recording:", error);
+      alert(
+        `Video recording failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      // Disable auto-rotation if recording fails
+      setAutoRotate(false);
+    }
+  };
+
+  const handleStopRecording = () => {
+    const mediaRecorder = (window as any).mediaRecorder;
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+    }
   };
 
   return (
@@ -152,122 +247,183 @@ export function ControlsPanel() {
         )}
         {activeTab === "texture" && <UVEditor />}
         {activeTab === "export" && (
-          <div className="p-4 space-y-4">
-            <div>
-              <h3 className="font-semibold mb-3">Scene Controls</h3>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleGrid}
-                  className="w-full justify-start bg-transparent"
-                >
-                  <Grid3x3 className="w-4 h-4 mr-2" />
-                  {showGrid ? "Hide Grid" : "Show Grid"}
-                </Button>
-                <ResetCameraButton />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleScreenshot}
-                  className="w-full justify-start bg-transparent"
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Take Screenshot
-                </Button>
-              </div>
-            </div>
-
-            <div className="border-t border-border/50 pt-4">
-              <h3 className="font-semibold mb-3">Export Options</h3>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Preview or copy your preset JSON before downloading. Model
-                  export will be disabled until a model is loaded.
-                </p>
-
-                <div className="grid grid-cols-3 gap-2">
+          <div className="p-4">
+            {/* Nested Tabs for Export Options */}
+            <Tabs value={exportSubTab} onValueChange={(value) => setExportSubTab(value as any)}>
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="camera" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Camera className="w-4 h-4" />
+                  <span>Camera</span>
+                </TabsTrigger>
+                <TabsTrigger value="scene" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Grid3x3 className="w-4 h-4" />
+                  <span>Scene</span>
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Bot className="w-4 h-4" />
+                  <span>AI</span>
+                </TabsTrigger>
+                <TabsTrigger value="images" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Image className="w-4 h-4" />
+                  <span>Images</span>
+                </TabsTrigger>
+                <TabsTrigger value="video" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Video className="w-4 h-4" />
+                  <span>Video</span>
+                </TabsTrigger>
+                <TabsTrigger value="model" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Package2 className="w-4 h-4" />
+                  <span>Model</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="camera" className="mt-4 space-y-2">
+                <h3 className="font-semibold mb-3">Camera Controls</h3>
+                <div className="space-y-2">
+                  <ResetCameraButton />
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      try {
-                        const json = exportPreset();
-                        navigator.clipboard?.writeText(json);
-                        alert("Preset JSON copied to clipboard");
-                      } catch (err) {
-                        console.error("Copy failed:", err);
-                        alert("Failed to copy preset JSON");
-                      }
-                    }}
-                    className="w-full justify-center col-span-1"
+                    onClick={handleScreenshot}
+                    className="w-full justify-start bg-transparent"
                   >
-                    Copy
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      try {
-                        const json = exportPreset();
-                        const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
-                        window.open(preview, "_blank");
-                      } catch (err) {
-                        console.error("Preview failed:", err);
-                        alert("Failed to open preview");
-                      }
-                    }}
-                    className="w-full justify-center col-span-1"
-                  >
-                    Preview
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExport}
-                    className="w-full justify-center col-span-1"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
+                    <Aperture className="w-4 h-4 mr-2" />
+                    Take Screenshot
                   </Button>
                 </div>
-
-                <Button
-                  variant={currentModelUrl ? "outline" : "ghost"}
-                  size="sm"
-                  onClick={handleExportModel}
-                  className="w-full justify-start bg-transparent"
-                  disabled={!currentModelUrl}
-                  title={
-                    currentModelUrl
-                      ? "Download configured model"
-                      : "No model loaded"
-                  }
-                >
-                  <Package2 className="w-4 h-4 mr-2" />
-                  Export Model (GLB)
-                </Button>
-
-                <label className="block">
+              </TabsContent>
+              
+              <TabsContent value="scene" className="mt-4 space-y-2">
+                <h3 className="font-semibold mb-3">Scene Options</h3>
+                <div className="space-y-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start cursor-pointer bg-transparent"
+                    onClick={toggleGrid}
+                    className="w-full justify-start bg-transparent"
                   >
-                    <Save className="w-4 h-4 mr-2" />
-                    Import Preset
+                    <Grid3x3 className="w-4 h-4 mr-2" />
+                    {showGrid ? "Hide Grid" : "Show Grid"}
                   </Button>
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImport}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAutoRotate(true)}
+                    className="w-full justify-start bg-transparent"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Enable Auto-Rotate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAutoRotate(false)}
+                    className="w-full justify-start bg-transparent"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Disable Auto-Rotate
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="ai" className="mt-4">
+                <h3 className="font-semibold mb-3">AI Image Generator</h3>
+                <AIImageGenerator />
+              </TabsContent>
+              
+              <TabsContent value="images" className="mt-4 space-y-2">
+                <h3 className="font-semibold mb-3">Export Images</h3>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleScreenshot}
+                    className="w-full justify-start bg-transparent"
+                  >
+                    <Image className="w-4 h-4 mr-2" />
+                    Export PNG Screenshot
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="video" className="mt-4 space-y-2">
+                <h3 className="font-semibold mb-3">Export Video</h3>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartRecording}
+                    className="w-full justify-start bg-transparent"
+                  >
+                    <Video className="w-4 h-4 mr-2" />
+                    Start Recording
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStopRecording}
+                    className="w-full justify-start bg-transparent"
+                  >
+                    <Video className="w-4 h-4 mr-2" />
+                    Stop Recording
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="model" className="mt-4 space-y-2">
+                <h3 className="font-semibold mb-3">Export Model & Presets</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Export your configured 3D model and presets. Model export will be disabled until a model is loaded.
+                </p>
+                
+                <div className="space-y-2">
+                  <Button
+                    variant={currentModelUrl ? "outline" : "ghost"}
+                    size="sm"
+                    onClick={handleExportModel}
+                    className="w-full justify-start bg-transparent"
+                    disabled={!currentModelUrl}
+                    title={
+                      currentModelUrl
+                        ? "Download configured model"
+                        : "No model loaded"
+                    }
+                  >
+                    <Package2 className="w-4 h-4 mr-2" />
+                    Export Model (GLB)
+                  </Button>
+                  
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExport}
+                      className="w-full justify-center"
+                    >
+                      <FileJson className="w-4 h-4 mr-2" />
+                      Export Preset
+                    </Button>
+
+                    <label className="block">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-center cursor-pointer"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Import Preset
+                      </Button>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleImport}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </div>

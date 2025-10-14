@@ -144,13 +144,13 @@ export function AIImageGenerator() {
   return (
     <div className="space-y-4" data-tour="ai-generator">
       <div className="space-y-2">
-        <Label htmlFor="ai-prompt" className="flex items-center gap-2">
+        <Label htmlFor="ai-prompt" className="flex items-center gap-2 text-sm">
           <Sparkles className="w-4 h-4" />
-          AI Image Generator
+          Describe the image you want to generate...
         </Label>
         <Input
           id="ai-prompt"
-          placeholder="Describe the image you want to generate..."
+          placeholder="A futuristic sports jersey design..."
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => {
@@ -160,14 +160,15 @@ export function AIImageGenerator() {
           }}
           disabled={loading}
           data-tour="ai-prompt"
+          className="text-sm"
         />
       </div>
 
       {/* User API Mode Toggle */}
-      <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+      <div className="flex items-center justify-between p-2 border rounded-lg bg-card">
         <div className="flex items-center gap-2">
           <Key className="w-4 h-4" />
-          <Label htmlFor="user-api-mode" className="text-sm font-medium">
+          <Label htmlFor="user-api-mode" className="text-xs font-medium">
             Use My API Key
           </Label>
         </div>
@@ -175,25 +176,27 @@ export function AIImageGenerator() {
           id="user-api-mode"
           checked={userApiMode}
           onCheckedChange={setUserApiMode}
+          className="data-[state=checked]:bg-primary"
         />
       </div>
 
       {/* User API Key Input */}
       {userApiMode && (
         <div className="space-y-2">
-          <Label htmlFor="user-api-key" className="flex items-center gap-2">
-            <Key className="w-4 h-4" />
-            Your Runware API Key
+          <Label htmlFor="user-api-key" className="flex items-center gap-2 text-xs">
+            <Key className="w-3 h-3" />
+            Enter your Runware API key...
           </Label>
           <Input
             id="user-api-key"
             type="password"
-            placeholder="Enter your Runware API key..."
+            placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx"
             value={userApiKey}
             onChange={(e) => setUserApiKey(e.target.value)}
             disabled={loading}
+            className="text-xs"
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] text-muted-foreground">
             Your API key will be used for image generation (3 uses per day)
           </p>
         </div>
@@ -202,7 +205,7 @@ export function AIImageGenerator() {
       {/* Usage Information */}
       {usage && (
         <div
-          className={`text-xs p-2 rounded-md ${
+          className={`text-[10px] p-2 rounded-md ${
             usage.remaining === 0
               ? "text-destructive bg-destructive/10 border border-destructive/20"
               : "text-muted-foreground bg-secondary/20"
@@ -222,7 +225,7 @@ export function AIImageGenerator() {
             {usage.used}/{usage.limit} calls used ({usage.remaining} remaining)
           </div>
           {usage.remaining === 0 && (
-            <div className="text-xs text-destructive mt-1">
+            <div className="text-[10px] text-destructive mt-1">
               Limit reached! Switch to system API or wait until tomorrow.
             </div>
           )}
@@ -237,17 +240,18 @@ export function AIImageGenerator() {
           (userApiMode && !userApiKey.trim()) ||
           (usage?.remaining === 0 && userApiMode)
         }
-        className="w-full"
+        className="w-full text-xs h-8"
         data-tour="ai-generate"
+        size="sm"
       >
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
             Generating...
           </>
         ) : (
           <>
-            <Sparkles className="w-4 h-4 mr-2" />
+            <Sparkles className="w-3 h-3 mr-2" />
             Generate Image
           </>
         )}
@@ -255,7 +259,7 @@ export function AIImageGenerator() {
 
       {generatedImages.length > 0 && (
         <div className="space-y-3">
-          <Label>Generated Images</Label>
+          <Label className="text-sm">Generated Images</Label>
 
           {/* Material Section Selector */}
           <div className="space-y-2">
@@ -263,12 +267,12 @@ export function AIImageGenerator() {
               Apply to Material Section
             </Label>
             <Select value={selectedSection} onValueChange={setSelectedSection}>
-              <SelectTrigger id="material-section">
+              <SelectTrigger id="material-section" className="text-xs h-8">
                 <SelectValue placeholder="Select a section..." />
               </SelectTrigger>
               <SelectContent>
                 {sections.map((section) => (
-                  <SelectItem key={section.id} value={section.id}>
+                  <SelectItem key={section.id} value={section.id} className="text-xs">
                     {section.name}
                   </SelectItem>
                 ))}
@@ -276,35 +280,37 @@ export function AIImageGenerator() {
             </Select>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2">
             {generatedImages.map((image, index) => (
               <div
                 key={image.imageUUID}
-                className="relative group rounded-lg overflow-hidden border bg-card"
+                className="relative group rounded-md overflow-hidden border bg-card"
               >
                 <Image
                   src={image.imageURL}
                   alt={`Generated ${index + 1}`}
                   width={512}
                   height={512}
-                  className="w-full h-auto"
+                  className="w-full h-auto object-cover"
                 />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2">
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={() => handleApplyToModel(image.imageURL)}
                     disabled={!selectedSection}
+                    className="text-xs h-7 px-2"
                   >
-                    <Paintbrush className="w-4 h-4 mr-2" />
+                    <Paintbrush className="w-3 h-3 mr-1" />
                     Apply
                   </Button>
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={() => handleDownload(image.imageURL, index)}
+                    className="text-xs h-7 px-2"
                   >
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="w-3 h-3 mr-1" />
                     Download
                   </Button>
                 </div>
