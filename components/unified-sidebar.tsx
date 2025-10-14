@@ -873,110 +873,98 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                     Export Model & Presets
                   </h3>
                   
-                  {/* Nested Tabs for Export Options */}
-                  <Tabs defaultValue="presets">
-                    <TabsList className="grid w-full grid-cols-3 h-auto">
-                      <TabsTrigger value="presets" className="text-xs py-2">
-                        Presets
-                      </TabsTrigger>
-                      <TabsTrigger value="model" className="text-xs py-2">
-                        Model
-                      </TabsTrigger>
-                      <TabsTrigger value="import" className="text-xs py-2">
-                        Import
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="presets" className="mt-3 space-y-2">
-                      <p className="text-xs text-muted-foreground">
-                        Export your current configuration. You can preview or copy the preset JSON before downloading.
-                      </p>
-                      <div className="grid grid-cols-3 gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            try {
-                              const json = exportPreset();
-                              navigator.clipboard?.writeText(json);
-                              alert("Preset JSON copied to clipboard");
-                            } catch (err) {
-                              console.error("Copy failed:", err);
-                              alert("Failed to copy preset JSON");
-                            }
-                          }}
-                          className="w-full justify-center text-xs h-8"
-                        >
-                          Copy
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            try {
-                              const json = exportPreset();
-                              const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
-                              window.open(preview, "_blank");
-                            } catch (err) {
-                              console.error("Preview failed:", err);
-                              alert("Failed to open preview");
-                            }
-                          }}
-                          className="w-full justify-center text-xs h-8"
-                        >
-                          Preview
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleExport}
-                          className="w-full justify-center text-xs h-8"
-                          data-tour="export-options"
-                        >
-                          <Download className="w-3 h-3 mr-1" />
-                          Download
-                        </Button>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="model" className="mt-3 space-y-2">
+                  {/* Export Presets Section */}
+                  <div className="space-y-2 mb-4">
+                    <p className="text-xs text-muted-foreground">
+                      Export your current configuration. You can preview or copy the preset JSON before downloading.
+                    </p>
+                    <div className="grid grid-cols-3 gap-1">
                       <Button
-                        variant={currentModelUrl ? "outline" : "ghost"}
+                        variant="outline"
                         size="sm"
-                        onClick={handleExportModel}
-                        className="w-full justify-start text-xs h-8"
-                        disabled={!currentModelUrl}
-                        title={currentModelUrl ? "Download configured model" : "No model loaded"}
+                        onClick={() => {
+                          try {
+                            const json = exportPreset();
+                            navigator.clipboard?.writeText(json);
+                            alert("Preset JSON copied to clipboard");
+                          } catch (err) {
+                            console.error("Copy failed:", err);
+                            alert("Failed to copy preset JSON");
+                          }
+                        }}
+                        className="w-full justify-center text-xs h-8"
                       >
-                        <Package2 className="w-3 h-3 mr-2" />
-                        Export Model (GLB)
+                        Copy
                       </Button>
-                      <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                        Additional formats (OBJ, FBX) planned — contact us if you need a specific export.
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="import" className="mt-3 space-y-2">
-                      <label className="block">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full justify-start text-xs h-8 cursor-pointer"
-                        >
-                          <Save className="w-3 h-3 mr-2" />
-                          Import Preset
-                        </Button>
-                        <input
-                          type="file"
-                          accept=".json"
-                          onChange={handleImport}
-                          className="hidden"
-                        />
-                      </label>
-                    </TabsContent>
-                  </Tabs>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          try {
+                            const json = exportPreset();
+                            const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
+                            window.open(preview, "_blank");
+                          } catch (err) {
+                            console.error("Preview failed:", err);
+                            alert("Failed to open preview");
+                          }
+                        }}
+                        className="w-full justify-center text-xs h-8"
+                      >
+                        Preview
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExport}
+                        className="w-full justify-center text-xs h-8"
+                        data-tour="export-options"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Export Model Section */}
+                  <div className="space-y-2 mb-4">
+                    <Button
+                      variant={currentModelUrl ? "outline" : "ghost"}
+                      size="sm"
+                      onClick={handleExportModel}
+                      className="w-full justify-start text-xs h-8"
+                      disabled={!currentModelUrl}
+                      title={currentModelUrl ? "Download configured model" : "No model loaded"}
+                    >
+                      <Package2 className="w-3 h-3 mr-2" />
+                      Export Model (GLB)
+                    </Button>
+                    <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
+                      Additional formats (OBJ, FBX) planned — contact us if you need a specific export.
+                    </div>
+                  </div>
+                  
+                  {/* Import Preset Section */}
+                  <div className="space-y-2">
+                    <label className="block">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-xs h-8 cursor-pointer"
+                      >
+                        <Save className="w-3 h-3 mr-2" />
+                        Import Preset
+                      </Button>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleImport}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>

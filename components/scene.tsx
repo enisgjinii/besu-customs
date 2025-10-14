@@ -1,17 +1,76 @@
 "use client";
 
-import { useRef, Suspense, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useRef, Suspense, useEffect, useMemo } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
   Grid,
   Environment,
   PerspectiveCamera,
+  Text,
 } from "@react-three/drei";
 import * as THREE from "three";
 import { ModelLoader } from "./model-loader";
 import { useConfiguratorStore } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
+
+// Background component that handles color, image, and video backgrounds
+function Background() {
+  const backgroundColor = useConfiguratorStore((state) => state.backgroundColor);
+  const backgroundImage = useConfiguratorStore((state) => state.backgroundImage);
+  const backgroundVideo = useConfiguratorStore((state) => state.backgroundVideo);
+  const isVideoPlaying = useConfiguratorStore((state) => state.isVideoPlaying);
+  
+  const { scene } = useThree();
+  
+  // Handle background color
+  useEffect(() => {
+    if (!backgroundImage && !backgroundVideo) {
+      scene.background = new THREE.Color(backgroundColor);
+    }
+  }, [backgroundColor, backgroundImage, backgroundVideo, scene]);
+  
+  // Handle background image
+  useEffect(() => {
+    if (backgroundImage) {
+      const loader = new THREE.TextureLoader();
+      loader.load(backgroundImage, (texture) => {
+        scene.background = texture;
+      });
+    }
+  }, [backgroundImage, scene]);
+  
+  // Handle background video
+  useEffect(() => {
+    if (backgroundVideo && isVideoPlaying) {
+      const video = document.createElement('video');
+      video.src = backgroundVideo;
+      video.loop = true;
+      video.muted = true;
+      video.play();
+      
+      const texture = new THREE.VideoTexture(video);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      scene.background = texture;
+      
+      return () => {
+        video.pause();
+        video.remove();
+      };
+    } else if (backgroundVideo && !isVideoPlaying) {
+      // Show first frame of video when paused
+      const video = document.createElement('video');
+      video.src = backgroundVideo;
+      video.muted = true;
+      
+      const texture = new THREE.VideoTexture(video);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      scene.background = texture;
+    }
+  }, [backgroundVideo, isVideoPlaying, scene]);
+  
+  return null;
+}
 
 // Loading fallback component for Suspense
 function LoadingFallback() {
@@ -86,6 +145,9 @@ export function Scene() {
         <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
 
         <Environment preset="studio" />
+
+        {/* Background handler */}
+        <Background />
 
         {showGrid && (
           <Grid args={[20, 20]} cellColor="#6b7280" sectionColor="#374151" />
