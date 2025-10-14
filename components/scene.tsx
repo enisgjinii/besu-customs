@@ -35,16 +35,22 @@ function Background() {
     if (backgroundImage) {
       const loader = new THREE.TextureLoader();
       loader.load(backgroundImage, (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
         scene.background = texture;
+      }, undefined, (error) => {
+        console.warn('Background image loading error (possibly CORS related):', error);
+        // Fallback to solid color background
+        scene.background = new THREE.Color(backgroundColor);
       });
     }
-  }, [backgroundImage, scene]);
+  }, [backgroundImage, backgroundColor, scene]);
   
   // Handle background video
   useEffect(() => {
     if (backgroundVideo && isVideoPlaying) {
       const video = document.createElement('video');
       video.src = backgroundVideo;
+      video.crossOrigin = "anonymous"; // Add CORS handling
       video.loop = true;
       video.muted = true;
       video.play();
@@ -52,6 +58,13 @@ function Background() {
       const texture = new THREE.VideoTexture(video);
       texture.colorSpace = THREE.SRGBColorSpace;
       scene.background = texture;
+      
+      // Add error handling for CORS issues
+      video.addEventListener('error', (e) => {
+        console.warn('Video loading error (possibly CORS related):', e);
+        // Fallback to a solid color background
+        scene.background = new THREE.Color(backgroundColor);
+      });
       
       return () => {
         video.pause();
@@ -61,11 +74,19 @@ function Background() {
       // Show first frame of video when paused
       const video = document.createElement('video');
       video.src = backgroundVideo;
+      video.crossOrigin = "anonymous"; // Add CORS handling
       video.muted = true;
       
       const texture = new THREE.VideoTexture(video);
       texture.colorSpace = THREE.SRGBColorSpace;
       scene.background = texture;
+      
+      // Add error handling for CORS issues
+      video.addEventListener('error', (e) => {
+        console.warn('Video loading error (possibly CORS related):', e);
+        // Fallback to a solid color background
+        scene.background = new THREE.Color(backgroundColor);
+      });
     }
   }, [backgroundVideo, isVideoPlaying, scene]);
   
