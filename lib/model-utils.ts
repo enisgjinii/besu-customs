@@ -122,6 +122,62 @@ export function applyBasketballJerseyNaming(
     sectionsCount: sections.length,
     firstFewMaterials: sections.slice(0, 3).map(s => s.originalName)
   });
+
+  // Special case: for the original 'Basketball Jersey Top And Long Shorts' model
+  // the client requested mostly original material names, BUT wants the
+  // primary FABRIC to be labeled as the 'Pants Waist Trim'. Preserve other
+  // original names while applying this single targeted substitution.
+  if (modelId.includes("basketball jersey top and long shorts")) {
+    console.log('ℹ️ Basketball Jersey Top And Long Shorts detected — applying ordered FABRIC remap');
+    // We'll preserve original names for everything except ordered fabric mappings.
+    const updated = sections.map((s) => ({ ...s, name: s.originalName }));
+
+    // Detect fabric candidates in the original sections order
+    const fabricCandidates = updated.filter((s) => {
+      const on = (s.originalName || "").toLowerCase();
+      return (
+        /^fabric\b/.test(on) ||
+        /^material\b/.test(on) ||
+        on === "fabric" ||
+        on.startsWith("fabric") ||
+        on.startsWith("material") ||
+        on === "default"
+      );
+    });
+
+  // Apply ordered mapping: 1st -> Pants Waist Trim, 2nd -> Back of Shorts, 3rd -> Front of Shorts, 4th+ -> Unknown
+    if (fabricCandidates.length > 0) {
+      if (fabricCandidates[0]) {
+        fabricCandidates[0].name = "Pants Waist Trim";
+        fabricCandidates[0].category = "Jersey";
+      }
+      if (fabricCandidates[1]) {
+        fabricCandidates[1].name = "Back of Shorts";
+        fabricCandidates[1].category = "Jersey";
+      }
+      if (fabricCandidates[2]) {
+        fabricCandidates[2].name = "Front of Shorts";
+        fabricCandidates[2].category = "Jersey";
+      }
+      for (let i = 3; i < fabricCandidates.length; i++) {
+        const s = fabricCandidates[i];
+        s.name = `Unknown Fabric - Investigate (${s.originalName || "unnamed"})`;
+        s.category = "Other";
+      }
+    }
+
+    // Final pass: ensure manufacturer shorthand 'ble' (and variants) are
+    // normalized even though we otherwise keep original names for this model.
+    updated.forEach((s) => {
+      const on = (s.originalName || "").toLowerCase();
+      if (on.startsWith("ble")) {
+        s.name = "Jersey Sleeve & Collar Trim";
+        s.category = "Piping/Trim";
+      }
+    });
+
+    return updated;
+  }
   
   const isBasketballByUrl = modelId.includes(
     "basketball jersey top and long shorts",
@@ -504,6 +560,12 @@ export function getUserFriendlyName(name: string): string {
   // Handle FABRIC -> Base Color conversion
   if (lowerCleanedName.includes("fabric") || lowerCleanedName === "fabric") {
     return "Base Color";
+  }
+
+  // Map manufacturer shorthand 'ble' (and variants like 'ble_123') to a clearer
+  // friendly name so it doesn't appear as ambiguous 'Ble' in the UI.
+  if (lowerCleanedName.startsWith("ble")) {
+    return "Jersey Sleeve & Collar Trim";
   }
 
   // Handle Baseball Jersey specific naming
