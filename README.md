@@ -40,7 +40,7 @@ When a model is loaded, the app automatically:
 1. Traverses the scene graph to find all meshes
 2. Extracts unique materials (MeshStandardMaterial)
 3. Categorizes materials based on naming conventions:
-   - **Body**: Contains "body" or "main"
+   - **Jersey**: Contains "body" or "main"
    - **Panels**: Contains "panel", "door", or "hood"
    - **Piping/Trim**: Contains "trim", "pipe", or "edge"
    - **Other**: Everything else

@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
+import type { Product } from "@/lib/store";
 import { AIImageGenerator } from "./ai-image-generator";
 import { OnboardingInfoButton } from "./onboarding-info-button";
 import { Button } from "./ui/button";
@@ -75,6 +76,17 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const setSelectedProduct = useConfiguratorStore(
     (state) => state.setSelectedProduct,
   );
+
+  // Group products by category for the model selector
+  const groupedProducts = (products as Product[])
+    .slice()
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .reduce((map: Record<string, Product[]>, p: Product) => {
+      const key = p.category || "Other";
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+      return map;
+    }, {} as Record<string, Product[]>);
   const cameraControlsRef = useConfiguratorStore(
     (state) => state.cameraControlsRef,
   );
@@ -463,7 +475,10 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
         {/* Model Dropdown */}
         <div data-tour="model-loader">
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Select Model
+            <div className="flex items-baseline justify-between">
+              <span>Select Model</span>
+              <span className="text-xs text-muted-foreground">{products.length} models</span>
+            </div>
           </label>
           <Select
             value={selectedProductId || undefined}
@@ -473,10 +488,17 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
               <SelectValue placeholder="Choose a model..." />
             </SelectTrigger>
             <SelectContent>
-              {products.map((product) => (
-                <SelectItem key={product.id} value={product.id}>
-                  {product.title}
-                </SelectItem>
+              {Object.entries(groupedProducts).map(([category, items]) => (
+                <div key={category} className="py-1">
+                  <div className="px-3 py-1 text-xs text-muted-foreground font-semibold">
+                    {category}
+                  </div>
+                  {items.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.title}
+                    </SelectItem>
+                  ))}
+                </div>
               ))}
             </SelectContent>
           </Select>

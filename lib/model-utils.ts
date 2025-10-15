@@ -115,7 +115,9 @@ export function applyBasketballJerseyNaming(
   const modelId = modelUrl?.toLowerCase() || "";
   const isBasketballByUrl = modelId.includes(
     "basketball jersey top and long shorts",
-  ) || modelId.includes("basketball jersey top and long shorts.glb");
+  ) || modelId.includes("basketball jersey top and long shorts.glb") ||
+    modelId.includes("basketball jersey and shorts") ||
+    modelId.includes("basketball jersey and shorts.glb");
 
   const containsBasketballKeywords = sections.some((section) =>
     (section.originalName || "").toLowerCase().includes("basketball"),
@@ -156,26 +158,24 @@ export function applyBasketballJerseyNaming(
     });
   }
 
-  // Apply the requested renaming for the first three fabric materials
+  // Apply the requested renaming for the first two fabric materials
   if (fabricCandidates.length > 0) {
     // Ensure we have stable order - rely on original appearance in sections array
     const fabricsInOrder = updatedSections.filter((s) => fabricCandidates.includes(s));
-    // Map the first three fabrics to the requested roles
+    // Map the first two fabrics to the requested roles
     if (fabricsInOrder[0]) {
-      fabricsInOrder[0].name = "Pants Waist Trim";
-      fabricsInOrder[0].category = "Body";
+      // Map first fabric to back of shorts
+      fabricsInOrder[0].name = "Back of Shorts";
+      fabricsInOrder[0].category = "Jersey";
     }
     if (fabricsInOrder[1]) {
-      fabricsInOrder[1].name = "Back of Shorts";
-      fabricsInOrder[1].category = "Body";
-    }
-    if (fabricsInOrder[2]) {
-      fabricsInOrder[2].name = "Front of Shorts";
-      fabricsInOrder[2].category = "Body";
+      // Map second fabric to front of shorts
+      fabricsInOrder[1].name = "Front of Shorts";
+      fabricsInOrder[1].category = "Jersey";
     }
 
-    // For any fourth (or more) fabric, mark as unknown so the UI indicates investigation is needed
-    for (let i = 3; i < fabricsInOrder.length; i++) {
+    // For any third (or more) fabric, mark as unknown so the UI indicates investigation is needed
+    for (let i = 2; i < fabricsInOrder.length; i++) {
       const s = fabricsInOrder[i];
       s.name = `Unknown Fabric - Investigate (${s.originalName || "unnamed"})`;
       s.category = "Other";
@@ -206,15 +206,20 @@ export function applyBasketballJerseyNaming(
     }
   });
 
-  // If this is a basketball jersey, remove any materials that represent buttons
+  // If this is a basketball jersey, remove any materials that represent buttons or buttonholes
   // — basketball jerseys in our product set don't have buttons and the exporter
-  // sometimes includes button materials; remove them to avoid confusing the UI.
+  // sometimes includes button/buttonhole materials; remove them to avoid confusing the UI.
+  // Apply button filtering if we detect basketball keywords OR if the model URL indicates basketball
   if (isBasketballByUrl || containsBasketballKeywords || hasCharacteristicNames) {
     // Filter out button-like sections by checking both originalName and computed name
     const filtered = updatedSections.filter((s) => {
       const on = (s.originalName || "").toLowerCase();
       const n = (s.name || "").toLowerCase();
-      if (on.includes("button") || n.includes("button")) {
+      // Remove any materials that contain button-related terms
+      const isButtonMaterial = on.includes("button") || n.includes("button") ||
+                              on.includes("buttonhole") || n.includes("buttonhole") ||
+                              n === "all buttons" || n === "button stitching color";
+      if (isButtonMaterial) {
         return false;
       }
       return true;
@@ -241,13 +246,24 @@ export function applyBasketballJerseyNaming(
  */
 function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSection[] {
   // Check if this might be a baseball jersey by looking at section names
-  const isBaseballJersey = sections.some(section => 
-    (section.originalName?.toLowerCase().includes('baseball') && 
+  // But skip if it looks like a basketball jersey
+  const hasBasketballKeywords = sections.some(section =>
+    (section.originalName?.toLowerCase().includes('basketball') &&
+    (section.originalName?.toLowerCase().includes('shorts') ||
+     section.originalName?.toLowerCase().includes('long')))
+  );
+
+  if (hasBasketballKeywords) {
+    return sections;
+  }
+
+  const isBaseballJersey = sections.some(section =>
+    (section.originalName?.toLowerCase().includes('baseball') &&
     section.originalName?.toLowerCase().includes('jersey')) ||
     section.name.toLowerCase().includes('baseball jersey') ||
     sections.some(s => s.originalName?.includes('Body_B') || s.originalName?.includes('Body_F'))
   );
-  
+
   if (!isBaseballJersey) {
     return sections;
   }
@@ -264,11 +280,9 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
       section.name = 'Back';
     }
     
-    // Handle Button materials with specific naming
+    // Handle Button materials with specific naming (remove second/top button option)
     if (section.originalName?.includes('Button_1')) {
       section.name = 'All Buttons';
-    } else if (section.originalName?.includes('Default_Button_3683977')) {
-      section.name = 'Top Button';
     } else if (section.originalName?.includes('Default_Button_3683978')) {
       section.name = 'Button Stitching Color';
     }
@@ -295,10 +309,6 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
   // Add All Buttons
   const allButtonsSection = updatedSections.find(section => section.name === 'All Buttons');
   if (allButtonsSection) orderedSections.push(allButtonsSection);
-  
-  // Add Top Button
-  const topButtonSection = updatedSections.find(section => section.name === 'Top Button');
-  if (topButtonSection) orderedSections.push(topButtonSection);
   
   // Add Button Stitching Color
   const buttonStitchingSection = updatedSections.find(section => section.name === 'Button Stitching Color');
@@ -338,9 +348,7 @@ export function getUserFriendlyName(name: string): string {
   if (name.includes('Button_1')) {
     return "All Buttons";
   }
-  if (name.includes('Default_Button_3683977')) {
-    return "Top Button";
-  }
+  // Removed mapping for Default_Button_3683977 (second/top button) per request
   if (name.includes('Default_Button_3683978')) {
     return "Button Stitching Color";
   }
@@ -378,9 +386,6 @@ export function getUserFriendlyName(name: string): string {
     if (lowerCleanedName.includes("button 1")) {
       return "All Buttons";
     }
-    if (lowerCleanedName.includes("button 2")) {
-      return "Top Button";
-    }
     if (lowerCleanedName.includes("button 3")) {
       return "Button Stitching Color";
     }
@@ -411,7 +416,7 @@ export function getUserFriendlyName(name: string): string {
     return "Panel";
   }
   if (lowerCleanedName.includes("body")) {
-    return "Body";
+    return "Jersey";
   }
   if (lowerCleanedName.includes("main")) {
     return "Main";
@@ -500,7 +505,7 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
   // Special handling for baseball jersey to ensure proper categorization
   if (name.includes('Body_F') || name.includes('Body_B') || 
       lowerName.includes("front") || lowerName.includes("back")) {
-    return "Body";
+    return "Jersey";
   }
   
   if (name.includes('Button')) {
@@ -519,10 +524,10 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
   if (lowerName.includes("baseball") && lowerName.includes("jersey")) {
     // Front/Back categorization for baseball jersey
     if (lowerName.includes("front")) {
-      return "Body";
+      return "Jersey";
     }
     if (lowerName.includes("back")) {
-      return "Body";
+      return "Jersey";
     }
     // Keep other materials in their appropriate categories
   }
@@ -530,12 +535,12 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
   // Special handling for basketball jersey materials
   if (name.includes('Pants Waist Trim') || name.includes('Back of Shorts') || name.includes('Front of Shorts') ||
       name.includes('Waistband Elastic')) {
-    return "Body";
+    return "Jersey";
   }
 
   // Front/Back categorization
   if (lowerName.includes("front") || lowerName.includes("back")) {
-    return "Body";
+    return "Jersey";
   }
 
   if (
@@ -544,7 +549,7 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
     lowerName.includes("chest") ||
     lowerName.includes("torso")
   ) {
-    return "Body";
+    return "Jersey";
   }
   if (
     lowerName.includes("panel") ||

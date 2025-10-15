@@ -20,12 +20,13 @@ Once the model is detected, the following naming transformations are applied:
 
 | Original Material Name | New User-Friendly Name                    | Notes |
 |------------------------|-------------------------------------------|-------|
-| First "Metal"          | Pants Waist Trim                          | The trim material around the waist of the pants |
-| Second "Metal"         | Back of Shorts                            | The material on the back of the shorts |
+| First "FABRIC"         | Back of Shorts                            | The material on the back of the shorts |
+| Second "FABRIC"        | Front of Shorts                           | The material on the front of the shorts |
 | "Zipper"               | Front of Shorts                           | The material on the front of the shorts |
 | "Elastic"              | Waistband Elastic - Needs Further Identification | The elastic component, requires further investigation |
 | "Topstitch"            | Stitching                                 | Stitching details on the garment |
 | "Panel"                | Main Panel                                | The main panel of the garment |
+| Button/Buttonhole      | *Removed*                                 | Button and buttonhole materials are filtered out as they don't apply to basketball jerseys |
 
 ### Code Implementation
 
@@ -38,8 +39,9 @@ The order of processing is:
 ### Categorization
 
 The new material names are properly categorized:
-- "Pants Waist Trim", "Back of Shorts", "Front of Shorts", "Waistband Elastic" → "Body" category
+- "Back of Shorts", "Front of Shorts", "Waistband Elastic" → "Jersey" category
 - Other materials maintain their appropriate categories
+- Button and buttonhole materials are filtered out entirely
 
 ## Future Improvements
 

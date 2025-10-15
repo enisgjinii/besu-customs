@@ -3,55 +3,28 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Package } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { Product } from "@/lib/store";
 
 export function ProductSidebar() {
-  const setCurrentModelUrl = useConfiguratorStore(
-    (state) => state.setCurrentModelUrl,
-  );
-  const [models, setModels] = useState<{ name: string; url: string }[]>([]);
-  const currentModelUrl = useConfiguratorStore(
-    (state) => state.currentModelUrl,
-  );
+  const products = useConfiguratorStore((state) => state.products);
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const setCurrentModelUrl = useConfiguratorStore((state) => state.setCurrentModelUrl);
 
-  function prettyName(filename: string) {
-    // Remove extension
-    let name = filename.replace(/\.glb$/i, "");
-    // Replace underscores, multiple spaces, dashes with single space
-    name = name.replace(/[_.\-]+/g, " ");
-    name = name.replace(/\s+/g, " ").trim();
-    // Title case (simple)
-    name = name
-      .split(" ")
-      .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : ""))
-      .join(" ");
-    return name;
-  }
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    let canceled = false;
-    fetch("/api/models")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!canceled && Array.isArray(data)) {
-          // sort and set
-          const sorted = data
-            .slice()
-            .sort((a: { name: string }, b: { name: string }) => {
-              const na = prettyName(a.name).toLowerCase();
-              const nb = prettyName(b.name).toLowerCase();
-              return na < nb ? -1 : na > nb ? 1 : 0;
-            });
-          setModels(sorted);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch models:", err);
-      });
+    const cats = Array.from(new Set(products.map((p) => p.category || "Other")));
+    const map: Record<string, boolean> = {};
+    cats.forEach((c) => (map[c] = false));
+    setCollapsed(map);
+  }, [products]);
 
-    return () => {
-      canceled = true;
-    };
-  }, []);
+  const grouped = products.reduce((map: Record<string, Product[]>, p) => {
+    const key = p.category || "Other";
+    if (!map[key]) map[key] = [];
+    map[key].push(p as Product);
+    return map;
+  }, {} as Record<string, Product[]>);
 
   return (
     <div className="h-full flex flex-col bg-card w-full">
@@ -60,42 +33,47 @@ export function ProductSidebar() {
           <Package className="w-5 h-5 text-primary" />
           Models
         </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Select a 3D model to customize
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">Select a 3D model to customize</p>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3">
-        {models.length > 0 ? (
-          <div className="space-y-1.5">
-            {models.map((m) => {
-              const display = prettyName(m.name);
-              const isSelected = currentModelUrl === m.url;
-              const handleModelClick = () => {
-                console.log("ProductSidebar: loading model URL", m.url);
-                setCurrentModelUrl(m.url);
-              };
-
-              return (
+        {products.length > 0 ? (
+          <div className="space-y-2">
+            {Object.entries(grouped).map(([category, items]) => (
+              <div key={category} className="mb-1">
                 <button
-                  key={m.url}
-                  onClick={handleModelClick}
-                  title={display}
-                  className={`group block text-left w-full text-sm px-3 py-3 rounded-lg transition-all duration-200 ${
-                    isSelected
-                      ? "bg-primary text-primary-foreground font-medium shadow-md"
-                      : "hover:bg-secondary/80 text-foreground hover:shadow-sm"
-                  }`}
+                  onClick={() => setCollapsed((s) => ({ ...s, [category]: !s[category] }))}
+                  className="w-full text-left px-3 py-2 rounded-md font-semibold bg-muted/40"
                 >
-                  <span className="truncate block">{display}</span>
-                  {isSelected && (
-                    <span className="text-xs opacity-80 mt-0.5 block">
-                      Currently loaded
-                    </span>
-                  )}
+                  {category} ({items.length})
                 </button>
-              );
-            })}
+
+                {!collapsed[category] && (
+                  <div className="mt-2 space-y-1">
+                    {items.map((p) => {
+                      const isSelected = currentModelUrl === p.modelUrl;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => setCurrentModelUrl(p.modelUrl || null)}
+                          title={p.title}
+                          className={`group block text-left w-full text-sm px-3 py-2 rounded-lg transition-all duration-200 ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground font-medium shadow-md"
+                              : "hover:bg-secondary/80 text-foreground hover:shadow-sm"
+                          }`}
+                        >
+                          <span className="truncate block">{p.title}</span>
+                          {isSelected && (
+                            <span className="text-xs opacity-80 mt-0.5 block">Currently loaded</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center text-sm text-muted-foreground py-12">
