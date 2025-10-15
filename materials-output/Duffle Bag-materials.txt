@@ -1,0 +1,183 @@
+3D Model Materials Report
+========================
+Model Name: Duffle Bag
+File Name: Duffle Bag.glb
+Generated on: 2025-10-15T07:30:04.498Z
+Total Materials: 11
+
+Material 1
+  ID: mat_duffle_bag_1
+  Name: Trim
+  Type: MeshStandardMaterial
+  Color: #377c6d
+  Roughness: 0.80
+  Metalness: 0.29
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_duffle_bag_2
+  Name: Zipper
+  Type: MeshStandardMaterial
+  Color: #31c0ec
+  Roughness: 0.34
+  Metalness: 0.06
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_duffle_bag_3
+  Name: Lining
+  Type: MeshStandardMaterial
+  Color: #5138b4
+  Roughness: 0.99
+  Metalness: 0.13
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: Yes
+
+Material 4
+  ID: mat_duffle_bag_4
+  Name: Topstitch
+  Type: MeshStandardMaterial
+  Color: #0e50f4
+  Roughness: 0.88
+  Metalness: 0.01
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: Yes
+
+Material 5
+  ID: mat_duffle_bag_5
+  Name: Mesh
+  Type: MeshStandardMaterial
+  Color: #e54595
+  Roughness: 0.82
+  Metalness: 0.14
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_duffle_bag_6
+  Name: Panel
+  Type: MeshStandardMaterial
+  Color: #ebcd74
+  Roughness: 0.40
+  Metalness: 0.26
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 7
+  ID: mat_duffle_bag_7
+  Name: Collar
+  Type: MeshStandardMaterial
+  Color: #2372ea
+  Roughness: 0.46
+  Metalness: 0.14
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 8
+  ID: mat_duffle_bag_8
+  Name: Brim
+  Type: MeshStandardMaterial
+  Color: #fd3fbd
+  Roughness: 0.91
+  Metalness: 0.13
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 9
+  ID: mat_duffle_bag_9
+  Name: Mesh
+  Type: MeshStandardMaterial
+  Color: #1a13b5
+  Roughness: 0.19
+  Metalness: 0.05
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: Yes
+
+Material 10
+  ID: mat_duffle_bag_10
+  Name: Main Body
+  Type: MeshStandardMaterial
+  Color: #8272d7
+  Roughness: 0.71
+  Metalness: 0.06
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 11
+  ID: mat_duffle_bag_11
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #9b23ed
+  Roughness: 0.13
+  Metalness: 0.06
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+

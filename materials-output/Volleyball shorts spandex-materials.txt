@@ -1,0 +1,151 @@
+3D Model Materials Report
+========================
+Model Name: Volleyball shorts spandex
+File Name: Volleyball shorts spandex.glb
+Generated on: 2025-10-15T07:30:04.501Z
+Total Materials: 9
+
+Material 1
+  ID: mat_volleyball_shorts_spandex_1
+  Name: Hood
+  Type: MeshStandardMaterial
+  Color: #250d47
+  Roughness: 0.31
+  Metalness: 0.24
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 2
+  ID: mat_volleyball_shorts_spandex_2
+  Name: Sleeve
+  Type: MeshStandardMaterial
+  Color: #d3cc5e
+  Roughness: 0.80
+  Metalness: 0.27
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_volleyball_shorts_spandex_3
+  Name: Hood
+  Type: MeshStandardMaterial
+  Color: #8181e4
+  Roughness: 0.48
+  Metalness: 0.23
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_volleyball_shorts_spandex_4
+  Name: Button
+  Type: MeshStandardMaterial
+  Color: #d09c71
+  Roughness: 0.40
+  Metalness: 0.00
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_volleyball_shorts_spandex_5
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #06b1e2
+  Roughness: 0.73
+  Metalness: 0.05
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 6
+  ID: mat_volleyball_shorts_spandex_6
+  Name: Rubber
+  Type: MeshStandardMaterial
+  Color: #6c6953
+  Roughness: 0.60
+  Metalness: 0.01
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: Yes
+
+Material 7
+  ID: mat_volleyball_shorts_spandex_7
+  Name: Topstitch
+  Type: MeshStandardMaterial
+  Color: #3a387f
+  Roughness: 0.25
+  Metalness: 0.25
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 8
+  ID: mat_volleyball_shorts_spandex_8
+  Name: Leather
+  Type: MeshStandardMaterial
+  Color: #3d7d7b
+  Roughness: 0.04
+  Metalness: 0.20
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 9
+  ID: mat_volleyball_shorts_spandex_9
+  Name: Leather
+  Type: MeshStandardMaterial
+  Color: #45b969
+  Roughness: 0.49
+  Metalness: 0.01
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+

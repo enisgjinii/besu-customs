@@ -1,0 +1,183 @@
+3D Model Materials Report
+========================
+Model Name: Hoodie
+File Name: Hoodie.glb
+Generated on: 2025-10-15T07:30:04.498Z
+Total Materials: 11
+
+Material 1
+  ID: mat_hoodie_1
+  Name: Brim
+  Type: MeshStandardMaterial
+  Color: #715255
+  Roughness: 0.51
+  Metalness: 0.09
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_hoodie_2
+  Name: Panel
+  Type: MeshStandardMaterial
+  Color: #d7c70a
+  Roughness: 0.43
+  Metalness: 0.27
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_hoodie_3
+  Name: Main Body
+  Type: MeshStandardMaterial
+  Color: #1b04b4
+  Roughness: 0.11
+  Metalness: 0.27
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_hoodie_4
+  Name: Pocket
+  Type: MeshStandardMaterial
+  Color: #13e88a
+  Roughness: 0.16
+  Metalness: 0.09
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_hoodie_5
+  Name: Mesh
+  Type: MeshStandardMaterial
+  Color: #677323
+  Roughness: 0.98
+  Metalness: 0.19
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.57
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_hoodie_6
+  Name: Hood
+  Type: MeshStandardMaterial
+  Color: #c0b336
+  Roughness: 0.05
+  Metalness: 0.04
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 7
+  ID: mat_hoodie_7
+  Name: Elastic
+  Type: MeshStandardMaterial
+  Color: #0bdcd0
+  Roughness: 0.21
+  Metalness: 0.22
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 8
+  ID: mat_hoodie_8
+  Name: Lining
+  Type: MeshStandardMaterial
+  Color: #619686
+  Roughness: 0.81
+  Metalness: 0.28
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 9
+  ID: mat_hoodie_9
+  Name: Logo
+  Type: MeshStandardMaterial
+  Color: #722397
+  Roughness: 0.13
+  Metalness: 0.15
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 10
+  ID: mat_hoodie_10
+  Name: Metal
+  Type: MeshStandardMaterial
+  Color: #cc9e1a
+  Roughness: 0.30
+  Metalness: 0.26
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 11
+  ID: mat_hoodie_11
+  Name: Main Body
+  Type: MeshStandardMaterial
+  Color: #e20033
+  Roughness: 0.13
+  Metalness: 0.19
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+

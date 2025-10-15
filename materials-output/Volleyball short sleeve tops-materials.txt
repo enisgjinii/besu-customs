@@ -1,0 +1,87 @@
+3D Model Materials Report
+========================
+Model Name: Volleyball short sleeve tops
+File Name: Volleyball short sleeve tops.glb
+Generated on: 2025-10-15T07:30:04.500Z
+Total Materials: 5
+
+Material 1
+  ID: mat_volleyball_short_sleeve_tops_1
+  Name: Logo
+  Type: MeshStandardMaterial
+  Color: #5963f5
+  Roughness: 0.20
+  Metalness: 0.12
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.67
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_volleyball_short_sleeve_tops_2
+  Name: Zipper
+  Type: MeshStandardMaterial
+  Color: #761432
+  Roughness: 0.41
+  Metalness: 0.13
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_volleyball_short_sleeve_tops_3
+  Name: Metal
+  Type: MeshStandardMaterial
+  Color: #8d588f
+  Roughness: 0.26
+  Metalness: 0.15
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_volleyball_short_sleeve_tops_4
+  Name: Fabric
+  Type: MeshStandardMaterial
+  Color: #82c5a3
+  Roughness: 0.75
+  Metalness: 0.21
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_volleyball_short_sleeve_tops_5
+  Name: Sleeve
+  Type: MeshStandardMaterial
+  Color: #53061f
+  Roughness: 0.11
+  Metalness: 0.19
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+

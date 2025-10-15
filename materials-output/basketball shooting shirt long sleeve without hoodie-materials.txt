@@ -1,0 +1,119 @@
+3D Model Materials Report
+========================
+Model Name: basketball shooting shirt long sleeve without hoodie
+File Name: basketball shooting shirt long sleeve without hoodie.glb
+Generated on: 2025-10-15T07:30:04.501Z
+Total Materials: 7
+
+Material 1
+  ID: mat_basketball_shooting_shirt_long_sleeve_without_hoodie_1
+  Name: Hood
+  Type: MeshStandardMaterial
+  Color: #2f02f5
+  Roughness: 0.23
+  Metalness: 0.14
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_basketball_shooting_shirt_long_sleeve_without_hoodie_2
+  Name: Rubber
+  Type: MeshStandardMaterial
+  Color: #db456d
+  Roughness: 0.30
+  Metalness: 0.13
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_basketball_shooting_shirt_long_sleeve_without_hoodie_3
+  Name: Logo
+  Type: MeshStandardMaterial
+  Color: #f7fbe4
+  Roughness: 0.64
+  Metalness: 0.11
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_basketball_shooting_shirt_long_sleeve_without_hoodie_4
+  Name: Elastic
+  Type: MeshStandardMaterial
+  Color: #3a4a19
+  Roughness: 0.12
+  Metalness: 0.20
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_basketball_shooting_shirt_long_sleeve_without_hoodie_5
+  Name: Brim
+  Type: MeshStandardMaterial
+  Color: #7b8cd3
+  Roughness: 0.17
+  Metalness: 0.14
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_basketball_shooting_shirt_long_sleeve_without_hoodie_6
+  Name: Topstitch
+  Type: MeshStandardMaterial
+  Color: #db5fb9
+  Roughness: 0.15
+  Metalness: 0.28
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 7
+  ID: mat_basketball_shooting_shirt_long_sleeve_without_hoodie_7
+  Name: Sleeve
+  Type: MeshStandardMaterial
+  Color: #2de509
+  Roughness: 0.06
+  Metalness: 0.05
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+

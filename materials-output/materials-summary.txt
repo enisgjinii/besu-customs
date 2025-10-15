@@ -1,0 +1,150 @@
+3D Model Materials Summary Report
+================================
+Generated on: 2025-10-15T07:30:04.495Z
+Total Models: 29
+
+Model 1: Baseball caps
+  File: Baseball caps.glb
+  Materials: 9
+  Report: Baseball caps-materials.txt
+
+Model 2: Baseball pants
+  File: Baseball pants.glb
+  Materials: 7
+  Report: Baseball pants-materials.txt
+
+Model 3: Basketball jersey top long pants
+  File: Basketball jersey top long pants.glb
+  Materials: 6
+  Report: Basketball jersey top long pants-materials.txt
+
+Model 4: Basketball jersey
+  File: Basketball jersey.glb
+  Materials: 5
+  Report: Basketball jersey-materials.txt
+
+Model 5: Duffle Bag
+  File: Duffle Bag.glb
+  Materials: 11
+  Report: Duffle Bag-materials.txt
+
+Model 6: Duffle bag_01
+  File: Duffle bag_01.glb
+  Materials: 8
+  Report: Duffle bag_01-materials.txt
+
+Model 7: Flag football top with hoodie
+  File: Flag football top with hoodie.glb
+  Materials: 12
+  Report: Flag football top with hoodie-materials.txt
+
+Model 8: Half short
+  File: Half short.glb
+  Materials: 6
+  Report: Half short-materials.txt
+
+Model 9: Hoodie
+  File: Hoodie.glb
+  Materials: 11
+  Report: Hoodie-materials.txt
+
+Model 10: Polo shirts long sleeve
+  File: Polo shirts long sleeve.glb
+  Materials: 11
+  Report: Polo shirts long sleeve-materials.txt
+
+Model 11: Polo shirts short sleeve
+  File: Polo shirts short sleeve.glb
+  Materials: 4
+  Report: Polo shirts short sleeve-materials.txt
+
+Model 12: Soccer jersey crew neck
+  File: Soccer jersey crew neck.glb
+  Materials: 11
+  Report: Soccer jersey crew neck-materials.txt
+
+Model 13: Soccer jersey v-neck
+  File: Soccer jersey v-neck.glb
+  Materials: 3
+  Report: Soccer jersey v-neck-materials.txt
+
+Model 14: Standard bottom cut, cuffed
+  File: Standard bottom cut, cuffed.glb
+  Materials: 6
+  Report: Standard bottom cut, cuffed-materials.txt
+
+Model 15: Track and field compression shorts
+  File: Track and field compression shorts.glb
+  Materials: 4
+  Report: Track and field compression shorts-materials.txt
+
+Model 16: Track and field mid-len gth shorts
+  File: Track and field mid-len gth shorts.glb
+  Materials: 12
+  Report: Track and field mid-len gth shorts-materials.txt
+
+Model 17: Track and field split shorts
+  File: Track and field split shorts.glb
+  Materials: 4
+  Report: Track and field split shorts-materials.txt
+
+Model 18: Track and field top crop top
+  File: Track and field top crop top.glb
+  Materials: 5
+  Report: Track and field top crop top-materials.txt
+
+Model 19: Track and field top short sleeve
+  File: Track and field top short sleeve.glb
+  Materials: 6
+  Report: Track and field top short sleeve-materials.txt
+
+Model 20: Track and field top tank top
+  File: Track and field top tank top.glb
+  Materials: 11
+  Report: Track and field top tank top-materials.txt
+
+Model 21: Volleyball long sleeve tops
+  File: Volleyball long sleeve tops.glb
+  Materials: 11
+  Report: Volleyball long sleeve tops-materials.txt
+
+Model 22: Volleyball short sleeve tops
+  File: Volleyball short sleeve tops.glb
+  Materials: 5
+  Report: Volleyball short sleeve tops-materials.txt
+
+Model 23: Volleyball shorts spandex 4
+  File: Volleyball shorts spandex 4.glb
+  Materials: 6
+  Report: Volleyball shorts spandex 4-materials.txt
+
+Model 24: Volleyball shorts spandex
+  File: Volleyball shorts spandex.glb
+  Materials: 9
+  Report: Volleyball shorts spandex-materials.txt
+
+Model 25: Volleyball spandex
+  File: Volleyball spandex.glb
+  Materials: 6
+  Report: Volleyball spandex-materials.txt
+
+Model 26: basketball shooting shirt long sleeve without hoodie
+  File: basketball shooting shirt long sleeve without hoodie.glb
+  Materials: 7
+  Report: basketball shooting shirt long sleeve without hoodie-materials.txt
+
+Model 27: basketball shooting shirt short sleeve with hoodie
+  File: basketball shooting shirt short sleeve with hoodie.glb
+  Materials: 3
+  Report: basketball shooting shirt short sleeve with hoodie-materials.txt
+
+Model 28: basketball shooting shirt, short sleeve without a hoodie
+  File: basketball shooting shirt, short sleeve without a hoodie.glb
+  Materials: 8
+  Report: basketball shooting shirt, short sleeve without a hoodie-materials.txt
+
+Model 29: long pants
+  File: long pants.glb
+  Materials: 5
+  Report: long pants-materials.txt
+

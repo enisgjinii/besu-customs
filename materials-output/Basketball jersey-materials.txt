@@ -1,0 +1,87 @@
+3D Model Materials Report
+========================
+Model Name: Basketball jersey
+File Name: Basketball jersey.glb
+Generated on: 2025-10-15T07:30:04.498Z
+Total Materials: 5
+
+Material 1
+  ID: mat_basketball_jersey_1
+  Name: Main Body
+  Type: MeshStandardMaterial
+  Color: #3f820d
+  Roughness: 0.64
+  Metalness: 0.19
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 2
+  ID: mat_basketball_jersey_2
+  Name: Brim
+  Type: MeshStandardMaterial
+  Color: #81c4c7
+  Roughness: 0.35
+  Metalness: 0.08
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_basketball_jersey_3
+  Name: Fabric
+  Type: MeshStandardMaterial
+  Color: #46dca3
+  Roughness: 0.32
+  Metalness: 0.04
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: Yes
+
+Material 4
+  ID: mat_basketball_jersey_4
+  Name: Leather
+  Type: MeshStandardMaterial
+  Color: #5b4135
+  Roughness: 0.50
+  Metalness: 0.25
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.88
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_basketball_jersey_5
+  Name: Elastic
+  Type: MeshStandardMaterial
+  Color: #0254be
+  Roughness: 0.55
+  Metalness: 0.10
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: Yes
+

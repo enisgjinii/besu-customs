@@ -42,6 +42,70 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
     }
   });
 
+  // Special handling for baseball jerseys to reorder sections
+  return reorderBaseballJerseySections(sections);
+}
+
+/**
+ * Reorder sections for baseball jerseys to ensure front comes before back
+ * and apply specific naming rules
+ * @param sections Array of material sections
+ * @returns Reordered array of material sections
+ */
+function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSection[] {
+  // Check if this might be a baseball jersey by looking at section names
+  const isBaseballJersey = sections.some(section => 
+    section.originalName?.toLowerCase().includes('baseball') && 
+    section.originalName?.toLowerCase().includes('pants')
+  );
+  
+  if (!isBaseballJersey) {
+    return sections;
+  }
+  
+  // Apply specific naming rules for baseball jersey
+  let bodyCount = 0;
+  sections.forEach(section => {
+    // Change "Baseball pants" to "Baseball Jersey" in the display name
+    if (section.name.toLowerCase().includes('baseball') && section.name.toLowerCase().includes('pants')) {
+      section.name = section.name.replace(/pants/gi, 'Jersey');
+    }
+    
+    // Handle Body materials
+    if (section.name === 'Body' || section.name === 'Main Body') {
+      bodyCount++;
+      if (bodyCount === 1) {
+        section.name = 'Back';
+      } else if (bodyCount === 2) {
+        section.name = 'Front';
+      }
+    }
+    
+    // Handle Button materials
+    if (section.originalName?.toLowerCase().includes('button 1')) {
+      section.name = 'All Buttons';
+    } else if (section.originalName?.toLowerCase().includes('button 2')) {
+      section.name = 'Top Button';
+    } else if (section.originalName?.toLowerCase().includes('button 3')) {
+      section.name = 'Button Stitching Color';
+    }
+    
+    // Keep collar and sleeve as is (no change needed)
+  });
+  
+  // Reorder to put Front before Back
+  const frontIndex = sections.findIndex(section => section.name === 'Front');
+  const backIndex = sections.findIndex(section => section.name === 'Back');
+  
+  if (frontIndex !== -1 && backIndex !== -1 && frontIndex > backIndex) {
+    // Swap front and back positions
+    const newSections = [...sections];
+    const temp = newSections[frontIndex];
+    newSections[frontIndex] = newSections[backIndex];
+    newSections[backIndex] = temp;
+    return newSections;
+  }
+  
   return sections;
 }
 
@@ -53,9 +117,15 @@ export function getUserFriendlyName(name: string): string {
 
   const lowerCleanedName = cleanedName.toLowerCase();
 
+  // Handle baseball pants -> baseball jersey renaming
+  if (lowerCleanedName.includes("baseball") && lowerCleanedName.includes("pants")) {
+    // Replace "pants" with "jersey"
+    cleanedName = cleanedName.replace(/pants/gi, "jersey");
+  }
+
   // Specific matching for common clothing terms - prioritize these
   if (lowerCleanedName.includes("topstitch")) {
-    return "Topstitch";
+    return "Stitching"; // Changed from "Topstitch" to "Stitching" per requirements
   }
   if (
     lowerCleanedName.includes("strap") &&
@@ -66,13 +136,19 @@ export function getUserFriendlyName(name: string): string {
   if (lowerCleanedName.includes("brim")) {
     return "Brim";
   }
-  if (
-    lowerCleanedName.includes("button") &&
-    !lowerCleanedName.includes("buttonless")
-  ) {
+  if (lowerCleanedName.includes("button")) {
     // More specific button matching
     if (lowerCleanedName.includes("buttonhole")) {
       return "Buttonhole";
+    }
+    if (lowerCleanedName.includes("button 1")) {
+      return "All Buttons";
+    }
+    if (lowerCleanedName.includes("button 2")) {
+      return "Top Button";
+    }
+    if (lowerCleanedName.includes("button 3")) {
+      return "Button Stitching Color";
     }
     return "Button";
   }

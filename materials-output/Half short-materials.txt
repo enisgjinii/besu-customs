@@ -1,0 +1,103 @@
+3D Model Materials Report
+========================
+Model Name: Half short
+File Name: Half short.glb
+Generated on: 2025-10-15T07:30:04.498Z
+Total Materials: 6
+
+Material 1
+  ID: mat_half_short_1
+  Name: Main Body
+  Type: MeshStandardMaterial
+  Color: #5b9d51
+  Roughness: 0.05
+  Metalness: 0.00
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.96
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_half_short_2
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #a813a3
+  Roughness: 0.12
+  Metalness: 0.13
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_half_short_3
+  Name: Metal
+  Type: MeshStandardMaterial
+  Color: #bb9ee4
+  Roughness: 0.07
+  Metalness: 0.19
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_half_short_4
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #542a11
+  Roughness: 0.99
+  Metalness: 0.07
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_half_short_5
+  Name: Leather
+  Type: MeshStandardMaterial
+  Color: #aaf7b9
+  Roughness: 0.68
+  Metalness: 0.26
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 6
+  ID: mat_half_short_6
+  Name: Brim
+  Type: MeshStandardMaterial
+  Color: #9c55eb
+  Roughness: 0.86
+  Metalness: 0.20
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 0.76
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+

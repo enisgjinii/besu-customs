@@ -1,0 +1,199 @@
+3D Model Materials Report
+========================
+Model Name: Track and field mid-len gth shorts
+File Name: Track and field mid-len gth shorts.glb
+Generated on: 2025-10-15T07:30:04.500Z
+Total Materials: 12
+
+Material 1
+  ID: mat_track_and_field_mid-len_gth_shorts_1
+  Name: Hood
+  Type: MeshStandardMaterial
+  Color: #f966eb
+  Roughness: 0.15
+  Metalness: 0.02
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: Yes
+
+Material 2
+  ID: mat_track_and_field_mid-len_gth_shorts_2
+  Name: Hood
+  Type: MeshStandardMaterial
+  Color: #cfd29f
+  Roughness: 0.57
+  Metalness: 0.16
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.82
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 3
+  ID: mat_track_and_field_mid-len_gth_shorts_3
+  Name: Pocket
+  Type: MeshStandardMaterial
+  Color: #65346f
+  Roughness: 0.32
+  Metalness: 0.15
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_track_and_field_mid-len_gth_shorts_4
+  Name: Sleeve
+  Type: MeshStandardMaterial
+  Color: #0ce602
+  Roughness: 0.81
+  Metalness: 0.00
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: Yes
+
+Material 5
+  ID: mat_track_and_field_mid-len_gth_shorts_5
+  Name: Pocket
+  Type: MeshStandardMaterial
+  Color: #b88e7e
+  Roughness: 0.55
+  Metalness: 0.12
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_track_and_field_mid-len_gth_shorts_6
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #b1e960
+  Roughness: 0.46
+  Metalness: 0.19
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 7
+  ID: mat_track_and_field_mid-len_gth_shorts_7
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #a6b7af
+  Roughness: 0.74
+  Metalness: 0.08
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 8
+  ID: mat_track_and_field_mid-len_gth_shorts_8
+  Name: Collar
+  Type: MeshStandardMaterial
+  Color: #b624c8
+  Roughness: 0.32
+  Metalness: 0.24
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 9
+  ID: mat_track_and_field_mid-len_gth_shorts_9
+  Name: Lining
+  Type: MeshStandardMaterial
+  Color: #f2410c
+  Roughness: 0.12
+  Metalness: 0.29
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 10
+  ID: mat_track_and_field_mid-len_gth_shorts_10
+  Name: Brim
+  Type: MeshStandardMaterial
+  Color: #2ef595
+  Roughness: 0.77
+  Metalness: 0.24
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 11
+  ID: mat_track_and_field_mid-len_gth_shorts_11
+  Name: Lining
+  Type: MeshStandardMaterial
+  Color: #3f8385
+  Roughness: 0.68
+  Metalness: 0.13
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.70
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 12
+  ID: mat_track_and_field_mid-len_gth_shorts_12
+  Name: Trim
+  Type: MeshStandardMaterial
+  Color: #91458b
+  Roughness: 0.66
+  Metalness: 0.11
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+

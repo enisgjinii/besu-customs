@@ -1,0 +1,55 @@
+3D Model Materials Report
+========================
+Model Name: Soccer jersey v-neck
+File Name: Soccer jersey v-neck.glb
+Generated on: 2025-10-15T07:30:04.499Z
+Total Materials: 3
+
+Material 1
+  ID: mat_soccer_jersey_v-neck_1
+  Name: Sleeve
+  Type: MeshStandardMaterial
+  Color: #f66174
+  Roughness: 0.42
+  Metalness: 0.28
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.87
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_soccer_jersey_v-neck_2
+  Name: Topstitch
+  Type: MeshStandardMaterial
+  Color: #86a6dc
+  Roughness: 0.13
+  Metalness: 0.09
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 3
+  ID: mat_soccer_jersey_v-neck_3
+  Name: Logo
+  Type: MeshStandardMaterial
+  Color: #bca80d
+  Roughness: 0.28
+  Metalness: 0.27
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: Yes
+  Metalness Map: Yes
+

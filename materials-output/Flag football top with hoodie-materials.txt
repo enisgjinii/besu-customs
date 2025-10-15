@@ -1,0 +1,199 @@
+3D Model Materials Report
+========================
+Model Name: Flag football top with hoodie
+File Name: Flag football top with hoodie.glb
+Generated on: 2025-10-15T07:30:04.498Z
+Total Materials: 12
+
+Material 1
+  ID: mat_flag_football_top_with_hoodie_1
+  Name: Main Body
+  Type: MeshStandardMaterial
+  Color: #a14aae
+  Roughness: 0.87
+  Metalness: 0.21
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_flag_football_top_with_hoodie_2
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #d23fc4
+  Roughness: 0.72
+  Metalness: 0.06
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.66
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_flag_football_top_with_hoodie_3
+  Name: Mesh
+  Type: MeshStandardMaterial
+  Color: #1ac486
+  Roughness: 0.22
+  Metalness: 0.17
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_flag_football_top_with_hoodie_4
+  Name: Logo
+  Type: MeshStandardMaterial
+  Color: #e7c401
+  Roughness: 1.00
+  Metalness: 0.16
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_flag_football_top_with_hoodie_5
+  Name: Main Body
+  Type: MeshStandardMaterial
+  Color: #0a2a11
+  Roughness: 0.30
+  Metalness: 0.16
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_flag_football_top_with_hoodie_6
+  Name: Logo
+  Type: MeshStandardMaterial
+  Color: #b148a4
+  Roughness: 0.68
+  Metalness: 0.06
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 7
+  ID: mat_flag_football_top_with_hoodie_7
+  Name: Mesh
+  Type: MeshStandardMaterial
+  Color: #844c57
+  Roughness: 0.61
+  Metalness: 0.06
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 8
+  ID: mat_flag_football_top_with_hoodie_8
+  Name: Hood
+  Type: MeshStandardMaterial
+  Color: #3309a9
+  Roughness: 0.25
+  Metalness: 0.17
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 9
+  ID: mat_flag_football_top_with_hoodie_9
+  Name: Leather
+  Type: MeshStandardMaterial
+  Color: #70e30b
+  Roughness: 0.31
+  Metalness: 0.23
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 10
+  ID: mat_flag_football_top_with_hoodie_10
+  Name: Pocket
+  Type: MeshStandardMaterial
+  Color: #6abef7
+  Roughness: 0.41
+  Metalness: 0.01
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 11
+  ID: mat_flag_football_top_with_hoodie_11
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #2656c4
+  Roughness: 0.58
+  Metalness: 0.25
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.64
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 12
+  ID: mat_flag_football_top_with_hoodie_12
+  Name: Fabric
+  Type: MeshStandardMaterial
+  Color: #3927a1
+  Roughness: 0.57
+  Metalness: 0.30
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: Yes
+

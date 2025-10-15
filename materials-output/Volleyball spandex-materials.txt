@@ -1,0 +1,103 @@
+3D Model Materials Report
+========================
+Model Name: Volleyball spandex
+File Name: Volleyball spandex.glb
+Generated on: 2025-10-15T07:30:04.501Z
+Total Materials: 6
+
+Material 1
+  ID: mat_volleyball_spandex_1
+  Name: Collar
+  Type: MeshStandardMaterial
+  Color: #6c6798
+  Roughness: 0.22
+  Metalness: 0.24
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_volleyball_spandex_2
+  Name: Collar
+  Type: MeshStandardMaterial
+  Color: #124dc9
+  Roughness: 0.96
+  Metalness: 0.12
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 3
+  ID: mat_volleyball_spandex_3
+  Name: Stripe
+  Type: MeshStandardMaterial
+  Color: #16daef
+  Roughness: 0.26
+  Metalness: 0.27
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_volleyball_spandex_4
+  Name: Leather
+  Type: MeshStandardMaterial
+  Color: #b96092
+  Roughness: 0.18
+  Metalness: 0.03
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 5
+  ID: mat_volleyball_spandex_5
+  Name: Logo
+  Type: MeshStandardMaterial
+  Color: #7162f9
+  Roughness: 0.63
+  Metalness: 0.00
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_volleyball_spandex_6
+  Name: Collar
+  Type: MeshStandardMaterial
+  Color: #244a4a
+  Roughness: 0.85
+  Metalness: 0.21
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: Yes
+

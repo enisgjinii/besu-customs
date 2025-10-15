@@ -27,6 +27,10 @@ A minimal React + Three.js configurator app for uploading and customizing 3D mod
 - Zustand for state management
 - Three.js for 3D rendering
 
+## Utilities
+
+- Materials Extraction Script - Extract material information from 3D models (see [MATERIALS_EXTRACTION.md](MATERIALS_EXTRACTION.md))
+
 ## How It Works
 
 ### Section Detection
@@ -57,4 +61,5 @@ The model will be associated with that product and load when selected from the s
 ✅ Switch between 34 placeholder products  
 ✅ Save/load presets as JSON  
 ✅ Responsive layout (desktop and mobile)  
-✅ Demo route at `/review` with public GLB model
+✅ Demo route at `/review` with public GLB model  
+✅ Materials extraction script for analyzing 3D model materials

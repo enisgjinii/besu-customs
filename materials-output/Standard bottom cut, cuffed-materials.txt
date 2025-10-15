@@ -1,0 +1,103 @@
+3D Model Materials Report
+========================
+Model Name: Standard bottom cut, cuffed
+File Name: Standard bottom cut, cuffed.glb
+Generated on: 2025-10-15T07:30:04.499Z
+Total Materials: 6
+
+Material 1
+  ID: mat_standard_bottom_cut,_cuffed_1
+  Name: Leather
+  Type: MeshStandardMaterial
+  Color: #134611
+  Roughness: 0.53
+  Metalness: 0.18
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_standard_bottom_cut,_cuffed_2
+  Name: Button
+  Type: MeshStandardMaterial
+  Color: #b2e6fa
+  Roughness: 0.21
+  Metalness: 0.29
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_standard_bottom_cut,_cuffed_3
+  Name: Mesh
+  Type: MeshStandardMaterial
+  Color: #cf2da0
+  Roughness: 0.61
+  Metalness: 0.15
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 4
+  ID: mat_standard_bottom_cut,_cuffed_4
+  Name: Button
+  Type: MeshStandardMaterial
+  Color: #afd472
+  Roughness: 0.40
+  Metalness: 0.15
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 5
+  ID: mat_standard_bottom_cut,_cuffed_5
+  Name: Button
+  Type: MeshStandardMaterial
+  Color: #4cb03b
+  Roughness: 0.71
+  Metalness: 0.01
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_standard_bottom_cut,_cuffed_6
+  Name: Lining
+  Type: MeshStandardMaterial
+  Color: #04b4ef
+  Roughness: 0.32
+  Metalness: 0.15
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+

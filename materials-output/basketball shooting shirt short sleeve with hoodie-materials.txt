@@ -1,0 +1,55 @@
+3D Model Materials Report
+========================
+Model Name: basketball shooting shirt short sleeve with hoodie
+File Name: basketball shooting shirt short sleeve with hoodie.glb
+Generated on: 2025-10-15T07:30:04.501Z
+Total Materials: 3
+
+Material 1
+  ID: mat_basketball_shooting_shirt_short_sleeve_with_hoodie_1
+  Name: Sleeve
+  Type: MeshStandardMaterial
+  Color: #662ee6
+  Roughness: 0.87
+  Metalness: 0.08
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_basketball_shooting_shirt_short_sleeve_with_hoodie_2
+  Name: Mesh
+  Type: MeshStandardMaterial
+  Color: #2ae073
+  Roughness: 0.73
+  Metalness: 0.10
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: Yes
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: Yes
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_basketball_shooting_shirt_short_sleeve_with_hoodie_3
+  Name: Rubber
+  Type: MeshStandardMaterial
+  Color: #1a37ff
+  Roughness: 0.98
+  Metalness: 0.01
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
