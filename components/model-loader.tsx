@@ -54,7 +54,7 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: unknown }) {
         groupRef.current.add(cube);
 
         // Extract sections from placeholder
-        const newSections = extractSections(groupRef.current);
+  const newSections = extractSections(groupRef.current, undefined);
         setSections(newSections);
 
         // Extract complete UV map from entire model
@@ -153,7 +153,7 @@ function LoadedModel({
   // Extract sections on load and fit model to view
   useEffect(() => {
     try {
-      const newSections = extractSections(clonedScene.current);
+  const newSections = extractSections(clonedScene.current, url);
       setSections(newSections);
 
       // Extract complete UV map from entire model

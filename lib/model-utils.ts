@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { MaterialSection } from "./store";
 
-export function extractSections(scene: THREE.Group): MaterialSection[] {
+export function extractSections(scene: THREE.Group, modelUrl?: string): MaterialSection[] {
   const sections: MaterialSection[] = [];
   const processedMaterials = new Set<string>();
 
@@ -42,8 +42,195 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
     }
   });
 
-  // Special handling for baseball jerseys to reorder sections
-  return reorderBaseballJerseySections(sections);
+  // Apply special naming rules in order
+  // First apply basketball jersey naming (as it's more specific)
+  let processedSections = applyBasketballJerseyNaming(sections, modelUrl);
+  
+  // Then apply baseball jersey reordering (as it's more general)
+  processedSections = reorderBaseballJerseySections(processedSections);
+  // Disambiguate duplicate display names so the UI doesn't show many identical labels
+  processedSections = disambiguateDuplicateNames(processedSections);
+
+  return processedSections;
+}
+
+/**
+ * Append numeric suffixes to duplicate section names to avoid identical labels
+ * in the UI (e.g. "Fabric (1)", "Fabric (2)"). This preserves distinct
+ * materials while improving clarity for users.
+ */
+function disambiguateDuplicateNames(sections: MaterialSection[]): MaterialSection[] {
+  const nameCounts: Record<string, number> = {};
+
+  // First pass: count occurrences of the display name (case-insensitive)
+  sections.forEach((s) => {
+    const key = (s.name || "").trim();
+    const lk = key.toLowerCase();
+    nameCounts[lk] = (nameCounts[lk] || 0) + 1;
+  });
+
+  // If no duplicates, return early
+  const hasDuplicates = Object.values(nameCounts).some((c) => c > 1);
+  if (!hasDuplicates) return sections;
+
+  // Second pass: assign suffixes incrementally for duplicated names
+  const seen: Record<string, number> = {};
+  return sections.map((s) => {
+    const key = (s.name || "").trim();
+    const lk = key.toLowerCase();
+    if (nameCounts[lk] > 1) {
+      seen[lk] = (seen[lk] || 0) + 1;
+      // Only append if there's more than one occurrence
+      return { ...s, name: `${key} (${seen[lk]})` };
+    }
+    return s;
+  });
+}
+
+/**
+ * Apply special naming rules for Basketball Jersey Top And Long Shorts
+ * @param sections Array of material sections
+ * @returns Updated array of material sections with specific naming
+ */
+export function applyBasketballJerseyNaming(
+  sections: MaterialSection[],
+  modelUrl?: string,
+): MaterialSection[] {
+  // Work on a copy so we can apply a couple of small mappings unconditionally
+  const updatedSections = [...sections];
+
+  // Always map manufacturer shorthand 'Ble' to a clearer friendly name so it
+  // doesn't appear as an ambiguous 'Ble' entry in the UI, even if model
+  // detection heuristics don't match.
+  updatedSections.forEach((section) => {
+    const originalName = (section.originalName || "").toLowerCase();
+    // Match 'ble' and variants like 'ble_12345', 'BLE666' etc.
+    if (originalName.startsWith("ble")) {
+      section.name = "Jersey Sleeve & Collar Trim";
+      section.category = "Piping/Trim";
+    }
+  });
+
+  // Detect the specific model by modelUrl when available, otherwise fall back to heuristics
+  const modelId = modelUrl?.toLowerCase() || "";
+  const isBasketballByUrl = modelId.includes(
+    "basketball jersey top and long shorts",
+  ) || modelId.includes("basketball jersey top and long shorts.glb");
+
+  const containsBasketballKeywords = sections.some((section) =>
+    (section.originalName || "").toLowerCase().includes("basketball"),
+  );
+
+  // Also permit detection via presence of a few expected material names
+  const hasCharacteristicNames = sections.some((section) =>
+    ["metal", "zipper", "elastic", "topstitch", "panel"].includes(
+      (section.originalName || "").toLowerCase(),
+    ),
+  );
+
+  if (!isBasketballByUrl && !containsBasketballKeywords && !hasCharacteristicNames) {
+    return updatedSections;
+  }
+
+  // Map generic FABRIC materials (often exported as 'FABRIC', 'FABRIC1', etc.)
+  const fabricCandidates = updatedSections.filter((s) => {
+    const on = (s.originalName || "").toLowerCase();
+    // match 'fabric', 'fabric1', 'fabric_1', 'fabric 1', or unnamed generic 'material'
+    return (
+      /^fabric\b/.test(on) ||
+      /^material\b/.test(on) ||
+      on === "fabric" ||
+      on.startsWith("fabric") ||
+      on.startsWith("material") ||
+      on === "default"
+    );
+  });
+
+  // If we didn't find clear fabric candidates, try looser match: any section whose name is 'Material' or contains 'fabric'
+  if (fabricCandidates.length === 0) {
+    updatedSections.forEach((s) => {
+      const on = (s.originalName || "").toLowerCase();
+      if (on.includes("fabric") || s.name.toLowerCase().includes("material")) {
+        fabricCandidates.push(s);
+      }
+    });
+  }
+
+  // Apply the requested renaming for the first three fabric materials
+  if (fabricCandidates.length > 0) {
+    // Ensure we have stable order - rely on original appearance in sections array
+    const fabricsInOrder = updatedSections.filter((s) => fabricCandidates.includes(s));
+    // Map the first three fabrics to the requested roles
+    if (fabricsInOrder[0]) {
+      fabricsInOrder[0].name = "Pants Waist Trim";
+      fabricsInOrder[0].category = "Body";
+    }
+    if (fabricsInOrder[1]) {
+      fabricsInOrder[1].name = "Back of Shorts";
+      fabricsInOrder[1].category = "Body";
+    }
+    if (fabricsInOrder[2]) {
+      fabricsInOrder[2].name = "Front of Shorts";
+      fabricsInOrder[2].category = "Body";
+    }
+
+    // For any fourth (or more) fabric, mark as unknown so the UI indicates investigation is needed
+    for (let i = 3; i < fabricsInOrder.length; i++) {
+      const s = fabricsInOrder[i];
+      s.name = `Unknown Fabric - Investigate (${s.originalName || "unnamed"})`;
+      s.category = "Other";
+    }
+  }
+
+  // Keep any existing specific rules for zipper/elastic/topstitch/panel/metal
+  updatedSections.forEach((section) => {
+    const originalName = (section.originalName || "").toLowerCase();
+    // Map manufacturer shorthand 'Ble' to a clear friendly name
+    if (originalName === "ble") {
+      section.name = "Jersey Sleeve & Collar Trim";
+      section.category = "Piping/Trim";
+      return;
+    }
+    if (originalName === "zipper") {
+      section.name = "Front of Shorts";
+    } else if (originalName === "elastic") {
+      section.name = "Waistband Elastic - Needs Further Identification";
+    } else if (originalName === "topstitch") {
+      section.name = "Stitching";
+    } else if (originalName === "panel") {
+      section.name = "Main Panel";
+    } else if (originalName === "metal") {
+      // if metal exists, try to map first two to the requested names if not already set
+      // Find metal occurrences in updatedSections order
+      // This is secondary to the FABRIC mapping above
+    }
+  });
+
+  // If this is a basketball jersey, remove any materials that represent buttons
+  // — basketball jerseys in our product set don't have buttons and the exporter
+  // sometimes includes button materials; remove them to avoid confusing the UI.
+  if (isBasketballByUrl || containsBasketballKeywords || hasCharacteristicNames) {
+    // Filter out button-like sections by checking both originalName and computed name
+    const filtered = updatedSections.filter((s) => {
+      const on = (s.originalName || "").toLowerCase();
+      const n = (s.name || "").toLowerCase();
+      if (on.includes("button") || n.includes("button")) {
+        return false;
+      }
+      return true;
+    });
+
+    // Replace updatedSections contents while preserving reference semantics
+    // (we created updatedSections earlier as a shallow copy)
+    // eslint-disable-next-line no-unused-vars
+    // @ts-ignore - reassigning for clarity
+    // Note: we return filtered below, so reassign here is optional; keep filtered in scope
+    // and use it for subsequent logic if needed.
+    // For simplicity, return now with the filtered set so downstream logic doesn't run on removed items.
+    return filtered;
+  }
+
+  return updatedSections;
 }
 
 /**
@@ -338,6 +525,12 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
       return "Body";
     }
     // Keep other materials in their appropriate categories
+  }
+
+  // Special handling for basketball jersey materials
+  if (name.includes('Pants Waist Trim') || name.includes('Back of Shorts') || name.includes('Front of Shorts') ||
+      name.includes('Waistband Elastic')) {
+    return "Body";
   }
 
   // Front/Back categorization
