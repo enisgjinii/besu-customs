@@ -209,7 +209,11 @@ export function Scene() {
           depth: true,
           powerPreference: "high-performance" // Request high-performance GPU
         }}
-        onCreated={({ gl }) => setGlRef(gl)}
+        onCreated={({ gl }) => {
+          setGlRef(gl);
+          // Enable Draco loader for compressed models
+          gl.capabilities.maxTextures = 16;
+        }}
         frameloop="always" // Ensure consistent frame updates
         dpr={[1, 2]} // Limit device pixel ratio for performance
       >

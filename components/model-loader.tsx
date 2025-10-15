@@ -7,6 +7,9 @@ import { extractUVMapForMaterial, extractCompleteUVMap } from "@/lib/uv-utils";
 import { applyMaterialUpdates } from "@/lib/model-utils";
 import { useConfiguratorStore } from "@/lib/store";
 
+// Preload frequently used models for faster loading
+useGLTF.preload("/models/Duffle bag_01.glb");
+
 type Props = { controlsRef?: React.RefObject<any> };
 
 export function ModelLoader({ controlsRef }: Props) {
