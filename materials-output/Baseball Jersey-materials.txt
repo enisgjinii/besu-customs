@@ -3,10 +3,10 @@
 Model Name: Baseball Jersey
 File Name: Baseball-Jersey.glb
 Generated on: 2025-10-15T07:30:04.497Z
-Total Materials: 7
+Total Materials: 8
 
 Material 1
-  ID: mat_baseball_pants_1
+  ID: mat_baseball_jersey_1
   Name: Elastic
   Type: MeshStandardMaterial
   Color: #13c177
@@ -22,8 +22,8 @@ Material 1
   Metalness Map: No
 
 Material 2
-  ID: mat_baseball_pants_2
-  Name: Main Body
+  ID: mat_baseball_jersey_2
+  Name: Back
   Type: MeshStandardMaterial
   Color: #38e95d
   Roughness: 0.64
@@ -38,7 +38,7 @@ Material 2
   Metalness Map: No
 
 Material 3
-  ID: mat_baseball_pants_3
+  ID: mat_baseball_jersey_3
   Name: Hood
   Type: MeshStandardMaterial
   Color: #3aabf6
@@ -54,7 +54,7 @@ Material 3
   Metalness Map: No
 
 Material 4
-  ID: mat_baseball_pants_4
+  ID: mat_baseball_jersey_4
   Name: Hood
   Type: MeshStandardMaterial
   Color: #9f9d55
@@ -70,7 +70,7 @@ Material 4
   Metalness Map: No
 
 Material 5
-  ID: mat_baseball_pants_5
+  ID: mat_baseball_jersey_5
   Name: Pocket
   Type: MeshStandardMaterial
   Color: #54d46d
@@ -86,7 +86,7 @@ Material 5
   Metalness Map: No
 
 Material 6
-  ID: mat_baseball_pants_6
+  ID: mat_baseball_jersey_6
   Name: Panel
   Type: MeshStandardMaterial
   Color: #90021d
@@ -102,7 +102,7 @@ Material 6
   Metalness Map: No
 
 Material 7
-  ID: mat_baseball_pants_7
+  ID: mat_baseball_jersey_7
   Name: Collar
   Type: MeshStandardMaterial
   Color: #caaf17
@@ -117,3 +117,18 @@ Material 7
   Roughness Map: No
   Metalness Map: No
 
+Material 8
+  ID: mat_baseball_jersey_8
+  Name: Front
+  Type: MeshStandardMaterial
+  Color: #0a2a11
+  Roughness: 0.30
+  Metalness: 0.16
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
