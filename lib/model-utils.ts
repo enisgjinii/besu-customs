@@ -6,7 +6,7 @@ let duffleBagFabricCount = 0;
 
 export function extractSections(scene: THREE.Group, modelUrl?: string): MaterialSection[] {
   console.log('🎯 extractSections called with modelUrl:', modelUrl);
-  
+
   const sections: MaterialSection[] = [];
   const processedMaterials = new Set<string>();
 
@@ -50,7 +50,7 @@ export function extractSections(scene: THREE.Group, modelUrl?: string): Material
   // Apply special naming rules in order
   // First apply basketball jersey naming (as it's more specific)
   let processedSections = applyBasketballJerseyNaming(sections, modelUrl);
-  
+
   // Then apply baseball jersey reordering (as it's more general)
   processedSections = reorderBaseballJerseySections(processedSections);
   // Disambiguate duplicate display names so the UI doesn't show many identical labels
@@ -118,7 +118,7 @@ export function applyBasketballJerseyNaming(
 
   // Detect the specific model by modelUrl when available, otherwise fall back to heuristics
   const modelId = modelUrl?.toLowerCase() || "";
-  
+
   console.log('🔍 Detection starting:', {
     modelUrl,
     modelId,
@@ -148,7 +148,7 @@ export function applyBasketballJerseyNaming(
       );
     });
 
-  // Apply ordered mapping: 1st -> Pants Waist Trim, 2nd -> Back of Shorts, 3rd -> Front of Shorts, 4th+ -> Unknown
+    // Apply ordered mapping: 1st -> Pants Waist Trim, 2nd -> Back of Shorts, 3rd -> Front of Shorts, 4th+ -> Unknown
     if (fabricCandidates.length > 0) {
       if (fabricCandidates[0]) {
         fabricCandidates[0].name = "Pants Waist Trim";
@@ -191,7 +191,7 @@ export function applyBasketballJerseyNaming(
 
     return filtered;
   }
-  
+
   const isBasketballByUrl = modelId.includes(
     "basketball jersey top and long shorts",
   ) || modelId.includes("basketball jersey top and long shorts.glb") ||
@@ -214,7 +214,7 @@ export function applyBasketballJerseyNaming(
   });
 
   const isShootingShirtHoodie = isShootingShirtHoodieByUrl || containsHoodKeywords;
-  
+
   console.log('🔍 Detection results:', {
     isShootingShirtByUrl,
     isShootingShirtHoodieByUrl,
@@ -243,7 +243,7 @@ export function applyBasketballJerseyNaming(
     console.log('⚠️ EARLY EXIT - No basketball/hoodie detected');
     return updatedSections;
   }
-  
+
   console.log('✅ Passed early exit check, continuing with basketball/hoodie processing');
 
   // Map generic FABRIC materials (often exported as 'FABRIC', 'FABRIC1', etc.)
@@ -329,8 +329,8 @@ export function applyBasketballJerseyNaming(
       const n = (s.name || "").toLowerCase();
       // Remove any materials that contain button-related terms
       const isButtonMaterial = on.includes("button") || n.includes("button") ||
-                              on.includes("buttonhole") || n.includes("buttonhole") ||
-                              n === "all buttons" || n === "button stitching color";
+        on.includes("buttonhole") || n.includes("buttonhole") ||
+        n === "all buttons" || n === "button stitching color";
       if (isButtonMaterial) {
         return false;
       }
@@ -360,7 +360,7 @@ export function applyBasketballJerseyNaming(
   // heuristic detection via material section names (e.g. 'Hood').
   if (isShootingShirtHoodie) {
     console.log('🔥 HOODIE LOGIC RUNNING - sections before filter:', updatedSections.length);
-    
+
     // Remove CORD END materials if they exist
     const filteredSections = updatedSections.filter((section) => {
       const originalName = (section.originalName || "").toLowerCase();
@@ -433,12 +433,12 @@ export function applyBasketballJerseyNaming(
     const topStopperSections = updatedSections.filter(s => {
       const on = (s.originalName || "").toLowerCase();
       const dn = (s.name || "").toLowerCase();
-      return on.includes("zipper top stopper") || on.includes("zipper_top_stopper") || 
-             dn.includes("zipper topstopper") || dn.includes("zipper top stopper") ||
-             dn.includes("topstopper") || dn.includes("top stopper");
+      return on.includes("zipper top stopper") || on.includes("zipper_top_stopper") ||
+        dn.includes("zipper topstopper") || dn.includes("zipper top stopper") ||
+        dn.includes("topstopper") || dn.includes("top stopper");
     });
-    
-  if (topStopperSections.length > 1) {
+
+    if (topStopperSections.length > 1) {
       // Combine into one - keep the first one and remove others
       const combinedSection = topStopperSections[0];
       combinedSection.name = "Zipper Top Stopper";
@@ -451,12 +451,12 @@ export function applyBasketballJerseyNaming(
     const bottomStopperSections = updatedSections.filter(s => {
       const on = (s.originalName || "").toLowerCase();
       const dn = (s.name || "").toLowerCase();
-      return on.includes("zipper bottom stopper") || on.includes("zipper_bottom_stopper") || 
-             dn.includes("zipper bottomstopper") || dn.includes("zipper bottom stopper") ||
-             dn.includes("bottomstopper") || dn.includes("bottom stopper");
+      return on.includes("zipper bottom stopper") || on.includes("zipper_bottom_stopper") ||
+        dn.includes("zipper bottomstopper") || dn.includes("zipper bottom stopper") ||
+        dn.includes("bottomstopper") || dn.includes("bottom stopper");
     });
-    
-  if (bottomStopperSections.length > 1) {
+
+    if (bottomStopperSections.length > 1) {
       // Combine into one - keep the first one and remove others
       const combinedSection = bottomStopperSections[0];
       combinedSection.name = "Zipper Bottom Stopper";
@@ -566,9 +566,9 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
   // Check if this might be a baseball jersey by looking at section names
   // But skip if it looks like a basketball jersey
   const hasBasketballKeywords = sections.some(section =>
-    (section.originalName?.toLowerCase().includes('basketball') &&
+  (section.originalName?.toLowerCase().includes('basketball') &&
     (section.originalName?.toLowerCase().includes('shorts') ||
-     section.originalName?.toLowerCase().includes('long')))
+      section.originalName?.toLowerCase().includes('long')))
   );
 
   if (hasBasketballKeywords) {
@@ -577,7 +577,7 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
 
   const isBaseballJersey = sections.some(section =>
     (section.originalName?.toLowerCase().includes('baseball') &&
-    section.originalName?.toLowerCase().includes('jersey')) ||
+      section.originalName?.toLowerCase().includes('jersey')) ||
     section.name.toLowerCase().includes('baseball jersey') ||
     sections.some(s => s.originalName?.includes('Body_B') || s.originalName?.includes('Body_F'))
   );
@@ -585,10 +585,10 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
   if (!isBaseballJersey) {
     return sections;
   }
-  
+
   // Create a new array to avoid mutating the original
   const updatedSections = [...sections];
-  
+
   // Apply specific naming rules for baseball jersey materials
   updatedSections.forEach(section => {
     // Handle Body materials with specific naming
@@ -597,14 +597,14 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
     } else if (section.originalName?.includes('Body_B')) {
       section.name = 'Back';
     }
-    
+
     // Handle Button materials with specific naming (remove second/top button option)
     if (section.originalName?.includes('Button_1')) {
       section.name = 'All Buttons';
     } else if (section.originalName?.includes('Default_Button_3683978')) {
       section.name = 'Button Stitching Color';
     }
-    
+
     // Keep collar and sleeve names as is (they should already be correct)
     if (section.originalName?.includes('Collar')) {
       section.name = 'Collar';
@@ -612,39 +612,39 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
       section.name = 'Sleeve';
     }
   });
-  
+
   // Create the specific order: Front, Back, All Buttons, Top Button, Button Stitching Color, Collar, Sleeve
   const orderedSections: MaterialSection[] = [];
-  
+
   // Add Front
   const frontSection = updatedSections.find(section => section.name === 'Front');
   if (frontSection) orderedSections.push(frontSection);
-  
+
   // Add Back
   const backSection = updatedSections.find(section => section.name === 'Back');
   if (backSection) orderedSections.push(backSection);
-  
+
   // Add All Buttons
   const allButtonsSection = updatedSections.find(section => section.name === 'All Buttons');
   if (allButtonsSection) orderedSections.push(allButtonsSection);
-  
+
   // Add Button Stitching Color
   const buttonStitchingSection = updatedSections.find(section => section.name === 'Button Stitching Color');
   if (buttonStitchingSection) orderedSections.push(buttonStitchingSection);
-  
+
   // Add Collar
   const collarSection = updatedSections.find(section => section.name === 'Collar');
   if (collarSection) orderedSections.push(collarSection);
-  
+
   // Add Sleeve
   const sleeveSection = updatedSections.find(section => section.name === 'Sleeve');
   if (sleeveSection) orderedSections.push(sleeveSection);
-  
+
   // Add any remaining sections that weren't specifically ordered
-  const remainingSections = updatedSections.filter(section => 
+  const remainingSections = updatedSections.filter(section =>
     !orderedSections.includes(section)
   );
-  
+
   return [...orderedSections, ...remainingSections];
 }
 
@@ -696,16 +696,16 @@ export function getUserFriendlyName(name: string): string {
 
   // Specific matching for common clothing terms - prioritize these
   if (lowerCleanedName.includes("topstitch")) {
-    return "Stitching"; // Changed from "Topstitch" to "Stitching" per requirements
+    return "Stitching Color"; // Changed from "Topstitch" to "Stitching" per requirements
   }
   if (
     lowerCleanedName.includes("strap") &&
     !lowerCleanedName.includes("strapless")
   ) {
-    return "Strap";
+    return "Strap Color";
   }
   if (lowerCleanedName.includes("brim")) {
-    return "Brim";
+    return "Brim Color";
   }
   if (lowerCleanedName.includes("button")) {
     // More specific button matching
@@ -748,7 +748,7 @@ export function getUserFriendlyName(name: string): string {
     return "Jersey";
   }
   if (lowerCleanedName.includes("main")) {
-    return "Main";
+    return "Main Cap Color";
   }
   if (
     lowerCleanedName.includes("trim") ||
@@ -832,19 +832,19 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
   const lowerName = cleanedName.toLowerCase();
 
   // Special handling for baseball jersey to ensure proper categorization
-  if (name.includes('Body_F') || name.includes('Body_B') || 
-      lowerName.includes("front") || lowerName.includes("back")) {
+  if (name.includes('Body_F') || name.includes('Body_B') ||
+    lowerName.includes("front") || lowerName.includes("back")) {
     return "Jersey";
   }
-  
+
   if (name.includes('Button')) {
     return "Other";
   }
-  
+
   if (name.includes('Collar')) {
     return "Piping/Trim";
   }
-  
+
   if (name.includes('Sleeve')) {
     return "Panels";
   }
@@ -863,7 +863,7 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
 
   // Special handling for basketball jersey materials
   if (name.includes('Pants Waist Trim') || name.includes('Back of Shorts') || name.includes('Front of Shorts') ||
-      name.includes('Waistband Elastic')) {
+    name.includes('Waistband Elastic')) {
     return "Jersey";
   }
 
@@ -904,7 +904,7 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
     return "Piping/Trim";
   }
 
-  return "Other";
+  return "Baseball Cap Color Options";
 }
 
 function createGradientTexture(
@@ -957,6 +957,8 @@ export function applyMaterialUpdates(
 ) {
   const sectionMap = new Map(sections.map((s) => [s.id, s]));
 
+
+
   scene.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
       const materials = Array.isArray(child.material)
@@ -965,9 +967,21 @@ export function applyMaterialUpdates(
 
       materials.forEach((material) => {
         if (material instanceof THREE.MeshStandardMaterial) {
-          const section = sectionMap.get(material.uuid);
+
+          let section = sectionMap.get(material.uuid);
+          
+          // Check if this material is part of a combined section
+          if (!section) {
+            for (const [sectionId, sectionData] of sectionMap.entries()) {
+              if (sectionData.combinedMaterialIds && sectionData.combinedMaterialIds.includes(material.uuid)) {
+                section = sectionData;
+                break;
+              }
+            }
+          }
 
           if (section) {
+
             // Apply custom texture if available
             if (section.customTexture) {
               const loader = new THREE.TextureLoader();
@@ -987,8 +1001,12 @@ export function applyMaterialUpdates(
               }
             } else {
               // Use base color if no texture or gradient
-              material.map = null;
+              if (material.map) {
+                material.map.dispose();
+                material.map = null;
+              }
               material.color.set(section.color);
+              material.needsUpdate = true;
             }
 
             material.roughness = section.roughness ?? 0.5;

@@ -32,8 +32,7 @@ export function MaterialEditor() {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   // State to track expanded categories
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const [extractingNames, setExtractingNames] = useState(false);
-  const [extractNamesMessage, setExtractNamesMessage] = useState("");
+  // Extraction UI removed — we rely on precomputed API files
 
   const sections = useConfiguratorStore((state) => state.sections);
   const selectedSectionId = useConfiguratorStore(
@@ -84,39 +83,6 @@ export function MaterialEditor() {
     setExpandedCategories(initialExpanded);
   }
 
-  const handleExtractMaterialNames = async () => {
-    setExtractingNames(true);
-    setExtractNamesMessage("Extracting material names...");
-    
-    try {
-      // Call the API endpoint to extract material names
-      const response = await fetch('/api/extract-material-names', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setExtractNamesMessage("Material names extracted successfully!");
-        // Optionally, you could refresh the page or update the UI
-        setTimeout(() => setExtractNamesMessage(""), 3000);
-      } else {
-        setExtractNamesMessage(`Error: ${result.error}`);
-      }
-    } catch (error: unknown) {
-      console.error("Error extracting material names:", error);
-      if (error instanceof Error) {
-        setExtractNamesMessage(`Error: ${error.message}`);
-      } else {
-        setExtractNamesMessage("Error: Unknown error occurred");
-      }
-    } finally {
-      setExtractingNames(false);
-    }
-  };
 
   return (
     <div className="space-y-6" data-tour="material-editor">
@@ -137,24 +103,7 @@ export function MaterialEditor() {
           )}
         </div>
 
-        {/* Extract Material Names Button */}
-        <div className="mb-4">
-          <Button 
-            onClick={handleExtractMaterialNames} 
-            disabled={extractingNames}
-            variant="outline"
-            size="sm"
-            className="w-full flex items-center gap-2"
-          >
-            <List className="w-4 h-4" />
-            {extractingNames ? "Extracting..." : "Extract Material Names"}
-          </Button>
-          {extractNamesMessage && (
-            <p className="mt-2 text-xs text-muted-foreground text-center">
-              {extractNamesMessage}
-            </p>
-          )}
-        </div>
+        {/* Extraction controls removed — precomputed API is used instead */}
 
         {selectedSectionId && linkedSections.size > 0 && (
           <div className="mb-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
@@ -188,7 +137,7 @@ export function MaterialEditor() {
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   )}
                 </button>
-                
+
                 {/* Category Sections - Only show if expanded */}
                 {expandedCategories[category] && (
                   <div className="space-y-1.5 ml-2 pl-2 border-l border-border/50">
@@ -200,17 +149,15 @@ export function MaterialEditor() {
                       return (
                         <div
                           key={section.id}
-                          className={`group relative rounded-lg transition-all ${
-                            isLinked ? "ring-2 ring-blue-500/50" : ""
-                          }`}
+                          className={`group relative rounded-lg transition-all ${isLinked ? "ring-2 ring-blue-500/50" : ""
+                            }`}
                         >
                           <button
                             onClick={() => setSelectedSection(section.id)}
-                            className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
-                              isSelected
-                                ? "bg-accent text-accent-foreground shadow-sm"
-                                : "bg-secondary/30 hover:bg-secondary/50"
-                            }`}
+                            className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${isSelected
+                              ? "bg-accent text-accent-foreground shadow-sm"
+                              : "bg-secondary/30 hover:bg-secondary/50"
+                              }`}
                           >
                             <div className="flex items-center justify-start gap-2.5">
                               <div
@@ -241,11 +188,10 @@ export function MaterialEditor() {
                             selectedSectionId !== section.id && (
                               <button
                                 onClick={() => toggleSectionLink(section.id)}
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${
-                                  isLinked
-                                    ? "bg-blue-500 text-white shadow-sm"
-                                    : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
-                                }`}
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${isLinked
+                                  ? "bg-blue-500 text-white shadow-sm"
+                                  : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
+                                  }`}
                                 title={
                                   isLinked
                                     ? "Click to unlink"
@@ -342,6 +288,35 @@ export function MaterialEditor() {
               )}
             </div>
 
+            {/* Trim Design Options */}
+            {selectedSection.category === "Trim Options" && (
+              <div className="border-t border-border/50 pt-4">
+                <div className="mb-4">
+                  <label className="block text-xs font-medium mb-3">
+                    Trim Design
+                  </label>
+                  <select
+                    value={selectedSection.trimDesign || "none"}
+                    onChange={(e) =>
+                      updateSection(selectedSection.id, {
+                        trimDesign: e.target.value === "none" ? undefined : e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
+                  >
+                    <option value="none">No Trim</option>
+                    <option value="single-line">Single Line</option>
+                    <option value="double-line">Double Line</option>
+                    <option value="triple-line">Triple Line</option>
+                    <option value="dashed-line">Dashed Line</option>
+                    <option value="dotted-line">Dotted Line</option>
+                    <option value="zigzag">Zigzag Pattern</option>
+                    <option value="wave">Wave Pattern</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div className="border-t border-border/50 pt-4">
               <div className="flex items-center justify-between mb-3">
                 <label className="text-xs font-medium">Gradient</label>
@@ -355,32 +330,29 @@ export function MaterialEditor() {
                     updateSection(selectedSection.id, {
                       gradient: enabled
                         ? {
-                            enabled: true,
-                            type: "linear",
-                            colors: [selectedSection.color, "#ffffff"],
-                            angle: 90,
-                            stops: [0, 1],
-                          }
+                          enabled: true,
+                          type: "linear",
+                          colors: [selectedSection.color, "#ffffff"],
+                          angle: 90,
+                          stops: [0, 1],
+                        }
                         : undefined,
                     });
                   }}
                   disabled={!!selectedSection.customTexture}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    selectedSection.gradient?.enabled
-                      ? "bg-primary"
-                      : "bg-input"
-                  } ${
-                    selectedSection.customTexture
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selectedSection.gradient?.enabled
+                    ? "bg-primary"
+                    : "bg-input"
+                    } ${selectedSection.customTexture
                       ? "opacity-50 cursor-not-allowed"
                       : "cursor-pointer"
-                  }`}
+                    }`}
                 >
                   <span
-                    className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                      selectedSection.gradient?.enabled
-                        ? "translate-x-4"
-                        : "translate-x-0.5"
-                    }`}
+                    className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${selectedSection.gradient?.enabled
+                      ? "translate-x-4"
+                      : "translate-x-0.5"
+                      }`}
                   />
                 </button>
               </div>

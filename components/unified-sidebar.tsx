@@ -505,18 +505,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
           </Select>
         </div>
 
-        {/* Materials Page Link */}
-        <div className="mt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full flex items-center gap-2"
-            onClick={() => window.location.href = '/materials'}
-          >
-            <List className="w-4 h-4" />
-            View All Material Names
-          </Button>
-        </div>
+        {/* Materials Page Link removed per user request */}
 
         {/* Tab Navigation */}
         <div className="grid grid-cols-3 gap-1.5">

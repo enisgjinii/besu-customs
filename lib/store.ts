@@ -26,12 +26,15 @@ export interface MaterialSection {
   name: string;
   originalName: string;
   // Use explicit categories but allow custom category strings
-  category: "Jersey" | "Panels" | "Piping/Trim" | "Other" | string;
+  category: "Jersey" | "Panels" | "Piping/Trim" | "Other" | "Trim Options" | "Long Sleeve Shooting Shirt" | "Basketball Shooting Shirt with Hoodie" | "Basketball Shooting Shirt Short Sleeve" | "Duffle Bag" | "Backpack" | "Jersey & Shorts" | "Hoodie & Zipper" | "Half Size Shorts" | string;
   color: string;
   roughness: number;
   metalness: number;
   wireframe: boolean;
   customTexture?: string; // base64 data URL
+  trimDesign?: string; // For trim line designs
+  combinedOriginalNames?: string[]; // For combined sections like stoppers
+  combinedMaterialIds?: string[]; // Material UUIDs for combined sections
   gradient?: {
     enabled: boolean;
     type?: "linear" | "radial";
@@ -106,8 +109,8 @@ function generateProducts(): Product[] {
     { id: "basketball-jersey", title: "Basketball Jersey and Shorts", modelUrl: "/models/Basketball Jersey and Shorts.glb", category: "Jerseys" },
     { id: "duffle-bag", title: "Duffle Bag", modelUrl: "/models/Duffle Bag.glb", category: "Bags" },
     { id: "duffle-bag-01", title: "Duffle Bag 01", modelUrl: "/models/Duffle bag_01.glb", category: "Bags" },
-    { id: "flag-football-hoodie", title: "Flag Football Top with Hoodie", modelUrl: "/models/Flag football top with hoodie.glb", category: "Hoodies" },
-    { id: "half-short", title: "Half Short", modelUrl: "/models/Half short.glb", category: "Shorts" },
+    { id: "flag-football-hoodie", title: "Flag Football Jersey with Hoodie and Shorts", modelUrl: "/models/Flag football top with hoodie.glb", category: "Hoodies" },
+    { id: "half-short", title: "Half Size Shorts", modelUrl: "/models/Half short.glb", category: "Shorts" },
     { id: "hoodie", title: "Hoodie", modelUrl: "/models/Hoodie.glb", category: "Hoodies" },
     { id: "polo-long", title: "Polo Shirts Long Sleeve", modelUrl: "/models/Polo shirts long sleeve.glb", category: "Polos" },
     { id: "polo-short", title: "Polo Shirts Short Sleeve", modelUrl: "/models/Polo shirts short sleeve.glb", category: "Polos" },
@@ -139,8 +142,29 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   selectedProductId: products[0]?.id ?? null,
   setSelectedProduct: (id: string) => {
     const product = get().products.find((p) => p.id === id) ?? null;
-    if (product?.modelUrl) set({ selectedProductId: id, currentModelUrl: product.modelUrl });
-    else set({ selectedProductId: id });
+    if (product?.modelUrl) {
+      // Optimistically set selection and model
+      set({ selectedProductId: id, currentModelUrl: product.modelUrl });
+
+      // Try to fetch precomputed material sections for this model
+      (async () => {
+        try {
+          const resp = await fetch(`/api/materials?model=${encodeURIComponent(product.modelUrl!)}`);
+          if (resp.ok) {
+            const json = await resp.json();
+            if (json?.sections) {
+              // Populate sections from precomputed file
+              set({ sections: json.sections });
+              return;
+            }
+          }
+        } catch (err) {
+          // ignore and fall back to client extraction
+        }
+        // No precomputed sections — leave sections empty so ModelLoader will extract
+        set({ sections: [] });
+      })();
+    } else set({ selectedProductId: id });
   },
 
   currentModelUrl: products[0]?.modelUrl ?? null,

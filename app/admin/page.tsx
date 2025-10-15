@@ -137,31 +137,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="bg-card border-2 border-primary mb-6">
-          <div className="p-4 border-b-2 border-primary">
-            <h2 className="text-lg font-bold text-foreground">
-              Extract Material Names Only
-            </h2>
-          </div>
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Extract just the material names from all 3D models (simple format)
-            </p>
-            <Button 
-              onClick={handleExtractMaterialNames} 
-              disabled={extractingNames}
-              className="flex items-center gap-2"
-            >
-              <List className="w-4 h-4" />
-              {extractingNames ? "Extracting..." : "Extract Material Names"}
-            </Button>
-            {extractNamesMessage && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {extractNamesMessage}
-              </p>
-            )}
-          </div>
-        </div>
+        {/* Extract Material Names UI removed per user request */}
 
         <div className="bg-card border-2 border-primary">
           <div className="p-4 border-b-2 border-primary">

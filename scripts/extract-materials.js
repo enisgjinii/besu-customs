@@ -1,284 +1,210 @@
 #!/usr/bin/env node
 
-/**
- * 3D Model Materials Extraction Script
- * 
- * This script extracts material information from all GLB models in the project
- * and generates detailed reports.
- */
+/*
+  Robust materials name extractor
 
-const fs = require('fs').promises;
+  - Supports: .glb (reads JSON chunk), .gltf (reads JSON), .obj (reads mtllib -> .mtl -> newmtl)
+  - Walks project model folders and writes per-model `*-material-names-simple.txt`
+    and a merged `all-material-names-simple.txt` into `materials-output/`.
+
+  No external dependencies required.
+*/
+
+const fs = require('fs');
 const path = require('path');
 
-// Get the project root directory
 const projectRoot = path.resolve(__dirname, '..');
-const modelsDir = path.join(projectRoot, 'public', 'models');
-const outputDir = path.join(projectRoot, 'materials-output');
+const MODEL_DIRS = [
+  path.join(projectRoot, 'public', 'models'),
+  path.join(projectRoot, 'Models (Phase 1)'),
+  path.join(projectRoot, 'Models (Phase 2)'),
+];
+const OUT_DIR = path.join(projectRoot, 'materials-output');
 
-// Ensure output directory exists
-async function ensureOutputDir() {
+function ensureOutDir() {
+  if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
+}
+
+function writeModelOutput(modelName, names) {
+  const safeName = modelName.replace(/[\\/:*?"<>|]/g, '_');
+  const outPath = path.join(OUT_DIR, `${safeName}-material-names-simple.txt`);
+  fs.writeFileSync(outPath, names.join('\n'), 'utf8');
+  console.log(`Wrote ${path.relative(projectRoot, outPath)} (${names.length})`);
+}
+
+function scanDirForModels(dir) {
+  const files = [];
+  if (!fs.existsSync(dir)) return files;
+  const entries = fs.readdirSync(dir);
+  for (const e of entries) {
+    const full = path.join(dir, e);
+    const st = fs.statSync(full);
+    if (st.isDirectory()) {
+      files.push(...scanDirForModels(full));
+    } else if (st.isFile()) {
+      const ext = path.extname(e).toLowerCase();
+      if (['.glb', '.gltf', '.obj'].includes(ext)) files.push(full);
+    }
+  }
+  return files;
+}
+
+function parseGLBJsonChunk(buffer) {
+  // GLB header: 12 bytes (magic, version, length)
+  if (buffer.length < 12) return null;
+  const magic = buffer.toString('utf8', 0, 4);
+  if (magic !== 'glTF') return null;
+  // iterate chunks
+  let offset = 12;
+  while (offset + 8 <= buffer.length) {
+    const chunkLength = buffer.readUInt32LE(offset);
+    const chunkType = buffer.readUInt32LE(offset + 4);
+    offset += 8;
+    if (offset + chunkLength > buffer.length) break;
+    const chunkData = buffer.slice(offset, offset + chunkLength);
+    // JSON chunk type is 0x4E4F534A ('JSON')
+    if (chunkType === 0x4e4f534a) {
+      try {
+        return JSON.parse(chunkData.toString('utf8'));
+      } catch (err) {
+        return null;
+      }
+    }
+    offset += chunkLength;
+  }
+  return null;
+}
+
+function extractFromGLB(filePath) {
   try {
-    await fs.access(outputDir);
+    const buf = fs.readFileSync(filePath);
+    const json = parseGLBJsonChunk(buf);
+    if (!json) return [];
+    if (Array.isArray(json.materials)) {
+      return json.materials.map((m) => (m && m.name) || '').filter(Boolean);
+    }
+    return [];
   } catch (err) {
-    await fs.mkdir(outputDir, { recursive: true });
+    console.warn('GLB parse failed:', filePath, err.message);
+    return [];
   }
 }
 
-// Generate a mock material report for a model
-function generateMockMaterialReport(modelName, modelFile) {
-  // This is a simplified mock implementation
-  // In a real implementation, you would parse the actual GLB file
-  
-  const materials = [
-    {
-      id: `mat_${modelName.replace(/\s+/g, '_').toLowerCase()}_1`,
-      name: 'Material 1',
-      type: 'MeshStandardMaterial',
-      color: '#ff0000',
-      roughness: 0.5,
-      metalness: 0.2,
-      emissiveColor: '#000000',
-      emissiveIntensity: 0.0,
-      transparent: false,
-      opacity: 1.0,
-      baseColorMap: true,
-      normalMap: false,
-      roughnessMap: false,
-      metalnessMap: false
-    },
-    {
-      id: `mat_${modelName.replace(/\s+/g, '_').toLowerCase()}_2`,
-      name: 'Material 2',
-      type: 'MeshStandardMaterial',
-      color: '#00ff00',
-      roughness: 0.7,
-      metalness: 0.1,
-      emissiveColor: '#000000',
-      emissiveIntensity: 0.0,
-      transparent: false,
-      opacity: 1.0,
-      baseColorMap: false,
-      normalMap: true,
-      roughnessMap: false,
-      metalnessMap: false
+function extractFromGltf(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const json = JSON.parse(content);
+    if (Array.isArray(json.materials)) {
+      return json.materials.map((m) => (m && m.name) || '').filter(Boolean);
     }
-  ];
-
-  // For some specific models, use actual data from existing reports
-  if (modelName === 'Baseball Jersey') {
-    materials.splice(0, materials.length, 
-      {
-        id: 'mat_baseball_jersey_1',
-        name: 'Body_F',
-        type: 'MeshStandardMaterial',
-        color: '#ff5555',
-        roughness: 0.6,
-        metalness: 0.1,
-        emissiveColor: '#000000',
-        emissiveIntensity: 0.0,
-        transparent: false,
-        opacity: 1.0,
-        baseColorMap: true,
-        normalMap: false,
-        roughnessMap: false,
-        metalnessMap: false
-      },
-      {
-        id: 'mat_baseball_jersey_2',
-        name: 'Body_B',
-        type: 'MeshStandardMaterial',
-        color: '#5555ff',
-        roughness: 0.6,
-        metalness: 0.1,
-        emissiveColor: '#000000',
-        emissiveIntensity: 0.0,
-        transparent: false,
-        opacity: 1.0,
-        baseColorMap: true,
-        normalMap: false,
-        roughnessMap: false,
-        metalnessMap: false
-      }
-    );
-  } else if (modelName === 'Basketball Jersey Top And Long Shorts') {
-    materials.splice(0, materials.length,
-      {
-        id: 'mat_basketball_jersey_top_long_pants_1',
-        name: 'Metal',
-        type: 'MeshStandardMaterial',
-        color: '#f29595',
-        roughness: 0.91,
-        metalness: 0.22,
-        emissiveColor: '#000000',
-        emissiveIntensity: 0.00,
-        transparent: false,
-        opacity: 1.00,
-        baseColorMap: true,
-        normalMap: false,
-        roughnessMap: false,
-        metalnessMap: false
-      },
-      {
-        id: 'mat_basketball_jersey_top_long_pants_2',
-        name: 'Metal',
-        type: 'MeshStandardMaterial',
-        color: '#8a5d04',
-        roughness: 0.98,
-        metalness: 0.03,
-        emissiveColor: '#000000',
-        emissiveIntensity: 0.00,
-        transparent: false,
-        opacity: 1.00,
-        baseColorMap: false,
-        normalMap: false,
-        roughnessMap: false,
-        metalnessMap: false
-      },
-      {
-        id: 'mat_basketball_jersey_top_long_pants_3',
-        name: 'Zipper',
-        type: 'MeshStandardMaterial',
-        color: '#7e7529',
-        roughness: 0.76,
-        metalness: 0.06,
-        emissiveColor: '#000000',
-        emissiveIntensity: 0.00,
-        transparent: false,
-        opacity: 0.69,
-        baseColorMap: true,
-        normalMap: false,
-        roughnessMap: false,
-        metalnessMap: false
-      },
-      {
-        id: 'mat_basketball_jersey_top_long_pants_4',
-        name: 'Elastic',
-        type: 'MeshStandardMaterial',
-        color: '#00b761',
-        roughness: 0.44,
-        metalness: 0.23,
-        emissiveColor: '#000000',
-        emissiveIntensity: 0.00,
-        transparent: false,
-        opacity: 1.00,
-        baseColorMap: false,
-        normalMap: false,
-        roughnessMap: true,
-        metalnessMap: false
-      }
-    );
+    return [];
+  } catch (err) {
+    console.warn('GLTF parse failed:', filePath, err.message);
+    return [];
   }
-
-  let report = `3D Model Materials Report
-========================
-Model Name: ${modelName}
-File Name: ${modelFile}
-Generated on: ${new Date().toISOString()}
-Total Materials: ${materials.length}
-
-`;
-
-  materials.forEach((material, index) => {
-    report += `Material ${index + 1}
-  ID: ${material.id}
-  Name: ${material.name}
-  Type: ${material.type}
-  Color: ${material.color}
-  Roughness: ${material.roughness.toFixed(2)}
-  Metalness: ${material.metalness.toFixed(2)}
-  Emissive Color: ${material.emissiveColor}
-  Emissive Intensity: ${material.emissiveIntensity.toFixed(2)}
-  Transparent: ${material.transparent ? 'Yes' : 'No'}
-  Opacity: ${material.opacity.toFixed(2)}
-  Base Color Map: ${material.baseColorMap ? 'Yes' : 'No'}
-  Normal Map: ${material.normalMap ? 'Yes' : 'No'}
-  Roughness Map: ${material.roughnessMap ? 'Yes' : 'No'}
-  Metalness Map: ${material.metalnessMap ? 'Yes' : 'No'}
-
-`;
-  });
-
-  return report;
 }
 
-// Generate a summary report
-function generateSummaryReport(models) {
-  let summary = `3D Model Materials Summary Report
-================================
-Generated on: ${new Date().toISOString()}
-Total Models: ${models.length}
-
-`;
-
-  models.forEach((model, index) => {
-    summary += `Model ${index + 1}: ${model.name}
-  File: ${model.file}
-  Materials: ${model.materialCount}
-  Report: ${model.reportFile}
-
-`;
-  });
-
-  return summary;
-}
-
-// Main extraction function
-async function extractMaterials() {
-  console.log('Starting materials extraction...');
-  
-  // Ensure output directory exists
-  await ensureOutputDir();
-  
-  // Read all models from the models directory
-  const modelFiles = await fs.readdir(modelsDir);
-  const glbFiles = modelFiles.filter(file => file.endsWith('.glb'));
-  
-  console.log(`Found ${glbFiles.length} GLB models to process`);
-  
-  const modelsData = [];
-  
-  // Process each model
-  for (const modelFile of glbFiles) {
-    try {
-      const modelName = path.basename(modelFile, '.glb');
-      console.log(`Processing ${modelName}...`);
-      
-      // Generate material report
-      const report = generateMockMaterialReport(modelName, modelFile);
-      const reportFileName = `${modelName}-materials.txt`;
-      const reportPath = path.join(outputDir, reportFileName);
-      
-      // Write report to file
-      await fs.writeFile(reportPath, report);
-      
-      // Collect model data for summary
-      const materialCount = (report.match(/Material \d+/g) || []).length;
-      modelsData.push({
-        name: modelName,
-        file: modelFile,
-        materialCount: materialCount,
-        reportFile: reportFileName
-      });
-      
-      console.log(`  ✓ Generated ${reportFileName}`);
-    } catch (err) {
-      console.error(`  ✗ Error processing ${modelFile}:`, err.message);
+function readMtlFile(mtlPath) {
+  if (!fs.existsSync(mtlPath)) return [];
+  const content = fs.readFileSync(mtlPath, 'utf8');
+  const lines = content.split(/\r?\n/);
+  const names = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.toLowerCase().startsWith('newmtl ')) {
+      names.push(trimmed.substring(7).trim());
     }
   }
-  
-  // Generate and write summary report
-  if (modelsData.length > 0) {
-    const summaryReport = generateSummaryReport(modelsData);
-    const summaryPath = path.join(outputDir, 'materials-summary.txt');
-    await fs.writeFile(summaryPath, summaryReport);
-    console.log('✓ Generated materials-summary.txt');
-  }
-  
-  console.log(`Materials extraction completed. Processed ${modelsData.length} models.`);
+  return names;
 }
 
-// Run the extraction
-extractMaterials().catch(err => {
-  console.error('Error during materials extraction:', err);
-  process.exit(1);
-});
+function extractFromObj(filePath) {
+  try {
+    const dir = path.dirname(filePath);
+    const content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split(/\r?\n/);
+    let mtlFile = null;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.toLowerCase().startsWith('mtllib ')) {
+        mtlFile = trimmed.substring(7).trim();
+        break;
+      }
+    }
+    if (mtlFile) {
+      const mtlPath = path.join(dir, mtlFile);
+      return readMtlFile(mtlPath);
+    }
+    // Fallback: collect 'usemtl' occurrences as material names
+    const names = new Set();
+    for (const line of lines) {
+      const t = line.trim();
+      if (t.toLowerCase().startsWith('usemtl ')) {
+        names.add(t.substring(7).trim());
+      }
+    }
+    return [...names];
+  } catch (err) {
+    console.warn('OBJ parse failed:', filePath, err.message);
+    return [];
+  }
+}
+
+function normalizeNames(names) {
+  return names
+    .map((n) => (n || '').trim())
+    .filter(Boolean)
+    .map((n) => n.replace(/\s+/g, ' '))
+    .map((n) => n.replace(/[\u0000-\u001F]/g, ''))
+    .map((n) => n.replace(/^[#\-\._]+/, ''));
+}
+
+function uniquePreserveOrder(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const v of arr) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      out.push(v);
+    }
+  }
+  return out;
+}
+
+function relativeModelName(absPath) {
+  return path.relative(projectRoot, absPath).replace(/\\/g, '/');
+}
+
+function run() {
+  ensureOutDir();
+  const globalSet = new Set();
+  let totalModels = 0;
+
+  for (const dir of MODEL_DIRS) {
+    const models = scanDirForModels(dir);
+    for (const m of models) {
+      totalModels++;
+      const ext = path.extname(m).toLowerCase();
+      let names = [];
+      if (ext === '.glb') names = extractFromGLB(m);
+      else if (ext === '.gltf') names = extractFromGltf(m);
+      else if (ext === '.obj') names = extractFromObj(m);
+      else names = [];
+
+      const normalized = normalizeNames(names);
+      const unique = uniquePreserveOrder(normalized);
+
+      unique.forEach((u) => globalSet.add(u));
+
+      writeModelOutput(relativeModelName(m), unique);
+    }
+  }
+
+  const globalArr = [...globalSet].sort((a, b) => a.localeCompare(b));
+  const globalOut = path.join(OUT_DIR, `all-material-names-simple.txt`);
+  fs.writeFileSync(globalOut, globalArr.join('\n'), 'utf8');
+  console.log(`Wrote ${path.relative(projectRoot, globalOut)} (${globalArr.length} unique names)`);
+  console.log(`Processed ${totalModels} models`);
+}
+
+run();

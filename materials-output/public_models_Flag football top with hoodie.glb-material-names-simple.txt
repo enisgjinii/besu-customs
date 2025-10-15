@@ -1,0 +1,17 @@
+FABRIC 1_10070542
+Zipper 4_TapeFabric_10234985
+Cord end_01_10233876
+Cord end_01_10233907
+Trim_11533042_10233938
+Zipper 4_Teeth_10235089
+X 1_10070714
+X 2_10070836
+Zipper 4_Slider_10235018
+Zipper 4_Puller_10235037
+Zipper 4_TopStopper_10235055
+Zipper 4_TopStopper_10235057
+Zipper 4_BottomStopper_10235075
+Zipper 4_BottomStopper_10235077
+FABRIC_1_2587
+FABRIC_1_2590
+Material.001
