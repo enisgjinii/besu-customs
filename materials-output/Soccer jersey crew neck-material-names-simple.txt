@@ -1,7 +1,0 @@
-Material Names for Soccer jersey crew neck
-========================
-
-Body_Back
-Body_B_301116
-Body_F_279881
-Collar_Stand_441436

@@ -1,7 +1,0 @@
-Material Names for Track and field top short sleeve
-========================
-
-Body_Front_1
-Body_F_465647
-Body_F_465656
-Body_B_465650
