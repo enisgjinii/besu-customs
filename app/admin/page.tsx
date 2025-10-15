@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
-import { Link as LinkIcon, Save } from "lucide-react";
+import { Link as LinkIcon, Save, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -18,6 +18,8 @@ export default function AdminPage() {
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modelUrl, setModelUrl] = useState("");
+  const [extracting, setExtracting] = useState(false);
+  const [extractMessage, setExtractMessage] = useState("");
 
   const handleSave = (productId: string) => {
     // Persist model URL to store
@@ -31,6 +33,38 @@ export default function AdminPage() {
     setModelUrl("");
   };
 
+  const handleExtractMaterials = async () => {
+    setExtracting(true);
+    setExtractMessage("Extracting materials from all models...");
+    
+    try {
+      // Call the API endpoint to extract materials
+      const response = await fetch('/api/extract-materials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setExtractMessage("Materials extracted successfully! Check the materials-output directory.");
+      } else {
+        setExtractMessage(`Error extracting materials: ${result.error}`);
+      }
+    } catch (error: unknown) {
+      console.error("Error extracting materials:", error);
+      if (error instanceof Error) {
+        setExtractMessage(`Error extracting materials: ${error.message}`);
+      } else {
+        setExtractMessage("Error extracting materials: Unknown error occurred");
+      }
+    } finally {
+      setExtracting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
@@ -41,6 +75,32 @@ export default function AdminPage() {
           <p className="text-muted-foreground">
             Link products to 3D model URLs
           </p>
+        </div>
+
+        <div className="bg-card border-2 border-primary mb-6">
+          <div className="p-4 border-b-2 border-primary">
+            <h2 className="text-lg font-bold text-foreground">
+              Extract Materials
+            </h2>
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Extract material information from all 3D models in the project
+            </p>
+            <Button 
+              onClick={handleExtractMaterials} 
+              disabled={extracting}
+              className="flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              {extracting ? "Extracting..." : "Extract All Materials"}
+            </Button>
+            {extractMessage && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {extractMessage}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="bg-card border-2 border-primary">
