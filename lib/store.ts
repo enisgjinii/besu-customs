@@ -25,8 +25,8 @@ export interface MaterialSection {
   id: string;
   name: string;
   originalName: string;
-  // Use explicit 'Jersey' category instead of the previous generic 'Body'
-  category: "Jersey" | "Panels" | "Piping/Trim" | "Other";
+  // Use explicit categories but allow custom category strings
+  category: "Jersey" | "Panels" | "Piping/Trim" | "Other" | string;
   color: string;
   roughness: number;
   metalness: number;

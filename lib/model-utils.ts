@@ -119,8 +119,17 @@ export function applyBasketballJerseyNaming(
     modelId.includes("basketball jersey and shorts") ||
     modelId.includes("basketball jersey and shorts.glb");
 
+  // Detect basketball shooting shirt models
+  const isShootingShirtByUrl = modelId.includes("basketball shooting shirt");
+
   const containsBasketballKeywords = sections.some((section) =>
     (section.originalName || "").toLowerCase().includes("basketball"),
+  );
+
+  // Detect basketball shooting shirt models by content
+  const containsShootingShirtKeywords = sections.some((section) =>
+    (section.originalName || "").toLowerCase().includes("shooting") &&
+    (section.originalName || "").toLowerCase().includes("shirt")
   );
 
   // Also permit detection via presence of a few expected material names
@@ -235,6 +244,15 @@ export function applyBasketballJerseyNaming(
     return filtered;
   }
 
+
+  // Apply special naming for basketball shooting shirts
+  if (isShootingShirtByUrl || containsShootingShirtKeywords) {
+    updatedSections.forEach((section) => {
+      // Set category for all materials in shooting shirts
+      section.category = "Jersey";
+    });
+  }
+
   return updatedSections;
 }
 
@@ -337,6 +355,11 @@ export function getUserFriendlyName(name: string): string {
   cleanedName = cleanedName.replace(/\s+/g, " ").trim();
 
   const lowerCleanedName = cleanedName.toLowerCase();
+
+  // Handle FABRIC -> Base Color conversion
+  if (lowerCleanedName.includes("fabric") || lowerCleanedName === "fabric") {
+    return "Base Color";
+  }
 
   // Handle Baseball Jersey specific naming
   if (name.includes('Body_F')) {
