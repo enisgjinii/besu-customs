@@ -107,8 +107,8 @@ const generateProducts = (): Product[] => {
     },
     {
       id: "baseball-pants",
-      title: "Baseball Pants",
-      modelUrl: "/models/Baseball pants.glb",
+      title: "Baseball Jersey",
+      modelUrl: "/models/Baseball-Jersey.glb",
     },
     {
       id: "basketball-jersey-long",

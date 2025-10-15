@@ -8,10 +8,10 @@ Model 1: Baseball caps
   Materials: 9
   Report: Baseball caps-materials.txt
 
-Model 2: Baseball pants
-  File: Baseball pants.glb
+Model 2: Baseball Jersey
+  File: Baseball-Jersey.glb
   Materials: 7
-  Report: Baseball pants-materials.txt
+  Report: Baseball Jersey-materials.txt
 
 Model 3: Basketball jersey top long pants
   File: Basketball jersey top long pants.glb

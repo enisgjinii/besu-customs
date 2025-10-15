@@ -90,8 +90,8 @@ console.log(`a Node.js compatible GLB parser with proper polyfills.`);
  * @returns {Array} Array of mock material information
  */
 function generateMockMaterials(modelName) {
-  // Special handling for baseball pants -> baseball jersey
-  const isBaseballJersey = modelName === 'Baseball pants';
+  // Special handling for Baseball Jersey -> baseball jersey
+  const isBaseballJersey = modelName === 'Baseball Jersey';
   if (isBaseballJersey) {
     // Create specific materials for baseball jersey
     const materials = [

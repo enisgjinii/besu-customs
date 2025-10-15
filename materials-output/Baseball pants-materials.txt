@@ -1,7 +1,7 @@
 3D Model Materials Report
 ========================
-Model Name: Baseball pants
-File Name: Baseball pants.glb
+Model Name: Baseball Jersey
+File Name: Baseball-Jersey.glb
 Generated on: 2025-10-15T07:30:04.497Z
 Total Materials: 7
 

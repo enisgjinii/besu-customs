@@ -66,7 +66,7 @@ function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSec
   // Apply specific naming rules for baseball jersey
   let bodyCount = 0;
   sections.forEach(section => {
-    // Change "Baseball pants" to "Baseball Jersey" in the display name
+    // Change "Baseball Jersey" to "Baseball Jersey" in the display name
     if (section.name.toLowerCase().includes('baseball') && section.name.toLowerCase().includes('pants')) {
       section.name = section.name.replace(/pants/gi, 'Jersey');
     }
@@ -117,7 +117,7 @@ export function getUserFriendlyName(name: string): string {
 
   const lowerCleanedName = cleanedName.toLowerCase();
 
-  // Handle baseball pants -> baseball jersey renaming
+  // Handle Baseball Jersey -> baseball jersey renaming
   if (lowerCleanedName.includes("baseball") && lowerCleanedName.includes("pants")) {
     // Replace "pants" with "jersey"
     cleanedName = cleanedName.replace(/pants/gi, "jersey");
