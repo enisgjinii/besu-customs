@@ -1,6 +1,9 @@
 import * as THREE from "three";
 import type { MaterialSection } from "./store";
 
+// Insert module-level variable for Backpack FABRIC count
+let duffleBagFabricCount = 0;
+
 export function extractSections(scene: THREE.Group, modelUrl?: string): MaterialSection[] {
   console.log('🎯 extractSections called with modelUrl:', modelUrl);
   
@@ -166,9 +169,19 @@ export function applyBasketballJerseyNaming(
       }
     }
 
+    // Remove default button materials exported by some tools (e.g. Default_Button_12345)
+    const filtered = updated.filter((s) => {
+      const on = (s.originalName || "").toLowerCase();
+      // filter out default_button variants
+      if (on.startsWith("default_button") || on.includes("default_button")) {
+        return false;
+      }
+      return true;
+    });
+
     // Final pass: ensure manufacturer shorthand 'ble' (and variants) are
     // normalized even though we otherwise keep original names for this model.
-    updated.forEach((s) => {
+    filtered.forEach((s) => {
       const on = (s.originalName || "").toLowerCase();
       if (on.startsWith("ble")) {
         s.name = "Jersey Sleeve & Collar Trim";
@@ -176,7 +189,7 @@ export function applyBasketballJerseyNaming(
       }
     });
 
-    return updated;
+    return filtered;
   }
   
   const isBasketballByUrl = modelId.includes(
@@ -451,6 +464,92 @@ export function applyBasketballJerseyNaming(
       updatedSections = updatedSections.filter(s => !bottomStopperSections.includes(s) || s === combinedSection);
     } else if (bottomStopperSections.length === 1) {
       bottomStopperSections[0].name = "Zipper Bottom Stopper";
+    }
+  }
+
+  // Duffle Bag 01 / Backpack mapping
+  // Normalize modelId to tolerate underscores and spacing used in filenames (e.g. 'Duffle bag_01.glb')
+  const normalizedModelId = (modelId || '').replace(/[_\s]/g, '').toLowerCase();
+  if (
+    normalizedModelId.includes('dufflebag') ||
+    normalizedModelId.includes('dufflebag01') ||
+    modelId.toLowerCase().includes('duffle bag') ||
+    modelId.toLowerCase().includes('duffle')
+  ) {
+    console.log('ℹ️ Duffle Bag / Backpack detected — applying Backpack-specific mappings');
+
+    // Ordered FABRIC mapping: map the first FABRIC-like section to Front, second to Back
+    const fabricCandidates: MaterialSection[] = updatedSections.filter((s) => {
+      const on = (s.originalName || '').toLowerCase();
+      // include common exporter variants we see in the UI: 'base color', 'fabric', 'material'
+      return (
+        on === 'fabric' ||
+        on.startsWith('fabric') ||
+        on === 'material' ||
+        on.startsWith('material') ||
+        on.startsWith('base color') ||
+        on.includes('base color')
+      );
+    });
+
+    if (fabricCandidates.length > 0) {
+      if (fabricCandidates[0]) {
+        fabricCandidates[0].name = 'Front of Backpack & Straps Color';
+        fabricCandidates[0].category = 'Bags';
+      }
+      if (fabricCandidates[1]) {
+        fabricCandidates[1].name = 'Back of Backpack, Straps, and Grab Handle Color';
+        fabricCandidates[1].category = 'Bags';
+      }
+      for (let i = 2; i < fabricCandidates.length; i++) {
+        fabricCandidates[i].name = `Unknown Fabric - Investigate (${fabricCandidates[i].originalName || 'unnamed'})`;
+        fabricCandidates[i].category = 'Other';
+      }
+    }
+
+    // Map specific short names (M1..M5 and Material1..3) to clearer labels
+    updatedSections.forEach((s) => {
+      const on = (s.originalName || '').toLowerCase();
+      // Match variants like 'M (1)', 'M(1)', 'm1', 'M 1'
+      if (/^m\W*1/i.test(on)) {
+        s.name = 'Bottom Zipper Color';
+        s.category = 'Zipper';
+      } else if (/^m\W*2/i.test(on)) {
+        s.name = 'Top Left Zipper Color';
+        s.category = 'Zipper';
+      } else if (/^m\W*3/i.test(on)) {
+        s.name = 'Top Right Zipper Color';
+        s.category = 'Zipper';
+      } else if (/^m\W*4/i.test(on)) {
+        s.name = 'Left Slider Color';
+        s.category = 'Hardware';
+      } else if (/^m\W*5/i.test(on)) {
+        s.name = 'Right Slider Color';
+        s.category = 'Hardware';
+      } else if (/^material\W*1/i.test(on)) {
+        s.name = 'Strap Stitching Color';
+        s.category = 'Stitching';
+      } else if (/^material\W*2/i.test(on)) {
+        s.name = 'Total Backpack Stitching Color';
+        s.category = 'Stitching';
+      } else if (/^material\W*3/i.test(on)) {
+        s.name = 'Back of Backpack Stitching Color';
+        s.category = 'Stitching';
+      }
+    });
+
+    // Remove extra slider entries coming from exporters (e.g. 'Slider 1', 'Slider (1)')
+    updatedSections = updatedSections.filter((s) => {
+      const on = (s.originalName || '').toLowerCase();
+      if (/^slider\W*\d+/i.test(on)) return false;
+      return true;
+    });
+
+    // Debug: log mapping results so we can confirm the original->display name mapping in the console
+    try {
+      console.log('🔁 Backpack mapping results:', updatedSections.map(s => ({ original: s.originalName, name: s.name })));
+    } catch (e) {
+      // ignore logging errors
     }
   }
 
