@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
-import { Palette, Sliders, Link2, Unlink } from "lucide-react";
+import { Palette, Sliders, Link2, Unlink, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ColorPickerModal } from "./color-picker-modal";
@@ -30,6 +30,8 @@ function getSectionBadge(section: { name: string; originalName?: string }) {
 
 export function MaterialEditor() {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  // State to track expanded categories
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   const sections = useConfiguratorStore((state) => state.sections);
   const selectedSectionId = useConfiguratorStore(
@@ -51,13 +53,6 @@ export function MaterialEditor() {
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
-  // Add tour targets
-  /* const tourTargets = {
-    'material-editor': true,
-    'color-picker': 'material-color-picker',
-    'texture-upload': 'material-texture-upload',
-  }; */
-
   // Group sections by category
   const groupedSections = sections.reduce(
     (acc, section) => {
@@ -70,17 +65,22 @@ export function MaterialEditor() {
     {} as Record<string, typeof sections>,
   );
 
-  // Get front/back sections for quick toggle
-  const frontSections = sections.filter(
-    (section) =>
-      section.name.toLowerCase().includes("front") &&
-      !section.name.toLowerCase().includes("back"),
-  );
-  const backSections = sections.filter(
-    (section) =>
-      section.name.toLowerCase().includes("back") &&
-      !section.name.toLowerCase().includes("front"),
-  );
+  // Toggle category expanded state
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  // Initialize all categories as expanded by default
+  if (Object.keys(expandedCategories).length === 0 && Object.keys(groupedSections).length > 0) {
+    const initialExpanded: Record<string, boolean> = {};
+    Object.keys(groupedSections).forEach(category => {
+      initialExpanded[category] = true;
+    });
+    setExpandedCategories(initialExpanded);
+  }
 
   return (
     <div className="space-y-6" data-tour="material-editor">
@@ -101,55 +101,6 @@ export function MaterialEditor() {
           )}
         </div>
 
-        {/* Front/Back Quick Toggle */}
-        {(frontSections.length > 0 || backSections.length > 0) && (
-          <div className="mb-4 p-3 bg-secondary/20 rounded-lg">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                Quick Select:
-              </span>
-            </div>
-            <div className="flex gap-2">
-              {frontSections.length > 0 && (
-                <Button
-                  size="sm"
-                  variant={
-                    frontSections.some((s) => s.id === selectedSectionId)
-                      ? "default"
-                      : "outline"
-                  }
-                  onClick={() => {
-                    // Select the first front section if multiple
-                    const frontSection = frontSections[0];
-                    if (frontSection) setSelectedSection(frontSection.id);
-                  }}
-                  className="flex-1 text-xs"
-                >
-                  Front Panel
-                </Button>
-              )}
-              {backSections.length > 0 && (
-                <Button
-                  size="sm"
-                  variant={
-                    backSections.some((s) => s.id === selectedSectionId)
-                      ? "default"
-                      : "outline"
-                  }
-                  onClick={() => {
-                    // Select the first back section if multiple
-                    const backSection = backSections[0];
-                    if (backSection) setSelectedSection(backSection.id);
-                  }}
-                  className="flex-1 text-xs"
-                >
-                  Back Panel
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
         {selectedSectionId && linkedSections.size > 0 && (
           <div className="mb-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <div className="flex items-center gap-2">
@@ -168,81 +119,96 @@ export function MaterialEditor() {
           {Object.entries(groupedSections).map(
             ([category, categorySections]) => (
               <div key={category}>
-                <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
-                  {category}
-                </h4>
-                <div className="space-y-1.5">
-                  {categorySections.map((section) => {
-                    const isSelected = selectedSectionId === section.id;
-                    const isLinked = linkedSections.has(section.id);
-                    const badge = getSectionBadge(section);
+                {/* Category Header with Expand/Collapse */}
+                <button
+                  onClick={() => toggleCategory(category)}
+                  className="w-full flex items-center justify-between p-2 text-left rounded-lg hover:bg-secondary/50 transition-colors mb-2"
+                >
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {category}
+                  </h4>
+                  {expandedCategories[category] ? (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
+                
+                {/* Category Sections - Only show if expanded */}
+                {expandedCategories[category] && (
+                  <div className="space-y-1.5 ml-2 pl-2 border-l border-border/50">
+                    {categorySections.map((section) => {
+                      const isSelected = selectedSectionId === section.id;
+                      const isLinked = linkedSections.has(section.id);
+                      const badge = getSectionBadge(section);
 
-                    return (
-                      <div
-                        key={section.id}
-                        className={`group relative rounded-lg transition-all ${
-                          isLinked ? "ring-2 ring-blue-500/50" : ""
-                        }`}
-                      >
-                        <button
-                          onClick={() => setSelectedSection(section.id)}
-                          className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
-                            isSelected
-                              ? "bg-accent text-accent-foreground shadow-sm"
-                              : "bg-secondary/30 hover:bg-secondary/50"
+                      return (
+                        <div
+                          key={section.id}
+                          className={`group relative rounded-lg transition-all ${
+                            isLinked ? "ring-2 ring-blue-500/50" : ""
                           }`}
                         >
-                          <div className="flex items-center justify-start gap-2.5">
-                            <div
-                              className="w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-border/50 shadow-sm"
-                              style={{ backgroundColor: section.color }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="truncate font-medium">
-                                  {section.name}
-                                </span>
-                                {badge && (
-                                  <Badge
-                                    variant={badge.variant}
-                                    className="text-xs px-1.5 py-0.5 flex-shrink-0"
-                                  >
-                                    {badge.text}
-                                  </Badge>
-                                )}
+                          <button
+                            onClick={() => setSelectedSection(section.id)}
+                            className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
+                              isSelected
+                                ? "bg-accent text-accent-foreground shadow-sm"
+                                : "bg-secondary/30 hover:bg-secondary/50"
+                            }`}
+                          >
+                            <div className="flex items-center justify-start gap-2.5">
+                              <div
+                                className="w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-border/50 shadow-sm"
+                                style={{ backgroundColor: section.color }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="truncate font-medium">
+                                    {section.name}
+                                  </span>
+                                  {badge && (
+                                    <Badge
+                                      variant={badge.variant}
+                                      className="text-xs px-1.5 py-0.5 flex-shrink-0"
+                                    >
+                                      {badge.text}
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                            {isLinked && (
-                              <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                            )}
-                          </div>
-                        </button>
-                        {selectedSectionId &&
-                          selectedSectionId !== section.id && (
-                            <button
-                              onClick={() => toggleSectionLink(section.id)}
-                              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${
-                                isLinked
-                                  ? "bg-blue-500 text-white shadow-sm"
-                                  : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
-                              }`}
-                              title={
-                                isLinked
-                                  ? "Click to unlink"
-                                  : "Click to link with selected"
-                              }
-                            >
-                              {isLinked ? (
-                                <Link2 className="w-3.5 h-3.5" />
-                              ) : (
-                                <Link2 className="w-3.5 h-3.5" />
+                              {isLinked && (
+                                <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                               )}
-                            </button>
-                          )}
-                      </div>
-                    );
-                  })}
-                </div>
+                            </div>
+                          </button>
+                          {selectedSectionId &&
+                            selectedSectionId !== section.id && (
+                              <button
+                                onClick={() => toggleSectionLink(section.id)}
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${
+                                  isLinked
+                                    ? "bg-blue-500 text-white shadow-sm"
+                                    : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
+                                }`}
+                                title={
+                                  isLinked
+                                    ? "Click to unlink"
+                                    : "Click to link with selected"
+                                }
+                              >
+                                {isLinked ? (
+                                  <Link2 className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Link2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ),
           )}

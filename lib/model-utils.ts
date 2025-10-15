@@ -55,58 +55,82 @@ export function extractSections(scene: THREE.Group): MaterialSection[] {
 function reorderBaseballJerseySections(sections: MaterialSection[]): MaterialSection[] {
   // Check if this might be a baseball jersey by looking at section names
   const isBaseballJersey = sections.some(section => 
-    section.originalName?.toLowerCase().includes('baseball') && 
-    section.originalName?.toLowerCase().includes('pants')
+    (section.originalName?.toLowerCase().includes('baseball') && 
+    section.originalName?.toLowerCase().includes('jersey')) ||
+    section.name.toLowerCase().includes('baseball jersey') ||
+    sections.some(s => s.originalName?.includes('Body_B') || s.originalName?.includes('Body_F'))
   );
   
   if (!isBaseballJersey) {
     return sections;
   }
   
-  // Apply specific naming rules for baseball jersey
-  let bodyCount = 0;
-  sections.forEach(section => {
-    // Change "Baseball Jersey" to "Baseball Jersey" in the display name
-    if (section.name.toLowerCase().includes('baseball') && section.name.toLowerCase().includes('pants')) {
-      section.name = section.name.replace(/pants/gi, 'Jersey');
+  // Create a new array to avoid mutating the original
+  const updatedSections = [...sections];
+  
+  // Apply specific naming rules for baseball jersey materials
+  updatedSections.forEach(section => {
+    // Handle Body materials with specific naming
+    if (section.originalName?.includes('Body_F')) {
+      section.name = 'Front';
+    } else if (section.originalName?.includes('Body_B')) {
+      section.name = 'Back';
     }
     
-    // Handle Body materials
-    if (section.name === 'Body' || section.name === 'Main Body') {
-      bodyCount++;
-      if (bodyCount === 1) {
-        section.name = 'Back';
-      } else if (bodyCount === 2) {
-        section.name = 'Front';
-      }
-    }
-    
-    // Handle Button materials
-    if (section.originalName?.toLowerCase().includes('button 1')) {
+    // Handle Button materials with specific naming
+    if (section.originalName?.includes('Button_1')) {
       section.name = 'All Buttons';
-    } else if (section.originalName?.toLowerCase().includes('button 2')) {
+    } else if (section.originalName?.includes('Default_Button_3683977')) {
       section.name = 'Top Button';
-    } else if (section.originalName?.toLowerCase().includes('button 3')) {
+    } else if (section.originalName?.includes('Default_Button_3683978')) {
       section.name = 'Button Stitching Color';
     }
     
-    // Keep collar and sleeve as is (no change needed)
+    // Keep collar and sleeve names as is (they should already be correct)
+    if (section.originalName?.includes('Collar')) {
+      section.name = 'Collar';
+    } else if (section.originalName?.includes('Sleeve')) {
+      section.name = 'Sleeve';
+    }
   });
   
-  // Reorder to put Front before Back
-  const frontIndex = sections.findIndex(section => section.name === 'Front');
-  const backIndex = sections.findIndex(section => section.name === 'Back');
+  // Create the specific order: Front, Back, All Buttons, Top Button, Button Stitching Color, Collar, Sleeve
+  const orderedSections: MaterialSection[] = [];
   
-  if (frontIndex !== -1 && backIndex !== -1 && frontIndex > backIndex) {
-    // Swap front and back positions
-    const newSections = [...sections];
-    const temp = newSections[frontIndex];
-    newSections[frontIndex] = newSections[backIndex];
-    newSections[backIndex] = temp;
-    return newSections;
-  }
+  // Add Front
+  const frontSection = updatedSections.find(section => section.name === 'Front');
+  if (frontSection) orderedSections.push(frontSection);
   
-  return sections;
+  // Add Back
+  const backSection = updatedSections.find(section => section.name === 'Back');
+  if (backSection) orderedSections.push(backSection);
+  
+  // Add All Buttons
+  const allButtonsSection = updatedSections.find(section => section.name === 'All Buttons');
+  if (allButtonsSection) orderedSections.push(allButtonsSection);
+  
+  // Add Top Button
+  const topButtonSection = updatedSections.find(section => section.name === 'Top Button');
+  if (topButtonSection) orderedSections.push(topButtonSection);
+  
+  // Add Button Stitching Color
+  const buttonStitchingSection = updatedSections.find(section => section.name === 'Button Stitching Color');
+  if (buttonStitchingSection) orderedSections.push(buttonStitchingSection);
+  
+  // Add Collar
+  const collarSection = updatedSections.find(section => section.name === 'Collar');
+  if (collarSection) orderedSections.push(collarSection);
+  
+  // Add Sleeve
+  const sleeveSection = updatedSections.find(section => section.name === 'Sleeve');
+  if (sleeveSection) orderedSections.push(sleeveSection);
+  
+  // Add any remaining sections that weren't specifically ordered
+  const remainingSections = updatedSections.filter(section => 
+    !orderedSections.includes(section)
+  );
+  
+  return [...orderedSections, ...remainingSections];
 }
 
 export function getUserFriendlyName(name: string): string {
@@ -116,6 +140,29 @@ export function getUserFriendlyName(name: string): string {
   cleanedName = cleanedName.replace(/\s+/g, " ").trim();
 
   const lowerCleanedName = cleanedName.toLowerCase();
+
+  // Handle Baseball Jersey specific naming
+  if (name.includes('Body_F')) {
+    return "Front";
+  }
+  if (name.includes('Body_B')) {
+    return "Back";
+  }
+  if (name.includes('Button_1')) {
+    return "All Buttons";
+  }
+  if (name.includes('Default_Button_3683977')) {
+    return "Top Button";
+  }
+  if (name.includes('Default_Button_3683978')) {
+    return "Button Stitching Color";
+  }
+  if (name.includes('Collar')) {
+    return "Collar";
+  }
+  if (name.includes('Sleeve')) {
+    return "Sleeve";
+  }
 
   // Handle Baseball Jersey -> baseball jersey renaming
   if (lowerCleanedName.includes("baseball") && lowerCleanedName.includes("pants")) {
@@ -262,6 +309,36 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
   // Remove trailing numbers and any text that follows them for categorization
   const cleanedName = name.replace(/_\d+.*$/, "").trim();
   const lowerName = cleanedName.toLowerCase();
+
+  // Special handling for baseball jersey to ensure proper categorization
+  if (name.includes('Body_F') || name.includes('Body_B') || 
+      lowerName.includes("front") || lowerName.includes("back")) {
+    return "Body";
+  }
+  
+  if (name.includes('Button')) {
+    return "Other";
+  }
+  
+  if (name.includes('Collar')) {
+    return "Piping/Trim";
+  }
+  
+  if (name.includes('Sleeve')) {
+    return "Panels";
+  }
+
+  // Special handling for baseball jersey to ensure proper categorization
+  if (lowerName.includes("baseball") && lowerName.includes("jersey")) {
+    // Front/Back categorization for baseball jersey
+    if (lowerName.includes("front")) {
+      return "Body";
+    }
+    if (lowerName.includes("back")) {
+      return "Body";
+    }
+    // Keep other materials in their appropriate categories
+  }
 
   // Front/Back categorization
   if (lowerName.includes("front") || lowerName.includes("back")) {
