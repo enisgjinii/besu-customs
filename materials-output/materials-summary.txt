@@ -13,10 +13,10 @@ Model 2: Baseball Jersey
   Materials: 7
   Report: Baseball Jersey-materials.txt
 
-Model 3: Basketball jersey top long pants
-  File: Basketball jersey top long pants.glb
+Model 3: Basketball Jersey Top And Long Shorts
+  File: Basketball Jersey Top And Long Shorts.glb
   Materials: 6
-  Report: Basketball jersey top long pants-materials.txt
+  Report: Basketball Jersey Top And Long Shorts-materials.txt
 
 Model 4: Basketball jersey
   File: Basketball jersey.glb

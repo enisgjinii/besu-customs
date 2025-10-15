@@ -112,8 +112,8 @@ const generateProducts = (): Product[] => {
     },
     {
       id: "basketball-jersey-long",
-      title: "Basketball Jersey Top Long Pants",
-      modelUrl: "/models/Basketball jersey top long pants.glb",
+      title: "Basketball Jersey Top And Long Shorts",
+      modelUrl: "/models/Basketball Jersey Top And Long Shorts.glb",
     },
     {
       id: "basketball-jersey",

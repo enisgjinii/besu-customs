@@ -1,0 +1,102 @@
+3D Model Materials Report
+========================
+Model Name: Basketball Jersey Top And Long Shorts
+File Name: Basketball Jersey Top And Long Shorts.glb
+Generated on: 2025-10-15T07:30:04.497Z
+Total Materials: 6
+
+Material 1
+  ID: mat_basketball_jersey_top_long_pants_1
+  Name: Metal
+  Type: MeshStandardMaterial
+  Color: #f29595
+  Roughness: 0.91
+  Metalness: 0.22
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 2
+  ID: mat_basketball_jersey_top_long_pants_2
+  Name: Metal
+  Type: MeshStandardMaterial
+  Color: #8a5d04
+  Roughness: 0.98
+  Metalness: 0.03
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 3
+  ID: mat_basketball_jersey_top_long_pants_3
+  Name: Zipper
+  Type: MeshStandardMaterial
+  Color: #7e7529
+  Roughness: 0.76
+  Metalness: 0.06
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 0.69
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 4
+  ID: mat_basketball_jersey_top_long_pants_4
+  Name: Elastic
+  Type: MeshStandardMaterial
+  Color: #00b761
+  Roughness: 0.44
+  Metalness: 0.23
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: No
+  Normal Map: No
+  Roughness Map: Yes
+  Metalness Map: No
+
+Material 5
+  ID: mat_basketball_jersey_top_long_pants_5
+  Name: Topstitch
+  Type: MeshStandardMaterial
+  Color: #92d272
+  Roughness: 0.73
+  Metalness: 0.04
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
+
+Material 6
+  ID: mat_basketball_jersey_top_long_pants_6
+  Name: Panel
+  Type: MeshStandardMaterial
+  Color: #96a05a
+  Roughness: 0.98
+  Metalness: 0.03
+  Emissive Color: #000000
+  Emissive Intensity: 0.00
+  Transparent: No
+  Opacity: 1.00
+  Base Color Map: Yes
+  Normal Map: No
+  Roughness Map: No
+  Metalness Map: No
