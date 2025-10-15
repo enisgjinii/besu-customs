@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
-import { Palette, Sliders, Link2, Unlink, ChevronDown, ChevronRight } from "lucide-react";
+import { Palette, Sliders, Link2, Unlink, ChevronDown, ChevronRight, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ColorPickerModal } from "./color-picker-modal";
@@ -32,6 +32,8 @@ export function MaterialEditor() {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   // State to track expanded categories
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [extractingNames, setExtractingNames] = useState(false);
+  const [extractNamesMessage, setExtractNamesMessage] = useState("");
 
   const sections = useConfiguratorStore((state) => state.sections);
   const selectedSectionId = useConfiguratorStore(
@@ -82,6 +84,40 @@ export function MaterialEditor() {
     setExpandedCategories(initialExpanded);
   }
 
+  const handleExtractMaterialNames = async () => {
+    setExtractingNames(true);
+    setExtractNamesMessage("Extracting material names...");
+    
+    try {
+      // Call the API endpoint to extract material names
+      const response = await fetch('/api/extract-material-names', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setExtractNamesMessage("Material names extracted successfully!");
+        // Optionally, you could refresh the page or update the UI
+        setTimeout(() => setExtractNamesMessage(""), 3000);
+      } else {
+        setExtractNamesMessage(`Error: ${result.error}`);
+      }
+    } catch (error: unknown) {
+      console.error("Error extracting material names:", error);
+      if (error instanceof Error) {
+        setExtractNamesMessage(`Error: ${error.message}`);
+      } else {
+        setExtractNamesMessage("Error: Unknown error occurred");
+      }
+    } finally {
+      setExtractingNames(false);
+    }
+  };
+
   return (
     <div className="space-y-6" data-tour="material-editor">
       <div>
@@ -98,6 +134,25 @@ export function MaterialEditor() {
               <Unlink className="w-3 h-3" />
               Clear Links
             </button>
+          )}
+        </div>
+
+        {/* Extract Material Names Button */}
+        <div className="mb-4">
+          <Button 
+            onClick={handleExtractMaterialNames} 
+            disabled={extractingNames}
+            variant="outline"
+            size="sm"
+            className="w-full flex items-center gap-2"
+          >
+            <List className="w-4 h-4" />
+            {extractingNames ? "Extracting..." : "Extract Material Names"}
+          </Button>
+          {extractNamesMessage && (
+            <p className="mt-2 text-xs text-muted-foreground text-center">
+              {extractNamesMessage}
+            </p>
           )}
         </div>
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
-import { Link as LinkIcon, Save, FileText } from "lucide-react";
+import { Link as LinkIcon, Save, FileText, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -20,6 +20,8 @@ export default function AdminPage() {
   const [modelUrl, setModelUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [extractMessage, setExtractMessage] = useState("");
+  const [extractingNames, setExtractingNames] = useState(false);
+  const [extractNamesMessage, setExtractNamesMessage] = useState("");
 
   const handleSave = (productId: string) => {
     // Persist model URL to store
@@ -65,6 +67,38 @@ export default function AdminPage() {
     }
   };
 
+  const handleExtractMaterialNames = async () => {
+    setExtractingNames(true);
+    setExtractNamesMessage("Extracting material names from all models...");
+    
+    try {
+      // Call the API endpoint to extract material names
+      const response = await fetch('/api/extract-material-names', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setExtractNamesMessage("Material names extracted successfully! Check the materials-output directory.");
+      } else {
+        setExtractNamesMessage(`Error extracting material names: ${result.error}`);
+      }
+    } catch (error: unknown) {
+      console.error("Error extracting material names:", error);
+      if (error instanceof Error) {
+        setExtractNamesMessage(`Error extracting material names: ${error.message}`);
+      } else {
+        setExtractNamesMessage("Error extracting material names: Unknown error occurred");
+      }
+    } finally {
+      setExtractingNames(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
@@ -98,6 +132,32 @@ export default function AdminPage() {
             {extractMessage && (
               <p className="mt-2 text-sm text-muted-foreground">
                 {extractMessage}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-card border-2 border-primary mb-6">
+          <div className="p-4 border-b-2 border-primary">
+            <h2 className="text-lg font-bold text-foreground">
+              Extract Material Names Only
+            </h2>
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Extract just the material names from all 3D models (simple format)
+            </p>
+            <Button 
+              onClick={handleExtractMaterialNames} 
+              disabled={extractingNames}
+              className="flex items-center gap-2"
+            >
+              <List className="w-4 h-4" />
+              {extractingNames ? "Extracting..." : "Extract Material Names"}
+            </Button>
+            {extractNamesMessage && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {extractNamesMessage}
               </p>
             )}
           </div>

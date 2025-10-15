@@ -11,9 +11,14 @@ import {
   Square,
   Save,
   Share2,
+  Upload,
+  Settings,
+  List,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useConfiguratorStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -23,6 +28,7 @@ export default function Home() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [showUploadPanel, setShowUploadPanel] = useState(false);
 
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
@@ -318,6 +324,10 @@ export default function Home() {
           >
             <Share2 className="w-4 h-4" />
           </button>
+
+          <Link href="/materials" className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background">
+            <List className="w-4 h-4" />
+          </Link>
         </div>
       )}
 

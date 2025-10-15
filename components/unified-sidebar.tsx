@@ -21,6 +21,7 @@ import {
   Film,
   Sparkles,
   PanelLeftClose,
+  List
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import type { Product } from "@/lib/store";
@@ -502,6 +503,19 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Materials Page Link */}
+        <div className="mt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full flex items-center gap-2"
+            onClick={() => window.location.href = '/materials'}
+          >
+            <List className="w-4 h-4" />
+            View All Material Names
+          </Button>
         </div>
 
         {/* Tab Navigation */}
