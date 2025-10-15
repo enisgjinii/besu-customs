@@ -153,7 +153,10 @@ function LoadedModel({
   // Extract sections on load and fit model to view
   useEffect(() => {
     try {
-  const newSections = extractSections(clonedScene.current, url);
+      // Force re-extraction by clearing sections first to ensure fresh data
+      setSections([]);
+      
+      const newSections = extractSections(clonedScene.current, url);
       setSections(newSections);
 
       // Extract complete UV map from entire model

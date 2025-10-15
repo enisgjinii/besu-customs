@@ -2,6 +2,8 @@ import * as THREE from "three";
 import type { MaterialSection } from "./store";
 
 export function extractSections(scene: THREE.Group, modelUrl?: string): MaterialSection[] {
+  console.log('🎯 extractSections called with modelUrl:', modelUrl);
+  
   const sections: MaterialSection[] = [];
   const processedMaterials = new Set<string>();
 
@@ -97,7 +99,7 @@ export function applyBasketballJerseyNaming(
   modelUrl?: string,
 ): MaterialSection[] {
   // Work on a copy so we can apply a couple of small mappings unconditionally
-  const updatedSections = [...sections];
+  let updatedSections = [...sections];
 
   // Always map manufacturer shorthand 'Ble' to a clearer friendly name so it
   // doesn't appear as an ambiguous 'Ble' entry in the UI, even if model
@@ -113,6 +115,14 @@ export function applyBasketballJerseyNaming(
 
   // Detect the specific model by modelUrl when available, otherwise fall back to heuristics
   const modelId = modelUrl?.toLowerCase() || "";
+  
+  console.log('🔍 Detection starting:', {
+    modelUrl,
+    modelId,
+    sectionsCount: sections.length,
+    firstFewMaterials: sections.slice(0, 3).map(s => s.originalName)
+  });
+  
   const isBasketballByUrl = modelId.includes(
     "basketball jersey top and long shorts",
   ) || modelId.includes("basketball jersey top and long shorts.glb") ||
@@ -121,6 +131,27 @@ export function applyBasketballJerseyNaming(
 
   // Detect basketball shooting shirt models
   const isShootingShirtByUrl = modelId.includes("basketball shooting shirt");
+
+  // Detect basketball shooting shirt with hoodie models
+  const isShootingShirtHoodieByUrl = modelId.includes("basketball shooting shirt") && modelId.includes("hoodie");
+
+  // Also detect hoodie variants by inspecting section original/display names so
+  // the special hoodie rules apply even when the consumer of extractSections
+  // doesn't pass a modelUrl (the UI sometimes selects models by name only).
+  const containsHoodKeywords = sections.some((section) => {
+    const on = (section.originalName || "").toLowerCase();
+    const dn = (section.name || "").toLowerCase();
+    return on.includes("hood") || dn.includes("hood") || on.includes("hoodie") || dn.includes("hoodie");
+  });
+
+  const isShootingShirtHoodie = isShootingShirtHoodieByUrl || containsHoodKeywords;
+  
+  console.log('🔍 Detection results:', {
+    isShootingShirtByUrl,
+    isShootingShirtHoodieByUrl,
+    containsHoodKeywords,
+    isShootingShirtHoodie
+  });
 
   const containsBasketballKeywords = sections.some((section) =>
     (section.originalName || "").toLowerCase().includes("basketball"),
@@ -139,9 +170,12 @@ export function applyBasketballJerseyNaming(
     ),
   );
 
-  if (!isBasketballByUrl && !containsBasketballKeywords && !hasCharacteristicNames) {
+  if (!isBasketballByUrl && !isShootingShirtByUrl && !isShootingShirtHoodie && !containsBasketballKeywords && !hasCharacteristicNames && !containsHoodKeywords) {
+    console.log('⚠️ EARLY EXIT - No basketball/hoodie detected');
     return updatedSections;
   }
+  
+  console.log('✅ Passed early exit check, continuing with basketball/hoodie processing');
 
   // Map generic FABRIC materials (often exported as 'FABRIC', 'FABRIC1', etc.)
   const fabricCandidates = updatedSections.filter((s) => {
@@ -238,10 +272,9 @@ export function applyBasketballJerseyNaming(
     // (we created updatedSections earlier as a shallow copy)
     // eslint-disable-next-line no-unused-vars
     // @ts-ignore - reassigning for clarity
-    // Note: we return filtered below, so reassign here is optional; keep filtered in scope
-    // and use it for subsequent logic if needed.
-    // For simplicity, return now with the filtered set so downstream logic doesn't run on removed items.
-    return filtered;
+    // Note: we used to return filtered here, but we need to continue processing
+    // for hoodie-specific logic, so we update updatedSections instead.
+    updatedSections = filtered;
   }
 
 
@@ -251,6 +284,118 @@ export function applyBasketballJerseyNaming(
       // Set category for all materials in shooting shirts
       section.category = "Jersey";
     });
+  }
+
+  // Apply special naming for basketball shooting shirt with hoodie
+  // Use `isShootingShirtHoodie` which covers URL-based detection and
+  // heuristic detection via material section names (e.g. 'Hood').
+  if (isShootingShirtHoodie) {
+    console.log('🔥 HOODIE LOGIC RUNNING - sections before filter:', updatedSections.length);
+    
+    // Remove CORD END materials if they exist
+    const filteredSections = updatedSections.filter((section) => {
+      const originalName = (section.originalName || "").toLowerCase();
+      const displayName = (section.name || "").toLowerCase();
+      if (originalName.includes("cord end") || displayName.includes("cord end")) {
+        console.log('❌ REMOVING Cord End:', section.originalName);
+        return false; // Remove CORD END materials
+      }
+      return true;
+    });
+
+    console.log('🔥 HOODIE LOGIC - sections after cord end filter:', filteredSections.length);
+
+    // Replace the updatedSections with filtered ones
+    updatedSections.length = 0;
+    updatedSections.push(...filteredSections);
+
+    // Track X materials to differentiate them
+    let xMaterialCount = 0;
+
+    // Apply specific renaming
+    updatedSections.forEach((section) => {
+      const originalName = (section.originalName || "").toLowerCase();
+      const displayName = (section.name || "").toLowerCase();
+
+      // Rename specific materials based on original name OR current display name
+      // Detect zipper tape fabric under several common exporter names and map to "Zipper Outline"
+      if (
+        originalName.includes("zipper tape fabric") ||
+        originalName.includes("zipper_tape") ||
+        originalName.includes("zipper tape") ||
+        originalName.includes("tape fabric") ||
+        originalName.includes("tape") ||
+        displayName.includes("zipper tape") ||
+        displayName.includes("zipper_tape")
+      ) {
+        section.name = "Zipper Outline";
+      } else if (originalName.includes("zipper teeth") || originalName.includes("zipper_teeth") || displayName === "zipper teeth") {
+        section.name = "Zipper Teeth Color";
+      } else {
+        // Detect 'X' materials with common exporter variants such as
+        // 'X', 'x', 'X (1)', 'x_1', 'x(2)' etc. We check both the
+        // original name and the current display name (lowercased above).
+        const isXVariant =
+          originalName === "x" ||
+          originalName.startsWith("x ") ||
+          originalName.startsWith("x(") ||
+          originalName.startsWith("x_") ||
+          displayName === "x" ||
+          displayName.startsWith("x ") ||
+          displayName.startsWith("x(") ||
+          displayName.startsWith("x_");
+
+        if (isXVariant) {
+          // Handle the two X materials - differentiate them by order
+          xMaterialCount++;
+          if (xMaterialCount === 1) {
+            section.name = "Collar & Top of Hoodie Stitching Color";
+          } else {
+            section.name = "Hoodie Face Stitching Color";
+          }
+        }
+      }
+
+      // Set category for all materials
+      section.category = "Basketball Shooting Shirt with Hoodie";
+    });
+
+    // Combine zipper stopper materials
+    const topStopperSections = updatedSections.filter(s => {
+      const on = (s.originalName || "").toLowerCase();
+      const dn = (s.name || "").toLowerCase();
+      return on.includes("zipper top stopper") || on.includes("zipper_top_stopper") || 
+             dn.includes("zipper topstopper") || dn.includes("zipper top stopper") ||
+             dn.includes("topstopper") || dn.includes("top stopper");
+    });
+    
+  if (topStopperSections.length > 1) {
+      // Combine into one - keep the first one and remove others
+      const combinedSection = topStopperSections[0];
+      combinedSection.name = "Zipper Top Stopper";
+      // Remove the other top stopper sections
+      updatedSections = updatedSections.filter(s => !topStopperSections.includes(s) || s === combinedSection);
+    } else if (topStopperSections.length === 1) {
+      topStopperSections[0].name = "Zipper Top Stopper";
+    }
+
+    const bottomStopperSections = updatedSections.filter(s => {
+      const on = (s.originalName || "").toLowerCase();
+      const dn = (s.name || "").toLowerCase();
+      return on.includes("zipper bottom stopper") || on.includes("zipper_bottom_stopper") || 
+             dn.includes("zipper bottomstopper") || dn.includes("zipper bottom stopper") ||
+             dn.includes("bottomstopper") || dn.includes("bottom stopper");
+    });
+    
+  if (bottomStopperSections.length > 1) {
+      // Combine into one - keep the first one and remove others
+      const combinedSection = bottomStopperSections[0];
+      combinedSection.name = "Zipper Bottom Stopper";
+      // Remove the other bottom stopper sections
+      updatedSections = updatedSections.filter(s => !bottomStopperSections.includes(s) || s === combinedSection);
+    } else if (bottomStopperSections.length === 1) {
+      bottomStopperSections[0].name = "Zipper Bottom Stopper";
+    }
   }
 
   return updatedSections;
