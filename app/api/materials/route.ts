@@ -389,6 +389,11 @@ export async function GET(request: Request) {
       return 'Short Sleeve Polo Shirt Colors';
     }
 
+    // Baseball Jersey categories
+    if (modelParam.includes('Baseball-Jersey.glb')) {
+      return 'Baseball Jersey Colors';
+    }
+
     // Soccer Jersey Crew Neck categories
     if (modelParam.includes('Soccer jersey crew neck.glb')) {
       return 'Soccer Jersey Crew Neck Colors';
