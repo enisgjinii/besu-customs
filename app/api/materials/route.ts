@@ -328,78 +328,78 @@ export async function GET(request: Request) {
     // Basketball Jersey Top And Long Shorts categories (corrected mapping)
     if (modelParam.includes('Basketball Jersey Top And Long Shorts.glb')) {
       // FABRIC_1_ materials are actually the jersey parts
-      if (originalName.includes('FABRIC_1_')) return 'Jersey';
+      if (originalName.includes('FABRIC_1_')) return 'Basketball Jersey Colors';
       // Body_ and Ble_ materials are actually the shorts parts
-      if (originalName.includes('Body_') || originalName === 'Ble_66685') return 'Shorts';
+      if (originalName.includes('Body_') || originalName === 'Ble_66685') return 'Basketball Shorts Colors';
       return 'Other';
     }
 
     // Basketball Jersey and Shorts categories
     if (modelParam.includes('Basketball Jersey and Shorts.glb')) {
       // Body_ and Ble_ materials are the jersey parts
-      if (originalName.includes('Body_') || originalName === 'Ble_4559165') return 'Jersey';
+      if (originalName.includes('Body_') || originalName === 'Ble_4559165') return 'Basketball Jersey Colors';
       // FABRIC_1_ materials are the shorts parts
-      if (originalName.includes('FABRIC_1_')) return 'Shorts';
+      if (originalName.includes('FABRIC_1_')) return 'Basketball Shorts Colors';
       return 'Other';
     }
 
     // Basketball shooting shirt long sleeve categories
     if (modelParam.includes('basketball shooting shirt long sleeve without hoodie.glb')) {
-      return 'Long Sleeve Shooting Shirt';
+      return 'Long Sleeve Shooting Shirt Colors';
     }
 
     // Basketball shooting shirt with hoodie categories
     if (modelParam.includes('basketball shooting shirt short sleeve with hoodie.glb')) {
-      return 'Basketball Shooting Shirt with Hoodie';
+      return 'Basketball Shooting Shirt with Hoodie Colors';
     }
 
     // Basketball shooting shirt short sleeve categories
     if (modelParam.includes('basketball shooting shirt, short sleeve without a hoodie.glb')) {
-      return 'Basketball Shooting Shirt Short Sleeve';
+      return 'Basketball Shooting Shirt Short Sleeve Colors';
     }
 
     // Backpack categories
     if (modelParam.includes('Backpack.glb')) {
-      return 'Backpack';
+      return 'Backpack Colors';
     }
 
     // Hoodie categories
     if (modelParam.includes('Hoodie.glb')) {
-      return 'Hoodie Color Selection';
+      return 'Hoodie Colors';
     }
 
     // Long Pants (Long Shorts) categories
     if (modelParam.includes('long pants.glb')) {
-      return 'Long Shorts Color Selection';
+      return 'Long Shorts Colors';
     }
 
     // Polo Long Sleeve categories
     if (modelParam.includes('Polo shirts long sleeve.glb')) {
       if (originalName === 'Button_1_18571034' || originalName === 'FABRIC_1_18569862') {
-        return 'Button & Cuff Color';
+        return 'Button & Cuff Colors';
       }
-      return 'Polo Long Sleeve Shirt';
+      return 'Polo Long Sleeve Shirt Colors';
     }
 
     // Polo Short Sleeve categories
     if (modelParam.includes('Polo shirts short sleeve.glb')) {
       if (originalName === 'Button_1_17850263') {
-        return 'Button Color';
+        return 'Button Colors';
       }
-      return 'Short Sleeve Polo Shirt';
+      return 'Short Sleeve Polo Shirt Colors';
     }
 
     // Soccer Jersey Crew Neck categories
     if (modelParam.includes('Soccer jersey crew neck.glb')) {
-      return 'Soccer Jersey Crew Neck';
+      return 'Soccer Jersey Crew Neck Colors';
     }
 
     // Soccer Jersey V Neck categories
     if (modelParam.includes('Soccer jersey v-neck.glb')) {
       if (originalName.includes('FABRIC_1_')) {
-        return 'Shorts Colors';
+        return 'Soccer Shorts Colors';
       }
-      return 'Soccer Jersey V Neck';
+      return 'Soccer Jersey V Neck Colors';
     }
 
     // Standard Bottom Cut Cuffed (Baseball Pants) categories
@@ -409,68 +409,68 @@ export async function GET(request: Request) {
 
     // Track and Field Compression Shorts categories
     if (modelParam.includes('Track and field compression shorts.glb')) {
-      return 'Track Shorts Color';
+      return 'Track and Field Compression Shorts Colors';
     }
 
     // Track and Field Mid-Length Shorts categories
     if (modelParam.includes('Track and field mid-len gth shorts.glb')) {
-      return 'Track Shorts Color';
+      return 'Track and Field Mid-Length Shorts Colors';
     }
 
     // Track and Field Split Shorts categories
     if (modelParam.includes('Track and field split shorts.glb')) {
-      return 'Split Shorts Color';
+      return 'Track and Field Split Shorts Colors';
     }
 
     // Track and Field Crop Top categories
     if (modelParam.includes('Track and field top crop top.glb')) {
-      return 'Crop Top Color';
+      return 'Track and Field Crop Top Colors';
     }
 
     // Track and Field Short Sleeve categories
     if (modelParam.includes('Track and field top short sleeve.glb')) {
-      return 'Track and Field Short Sleeve';
+      return 'Track and Field Short Sleeve Colors';
     }
 
     // Track and Field Tank Top categories
     if (modelParam.includes('Track and field top tank top.glb')) {
-      return 'Tank Top Colors';
+      return 'Track and Field Tank Top Colors';
     }
 
     // Volleyball Long Sleeve Tops categories
     if (modelParam.includes('Volleyball long sleeve tops.glb')) {
-      return 'Volleyball Shirt Colors';
+      return 'Volleyball Long Sleeve Tops Colors';
     }
 
     // Volleyball Short Sleeve Tops categories
     if (modelParam.includes('Volleyball short sleeve tops.glb')) {
-      return 'Volleyball Jersey Color';
+      return 'Volleyball Short Sleeve Tops Colors';
     }
 
     // Volleyball Shorts Spandex 4 (Long Length) categories
     if (modelParam.includes('Volleyball shorts spandex 4.glb')) {
-      return 'Volley Ball Shorts Color Options';
+      return 'Volleyball Shorts Spandex 4 Colors';
     }
 
     // Volleyball Shorts Spandex (Small Length) categories
     if (modelParam.includes('Volleyball shorts spandex.glb')) {
-      return 'Volleyball Shorts Color Options';
+      return 'Volleyball Shorts Spandex Colors';
     }
 
     // Volleyball Spandex (Medium Length) categories
     if (modelParam.includes('Volleyball spandex.glb')) {
-      return 'Volleyball Shorts Color Options';
+      return 'Volleyball Spandex Colors';
     }
 
     // Half Short categories
     if (modelParam.includes('Half short.glb')) {
-      return 'Half Size Shorts';
+      return 'Half Size Shorts Colors';
     }
 
     // Flag Football Top with Hoodie categories
     if (modelParam.includes('Flag football top with hoodie.glb')) {
-      if (originalName.includes('FABRIC') && !originalName.includes('Zipper')) return 'Jersey & Shorts';
-      if (originalName.includes('Zipper') || originalName.includes('X ')) return 'Hoodie & Zipper';
+      if (originalName.includes('FABRIC') && !originalName.includes('Zipper')) return 'Flag Football Jersey & Shorts Colors';
+      if (originalName.includes('Zipper') || originalName.includes('X ')) return 'Flag Football Hoodie & Zipper Colors';
       return 'Other';
     }
 
@@ -481,7 +481,7 @@ export async function GET(request: Request) {
 
     // Backpack categories
     if (modelParam.includes('Backpack.glb')) {
-      return 'Backpack';
+      return 'Backpack Colors';
     }
 
     return 'Other';
