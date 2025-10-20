@@ -474,6 +474,11 @@ export async function GET(request: Request) {
       return 'Other';
     }
 
+    // Baseball Caps categories
+    if (modelParam.includes('Baseball caps.glb')) {
+      return 'Baseball Cap Colors';
+    }
+
     // Backpack categories
     if (modelParam.includes('Backpack.glb')) {
       return 'Backpack';
