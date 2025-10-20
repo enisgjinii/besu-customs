@@ -429,7 +429,7 @@ export async function GET(request: Request) {
 
     // Track and Field Short Sleeve categories
     if (modelParam.includes('Track and field top short sleeve.glb')) {
-      return 'Track and Field Short Sleeve Colors';
+      return 'Track And Field Short Sleeve Color';
     }
 
     // Track and Field Tank Top categories
