@@ -530,6 +530,37 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
+    if (modelParam.includes('Flag football top with hoodie.glb')) {
+      const reordered = [...sections];
+
+      // Define the desired order: Jersey Main, Shorts Front, Shorts Back, Shorts Waist, then others
+      const desiredOrder = [
+        'FABRIC 1_10070542', // Football Jersey Main Color
+        'Material.001',      // Shorts Front Color (moved to top)
+        'FABRIC_1_2590',     // Shorts Back Color
+        'FABRIC_1_2587'      // Shorts Waist Color
+      ];
+
+      const orderedSections: MaterialSection[] = [];
+
+      // Add sections in the desired order
+      for (const originalName of desiredOrder) {
+        const section = reordered.find(s => s.originalName === originalName);
+        if (section) {
+          orderedSections.push(section);
+        }
+      }
+
+      // Add any remaining sections that weren't in the desired order
+      for (const section of reordered) {
+        if (!orderedSections.find(s => s.originalName === section.originalName)) {
+          orderedSections.push(section);
+        }
+      }
+
+      return orderedSections;
+    }
+
     if (modelParam.includes('long pants.glb')) {
       const reordered = [...sections];
 
