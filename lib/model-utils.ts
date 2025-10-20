@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { MaterialSection } from "./store";
 
 // Insert module-level variable for Backpack FABRIC count
-let duffleBagFabricCount = 0;
+let backpackFabricCount = 0;
 
 export function extractSections(scene: THREE.Group, modelUrl?: string): MaterialSection[] {
   console.log('🎯 extractSections called with modelUrl:', modelUrl);
@@ -467,16 +467,14 @@ export function applyBasketballJerseyNaming(
     }
   }
 
-  // Duffle Bag 01 / Backpack mapping
-  // Normalize modelId to tolerate underscores and spacing used in filenames (e.g. 'Duffle bag_01.glb')
+  // Backpack mapping
+  // Normalize modelId to tolerate underscores and spacing used in filenames (e.g. 'Backpack.glb')
   const normalizedModelId = (modelId || '').replace(/[_\s]/g, '').toLowerCase();
   if (
-    normalizedModelId.includes('dufflebag') ||
-    normalizedModelId.includes('dufflebag01') ||
-    modelId.toLowerCase().includes('duffle bag') ||
-    modelId.toLowerCase().includes('duffle')
+    normalizedModelId.includes('backpack') ||
+    modelId.toLowerCase().includes('backpack')
   ) {
-    console.log('ℹ️ Duffle Bag / Backpack detected — applying Backpack-specific mappings');
+    console.log('ℹ️ Backpack detected — applying Backpack-specific mappings');
 
     // Ordered FABRIC mapping: map the first FABRIC-like section to Front, second to Back
     const fabricCandidates: MaterialSection[] = updatedSections.filter((s) => {

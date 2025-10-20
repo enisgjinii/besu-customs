@@ -8,7 +8,7 @@ import { applyMaterialUpdates } from "@/lib/model-utils";
 import { useConfiguratorStore } from "@/lib/store";
 
 // Preload frequently used models for faster loading
-useGLTF.preload("/models/Duffle bag_01.glb");
+useGLTF.preload("/models/Backpack.glb");
 
 type Props = { controlsRef?: React.RefObject<any> };
 

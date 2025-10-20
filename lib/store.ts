@@ -108,7 +108,7 @@ function generateProducts(): Product[] {
     { id: "basketball-top-long", title: "Basketball Jersey Top And Long Shorts", modelUrl: "/models/Basketball Jersey Top And Long Shorts.glb", category: "Jerseys" },
     { id: "basketball-jersey", title: "Basketball Jersey and Shorts", modelUrl: "/models/Basketball Jersey and Shorts.glb", category: "Jerseys" },
     { id: "duffle-bag", title: "Duffle Bag", modelUrl: "/models/Duffle Bag.glb", category: "Bags" },
-    { id: "duffle-bag-01", title: "Duffle Bag 01", modelUrl: "/models/Duffle bag_01.glb", category: "Bags" },
+    { id: "backpack", title: "Backpack", modelUrl: "/models/Backpack.glb", category: "Bags" },
     { id: "flag-football-hoodie", title: "Flag Football Jersey with Hoodie and Shorts", modelUrl: "/models/Flag football top with hoodie.glb", category: "Hoodies" },
     { id: "half-short", title: "Half Size Shorts", modelUrl: "/models/Half short.glb", category: "Shorts" },
     { id: "hoodie", title: "Hoodie", modelUrl: "/models/Hoodie.glb", category: "Hoodies" },

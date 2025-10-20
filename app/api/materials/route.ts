@@ -124,9 +124,9 @@ export async function GET(request: Request) {
       if (originalName === 'Sleeves_83893597') return 'Sleeves';
     }
 
-    // Duffle Bag renaming
-    if (modelParam.includes('Duffle Bag.glb')) {
-      if (originalName === 'FABRIC 2_612766') return 'Duffle Bag Color';
+    // Backpack renaming
+    if (modelParam.includes('Backpack.glb')) {
+      if (originalName === 'FABRIC 2_612766') return 'Backpack Color';
     }
 
     // Hoodie renaming
@@ -300,8 +300,8 @@ export async function GET(request: Request) {
       if (originalName === 'Cord end_01_10233907') return null;
     }
 
-    // Duffle bag_01 (Backpack) renaming
-    if (modelParam.includes('Duffle bag_01.glb')) {
+    // Backpack renaming
+    if (modelParam.includes('Backpack.glb')) {
       if (originalName === 'FABRIC_3_79203') return 'Front of Backpack & Straps Color';
       if (originalName === 'FABRIC_4_79209') return 'Back of Backpack, Straps, and Grab Handle Color';
       if (originalName === 'M_00005_156729') return 'Bottom Zipper Color';
@@ -358,9 +358,9 @@ export async function GET(request: Request) {
       return 'Basketball Shooting Shirt Short Sleeve';
     }
 
-    // Duffle Bag categories
-    if (modelParam.includes('Duffle Bag.glb')) {
-      return 'Duffle Bag';
+    // Backpack categories
+    if (modelParam.includes('Backpack.glb')) {
+      return 'Backpack';
     }
 
     // Hoodie categories
@@ -474,8 +474,8 @@ export async function GET(request: Request) {
       return 'Other';
     }
 
-    // Duffle bag_01 (Backpack) categories
-    if (modelParam.includes('Duffle bag_01.glb')) {
+    // Backpack categories
+    if (modelParam.includes('Backpack.glb')) {
       return 'Backpack';
     }
 

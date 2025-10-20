@@ -91,7 +91,7 @@ This document shows how material names were transformed from their original tech
 |------------------------|-------------------|
 | FABRIC 2_612766 | Duffle Bag Color |
 
-## Duffle Bag 01 (Backpack) ⚡
+## Backpack ⚡
 
 | Original Material Name | User-Friendly Name |
 |------------------------|-------------------|
@@ -319,6 +319,6 @@ This document shows how material names were transformed from their original tech
 
 ### Special Notes
 
-- ⚡ **Duffle Bag 01** has been optimized for fast loading (94.7% size reduction)
+- ⚡ **Backpack** has been optimized for fast loading (94.7% size reduction)
 - Materials marked as *(Removed)* were non-functional or redundant
 - Combined materials (like zipper stoppers) are grouped for easier editing
