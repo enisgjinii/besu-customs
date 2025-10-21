@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
+import { Model } from "@/lib/models-service";
 import {
   Grid3x3,
   Save,
@@ -21,7 +22,7 @@ import {
   Film,
   Sparkles,
   PanelLeftClose,
-  List
+  List,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import type { Product } from "@/lib/store";
@@ -51,19 +52,34 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState("");
+  const [productsLoaded, setProductsLoaded] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
-  const backgroundColor = useConfiguratorStore((state) => state.backgroundColor);
-  const setBackgroundColor = useConfiguratorStore((state) => state.setBackgroundColor);
-  const backgroundImage = useConfiguratorStore((state) => state.backgroundImage);
-  const setBackgroundImage = useConfiguratorStore((state) => state.setBackgroundImage);
-  const backgroundVideo = useConfiguratorStore((state) => state.backgroundVideo);
-  const setBackgroundVideo = useConfiguratorStore((state) => state.setBackgroundVideo);
+  const backgroundColor = useConfiguratorStore(
+    (state) => state.backgroundColor,
+  );
+  const setBackgroundColor = useConfiguratorStore(
+    (state) => state.setBackgroundColor,
+  );
+  const backgroundImage = useConfiguratorStore(
+    (state) => state.backgroundImage,
+  );
+  const setBackgroundImage = useConfiguratorStore(
+    (state) => state.setBackgroundImage,
+  );
+  const backgroundVideo = useConfiguratorStore(
+    (state) => state.backgroundVideo,
+  );
+  const setBackgroundVideo = useConfiguratorStore(
+    (state) => state.setBackgroundVideo,
+  );
   const isVideoPlaying = useConfiguratorStore((state) => state.isVideoPlaying);
-  const setIsVideoPlaying = useConfiguratorStore((state) => state.setIsVideoPlaying);
+  const setIsVideoPlaying = useConfiguratorStore(
+    (state) => state.setIsVideoPlaying,
+  );
   const exportPreset = useConfiguratorStore((state) => state.exportPreset);
   const importPreset = useConfiguratorStore((state) => state.importPreset);
 
@@ -77,17 +93,55 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const setSelectedProduct = useConfiguratorStore(
     (state) => state.setSelectedProduct,
   );
+  const setProducts = useConfiguratorStore((state) => state.setProducts);
+
+  // Load active products on mount
+  useEffect(() => {
+    const loadActiveProducts = async () => {
+      try {
+        const response = await fetch("/api/models?active=true");
+        if (response.ok) {
+          const { models } = await response.json();
+          const activeProducts = models.map((model: Model) => ({
+            id: model.id,
+            title: model.name,
+            modelUrl: model.file_path,
+            category: model.category || undefined,
+          }));
+          setProducts(activeProducts);
+
+          // Auto-select the first product if none is selected
+          if (activeProducts.length > 0 && !selectedProductId) {
+            setSelectedProduct(activeProducts[0].id);
+          }
+
+          setProductsLoaded(true);
+        }
+      } catch (error) {
+        console.error("Failed to load active products:", error);
+        // Fallback to all products if API fails - for now, just set loaded to true
+        setProductsLoaded(true);
+      }
+    };
+
+    if (!productsLoaded && products.length === 0) {
+      loadActiveProducts();
+    }
+  }, [productsLoaded, products.length, setProducts]);
 
   // Group products by category for the model selector
   const groupedProducts = (products as Product[])
     .slice()
     .sort((a, b) => a.title.localeCompare(b.title))
-    .reduce((map: Record<string, Product[]>, p: Product) => {
-      const key = p.category || "Other";
-      if (!map[key]) map[key] = [];
-      map[key].push(p);
-      return map;
-    }, {} as Record<string, Product[]>);
+    .reduce(
+      (map: Record<string, Product[]>, p: Product) => {
+        const key = p.category || "Other";
+        if (!map[key]) map[key] = [];
+        map[key].push(p);
+        return map;
+      },
+      {} as Record<string, Product[]>,
+    );
   const cameraControlsRef = useConfiguratorStore(
     (state) => state.cameraControlsRef,
   );
@@ -405,7 +459,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
     document.body.removeChild(link);
   };
 
-  const handleBackgroundImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBackgroundImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -417,7 +473,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
     }
   };
 
-  const handleBackgroundVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBackgroundVideoUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -430,7 +488,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   };
 
   const handleBackgroundImageUrlChange = () => {
-    const url = prompt('Enter image URL:', backgroundImageUrl);
+    const url = prompt("Enter image URL:", backgroundImageUrl);
     if (url !== null) {
       setBackgroundImageUrl(url);
       setBackgroundImage(url);
@@ -438,7 +496,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   };
 
   const handleBackgroundVideoUrlChange = () => {
-    const url = prompt('Enter video URL:', backgroundVideoUrl);
+    const url = prompt("Enter video URL:", backgroundVideoUrl);
     if (url !== null) {
       setBackgroundVideoUrl(url);
       setBackgroundVideo(url);
@@ -478,7 +536,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
             <div className="flex items-baseline justify-between">
               <span>Select Model</span>
-              <span className="text-xs text-muted-foreground">{products.length} models</span>
+              <span className="text-xs text-muted-foreground">
+                {products.length} active models
+              </span>
             </div>
           </label>
           <Select
@@ -595,31 +655,46 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
           <div className="p-4 space-y-3">
             <Tabs defaultValue="view">
               <TabsList className="grid w-full grid-cols-4 h-auto">
-                <TabsTrigger value="view" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="view"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Camera className="w-4 h-4" />
                   <span>View</span>
                 </TabsTrigger>
-                <TabsTrigger value="media" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="media"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <FileImage className="w-4 h-4" />
                   <span>Media</span>
                 </TabsTrigger>
-                <TabsTrigger value="ai" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="ai"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Sparkles className="w-4 h-4" />
                   <span>AI</span>
                 </TabsTrigger>
-                <TabsTrigger value="export" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="export"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Package2 className="w-4 h-4" />
                   <span>Export</span>
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="view" className="mt-4 space-y-4">
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
                     <Camera className="w-4 h-4" />
                     Camera Controls
                   </h3>
-                  <div className="grid grid-cols-2 gap-2" data-tour="camera-angles">
+                  <div
+                    className="grid grid-cols-2 gap-2"
+                    data-tour="camera-angles"
+                  >
                     <Button
                       variant="outline"
                       size="sm"
@@ -654,7 +729,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
                     <Grid3x3 className="w-4 h-4" />
@@ -671,25 +746,30 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                       <Grid3x3 className="w-4 h-4 mr-2" />
                       {showGrid ? "Hide Grid" : "Show Grid"}
                     </Button>
-                    
+
                     {/* Background Environment Options */}
                     <div className="space-y-2 pt-2 border-t border-border/50">
-                      <h4 className="text-xs font-medium text-muted-foreground">Background Environment</h4>
-                      
+                      <h4 className="text-xs font-medium text-muted-foreground">
+                        Background Environment
+                      </h4>
+
                       {/* Background Color Picker */}
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded border border-border" style={{ backgroundColor: backgroundColor }}></div>
+                        <div
+                          className="w-4 h-4 rounded border border-border"
+                          style={{ backgroundColor: backgroundColor }}
+                        ></div>
                         <span className="text-xs">Background Color</span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="ml-auto text-xs h-6 px-2"
                           onClick={() => setIsColorPickerOpen(true)}
                         >
                           Change
                         </Button>
                       </div>
-                      
+
                       {/* Background Image Options */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -698,12 +778,12 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                           </div>
                           <span className="text-xs">Background Image</span>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-2 ml-6">
                           <label className="cursor-pointer">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="text-xs h-8 w-full"
                             >
                               Upload
@@ -715,10 +795,10 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                               className="hidden"
                             />
                           </label>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-xs h-8"
                             onClick={handleBackgroundImageUrlChange}
                           >
@@ -726,7 +806,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Background Video Options */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -735,12 +815,12 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                           </div>
                           <span className="text-xs">Background Video</span>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-2 ml-6">
                           <label className="cursor-pointer">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="text-xs h-8 w-full"
                             >
                               Upload
@@ -752,10 +832,10 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                               className="hidden"
                             />
                           </label>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-xs h-8"
                             onClick={handleBackgroundVideoUrlChange}
                           >
@@ -763,13 +843,13 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Video Controls */}
                       {backgroundVideo && (
                         <div className="flex gap-1 mt-1 ml-6">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-xs h-6 px-2 flex-1"
                             onClick={() => setIsVideoPlaying(true)}
                             disabled={isVideoPlaying}
@@ -777,9 +857,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                             <Play className="w-3 h-3 mr-1" />
                             Play
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-xs h-6 px-2 flex-1"
                             onClick={() => setIsVideoPlaying(false)}
                             disabled={!isVideoPlaying}
@@ -796,7 +876,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="media" className="mt-4 space-y-4">
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
@@ -833,14 +913,14 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
                     <Film className="w-4 h-4" />
                     Export Video
                   </h3>
                   <div className="space-y-2">
-                    {! (!isRecording) ? (
+                    {!!isRecording ? (
                       <>
                         <Button
                           variant="outline"
@@ -880,7 +960,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="ai" className="mt-4">
                 <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
                   <Sparkles className="w-4 h-4" />
@@ -890,18 +970,19 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                   <AIImageGenerator />
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="export" className="mt-4 space-y-4">
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
                     <Package2 className="w-4 h-4" />
                     Export Model & Presets
                   </h3>
-                  
+
                   {/* Export Presets Section */}
                   <div className="space-y-2 mb-4">
                     <p className="text-xs text-muted-foreground">
-                      Export your current configuration. You can preview or copy the preset JSON before downloading.
+                      Export your current configuration. You can preview or copy
+                      the preset JSON before downloading.
                     </p>
                     <div className="grid grid-cols-3 gap-1">
                       <Button
@@ -952,7 +1033,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* Export Model Section */}
                   <div className="space-y-2 mb-4">
                     <Button
@@ -961,16 +1042,21 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                       onClick={handleExportModel}
                       className="w-full justify-start text-xs h-8"
                       disabled={!currentModelUrl}
-                      title={currentModelUrl ? "Download configured model" : "No model loaded"}
+                      title={
+                        currentModelUrl
+                          ? "Download configured model"
+                          : "No model loaded"
+                      }
                     >
                       <Package2 className="w-3 h-3 mr-2" />
                       Export Model (GLB)
                     </Button>
                     <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                      Additional formats (OBJ, FBX) planned — contact us if you need a specific export.
+                      Additional formats (OBJ, FBX) planned — contact us if you
+                      need a specific export.
                     </div>
                   </div>
-                  
+
                   {/* Import Preset Section */}
                   <div className="space-y-2">
                     <label className="block">

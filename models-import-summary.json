@@ -1,0 +1,176 @@
+[
+  {
+    "name": "Backpack",
+    "category": "Bags",
+    "url": "/models/Backpack.glb",
+    "productId": "backpackglb"
+  },
+  {
+    "name": "Baseball caps",
+    "category": "Caps",
+    "url": "/models/Baseball caps.glb",
+    "productId": "baseball-capsglb"
+  },
+  {
+    "name": "Baseball-Jersey",
+    "category": "Jerseys",
+    "url": "/models/Baseball-Jersey.glb",
+    "productId": "baseballjerseyglb"
+  },
+  {
+    "name": "Basketball Jersey Top And Long Shorts",
+    "category": "Jerseys",
+    "url": "/models/Basketball Jersey Top And Long Shorts.glb",
+    "productId": "basketball-jersey-top-and-long-shortsglb"
+  },
+  {
+    "name": "Basketball Jersey and Shorts",
+    "category": "Jerseys",
+    "url": "/models/Basketball Jersey and Shorts.glb",
+    "productId": "basketball-jersey-and-shortsglb"
+  },
+  {
+    "name": "Duffle Bag",
+    "category": "Bags",
+    "url": "/models/Duffle Bag.glb",
+    "productId": "duffle-bagglb"
+  },
+  {
+    "name": "Flag football top with hoodie",
+    "category": "Hoodies",
+    "url": "/models/Flag football top with hoodie.glb",
+    "productId": "flag-football-top-with-hoodieglb"
+  },
+  {
+    "name": "Half short",
+    "category": "Shorts",
+    "url": "/models/Half short.glb",
+    "productId": "half-shortglb"
+  },
+  {
+    "name": "Hoodie",
+    "category": "Hoodies",
+    "url": "/models/Hoodie.glb",
+    "productId": "hoodieglb"
+  },
+  {
+    "name": "Polo shirts long sleeve",
+    "category": "Polos",
+    "url": "/models/Polo shirts long sleeve.glb",
+    "productId": "polo-shirts-long-sleeveglb"
+  },
+  {
+    "name": "Polo shirts short sleeve",
+    "category": "Polos",
+    "url": "/models/Polo shirts short sleeve.glb",
+    "productId": "polo-shirts-short-sleeveglb"
+  },
+  {
+    "name": "Soccer jersey crew neck",
+    "category": "Jerseys",
+    "url": "/models/Soccer jersey crew neck.glb",
+    "productId": "soccer-jersey-crew-neckglb"
+  },
+  {
+    "name": "Soccer jersey v-neck",
+    "category": "Jerseys",
+    "url": "/models/Soccer jersey v-neck.glb",
+    "productId": "soccer-jersey-vneckglb"
+  },
+  {
+    "name": "Standard bottom cut, cuffed",
+    "category": "Other",
+    "url": "/models/Standard bottom cut, cuffed.glb",
+    "productId": "standard-bottom-cut-cuffedglb"
+  },
+  {
+    "name": "Track and field compression shorts",
+    "category": "Shorts",
+    "url": "/models/Track and field compression shorts.glb",
+    "productId": "track-and-field-compression-shortsglb"
+  },
+  {
+    "name": "Track and field mid-len gth shorts",
+    "category": "Shorts",
+    "url": "/models/Track and field mid-len gth shorts.glb",
+    "productId": "track-and-field-midlen-gth-shortsglb"
+  },
+  {
+    "name": "Track and field split shorts",
+    "category": "Shorts",
+    "url": "/models/Track and field split shorts.glb",
+    "productId": "track-and-field-split-shortsglb"
+  },
+  {
+    "name": "Track and field top crop top",
+    "category": "Track & Field",
+    "url": "/models/Track and field top crop top.glb",
+    "productId": "track-and-field-top-crop-topglb"
+  },
+  {
+    "name": "Track and field top short sleeve",
+    "category": "Track & Field",
+    "url": "/models/Track and field top short sleeve.glb",
+    "productId": "track-and-field-top-short-sleeveglb"
+  },
+  {
+    "name": "Track and field top tank top",
+    "category": "Track & Field",
+    "url": "/models/Track and field top tank top.glb",
+    "productId": "track-and-field-top-tank-topglb"
+  },
+  {
+    "name": "Volleyball long sleeve tops",
+    "category": "Volleyball",
+    "url": "/models/Volleyball long sleeve tops.glb",
+    "productId": "volleyball-long-sleeve-topsglb"
+  },
+  {
+    "name": "Volleyball short sleeve tops",
+    "category": "Volleyball",
+    "url": "/models/Volleyball short sleeve tops.glb",
+    "productId": "volleyball-short-sleeve-topsglb"
+  },
+  {
+    "name": "Volleyball shorts spandex 4",
+    "category": "Shorts",
+    "url": "/models/Volleyball shorts spandex 4.glb",
+    "productId": "volleyball-shorts-spandex-4glb"
+  },
+  {
+    "name": "Volleyball shorts spandex",
+    "category": "Shorts",
+    "url": "/models/Volleyball shorts spandex.glb",
+    "productId": "volleyball-shorts-spandexglb"
+  },
+  {
+    "name": "Volleyball spandex",
+    "category": "Volleyball",
+    "url": "/models/Volleyball spandex.glb",
+    "productId": "volleyball-spandexglb"
+  },
+  {
+    "name": "basketball shooting shirt long sleeve without hoodie",
+    "category": "Jerseys",
+    "url": "/models/basketball shooting shirt long sleeve without hoodie.glb",
+    "productId": "basketball-shooting-shirt-long-sleeve-without-hoodieglb"
+  },
+  {
+    "name": "basketball shooting shirt short sleeve with hoodie",
+    "category": "Jerseys",
+    "url": "/models/basketball shooting shirt short sleeve with hoodie.glb",
+    "productId": "basketball-shooting-shirt-short-sleeve-with-hoodieglb"
+  },
+  {
+    "name": "basketball shooting shirt, short sleeve without a hoodie",
+    "category": "Jerseys",
+    "url": "/models/basketball shooting shirt, short sleeve without a hoodie.glb",
+    "productId": "basketball-shooting-shirt-short-sleeve-without-a-hoodieglb"
+  },
+  {
+    "name": "long pants",
+    "category": "Other",
+    "url": "/models/long pants.glb",
+    "productId": "long-pantsglb"
+  }
+]

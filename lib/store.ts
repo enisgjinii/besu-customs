@@ -1,5 +1,6 @@
 // Clean Zustand store for the configurator. Single, self-contained file.
 import { create } from "zustand";
+import { Model } from "./models-service";
 
 export type Category =
   | "Jerseys"
@@ -26,7 +27,21 @@ export interface MaterialSection {
   name: string;
   originalName: string;
   // Use explicit categories but allow custom category strings
-  category: "Jersey" | "Panels" | "Piping/Trim" | "Other" | "Trim Options" | "Long Sleeve Shooting Shirt" | "Basketball Shooting Shirt with Hoodie" | "Basketball Shooting Shirt Short Sleeve" | "Duffle Bag" | "Backpack" | "Jersey & Shorts" | "Hoodie & Zipper" | "Half Size Shorts" | string;
+  category:
+    | "Jersey"
+    | "Panels"
+    | "Piping/Trim"
+    | "Other"
+    | "Trim Options"
+    | "Long Sleeve Shooting Shirt"
+    | "Basketball Shooting Shirt with Hoodie"
+    | "Basketball Shooting Shirt Short Sleeve"
+    | "Duffle Bag"
+    | "Backpack"
+    | "Jersey & Shorts"
+    | "Hoodie & Zipper"
+    | "Half Size Shorts"
+    | string;
   color: string;
   roughness: number;
   metalness: number;
@@ -44,10 +59,18 @@ export interface MaterialSection {
   } | null;
 }
 
+export interface CameraState {
+  position?: [number, number, number];
+  target?: [number, number, number];
+  zoom?: number;
+}
+
 export interface ConfiguratorState {
   products: Product[];
   selectedProductId: string | null;
   setSelectedProduct: (id: string) => void;
+  setProducts: (products: Product[]) => void;
+  refreshProducts: () => Promise<void>;
   currentModelUrl: string | null;
   setCurrentModelUrl: (url: string | null) => void;
   sections: MaterialSection[];
@@ -94,52 +117,247 @@ export interface ConfiguratorState {
   setModelError: (err: string | null) => void;
 
   // Presets
-  presets: Array<{ name: string; sections: MaterialSection[]; camera?: any }>;
-  savePreset: (name: string, camera?: any) => void;
-  loadPreset: (preset: { name: string; sections: MaterialSection[]; camera?: any }) => void;
+  presets: Array<{
+    name: string;
+    sections: MaterialSection[];
+    camera?: CameraState;
+  }>;
+  savePreset: (name: string, camera?: CameraState) => void;
+  loadPreset: (preset: {
+    name: string;
+    sections: MaterialSection[];
+    camera?: CameraState;
+  }) => void;
   exportPreset: () => string;
   importPreset: (json: string) => void;
 }
 
-function generateProducts(): Product[] {
+// Generate all possible products (for fallback and reference)
+function generateAllProducts(): Product[] {
   return [
-    { id: "baseball-caps", title: "Baseball Caps", modelUrl: "/models/Baseball caps.glb", category: "Caps" },
-    { id: "baseball-jersey", title: "Baseball Jersey", modelUrl: "/models/Baseball-Jersey.glb", category: "Baseball" },
-    { id: "basketball-top-long", title: "Basketball Jersey Top And Long Shorts", modelUrl: "/models/Basketball Jersey Top And Long Shorts.glb", category: "Jerseys" },
-    { id: "basketball-jersey", title: "Basketball Jersey and Shorts", modelUrl: "/models/Basketball Jersey and Shorts.glb", category: "Jerseys" },
-    { id: "duffle-bag", title: "Duffle Bag", modelUrl: "/models/Duffle Bag.glb", category: "Bags" },
-    { id: "backpack", title: "Backpack", modelUrl: "/models/Backpack.glb", category: "Bags" },
-    { id: "flag-football-hoodie", title: "Flag Football Jersey with Hoodie and Shorts", modelUrl: "/models/Flag football top with hoodie.glb", category: "Hoodies" },
-    { id: "half-short", title: "Half Size Shorts", modelUrl: "/models/Half short.glb", category: "Shorts" },
-    { id: "hoodie", title: "Hoodie", modelUrl: "/models/Hoodie.glb", category: "Hoodies" },
-    { id: "polo-long", title: "Polo Shirts Long Sleeve", modelUrl: "/models/Polo shirts long sleeve.glb", category: "Polos" },
-    { id: "polo-short", title: "Polo Shirts Short Sleeve", modelUrl: "/models/Polo shirts short sleeve.glb", category: "Polos" },
-    { id: "soccer-crew", title: "Soccer Jersey Crew Neck", modelUrl: "/models/Soccer jersey crew neck.glb", category: "Soccer" },
-    { id: "soccer-vneck", title: "Soccer Jersey V-Neck", modelUrl: "/models/Soccer jersey v-neck.glb", category: "Soccer" },
-    { id: "standard-bottom", title: "Standard Bottom Cut, Cuffed", modelUrl: "/models/Standard bottom cut, cuffed.glb", category: "Shorts" },
-    { id: "track-compression", title: "Track & Field Compression Shorts", modelUrl: "/models/Track and field compression shorts.glb", category: "Track & Field" },
-    { id: "track-mid-shorts", title: "Track & Field Mid-Length Shorts", modelUrl: "/models/Track and field mid-len gth shorts.glb", category: "Track & Field" },
-    { id: "track-split-shorts", title: "Track & Field Split Shorts", modelUrl: "/models/Track and field split shorts.glb", category: "Track & Field" },
-    { id: "track-crop", title: "Track & Field Crop Top", modelUrl: "/models/Track and field top crop top.glb", category: "Track & Field" },
-    { id: "track-short-sleeve", title: "Track & Field Short Sleeve", modelUrl: "/models/Track and field top short sleeve.glb", category: "Track & Field" },
-    { id: "track-tank", title: "Track & Field Tank Top", modelUrl: "/models/Track and field top tank top.glb", category: "Track & Field" },
-    { id: "volleyball-long", title: "Volleyball Long Sleeve Tops", modelUrl: "/models/Volleyball long sleeve tops.glb", category: "Volleyball" },
-    { id: "volleyball-short", title: "Volleyball Short Sleeve Tops", modelUrl: "/models/Volleyball short sleeve tops.glb", category: "Volleyball" },
-    { id: "volleyball-spandex-4", title: "Volleyball Shorts Spandex 4", modelUrl: "/models/Volleyball shorts spandex 4.glb", category: "Volleyball" },
-    { id: "volleyball-spandex", title: "Volleyball Shorts Spandex", modelUrl: "/models/Volleyball shorts spandex.glb", category: "Volleyball" },
-    { id: "volleyball-spandex-alt", title: "Volleyball Spandex", modelUrl: "/models/Volleyball spandex.glb", category: "Volleyball" },
-    { id: "basketball-shirt-long", title: "Basketball Shooting Shirt Long Sleeve", modelUrl: "/models/basketball shooting shirt long sleeve without hoodie.glb", category: "Jerseys" },
-    { id: "basketball-shirt-hoodie", title: "Basketball Shooting Shirt with Hoodie", modelUrl: "/models/basketball shooting shirt short sleeve with hoodie.glb", category: "Jerseys" },
-    { id: "basketball-shirt-short", title: "Basketball Shooting Shirt Short Sleeve", modelUrl: "/models/basketball shooting shirt, short sleeve without a hoodie.glb", category: "Jerseys" },
-    { id: "long-pants", title: "Long Pants", modelUrl: "/models/long pants.glb", category: "Shorts" },
+    {
+      id: "baseball-caps",
+      title: "Baseball Caps",
+      modelUrl: "/models/Baseball caps.glb",
+      category: "Caps",
+    },
+    {
+      id: "baseball-jersey",
+      title: "Baseball Jersey",
+      modelUrl: "/models/Baseball-Jersey.glb",
+      category: "Baseball",
+    },
+    {
+      id: "basketball-top-long",
+      title: "Basketball Jersey Top And Long Shorts",
+      modelUrl: "/models/Basketball Jersey Top And Long Shorts.glb",
+      category: "Jerseys",
+    },
+    {
+      id: "basketball-jersey",
+      title: "Basketball Jersey and Shorts",
+      modelUrl: "/models/Basketball Jersey and Shorts.glb",
+      category: "Jerseys",
+    },
+    {
+      id: "duffle-bag",
+      title: "Duffle Bag",
+      modelUrl: "/models/Duffle Bag.glb",
+      category: "Bags",
+    },
+    {
+      id: "backpack",
+      title: "Backpack",
+      modelUrl: "/models/Backpack.glb",
+      category: "Bags",
+    },
+    {
+      id: "flag-football-hoodie",
+      title: "Flag Football Jersey with Hoodie and Shorts",
+      modelUrl: "/models/Flag football top with hoodie.glb",
+      category: "Hoodies",
+    },
+    {
+      id: "half-short",
+      title: "Half Size Shorts",
+      modelUrl: "/models/Half short.glb",
+      category: "Shorts",
+    },
+    {
+      id: "hoodie",
+      title: "Hoodie",
+      modelUrl: "/models/Hoodie.glb",
+      category: "Hoodies",
+    },
+    {
+      id: "polo-long",
+      title: "Polo Shirts Long Sleeve",
+      modelUrl: "/models/Polo shirts long sleeve.glb",
+      category: "Polos",
+    },
+    {
+      id: "polo-short",
+      title: "Polo Shirts Short Sleeve",
+      modelUrl: "/models/Polo shirts short sleeve.glb",
+      category: "Polos",
+    },
+    {
+      id: "soccer-crew",
+      title: "Soccer Jersey Crew Neck",
+      modelUrl: "/models/Soccer jersey crew neck.glb",
+      category: "Soccer",
+    },
+    {
+      id: "soccer-vneck",
+      title: "Soccer Jersey V-Neck",
+      modelUrl: "/models/Soccer jersey v-neck.glb",
+      category: "Soccer",
+    },
+    {
+      id: "standard-bottom",
+      title: "Standard Bottom Cut, Cuffed",
+      modelUrl: "/models/Standard bottom cut, cuffed.glb",
+      category: "Shorts",
+    },
+    {
+      id: "track-compression",
+      title: "Track & Field Compression Shorts",
+      modelUrl: "/models/Track and field compression shorts.glb",
+      category: "Track & Field",
+    },
+    {
+      id: "track-mid-shorts",
+      title: "Track & Field Mid-Length Shorts",
+      modelUrl: "/models/Track and field mid-len gth shorts.glb",
+      category: "Track & Field",
+    },
+    {
+      id: "track-split-shorts",
+      title: "Track & Field Split Shorts",
+      modelUrl: "/models/Track and field split shorts.glb",
+      category: "Track & Field",
+    },
+    {
+      id: "track-crop",
+      title: "Track & Field Crop Top",
+      modelUrl: "/models/Track and field top crop top.glb",
+      category: "Track & Field",
+    },
+    {
+      id: "track-short-sleeve",
+      title: "Track & Field Short Sleeve",
+      modelUrl: "/models/Track and field top short sleeve.glb",
+      category: "Track & Field",
+    },
+    {
+      id: "track-tank",
+      title: "Track & Field Tank Top",
+      modelUrl: "/models/Track and field top tank top.glb",
+      category: "Track & Field",
+    },
+    {
+      id: "volleyball-long",
+      title: "Volleyball Long Sleeve Tops",
+      modelUrl: "/models/Volleyball long sleeve tops.glb",
+      category: "Volleyball",
+    },
+    {
+      id: "volleyball-short",
+      title: "Volleyball Short Sleeve Tops",
+      modelUrl: "/models/Volleyball short sleeve tops.glb",
+      category: "Volleyball",
+    },
+    {
+      id: "volleyball-spandex-4",
+      title: "Volleyball Shorts Spandex 4",
+      modelUrl: "/models/Volleyball shorts spandex 4.glb",
+      category: "Volleyball",
+    },
+    {
+      id: "volleyball-spandex",
+      title: "Volleyball Shorts Spandex",
+      modelUrl: "/models/Volleyball shorts spandex.glb",
+      category: "Volleyball",
+    },
+    {
+      id: "volleyball-spandex-alt",
+      title: "Volleyball Spandex",
+      modelUrl: "/models/Volleyball spandex.glb",
+      category: "Volleyball",
+    },
+    {
+      id: "basketball-shirt-long",
+      title: "Basketball Shooting Shirt Long Sleeve",
+      modelUrl:
+        "/models/basketball shooting shirt long sleeve without hoodie.glb",
+      category: "Jerseys",
+    },
+    {
+      id: "basketball-shirt-hoodie",
+      title: "Basketball Shooting Shirt with Hoodie",
+      modelUrl:
+        "/models/basketball shooting shirt short sleeve with hoodie.glb",
+      category: "Jerseys",
+    },
+    {
+      id: "basketball-shirt-short",
+      title: "Basketball Shooting Shirt Short Sleeve",
+      modelUrl:
+        "/models/basketball shooting shirt, short sleeve without a hoodie.glb",
+      category: "Jerseys",
+    },
+    {
+      id: "long-pants",
+      title: "Long Pants",
+      modelUrl: "/models/long pants.glb",
+      category: "Shorts",
+    },
   ];
 }
 
-const products = generateProducts();
+// Start with empty products and load active ones from Supabase
+const initialProducts: Product[] = [];
+
+// Function to load active products from Supabase
+const loadActiveProducts = async (): Promise<Product[]> => {
+  try {
+    const response = await fetch("/api/models?active=true");
+    if (response.ok) {
+      const { models } = await response.json();
+      return models.map((model: Model) => ({
+        id: model.id,
+        title: model.name,
+        modelUrl: model.file_path,
+        category: model.category || undefined,
+      }));
+    }
+  } catch (error) {
+    console.error("Failed to load active products:", error);
+  }
+
+  // Fallback to all products if API fails
+  return generateAllProducts().filter((p) => {
+    // Filter out inactive models (like "long-pants" which was set to inactive)
+    return p.id !== "long-pants";
+  });
+};
 
 export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
-  products,
-  selectedProductId: products[0]?.id ?? null,
+  products: initialProducts,
+  selectedProductId: initialProducts[0]?.id ?? null,
+  setProducts: (products: Product[]) => set({ products }),
+  refreshProducts: async () => {
+    try {
+      const activeProducts = await loadActiveProducts();
+      set({
+        products: activeProducts,
+        selectedProductId: activeProducts[0]?.id ?? null,
+        currentModelUrl: activeProducts[0]?.modelUrl ?? null,
+      });
+    } catch (error) {
+      console.error("Failed to refresh products:", error);
+    }
+  },
   setSelectedProduct: (id: string) => {
     const product = get().products.find((p) => p.id === id) ?? null;
     if (product?.modelUrl) {
@@ -149,7 +367,9 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       // Try to fetch precomputed material sections for this model
       (async () => {
         try {
-          const resp = await fetch(`/api/materials?model=${encodeURIComponent(product.modelUrl!)}`);
+          const resp = await fetch(
+            `/api/materials?model=${encodeURIComponent(product.modelUrl!)}`,
+          );
           if (resp.ok) {
             const json = await resp.json();
             if (json?.sections) {
@@ -158,7 +378,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
               return;
             }
           }
-        } catch (err) {
+        } catch {
           // ignore and fall back to client extraction
         }
         // No precomputed sections — leave sections empty so ModelLoader will extract
@@ -167,7 +387,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     } else set({ selectedProductId: id });
   },
 
-  currentModelUrl: products[0]?.modelUrl ?? null,
+  currentModelUrl: null,
   setCurrentModelUrl: (url: string | null) => set({ currentModelUrl: url }),
 
   sections: [],
@@ -181,7 +401,9 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         : [id];
 
       return {
-        sections: state.sections.map((s) => (idsToUpdate.includes(s.id) ? { ...s, ...updates } : s)),
+        sections: state.sections.map((s) =>
+          idsToUpdate.includes(s.id) ? { ...s, ...updates } : s,
+        ),
       };
     }),
   setSelectedSection: (id: string | null) => set({ selectedSectionId: id }),
@@ -196,7 +418,11 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
 
   // Product updates
   updateProduct: (id: string, updates: Partial<Product>) =>
-    set((state) => ({ products: state.products.map((p) => (p.id === id ? { ...p, ...updates } : p)) })),
+    set((state) => ({
+      products: state.products.map((p) =>
+        p.id === id ? { ...p, ...updates } : p,
+      ),
+    })),
 
   // UV map management
   uvMaps: new Map<string, string>(),
@@ -208,7 +434,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       return { uvMaps: newMaps };
     }),
   completeUVMap: null,
-  setCompleteUVMap: (uvMapUrl: string | null) => set({ completeUVMap: uvMapUrl }),
+  setCompleteUVMap: (uvMapUrl: string | null) =>
+    set({ completeUVMap: uvMapUrl }),
 
   // Scene controls
   showGrid: false,
@@ -222,7 +449,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   isVideoPlaying: false,
   setIsVideoPlaying: (playing: boolean) => set({ isVideoPlaying: playing }),
   cameraControlsRef: null,
-  setCameraControlsRef: (ref: unknown | null) => set({ cameraControlsRef: ref }),
+  setCameraControlsRef: (ref: unknown | null) =>
+    set({ cameraControlsRef: ref }),
   autoRotate: false,
   setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
   glRef: null,
@@ -237,16 +465,33 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   // Recent colors
   recentColors: [],
   addRecentColor: (color: string) =>
-    set((state) => ({ recentColors: [color, ...state.recentColors.filter((c) => c.toLowerCase() !== color.toLowerCase())].slice(0, 8) })),
+    set((state) => ({
+      recentColors: [
+        color,
+        ...state.recentColors.filter(
+          (c) => c.toLowerCase() !== color.toLowerCase(),
+        ),
+      ].slice(0, 8),
+    })),
 
   // Presets
   presets: [],
-  savePreset: (name: string, camera?: any) =>
-    set((state) => ({ presets: [...state.presets, { name, sections: state.sections, camera }] })),
-  loadPreset: (preset: { name: string; sections: MaterialSection[]; camera?: any }) => set({ sections: preset.sections }),
+  savePreset: (name: string, camera?: CameraState) =>
+    set((state) => ({
+      presets: [...state.presets, { name, sections: state.sections, camera }],
+    })),
+  loadPreset: (preset: {
+    name: string;
+    sections: MaterialSection[];
+    camera?: CameraState;
+  }) => set({ sections: preset.sections }),
   exportPreset: () => {
     const state = get();
-    return JSON.stringify({ sections: state.sections, productId: state.selectedProductId }, null, 2);
+    return JSON.stringify(
+      { sections: state.sections, productId: state.selectedProductId },
+      null,
+      2,
+    );
   },
   importPreset: (json: string) => {
     try {

@@ -1,24 +1,36 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, OrbitControls } from "@react-three/drei";
+import { GLTF } from "three-stdlib";
 import { extractUVMapForMaterial, extractCompleteUVMap } from "@/lib/uv-utils";
 import { applyMaterialUpdates } from "@/lib/model-utils";
-import { useConfiguratorStore } from "@/lib/store";
+import { useConfiguratorStore, MaterialSection } from "@/lib/store";
 
 // Preload frequently used models for faster loading
 useGLTF.preload("/models/Backpack.glb");
 
-type Props = { controlsRef?: React.RefObject<any> };
+type Props = { controlsRef?: React.RefObject<OrbitControls> };
 
 export function ModelLoader({ controlsRef }: Props) {
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
-  const url = currentModelUrl || "/placeholder-model.glb";
-  return <Model url={url} controlsRef={controlsRef} />;
+
+  // Don't render anything if no model is selected
+  if (!currentModelUrl) {
+    return null;
+  }
+
+  return <Model url={currentModelUrl} controlsRef={controlsRef} />;
 }
 
-function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObject<any> }) {
+function Model({
+  url,
+  controlsRef,
+}: {
+  url: string;
+  controlsRef?: React.RefObject<OrbitControls>;
+}) {
   const setSections = useConfiguratorStore((s) => s.setSections);
   const setUVMap = useConfiguratorStore((s) => s.setUVMap);
   const setCompleteUVMap = useConfiguratorStore((s) => s.setCompleteUVMap);
@@ -26,8 +38,14 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const sections = useConfiguratorStore((s) => s.sections);
 
-  const gltf = useGLTF(url) as any;
-  const scene = gltf?.scene ?? (gltf as any)?.scenes?.[0] ?? new THREE.Group();
+  const gltf = useGLTF(url) as GLTF & {
+    nodes: Record<string, THREE.Mesh>;
+    materials: Record<string, THREE.Material>;
+  };
+  const scene = useMemo(
+    () => gltf?.scene ?? gltf.scenes?.[0] ?? new THREE.Group(),
+    [gltf],
+  );
   const clonedScene = useRef<THREE.Group>(scene.clone());
 
   useEffect(() => {
@@ -42,7 +60,9 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
       setSections([]);
 
       try {
-        const resp = await fetch(`/api/materials?model=${encodeURIComponent(url)}`);
+        const resp = await fetch(
+          `/api/materials?model=${encodeURIComponent(url)}`,
+        );
         if (!mounted) return;
 
         if (!resp.ok) {
@@ -62,7 +82,9 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
         const materialsInModel: THREE.MeshStandardMaterial[] = [];
         clonedScene.current.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material) {
-            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            const materials = Array.isArray(child.material)
+              ? child.material
+              : [child.material];
             materials.forEach((material) => {
               if (material instanceof THREE.MeshStandardMaterial) {
                 materialsInModel.push(material);
@@ -70,12 +92,6 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
             });
           }
         });
-
-
-
-
-
-
 
         // Create a mapping based on material names
         const materialNameMap = new Map<string, THREE.MeshStandardMaterial>();
@@ -89,38 +105,43 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
         });
 
         // Update section IDs to match material UUIDs
-        const mappedSections = json.sections.map((section: any) => {
-          // Handle combined sections (like zipper stoppers)
-          if (section.combinedOriginalNames && section.combinedOriginalNames.length > 1) {
-            // Find all materials that match the combined original names
-            const matchingMaterials: string[] = [];
-            section.combinedOriginalNames.forEach((originalName: string) => {
-              const material = materialNameMap.get(originalName);
-              if (material) {
-                matchingMaterials.push(material.uuid);
-              }
-            });
+        const mappedSections = (json.sections as MaterialSection[]).map(
+          (section) => {
+            // Handle combined sections (like zipper stoppers)
+            if (
+              section.combinedOriginalNames &&
+              section.combinedOriginalNames.length > 1
+            ) {
+              // Find all materials that match the combined original names
+              const matchingMaterials: string[] = [];
+              section.combinedOriginalNames.forEach((originalName: string) => {
+                const material = materialNameMap.get(originalName);
+                if (material) {
+                  matchingMaterials.push(material.uuid);
+                }
+              });
 
-            return {
-              ...section,
-              id: matchingMaterials[0] || section.id, // Use first material as primary ID
-              combinedMaterialIds: matchingMaterials // Store all material IDs
-            };
-          }
+              return {
+                ...section,
+                id: matchingMaterials[0] || section.id, // Use first material as primary ID
+                combinedMaterialIds: matchingMaterials, // Store all material IDs
+              };
+            }
 
-          // Find material by original name from the material name map
-          const material = materialNameMap.get(section.originalName);
+            // Find material by original name from the material name map
+            const material = materialNameMap.get(section.originalName);
 
-          if (material) {
-            return { ...section, id: material.uuid };
-          }
+            if (material) {
+              return { ...section, id: material.uuid };
+            }
 
-          // If no material found, keep the section but log a warning
-          console.warn(`Material not found for section: ${section.name} (${section.originalName})`);
-          return section;
-        });
-
-
+            // If no material found, keep the section but log a warning
+            console.warn(
+              `Material not found for section: ${section.name} (${section.originalName})`,
+            );
+            return section;
+          },
+        );
 
         setSections(mappedSections);
 
@@ -135,7 +156,7 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
           try {
             const uv = extractUVMapForMaterial(clonedScene.current, section.id);
             if (uv) setUVMap(section.id, uv);
-          } catch (e) {
+          } catch {
             // ignore
           }
         }
@@ -145,10 +166,12 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
         } catch (e) {
           console.debug("applyMaterialUpdates failed:", e);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.warn("ModelLoader: failed to fetch precomputed sections:", err);
         setSections([]);
-        setModelError(err?.message ?? "Failed to load model materials");
+        setModelError(
+          err instanceof Error ? err.message : "Failed to load model materials",
+        );
       } finally {
         if (mounted) setModelLoading(false);
       }
@@ -159,7 +182,14 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
     return () => {
       mounted = false;
     };
-  }, [url, setSections, setUVMap, setCompleteUVMap, setModelLoading, setModelError]);
+  }, [
+    url,
+    setSections,
+    setUVMap,
+    setCompleteUVMap,
+    setModelLoading,
+    setModelError,
+  ]);
 
   useEffect(() => {
     try {
@@ -183,12 +213,12 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
         clonedScene.current.position.sub(scaledCenter);
       }
 
-      if (controlsRef && (controlsRef as any).current) {
-        const controls = (controlsRef as any).current;
+      if (controlsRef?.current) {
+        const controls = controlsRef.current;
         if (controls.target && typeof controls.target.set === "function") {
           controls.target.set(0, 0, 0);
         }
-        if (typeof (controls as any).update === "function") controls.update();
+        if (typeof controls.update === "function") controls.update();
       }
     } catch (err) {
       console.warn("Fit-to-view failed:", err);
@@ -199,7 +229,7 @@ function Model({ url, controlsRef }: { url: string; controlsRef?: React.RefObjec
     try {
       applyMaterialUpdates(clonedScene.current, sections);
     } catch (e) {
-      console.error('Failed to apply material updates:', e);
+      console.error("Failed to apply material updates:", e);
     }
   }, [sections]);
 

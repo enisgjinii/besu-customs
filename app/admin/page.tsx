@@ -1,10 +1,23 @@
-'use client'
+"use client";
 
-import { ProtectedRoute } from '@/components/auth/protected-route'
-import { AdminLayout } from '@/components/admin/admin-layout'
-import { StatsCard } from '@/components/admin/stats-card'
-import { RevenueChart, UserGrowthChart, DeviceChart, TopProductsChart } from '@/components/admin/charts'
-import { Users, DollarSign, ShoppingCart, TrendingUp, Activity, Package } from 'lucide-react'
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { StatsCard } from "@/components/admin/stats-card";
+import {
+  RevenueChart,
+  UserGrowthChart,
+  DeviceChart,
+  TopProductsChart,
+} from "@/components/admin/charts";
+import { ModelsStats } from "@/components/admin/models-stats";
+import {
+  Users,
+  DollarSign,
+  ShoppingCart,
+  TrendingUp,
+  Activity,
+  Package,
+} from "lucide-react";
 
 function AdminDashboard() {
   return (
@@ -53,6 +66,12 @@ function AdminDashboard() {
           <TopProductsChart />
         </div>
 
+        {/* Models Overview */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">3D Models Overview</h3>
+          <ModelsStats />
+        </div>
+
         {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatsCard
@@ -82,7 +101,7 @@ function AdminDashboard() {
         </div>
       </div>
     </AdminLayout>
-  )
+  );
 }
 
 export default function AdminPage() {
@@ -90,5 +109,5 @@ export default function AdminPage() {
     <ProtectedRoute>
       <AdminDashboard />
     </ProtectedRoute>
-  )
+  );
 }

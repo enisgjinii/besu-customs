@@ -1,32 +1,83 @@
-import fs from "fs";
-import path from "path";
+import { NextRequest, NextResponse } from "next/server";
+import { ModelsService } from "@/lib/models-service";
 
-// Use a static manifest to avoid bundling large .glb files into the serverless
-// function. The manifest lives in `public/models.json` and is generated/updated
-// by the repo maintainers when model files change.
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const manifestPath = path.join(process.cwd(), "public", "models.json");
+    const { searchParams } = new URL(request.url);
+    const activeOnly = searchParams.get("active") === "true";
+    const category = searchParams.get("category");
 
-    if (!fs.existsSync(manifestPath)) {
-      // Fall back to scanning the directory if the manifest is missing
-      const modelsDir = path.join(process.cwd(), "public", "models");
-      let files: string[] = [];
-      if (fs.existsSync(modelsDir)) {
-        files = fs
-          .readdirSync(modelsDir)
-          .filter((f) => f.toLowerCase().endsWith(".glb"));
-      }
-      const result = files.map((f) => ({ name: f, url: `/models/${encodeURIComponent(f)}` }));
-      return new Response(JSON.stringify(result), { status: 200, headers: { "Content-Type": "application/json" } });
+    let models;
+    if (activeOnly) {
+      models = await ModelsService.getActiveModels();
+    } else if (category) {
+      models = await ModelsService.getModelsByCategory(category);
+    } else {
+      models = await ModelsService.getAllModels();
     }
 
-    const raw = fs.readFileSync(manifestPath, "utf8");
-    const parsed = JSON.parse(raw);
+    return NextResponse.json({ models, count: models.length });
+  } catch (error) {
+    console.error("Error fetching models:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch models" },
+      { status: 500 },
+    );
+  }
+}
 
-    return new Response(JSON.stringify(parsed), { status: 200, headers: { "Content-Type": "application/json" } });
-  } catch (err) {
-    console.error("Failed to list models:", err);
-    return new Response(JSON.stringify([]), { status: 500, headers: { "Content-Type": "application/json" } });
+export async function PATCH(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Model ID is required" },
+        { status: 400 },
+      );
+    }
+
+    const body = await request.json();
+    const { is_active, is_featured } = body;
+
+    if (typeof is_active === "boolean") {
+      await ModelsService.toggleModelStatus(id, is_active);
+    }
+
+    if (typeof is_featured === "boolean") {
+      await ModelsService.toggleFeaturedStatus(id, is_featured);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error updating model:", error);
+    return NextResponse.json(
+      { error: "Failed to update model" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Model ID is required" },
+        { status: 400 },
+      );
+    }
+
+    await ModelsService.deleteModel(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting model:", error);
+    return NextResponse.json(
+      { error: "Failed to delete model" },
+      { status: 500 },
+    );
   }
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, Suspense, useEffect, useMemo } from "react";
+import { useRef, Suspense, useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
   Grid,
   Environment,
   PerspectiveCamera,
-  Text,
 } from "@react-three/drei";
 import * as THREE from "three";
 import { ModelLoader } from "./model-loader";
@@ -16,48 +15,62 @@ import { Spinner } from "@/components/ui/spinner";
 
 // Background component that handles color, image, and video backgrounds
 function Background() {
-  const backgroundColor = useConfiguratorStore((state) => state.backgroundColor);
-  const backgroundImage = useConfiguratorStore((state) => state.backgroundImage);
-  const backgroundVideo = useConfiguratorStore((state) => state.backgroundVideo);
+  const backgroundColor = useConfiguratorStore(
+    (state) => state.backgroundColor,
+  );
+  const backgroundImage = useConfiguratorStore(
+    (state) => state.backgroundImage,
+  );
+  const backgroundVideo = useConfiguratorStore(
+    (state) => state.backgroundVideo,
+  );
   const isVideoPlaying = useConfiguratorStore((state) => state.isVideoPlaying);
-  
+
   const { scene } = useThree();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const textureRef = useRef<THREE.VideoTexture | THREE.Texture | null>(null);
-  
+
   // Handle background color
   useEffect(() => {
     if (!backgroundImage && !backgroundVideo) {
       scene.background = new THREE.Color(backgroundColor);
     }
   }, [backgroundColor, backgroundImage, backgroundVideo, scene]);
-  
+
   // Handle background image with performance optimizations
   useEffect(() => {
     if (!backgroundImage) return;
-    
+
     // Clean up previous texture
     if (textureRef.current) {
       textureRef.current.dispose();
       textureRef.current = null;
     }
-    
+
     const loader = new THREE.TextureLoader();
-    const texture = loader.load(backgroundImage, (loadedTexture) => {
-      loadedTexture.colorSpace = THREE.SRGBColorSpace;
-      // Improve image quality with performance considerations
-      loadedTexture.minFilter = THREE.LinearFilter;
-      loadedTexture.magFilter = THREE.LinearFilter;
-      loadedTexture.generateMipmaps = false;
-      scene.background = loadedTexture;
-    }, undefined, (error) => {
-      console.warn('Background image loading error (possibly CORS related):', error);
-      // Fallback to solid color background
-      scene.background = new THREE.Color(backgroundColor);
-    });
-    
+    const texture = loader.load(
+      backgroundImage,
+      (loadedTexture) => {
+        loadedTexture.colorSpace = THREE.SRGBColorSpace;
+        // Improve image quality with performance considerations
+        loadedTexture.minFilter = THREE.LinearFilter;
+        loadedTexture.magFilter = THREE.LinearFilter;
+        loadedTexture.generateMipmaps = false;
+        scene.background = loadedTexture;
+      },
+      undefined,
+      (error) => {
+        console.warn(
+          "Background image loading error (possibly CORS related):",
+          error,
+        );
+        // Fallback to solid color background
+        scene.background = new THREE.Color(backgroundColor);
+      },
+    );
+
     textureRef.current = texture;
-    
+
     return () => {
       if (textureRef.current) {
         textureRef.current.dispose();
@@ -65,7 +78,7 @@ function Background() {
       }
     };
   }, [backgroundImage, backgroundColor, scene]);
-  
+
   // Handle background video with performance optimizations
   useEffect(() => {
     // Clean up previous video and texture
@@ -74,28 +87,28 @@ function Background() {
       videoRef.current.remove();
       videoRef.current = null;
     }
-    
+
     if (textureRef.current) {
       textureRef.current.dispose();
       textureRef.current = null;
     }
-    
+
     if (!backgroundVideo) return;
-    
-    const video = document.createElement('video');
+
+    const video = document.createElement("video");
     videoRef.current = video;
-    
+
     video.src = backgroundVideo;
     video.crossOrigin = "anonymous";
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
     video.preload = "metadata";
-    
+
     // Mobile optimization attributes
-    video.setAttribute('webkit-playsinline', 'true');
-    video.setAttribute('playsinline', 'true');
-    
+    video.setAttribute("webkit-playsinline", "true");
+    video.setAttribute("playsinline", "true");
+
     // Create texture with optimized settings
     const texture = new THREE.VideoTexture(video);
     textureRef.current = texture;
@@ -104,19 +117,19 @@ function Background() {
     texture.magFilter = THREE.LinearFilter;
     texture.generateMipmaps = false;
     texture.needsUpdate = true;
-    
+
     scene.background = texture;
-    
+
     if (isVideoPlaying) {
       // Start playing after a small delay to ensure proper initialization
       const playPromise = setTimeout(() => {
-        video.play().catch(e => {
-          console.warn('Video play failed:', e);
+        video.play().catch((e) => {
+          console.warn("Video play failed:", e);
           // Fallback to solid color on play failure
           scene.background = new THREE.Color(backgroundColor);
         });
       }, 50);
-      
+
       return () => {
         clearTimeout(playPromise);
         if (videoRef.current) {
@@ -131,10 +144,14 @@ function Background() {
       };
     } else {
       // For paused video, just load the first frame
-      video.addEventListener('loadeddata', () => {
-        texture.needsUpdate = true;
-      }, { once: true });
-      
+      video.addEventListener(
+        "loadeddata",
+        () => {
+          texture.needsUpdate = true;
+        },
+        { once: true },
+      );
+
       return () => {
         if (videoRef.current) {
           videoRef.current.pause();
@@ -147,9 +164,8 @@ function Background() {
         }
       };
     }
-    
   }, [backgroundVideo, isVideoPlaying, scene, backgroundColor]);
-  
+
   return null;
 }
 
@@ -179,11 +195,7 @@ export function Scene() {
   const controlsRef = useRef(null);
   const modelLoading = useConfiguratorStore((state) => state.modelLoading);
   const modelError = useConfiguratorStore((state) => state.modelError);
-  
-  // Performance monitoring
-  const frameCountRef = useRef(0);
-  const lastTimeRef = useRef(0);
-  
+
   // Store controls ref in global state
   useEffect(() => {
     if (controlsRef.current) {
@@ -201,13 +213,13 @@ export function Scene() {
     <div className="w-full h-full relative" data-tour="scene-controls">
       <Canvas
         shadows
-        gl={{ 
-          preserveDrawingBuffer: true, 
+        gl={{
+          preserveDrawingBuffer: true,
           antialias: true,
           alpha: false, // Disable alpha for better performance
           stencil: false, // Disable stencil for better performance
           depth: true,
-          powerPreference: "high-performance" // Request high-performance GPU
+          powerPreference: "high-performance", // Request high-performance GPU
         }}
         onCreated={({ gl }) => {
           setGlRef(gl);

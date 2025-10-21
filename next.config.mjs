@@ -13,10 +13,10 @@ const nextConfig = {
     // Optimize GLB/GLTF file loading
     config.module.rules.push({
       test: /\.(glb|gltf)$/,
-      type: 'asset/resource',
+      type: "asset/resource",
       generator: {
-        filename: 'static/models/[hash][ext][query]'
-      }
+        filename: "static/models/[hash][ext][query]",
+      },
     });
     return config;
   },
@@ -26,11 +26,11 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/models/:path*',
+        source: "/models/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },

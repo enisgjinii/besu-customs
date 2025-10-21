@@ -325,7 +325,10 @@ export default function Home() {
             <Share2 className="w-4 h-4" />
           </button>
 
-          <Link href="/materials" className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background">
+          <Link
+            href="/materials"
+            className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
+          >
             <List className="w-4 h-4" />
           </Link>
         </div>

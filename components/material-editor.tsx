@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
-import { Palette, Sliders, Link2, Unlink, ChevronDown, ChevronRight, List } from "lucide-react";
+import {
+  Palette,
+  Sliders,
+  Link2,
+  Unlink,
+  ChevronDown,
+  ChevronRight,
+  List,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ColorPickerModal } from "./color-picker-modal";
@@ -31,7 +39,9 @@ function getSectionBadge(section: { name: string; originalName?: string }) {
 export function MaterialEditor() {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   // State to track expanded categories
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [expandedCategories, setExpandedCategories] = useState<
+    Record<string, boolean>
+  >({});
   // Extraction UI removed — we rely on precomputed API files
 
   const sections = useConfiguratorStore((state) => state.sections);
@@ -68,21 +78,23 @@ export function MaterialEditor() {
 
   // Toggle category expanded state
   const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => ({
+    setExpandedCategories((prev) => ({
       ...prev,
-      [category]: !prev[category]
+      [category]: !prev[category],
     }));
   };
 
   // Initialize all categories as expanded by default
-  if (Object.keys(expandedCategories).length === 0 && Object.keys(groupedSections).length > 0) {
+  if (
+    Object.keys(expandedCategories).length === 0 &&
+    Object.keys(groupedSections).length > 0
+  ) {
     const initialExpanded: Record<string, boolean> = {};
-    Object.keys(groupedSections).forEach(category => {
+    Object.keys(groupedSections).forEach((category) => {
       initialExpanded[category] = true;
     });
     setExpandedCategories(initialExpanded);
   }
-
 
   return (
     <div className="space-y-6" data-tour="material-editor">
@@ -149,15 +161,17 @@ export function MaterialEditor() {
                       return (
                         <div
                           key={section.id}
-                          className={`group relative rounded-lg transition-all ${isLinked ? "ring-2 ring-blue-500/50" : ""
-                            }`}
+                          className={`group relative rounded-lg transition-all ${
+                            isLinked ? "ring-2 ring-blue-500/50" : ""
+                          }`}
                         >
                           <button
                             onClick={() => setSelectedSection(section.id)}
-                            className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${isSelected
-                              ? "bg-accent text-accent-foreground shadow-sm"
-                              : "bg-secondary/30 hover:bg-secondary/50"
-                              }`}
+                            className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
+                              isSelected
+                                ? "bg-accent text-accent-foreground shadow-sm"
+                                : "bg-secondary/30 hover:bg-secondary/50"
+                            }`}
                           >
                             <div className="flex items-center justify-start gap-2.5">
                               <div
@@ -188,10 +202,11 @@ export function MaterialEditor() {
                             selectedSectionId !== section.id && (
                               <button
                                 onClick={() => toggleSectionLink(section.id)}
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${isLinked
-                                  ? "bg-blue-500 text-white shadow-sm"
-                                  : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
-                                  }`}
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${
+                                  isLinked
+                                    ? "bg-blue-500 text-white shadow-sm"
+                                    : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background opacity-0 group-hover:opacity-100"
+                                }`}
                                 title={
                                   isLinked
                                     ? "Click to unlink"
@@ -299,7 +314,10 @@ export function MaterialEditor() {
                     value={selectedSection.trimDesign || "none"}
                     onChange={(e) =>
                       updateSection(selectedSection.id, {
-                        trimDesign: e.target.value === "none" ? undefined : e.target.value,
+                        trimDesign:
+                          e.target.value === "none"
+                            ? undefined
+                            : e.target.value,
                       })
                     }
                     className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
@@ -330,29 +348,32 @@ export function MaterialEditor() {
                     updateSection(selectedSection.id, {
                       gradient: enabled
                         ? {
-                          enabled: true,
-                          type: "linear",
-                          colors: [selectedSection.color, "#ffffff"],
-                          angle: 90,
-                          stops: [0, 1],
-                        }
+                            enabled: true,
+                            type: "linear",
+                            colors: [selectedSection.color, "#ffffff"],
+                            angle: 90,
+                            stops: [0, 1],
+                          }
                         : undefined,
                     });
                   }}
                   disabled={!!selectedSection.customTexture}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selectedSection.gradient?.enabled
-                    ? "bg-primary"
-                    : "bg-input"
-                    } ${selectedSection.customTexture
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    selectedSection.gradient?.enabled
+                      ? "bg-primary"
+                      : "bg-input"
+                  } ${
+                    selectedSection.customTexture
                       ? "opacity-50 cursor-not-allowed"
                       : "cursor-pointer"
-                    }`}
+                  }`}
                 >
                   <span
-                    className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${selectedSection.gradient?.enabled
-                      ? "translate-x-4"
-                      : "translate-x-0.5"
-                      }`}
+                    className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                      selectedSection.gradient?.enabled
+                        ? "translate-x-4"
+                        : "translate-x-0.5"
+                    }`}
                   />
                 </button>
               </div>

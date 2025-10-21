@@ -2,6 +2,12 @@
 
 import type React from "react";
 
+declare global {
+  interface Window {
+    mediaRecorder?: MediaRecorder;
+  }
+}
+
 import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import {
@@ -157,7 +163,7 @@ export function ControlsPanel() {
 
       mediaRecorder.start(100);
       // Store reference to stop recording later
-      (window as any).mediaRecorder = mediaRecorder;
+      window.mediaRecorder = mediaRecorder;
     } catch (error) {
       console.error("Failed to start recording:", error);
       alert(
@@ -169,7 +175,7 @@ export function ControlsPanel() {
   };
 
   const handleStopRecording = () => {
-    const mediaRecorder = (window as any).mediaRecorder;
+    const mediaRecorder = window.mediaRecorder;
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
     }
@@ -249,34 +255,65 @@ export function ControlsPanel() {
         {activeTab === "export" && (
           <div className="p-4">
             {/* Nested Tabs for Export Options */}
-            <Tabs value={exportSubTab} onValueChange={(value) => setExportSubTab(value as any)}>
+            <Tabs
+              value={exportSubTab}
+              onValueChange={(value) =>
+                setExportSubTab(
+                  value as
+                    | "camera"
+                    | "scene"
+                    | "ai"
+                    | "images"
+                    | "video"
+                    | "model",
+                )
+              }
+            >
               <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="camera" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="camera"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Camera className="w-4 h-4" />
                   <span>Camera</span>
                 </TabsTrigger>
-                <TabsTrigger value="scene" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="scene"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Grid3x3 className="w-4 h-4" />
                   <span>Scene</span>
                 </TabsTrigger>
-                <TabsTrigger value="ai" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="ai"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Bot className="w-4 h-4" />
                   <span>AI</span>
                 </TabsTrigger>
-                <TabsTrigger value="images" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="images"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Image className="w-4 h-4" />
                   <span>Images</span>
                 </TabsTrigger>
-                <TabsTrigger value="video" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="video"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Video className="w-4 h-4" />
                   <span>Video</span>
                 </TabsTrigger>
-                <TabsTrigger value="model" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="model"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Package2 className="w-4 h-4" />
                   <span>Model</span>
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="camera" className="mt-4 space-y-2">
                 <h3 className="font-semibold mb-3">Camera Controls</h3>
                 <div className="space-y-2">
@@ -292,7 +329,7 @@ export function ControlsPanel() {
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="scene" className="mt-4 space-y-2">
                 <h3 className="font-semibold mb-3">Scene Options</h3>
                 <div className="space-y-2">
@@ -325,12 +362,12 @@ export function ControlsPanel() {
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="ai" className="mt-4">
                 <h3 className="font-semibold mb-3">AI Image Generator</h3>
                 <AIImageGenerator />
               </TabsContent>
-              
+
               <TabsContent value="images" className="mt-4 space-y-2">
                 <h3 className="font-semibold mb-3">Export Images</h3>
                 <div className="space-y-2">
@@ -345,7 +382,7 @@ export function ControlsPanel() {
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="video" className="mt-4 space-y-2">
                 <h3 className="font-semibold mb-3">Export Video</h3>
                 <div className="space-y-2">
@@ -369,13 +406,14 @@ export function ControlsPanel() {
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="model" className="mt-4 space-y-2">
                 <h3 className="font-semibold mb-3">Export Model & Presets</h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Export your configured 3D model and presets. Model export will be disabled until a model is loaded.
+                  Export your configured 3D model and presets. Model export will
+                  be disabled until a model is loaded.
                 </p>
-                
+
                 <div className="space-y-2">
                   <Button
                     variant={currentModelUrl ? "outline" : "ghost"}
@@ -392,7 +430,7 @@ export function ControlsPanel() {
                     <Package2 className="w-4 h-4 mr-2" />
                     Export Model (GLB)
                   </Button>
-                  
+
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <Button
                       variant="outline"

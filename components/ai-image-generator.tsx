@@ -183,7 +183,10 @@ export function AIImageGenerator() {
       {/* User API Key Input */}
       {userApiMode && (
         <div className="space-y-2">
-          <Label htmlFor="user-api-key" className="flex items-center gap-2 text-xs">
+          <Label
+            htmlFor="user-api-key"
+            className="flex items-center gap-2 text-xs"
+          >
             <Key className="w-3 h-3" />
             Enter your Runware API key...
           </Label>
@@ -272,7 +275,11 @@ export function AIImageGenerator() {
               </SelectTrigger>
               <SelectContent>
                 {sections.map((section) => (
-                  <SelectItem key={section.id} value={section.id} className="text-xs">
+                  <SelectItem
+                    key={section.id}
+                    value={section.id}
+                    className="text-xs"
+                  >
                     {section.name}
                   </SelectItem>
                 ))}

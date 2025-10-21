@@ -5,6 +5,7 @@ This script extracts material information from 3D models in the project and save
 ## Overview
 
 The materials extraction script processes all GLB files in the `public/models` directory and generates:
+
 1. Individual material reports for each model
 2. A consolidated summary report
 
@@ -35,6 +36,7 @@ npm run extract-materials
 ## Output
 
 The script generates output files in the `materials-output` directory:
+
 - Individual material reports for each model (e.g., `Baseball caps-materials.txt`)
 - A consolidated summary report (`materials-summary.txt`)
 
@@ -51,6 +53,7 @@ The framework includes commented pseudocode showing how the actual implementatio
 ## Material Information Extracted
 
 For each material, the script extracts:
+
 - ID
 - Name
 - Type
