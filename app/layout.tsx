@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { OnboardingWelcome } from "@/components/onboarding-welcome";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { OnboardingKeyboardHandler } from "@/components/onboarding-keyboard-handler";
+import { AuthProvider } from "@/lib/auth-context";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,13 +26,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans ${inter.variable}`}>
-        {children}
-        <Toaster />
-        <OnboardingWelcome />
-        <OnboardingTour />
-        <OnboardingKeyboardHandler />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            {children}
+            <Toaster />
+            <OnboardingWelcome />
+            <OnboardingTour />
+            <OnboardingKeyboardHandler />
+          </AuthProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

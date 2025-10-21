@@ -1,211 +1,94 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useConfiguratorStore } from "@/lib/store";
-import { Link as LinkIcon, Save, FileText, List } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { ProtectedRoute } from '@/components/auth/protected-route'
+import { AdminLayout } from '@/components/admin/admin-layout'
+import { StatsCard } from '@/components/admin/stats-card'
+import { RevenueChart, UserGrowthChart, DeviceChart, TopProductsChart } from '@/components/admin/charts'
+import { Users, DollarSign, ShoppingCart, TrendingUp, Activity, Package } from 'lucide-react'
 
-export default function AdminPage() {
-  const products = useConfiguratorStore((state) => state.products);
-  const updateProduct = useConfiguratorStore(
-    (state) =>
-      (
-        state as unknown as {
-          updateProduct?: (id: string, updates: { modelUrl?: string }) => void;
-        }
-      ).updateProduct,
-  );
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [modelUrl, setModelUrl] = useState("");
-  const [extracting, setExtracting] = useState(false);
-  const [extractMessage, setExtractMessage] = useState("");
-  const [extractingNames, setExtractingNames] = useState(false);
-  const [extractNamesMessage, setExtractNamesMessage] = useState("");
-
-  const handleSave = (productId: string) => {
-    // Persist model URL to store
-    if (updateProduct) {
-      updateProduct(productId, { modelUrl: modelUrl || undefined });
-    } else {
-      console.log(`Saving model URL for ${productId}:`, modelUrl);
-    }
-
-    setEditingId(null);
-    setModelUrl("");
-  };
-
-  const handleExtractMaterials = async () => {
-    setExtracting(true);
-    setExtractMessage("Extracting materials from all models...");
-    
-    try {
-      // Call the API endpoint to extract materials
-      const response = await fetch('/api/extract-materials', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setExtractMessage("Materials extracted successfully! Check the materials-output directory.");
-      } else {
-        setExtractMessage(`Error extracting materials: ${result.error}`);
-      }
-    } catch (error: unknown) {
-      console.error("Error extracting materials:", error);
-      if (error instanceof Error) {
-        setExtractMessage(`Error extracting materials: ${error.message}`);
-      } else {
-        setExtractMessage("Error extracting materials: Unknown error occurred");
-      }
-    } finally {
-      setExtracting(false);
-    }
-  };
-
-  const handleExtractMaterialNames = async () => {
-    setExtractingNames(true);
-    setExtractNamesMessage("Extracting material names from all models...");
-    
-    try {
-      // Call the API endpoint to extract material names
-      const response = await fetch('/api/extract-material-names', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setExtractNamesMessage("Material names extracted successfully! Check the materials-output directory.");
-      } else {
-        setExtractNamesMessage(`Error extracting material names: ${result.error}`);
-      }
-    } catch (error: unknown) {
-      console.error("Error extracting material names:", error);
-      if (error instanceof Error) {
-        setExtractNamesMessage(`Error extracting material names: ${error.message}`);
-      } else {
-        setExtractNamesMessage("Error extracting material names: Unknown error occurred");
-      }
-    } finally {
-      setExtractingNames(false);
-    }
-  };
-
+function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Admin Panel
-          </h1>
-          <p className="text-muted-foreground">
-            Link products to 3D model URLs
-          </p>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatsCard
+            title="Total Revenue"
+            value="$45,231.89"
+            change="+20.1% from last month"
+            changeType="positive"
+            icon={DollarSign}
+          />
+          <StatsCard
+            title="Total Users"
+            value="2,350"
+            change="+180.1% from last month"
+            changeType="positive"
+            icon={Users}
+          />
+          <StatsCard
+            title="Orders"
+            value="12,234"
+            change="+19% from last month"
+            changeType="positive"
+            icon={ShoppingCart}
+          />
+          <StatsCard
+            title="Active Now"
+            value="573"
+            change="+201 since last hour"
+            changeType="positive"
+            icon={Activity}
+          />
         </div>
 
-        <div className="bg-card border-2 border-primary mb-6">
-          <div className="p-4 border-b-2 border-primary">
-            <h2 className="text-lg font-bold text-foreground">
-              Extract Materials
-            </h2>
-          </div>
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Extract material information from all 3D models in the project
-            </p>
-            <Button 
-              onClick={handleExtractMaterials} 
-              disabled={extracting}
-              className="flex items-center gap-2"
-            >
-              <FileText className="w-4 h-4" />
-              {extracting ? "Extracting..." : "Extract All Materials"}
-            </Button>
-            {extractMessage && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {extractMessage}
-              </p>
-            )}
-          </div>
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RevenueChart />
+          <UserGrowthChart />
         </div>
 
-        {/* Extract Material Names UI removed per user request */}
-
-        <div className="bg-card border-2 border-primary">
-          <div className="p-4 border-b-2 border-primary">
-            <h2 className="text-lg font-bold text-foreground">
-              Product Models
-            </h2>
-          </div>
-
-          <div className="divide-y divide-border">
-            {products.map((product) => (
-              <div key={product.id} className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground mb-1">
-                      {product.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      ID: {product.id}
-                    </p>
-                    {product.modelUrl && (
-                      <p className="text-xs text-accent mt-2 break-all">
-                        {product.modelUrl}
-                      </p>
-                    )}
-                  </div>
-
-                  {editingId === product.id ? (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={modelUrl}
-                        onChange={(e) => setModelUrl(e.target.value)}
-                        placeholder="https://example.com/model.glb"
-                        className="px-3 py-2 border-2 border-primary bg-input text-foreground text-sm w-64"
-                      />
-                      <Button
-                        onClick={() => handleSave(product.id)}
-                        size="sm"
-                        className="bg-accent text-accent-foreground hover:bg-accent/90"
-                      >
-                        <Save className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        setEditingId(product.id);
-                        setModelUrl(product.modelUrl || "");
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <LinkIcon className="w-4 h-4 mr-2" />
-                      Link Model
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DeviceChart />
+          <TopProductsChart />
         </div>
 
-        <div className="mt-6">
-          <Button asChild variant="outline">
-            <Link href="/">← Back to Viewer</Link>
-          </Button>
+        {/* Additional Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatsCard
+            title="Conversion Rate"
+            value="3.2%"
+            change="+0.5% from last week"
+            changeType="positive"
+            icon={TrendingUp}
+            description="Visitors to customers"
+          />
+          <StatsCard
+            title="Avg. Order Value"
+            value="$127.50"
+            change="-2.1% from last month"
+            changeType="negative"
+            icon={DollarSign}
+            description="Per transaction"
+          />
+          <StatsCard
+            title="Products Sold"
+            value="1,429"
+            change="+12.5% from last month"
+            changeType="positive"
+            icon={Package}
+            description="This month"
+          />
         </div>
       </div>
-    </div>
-  );
+    </AdminLayout>
+  )
+}
+
+export default function AdminPage() {
+  return (
+    <ProtectedRoute>
+      <AdminDashboard />
+    </ProtectedRoute>
+  )
 }
