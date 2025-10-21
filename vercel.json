@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "api/**": {
+      "excludeFiles": "public/models/**"
+    }
+  },
+  "cleanUrls": true,
+  "rewrites": []
+}
