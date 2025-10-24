@@ -159,6 +159,11 @@ export async function GET(request: Request) {
       if (originalName === "FABRIC 2_612766") return "Backpack Color";
     }
 
+    // Duffle Bag renaming
+    if (modelParam.includes("duffle") || modelParam.includes("Duffle")) {
+      if (originalName === "FABRIC 2_612766") return "Main Color";
+    }
+
     // Hoodie renaming
     if (modelParam.includes("Hoodie.glb")) {
       if (originalName === "FABRIC_1_607462") return "Main Hoodie Color";
@@ -558,6 +563,11 @@ export async function GET(request: Request) {
     // Backpack categories
     if (modelParam.includes("Backpack.glb")) {
       return "Backpack Colors";
+    }
+
+    // Duffle Bag categories
+    if (modelParam.includes("duffle") || modelParam.includes("Duffle")) {
+      return "Duffle Bag Color";
     }
 
     return "Other";

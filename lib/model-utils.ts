@@ -121,9 +121,13 @@ export function applyBasketballJerseyNaming(
   // Detect the specific model by modelUrl when available, otherwise fall back to heuristics
   const modelId = modelUrl?.toLowerCase() || "";
 
+  // Normalize modelId to tolerate underscores and spacing used in filenames (e.g. 'Backpack.glb', 'Duffle Bag.glb')
+  const normalizedModelId = (modelId || "").replace(/[_\s]/g, "").toLowerCase();
+
   console.log("🔍 Detection starting:", {
     modelUrl,
     modelId,
+    normalizedModelId,
     sectionsCount: sections.length,
     firstFewMaterials: sections.slice(0, 3).map((s) => s.originalName),
   });
@@ -226,13 +230,6 @@ export function applyBasketballJerseyNaming(
   const isShootingShirtHoodie =
     isShootingShirtHoodieByUrl || containsHoodKeywords;
 
-  console.log("🔍 Detection results:", {
-    isShootingShirtByUrl,
-    isShootingShirtHoodieByUrl,
-    containsHoodKeywords,
-    isShootingShirtHoodie,
-  });
-
   const containsBasketballKeywords = sections.some((section) =>
     (section.originalName || "").toLowerCase().includes("basketball"),
   );
@@ -251,20 +248,36 @@ export function applyBasketballJerseyNaming(
     ),
   );
 
+  // Check for duffle bag models
+  const isDuffleBagByUrl =
+    normalizedModelId.includes("duffle") ||
+    normalizedModelId.includes("duffel") ||
+    modelId.toLowerCase().includes("duffle") ||
+    modelId.toLowerCase().includes("duffel");
+
+  console.log("🔍 Detection results:", {
+    isShootingShirtByUrl,
+    isShootingShirtHoodieByUrl,
+    containsHoodKeywords,
+    isShootingShirtHoodie,
+    isDuffleBagByUrl,
+  });
+
   if (
     !isBasketballByUrl &&
     !isShootingShirtByUrl &&
     !isShootingShirtHoodie &&
     !containsBasketballKeywords &&
     !hasCharacteristicNames &&
-    !containsHoodKeywords
+    !containsHoodKeywords &&
+    !isDuffleBagByUrl
   ) {
-    console.log("⚠️ EARLY EXIT - No basketball/hoodie detected");
+    console.log("⚠️ EARLY EXIT - No supported model type detected");
     return updatedSections;
   }
 
   console.log(
-    "✅ Passed early exit check, continuing with basketball/hoodie processing",
+    "✅ Passed early exit check, continuing with model-specific processing",
   );
 
   // Map generic FABRIC materials (often exported as 'FABRIC', 'FABRIC1', etc.)
@@ -371,7 +384,6 @@ export function applyBasketballJerseyNaming(
     // Replace updatedSections contents while preserving reference semantics
     // (we created updatedSections earlier as a shallow copy)
     // eslint-disable-next-line no-unused-vars
-    // @ts-expect-error - reassigning for clarity
     // Note: we used to return filtered here, but we need to continue processing
     // for hoodie-specific logic, so we update updatedSections instead.
     updatedSections = filtered;
@@ -525,8 +537,6 @@ export function applyBasketballJerseyNaming(
   }
 
   // Backpack mapping
-  // Normalize modelId to tolerate underscores and spacing used in filenames (e.g. 'Backpack.glb')
-  const normalizedModelId = (modelId || "").replace(/[_\s]/g, "").toLowerCase();
   if (
     normalizedModelId.includes("backpack") ||
     modelId.toLowerCase().includes("backpack")
@@ -606,6 +616,41 @@ export function applyBasketballJerseyNaming(
     try {
       console.log(
         "🔁 Backpack mapping results:",
+        updatedSections.map((s) => ({
+          original: s.originalName,
+          name: s.name,
+        })),
+      );
+    } catch {
+      // ignore logging errors
+    }
+  }
+
+  // Duffle Bag mapping
+  // Normalize modelId to tolerate underscores and spacing used in filenames (e.g. 'Duffle Bag.glb')
+  if (
+    normalizedModelId.includes("duffle") ||
+    normalizedModelId.includes("duffel") ||
+    modelId.toLowerCase().includes("duffle") ||
+    modelId.toLowerCase().includes("duffel")
+  ) {
+    console.log("ℹ️ Duffle Bag detected — applying Duffle Bag-specific mappings");
+
+    // Find and rename the main fabric material
+    updatedSections.forEach((s) => {
+      const on = (s.originalName || "").toLowerCase();
+
+      // Check if this is the main fabric material (FABRIC 2_612766 or similar fabric materials)
+      if (on.includes("fabric") || on.startsWith("fabric") || on.includes("material")) {
+        s.name = "Duffle Bag Color";
+        s.category = "Bags";
+      }
+    });
+
+    // Debug: log mapping results so we can confirm the original->display name mapping in the console
+    try {
+      console.log(
+        "🔁 Duffle Bag mapping results:",
         updatedSections.map((s) => ({
           original: s.originalName,
           name: s.name,
@@ -998,7 +1043,18 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
     return "Piping/Trim";
   }
 
-  return "Baseball Cap Color Options";
+  // Handle fabric materials (common in bags and apparel)
+  if (
+    lowerName.includes("fabric") ||
+    lowerName.startsWith("fabric") ||
+    lowerName === "fabric" ||
+    lowerName.includes("material") ||
+    lowerName.startsWith("material")
+  ) {
+    return "Bags";
+  }
+
+  return "Other";
 }
 
 function createGradientTexture(
