@@ -1,0 +1,9 @@
+Material Names for Polo shirts long sleeve
+========================
+
+Body_Front_Placket
+Body_B_18747644
+Body_F_18571006
+Button_1_18571034
+Collar_18686026
+FABRIC_1_18569862

@@ -1,0 +1,9 @@
+Material Names for Standard bottom cut, cuffed
+========================
+
+Default_Button_46243
+FABRIC_1_1530
+FABRIC_1_233514
+FABRIC_1_46217
+FABRIC_1_83591
+Material.001

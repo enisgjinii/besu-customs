@@ -16,6 +16,40 @@ type MaterialSection = {
   combinedOriginalNames?: string[]; // For combined sections like stoppers
 };
 
+// Extract materials and meshes directly from GLB file
+async function extractFromGLB(modelPath: string): Promise<{ materials: string[], meshes: string[] }> {
+  try {
+    const buffer = fs.readFileSync(modelPath);
+    const text = buffer.toString("utf8");
+
+    // Extract materials array from JSON
+    const materialsMatch = text.match(/"materials"\s*:\s*\[([^\]]*)\]/);
+    const materials: string[] = [];
+
+    if (materialsMatch) {
+      const materialsText = materialsMatch[1];
+      const materialRegex = /"name"\s*:\s*"([^"]+)"/g;
+      let match;
+      while ((match = materialRegex.exec(materialsText)) !== null) {
+        materials.push(match[1]);
+      }
+    }
+
+    // Extract mesh names
+    const meshes: string[] = [];
+    const meshRegex = /"name"\s*:\s*"([^"]+)"\s*,\s*"primitives"/g;
+    let match;
+    while ((match = meshRegex.exec(text)) !== null) {
+      meshes.push(match[1]);
+    }
+
+    return { materials, meshes };
+  } catch (error) {
+    console.error("Error extracting from GLB:", error);
+    return { materials: [], meshes: [] };
+  }
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const modelParam = url.searchParams.get("model");
@@ -26,25 +60,30 @@ export async function GET(request: Request) {
     );
   }
 
-  // Normalize model path to a filename used by the extractor
-  // e.g. /models/Baseball caps.glb -> public_models_Baseball caps.glb-material-names-simple.txt
+  // Get the actual GLB file path
   const projectRoot = path.resolve(".");
   const relative = modelParam.replace(/^\//, "").replace(/\\/g, "/");
-  const safe = `public_${relative.replace(/\//g, "_")}-material-names-simple.txt`;
-  const filePath = path.join(projectRoot, "materials-output", safe);
+  const glbPath = path.join(projectRoot, "public", relative);
 
-  if (!fs.existsSync(filePath)) {
+  if (!fs.existsSync(glbPath)) {
     return NextResponse.json(
-      { error: "precomputed file not found", file: filePath },
+      { error: "GLB file not found", file: glbPath },
       { status: 404 },
     );
   }
 
-  const content = fs.readFileSync(filePath, "utf8");
-  const lines = content
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
+  // Extract materials and meshes directly from the GLB file
+  const { materials, meshes } = await extractFromGLB(glbPath);
+
+  // For volleyball models, we want individual nodes for coloring
+  let lines: string[];
+  if (modelParam.includes("Volleyball short sleeve tops.glb")) {
+    lines = meshes; // Use meshes for short sleeve
+  } else if (modelParam.includes("Volleyball long sleeve tops.glb")) {
+    lines = [...materials, ...meshes]; // Use both materials and meshes for long sleeve
+  } else {
+    lines = materials; // For other models, just use materials
+  }
 
   // Function to rename sections for specific models
   const renameSectionForModel = (originalName: string): string | null => {
@@ -279,14 +318,26 @@ export async function GET(request: Request) {
       if (originalName === "Body_FRONT_4160") return "Back of Shirt Color";
     }
 
-    // Volleyball Short Sleeve Tops renaming
+    // Volleyball Short Sleeve Tops mesh renaming
     if (modelParam.includes("Volleyball short sleeve tops.glb")) {
-      if (originalName === "Body_1486550") return "Jersey Neck Collar Color";
-      if (originalName === "Body_1337391")
-        return "Arm Sleeve & Bottom Trim Color";
-      if (originalName === "Body_1355687") return "Back of Jersey Color";
-      if (originalName === "Material.001") return "Front of Jersey Color";
+      if (originalName === "Ribbing") return "Neck Collar";
+      if (originalName === "Body_Back_1") return "Left Back Sleeve";
+      if (originalName === "Body_Back_3") return "Right Back Sleeve";
+      if (originalName === "Body_Front_2") return "Right Sleeve Front";
+      if (originalName === "Body_Front_3") return "Left Sleeve Front";
+      if (originalName === "Body_Front_4") return "Front Color";
+      if (originalName === "Body_Front_5") return "Bottom Trim Color Front";
+      if (originalName === "Body_Back_4") return "Back Color";
+      if (originalName === "Body_Back_5") return "Bottom Trim Color Back";
     }
+
+    // Volleyball Long Sleeve Tops renaming (materials and meshes)
+    if (modelParam.includes("Volleyball long sleeve tops.glb")) {
+      if (originalName === "Sleeves") return "Sleeves";
+      if (originalName === "Sleeves_FRONT_4165") return "Front of Shirt Color";
+      if (originalName === "Body_FRONT_4160") return "Back of Shirt Color";
+    }
+
 
     // Volleyball Shorts Spandex 4 (Long Length) renaming
     if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
@@ -521,10 +572,6 @@ export async function GET(request: Request) {
       return "Volleyball Long Sleeve Tops Colors";
     }
 
-    // Volleyball Short Sleeve Tops categories
-    if (modelParam.includes("Volleyball short sleeve tops.glb")) {
-      return "Volleyball Short Sleeve Tops Colors";
-    }
 
     // Volleyball Shorts Spandex 4 (Long Length) categories
     if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
@@ -1031,36 +1078,6 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Volleyball short sleeve tops.glb")) {
-      const reordered = [...sections];
-
-      // Define the desired order: Front, Back, Neck Collar, Arm & Bottom Trim
-      const desiredOrder = [
-        "Material.001", // Front of Jersey Color
-        "Body_1355687", // Back of Jersey Color
-        "Body_1486550", // Jersey Neck Collar Color
-        "Body_1337391", // Arm Sleeve & Bottom Trim Color
-      ];
-
-      const orderedSections: MaterialSection[] = [];
-
-      for (const originalName of desiredOrder) {
-        const section = reordered.find((s) => s.originalName === originalName);
-        if (section) {
-          orderedSections.push(section);
-        }
-      }
-
-      for (const section of reordered) {
-        if (
-          !orderedSections.find((s) => s.originalName === section.originalName)
-        ) {
-          orderedSections.push(section);
-        }
-      }
-
-      return orderedSections;
-    }
 
     if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
       const reordered = [...sections];
@@ -1229,26 +1246,55 @@ export async function GET(request: Request) {
     return sections;
   };
 
-  // Convert to minimal MaterialSection[] compatible with the store
-  let sections: MaterialSection[] = lines
-    .filter((name) => {
-      const renamedName = renameSectionForModel(name);
-      return renamedName !== null; // Filter out removed sections
-    })
-    .map((name, idx) => ({
-      id: `pre_${idx}_${name.replace(/\s+/g, "_")}`,
-      name: renameSectionForModel(name)!,
-      originalName: name,
-      category: getCategoryForSection(name),
-      color: "#cccccc",
-      roughness: 0.5,
-      metalness: 0.0,
-      wireframe: false,
-      customTexture: null,
-    }))
-    .filter((section) => {
-      return section.category !== "Other"; // Filter out "Other" category sections
+  // Special handling for Volleyball models - individual nodes for coloring
+  let sections: MaterialSection[];
+  if (modelParam.includes("Volleyball short sleeve tops.glb") || modelParam.includes("Volleyball long sleeve tops.glb")) {
+    sections = lines.map((name, idx) => {
+      // Categorize based on mesh name
+      let category = "Neck";
+      const displayName = renameSectionForModel(name) || name;
+      if (displayName.toLowerCase().includes("front")) {
+        category = "Fronts";
+      } else if (displayName.toLowerCase().includes("back")) {
+        category = "Back";
+      } else if (displayName.toLowerCase().includes("sleeve")) {
+        category = "Fronts"; // Sleeves go in Fronts category
+      }
+
+      return {
+        id: `node_${idx}_${name.replace(/\s+/g, "_")}`,
+        name: displayName,
+        originalName: name,
+        category: category,
+        color: "#cccccc",
+        roughness: 0.5,
+        metalness: 0.0,
+        wireframe: false,
+        customTexture: null,
+      };
     });
+  } else {
+    // Convert to minimal MaterialSection[] compatible with the store
+    sections = lines
+      .filter((name) => {
+        const renamedName = renameSectionForModel(name);
+        return renamedName !== null; // Filter out removed sections
+      })
+      .map((name, idx) => ({
+        id: `pre_${idx}_${name.replace(/\s+/g, "_")}`,
+        name: renameSectionForModel(name)!,
+        originalName: name,
+        category: getCategoryForSection(name),
+        color: "#cccccc",
+        roughness: 0.5,
+        metalness: 0.0,
+        wireframe: false,
+        customTexture: null,
+      }))
+      .filter((section) => {
+        return section.category !== "Other"; // Filter out "Other" category sections
+      });
+  }
 
   // Handle combined sections for Basketball shooting shirt with hoodie
   if (
@@ -1283,8 +1329,10 @@ export async function GET(request: Request) {
     );
   }
 
-  // Reorder sections if needed
-  sections = reorderSectionsForModel(sections);
+  // Reorder sections if needed (skip for volleyball short sleeve tops in node mode)
+  if (!modelParam.includes("Volleyball short sleeve tops.glb")) {
+    sections = reorderSectionsForModel(sections);
+  }
 
   // Add trim line options for Basketball Jersey and Shorts
   if (modelParam.includes("Basketball Jersey and Shorts.glb")) {

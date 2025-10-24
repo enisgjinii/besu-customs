@@ -20,12 +20,7 @@ function getSectionBadge(section: { name: string; originalName?: string }) {
   const name =
     section.originalName?.toLowerCase() || section.name.toLowerCase();
 
-  if (name.includes("front") && !name.includes("back")) {
-    return { text: "Front", variant: "default" as const };
-  }
-  if (name.includes("back") && !name.includes("front")) {
-    return { text: "Back", variant: "secondary" as const };
-  }
+  // Remove front/back badges as requested - only show left/right
   if (name.includes("left") && !name.includes("right")) {
     return { text: "Left", variant: "outline" as const };
   }
@@ -61,8 +56,12 @@ export function MaterialEditor() {
   );
   const recentColors = useConfiguratorStore((state) => state.recentColors);
   const addRecentColor = useConfiguratorStore((state) => state.addRecentColor);
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
+
+  // Check if this is a volleyball model
+  const isVolleyballModel = currentModelUrl?.includes("Volleyball");
 
   // Group sections by category
   const groupedSections = sections.reduce(
@@ -102,7 +101,7 @@ export function MaterialEditor() {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <Palette className="w-4 h-4" />
-            Material Sections
+            {isVolleyballModel ? "Colors" : "Material Sections"}
           </h3>
           {linkedSections.size > 0 && (
             <button
@@ -241,7 +240,7 @@ export function MaterialEditor() {
           </div>
 
           <div className="space-y-4">
-            {selectedSection.customTexture && (
+            {!isVolleyballModel && selectedSection.customTexture && (
               <div className="p-3 bg-secondary/30 rounded-md">
                 <p className="text-xs text-muted-foreground mb-2">
                   Custom texture applied
@@ -303,8 +302,8 @@ export function MaterialEditor() {
               )}
             </div>
 
-            {/* Trim Design Options */}
-            {selectedSection.category === "Trim Options DEMO" && (
+            {/* Trim Design Options - only for non-volleyball models */}
+            {!isVolleyballModel && selectedSection.category === "Trim Options DEMO" && (
               <div className="border-t border-border/50 pt-4">
                 <div className="mb-4">
                   <label className="block text-xs font-medium mb-3">
@@ -335,7 +334,9 @@ export function MaterialEditor() {
               </div>
             )}
 
-            <div className="border-t border-border/50 pt-4">
+            {/* Gradient section - only for non-volleyball models */}
+            {!isVolleyballModel && (
+              <div className="border-t border-border/50 pt-4">
               <div className="flex items-center justify-between mb-3">
                 <label className="text-xs font-medium">Gradient</label>
                 <button
@@ -558,6 +559,7 @@ export function MaterialEditor() {
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
       )}

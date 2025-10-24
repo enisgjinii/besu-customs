@@ -104,9 +104,61 @@ function Model({
           }
         });
 
-        // Update section IDs to match material UUIDs
-        const mappedSections = (json.sections as MaterialSection[]).map(
-          (section) => {
+        // Special handling for volleyball models - create individual materials for each mesh/material
+        const isVolleyballModel = url.includes("Volleyball");
+
+        let mappedSections: MaterialSection[];
+
+        if (isVolleyballModel) {
+          // For volleyball short sleeve tops, we want individual control over each mesh
+          // even when they share the same underlying material
+          const meshNameMap = new Map<string, THREE.Mesh>();
+
+          // Collect all meshes by name
+          clonedScene.current.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.name) {
+              meshNameMap.set(child.name, child);
+            }
+          });
+
+          mappedSections = (json.sections as MaterialSection[]).map((section) => {
+            // First, try to find a mesh with this name
+            const mesh = meshNameMap.get(section.originalName);
+            if (mesh) {
+              // Create a unique material for this mesh by cloning its current material
+              const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
+              const newMaterial = originalMaterial.clone();
+              newMaterial.name = `${section.originalName}_unique`;
+
+              // Replace the mesh's material with the new unique material
+              mesh.material = newMaterial;
+
+              return {
+                ...section,
+                id: newMaterial.uuid,
+                // Name is already renamed in the API response
+              };
+            }
+
+            // If no mesh found with this name, try to find by material name (for long sleeve tops)
+            const material = materialNameMap.get(section.originalName);
+            if (material) {
+              return {
+                ...section,
+                id: material.uuid,
+                // Name is already renamed in the API response
+              };
+            }
+
+            // If neither found, keep the section but log a warning
+            console.warn(
+              `Neither mesh nor material found for section: ${section.name} (${section.originalName})`,
+            );
+            return section;
+          });
+        } else {
+          // Normal mapping logic for other models
+          mappedSections = (json.sections as MaterialSection[]).map((section) => {
             // Handle combined sections (like zipper stoppers)
             if (
               section.combinedOriginalNames &&
@@ -140,8 +192,8 @@ function Model({
               `Material not found for section: ${section.name} (${section.originalName})`,
             );
             return section;
-          },
-        );
+          });
+        }
 
         setSections(mappedSections);
 
