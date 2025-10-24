@@ -17,7 +17,9 @@ type MaterialSection = {
 };
 
 // Extract materials and meshes directly from GLB file
-async function extractFromGLB(modelPath: string): Promise<{ materials: string[], meshes: string[] }> {
+async function extractFromGLB(
+  modelPath: string,
+): Promise<{ materials: string[]; meshes: string[] }> {
   try {
     const buffer = fs.readFileSync(modelPath);
     const text = buffer.toString("utf8");
@@ -338,7 +340,6 @@ export async function GET(request: Request) {
       if (originalName === "Body_FRONT_4160") return "Back of Shirt Color";
     }
 
-
     // Volleyball Shorts Spandex 4 (Long Length) renaming
     if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
       if (originalName === "Default_Topstitch_1426721")
@@ -571,7 +572,6 @@ export async function GET(request: Request) {
     if (modelParam.includes("Volleyball long sleeve tops.glb")) {
       return "Volleyball Long Sleeve Tops Colors";
     }
-
 
     // Volleyball Shorts Spandex 4 (Long Length) categories
     if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
@@ -1078,7 +1078,6 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-
     if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
       const reordered = [...sections];
 
@@ -1248,7 +1247,10 @@ export async function GET(request: Request) {
 
   // Special handling for Volleyball models - individual nodes for coloring
   let sections: MaterialSection[];
-  if (modelParam.includes("Volleyball short sleeve tops.glb") || modelParam.includes("Volleyball long sleeve tops.glb")) {
+  if (
+    modelParam.includes("Volleyball short sleeve tops.glb") ||
+    modelParam.includes("Volleyball long sleeve tops.glb")
+  ) {
     sections = lines.map((name, idx) => {
       // Categorize based on mesh name
       let category = "Neck";

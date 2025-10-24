@@ -121,78 +121,85 @@ function Model({
             }
           });
 
-          mappedSections = (json.sections as MaterialSection[]).map((section) => {
-            // First, try to find a mesh with this name
-            const mesh = meshNameMap.get(section.originalName);
-            if (mesh) {
-              // Create a unique material for this mesh by cloning its current material
-              const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
-              const newMaterial = originalMaterial.clone();
-              newMaterial.name = `${section.originalName}_unique`;
+          mappedSections = (json.sections as MaterialSection[]).map(
+            (section) => {
+              // First, try to find a mesh with this name
+              const mesh = meshNameMap.get(section.originalName);
+              if (mesh) {
+                // Create a unique material for this mesh by cloning its current material
+                const originalMaterial =
+                  mesh.material as THREE.MeshStandardMaterial;
+                const newMaterial = originalMaterial.clone();
+                newMaterial.name = `${section.originalName}_unique`;
 
-              // Replace the mesh's material with the new unique material
-              mesh.material = newMaterial;
+                // Replace the mesh's material with the new unique material
+                mesh.material = newMaterial;
 
-              return {
-                ...section,
-                id: newMaterial.uuid,
-                // Name is already renamed in the API response
-              };
-            }
+                return {
+                  ...section,
+                  id: newMaterial.uuid,
+                  // Name is already renamed in the API response
+                };
+              }
 
-            // If no mesh found with this name, try to find by material name (for long sleeve tops)
-            const material = materialNameMap.get(section.originalName);
-            if (material) {
-              return {
-                ...section,
-                id: material.uuid,
-                // Name is already renamed in the API response
-              };
-            }
+              // If no mesh found with this name, try to find by material name (for long sleeve tops)
+              const material = materialNameMap.get(section.originalName);
+              if (material) {
+                return {
+                  ...section,
+                  id: material.uuid,
+                  // Name is already renamed in the API response
+                };
+              }
 
-            // If neither found, keep the section but log a warning
-            console.warn(
-              `Neither mesh nor material found for section: ${section.name} (${section.originalName})`,
-            );
-            return section;
-          });
+              // If neither found, keep the section but log a warning
+              console.warn(
+                `Neither mesh nor material found for section: ${section.name} (${section.originalName})`,
+              );
+              return section;
+            },
+          );
         } else {
           // Normal mapping logic for other models
-          mappedSections = (json.sections as MaterialSection[]).map((section) => {
-            // Handle combined sections (like zipper stoppers)
-            if (
-              section.combinedOriginalNames &&
-              section.combinedOriginalNames.length > 1
-            ) {
-              // Find all materials that match the combined original names
-              const matchingMaterials: string[] = [];
-              section.combinedOriginalNames.forEach((originalName: string) => {
-                const material = materialNameMap.get(originalName);
-                if (material) {
-                  matchingMaterials.push(material.uuid);
-                }
-              });
+          mappedSections = (json.sections as MaterialSection[]).map(
+            (section) => {
+              // Handle combined sections (like zipper stoppers)
+              if (
+                section.combinedOriginalNames &&
+                section.combinedOriginalNames.length > 1
+              ) {
+                // Find all materials that match the combined original names
+                const matchingMaterials: string[] = [];
+                section.combinedOriginalNames.forEach(
+                  (originalName: string) => {
+                    const material = materialNameMap.get(originalName);
+                    if (material) {
+                      matchingMaterials.push(material.uuid);
+                    }
+                  },
+                );
 
-              return {
-                ...section,
-                id: matchingMaterials[0] || section.id, // Use first material as primary ID
-                combinedMaterialIds: matchingMaterials, // Store all material IDs
-              };
-            }
+                return {
+                  ...section,
+                  id: matchingMaterials[0] || section.id, // Use first material as primary ID
+                  combinedMaterialIds: matchingMaterials, // Store all material IDs
+                };
+              }
 
-            // Find material by original name from the material name map
-            const material = materialNameMap.get(section.originalName);
+              // Find material by original name from the material name map
+              const material = materialNameMap.get(section.originalName);
 
-            if (material) {
-              return { ...section, id: material.uuid };
-            }
+              if (material) {
+                return { ...section, id: material.uuid };
+              }
 
-            // If no material found, keep the section but log a warning
-            console.warn(
-              `Material not found for section: ${section.name} (${section.originalName})`,
-            );
-            return section;
-          });
+              // If no material found, keep the section but log a warning
+              console.warn(
+                `Material not found for section: ${section.name} (${section.originalName})`,
+              );
+              return section;
+            },
+          );
         }
 
         setSections(mappedSections);

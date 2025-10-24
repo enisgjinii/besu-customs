@@ -56,7 +56,9 @@ export function MaterialEditor() {
   );
   const recentColors = useConfiguratorStore((state) => state.recentColors);
   const addRecentColor = useConfiguratorStore((state) => state.addRecentColor);
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
@@ -303,184 +305,142 @@ export function MaterialEditor() {
             </div>
 
             {/* Trim Design Options - only for non-volleyball models */}
-            {!isVolleyballModel && selectedSection.category === "Trim Options DEMO" && (
-              <div className="border-t border-border/50 pt-4">
-                <div className="mb-4">
-                  <label className="block text-xs font-medium mb-3">
-                    Trim Design
-                  </label>
-                  <select
-                    value={selectedSection.trimDesign || "none"}
-                    onChange={(e) =>
-                      updateSection(selectedSection.id, {
-                        trimDesign:
-                          e.target.value === "none"
-                            ? undefined
-                            : e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
-                  >
-                    <option value="none">No Trim</option>
-                    <option value="single-line">Single Line</option>
-                    <option value="double-line">Double Line</option>
-                    <option value="triple-line">Triple Line</option>
-                    <option value="dashed-line">Dashed Line</option>
-                    <option value="dotted-line">Dotted Line</option>
-                    <option value="zigzag">Zigzag Pattern</option>
-                    <option value="wave">Wave Pattern</option>
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* Gradient section - only for non-volleyball models */}
-            {!isVolleyballModel && (
-              <div className="border-t border-border/50 pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs font-medium">Gradient</label>
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={selectedSection.gradient?.enabled || false}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const enabled = !selectedSection.gradient?.enabled;
-                    updateSection(selectedSection.id, {
-                      gradient: enabled
-                        ? {
-                            enabled: true,
-                            type: "linear",
-                            colors: [selectedSection.color, "#ffffff"],
-                            angle: 90,
-                            stops: [0, 1],
-                          }
-                        : undefined,
-                    });
-                  }}
-                  disabled={!!selectedSection.customTexture}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    selectedSection.gradient?.enabled
-                      ? "bg-primary"
-                      : "bg-input"
-                  } ${
-                    selectedSection.customTexture
-                      ? "opacity-50 cursor-not-allowed"
-                      : "cursor-pointer"
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                      selectedSection.gradient?.enabled
-                        ? "translate-x-4"
-                        : "translate-x-0.5"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {selectedSection.gradient?.enabled && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-2">
-                      Gradient Type
+            {!isVolleyballModel &&
+              selectedSection.category === "Trim Options DEMO" && (
+                <div className="border-t border-border/50 pt-4">
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium mb-3">
+                      Trim Design
                     </label>
                     <select
-                      value={selectedSection.gradient.type}
+                      value={selectedSection.trimDesign || "none"}
                       onChange={(e) =>
                         updateSection(selectedSection.id, {
-                          gradient: {
-                            ...selectedSection.gradient!,
-                            type: e.target.value as "linear" | "radial",
-                          },
+                          trimDesign:
+                            e.target.value === "none"
+                              ? undefined
+                              : e.target.value,
                         })
                       }
                       className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
                     >
-                      <option value="linear">Linear</option>
-                      <option value="radial">Radial</option>
+                      <option value="none">No Trim</option>
+                      <option value="single-line">Single Line</option>
+                      <option value="double-line">Double Line</option>
+                      <option value="triple-line">Triple Line</option>
+                      <option value="dashed-line">Dashed Line</option>
+                      <option value="dotted-line">Dotted Line</option>
+                      <option value="zigzag">Zigzag Pattern</option>
+                      <option value="wave">Wave Pattern</option>
                     </select>
                   </div>
+                </div>
+              )}
 
-                  {selectedSection.gradient.type === "linear" && (
+            {/* Gradient section - only for non-volleyball models */}
+            {!isVolleyballModel && (
+              <div className="border-t border-border/50 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-medium">Gradient</label>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={selectedSection.gradient?.enabled || false}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const enabled = !selectedSection.gradient?.enabled;
+                      updateSection(selectedSection.id, {
+                        gradient: enabled
+                          ? {
+                              enabled: true,
+                              type: "linear",
+                              colors: [selectedSection.color, "#ffffff"],
+                              angle: 90,
+                              stops: [0, 1],
+                            }
+                          : undefined,
+                      });
+                    }}
+                    disabled={!!selectedSection.customTexture}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      selectedSection.gradient?.enabled
+                        ? "bg-primary"
+                        : "bg-input"
+                    } ${
+                      selectedSection.customTexture
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                        selectedSection.gradient?.enabled
+                          ? "translate-x-4"
+                          : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {selectedSection.gradient?.enabled && (
+                  <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-medium mb-2">
-                        Angle: {selectedSection.gradient.angle || 90}°
+                        Gradient Type
                       </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="360"
-                        step="1"
-                        value={selectedSection.gradient.angle || 90}
+                      <select
+                        value={selectedSection.gradient.type}
                         onChange={(e) =>
                           updateSection(selectedSection.id, {
                             gradient: {
                               ...selectedSection.gradient!,
-                              angle: Number.parseInt(e.target.value),
+                              type: e.target.value as "linear" | "radial",
                             },
                           })
                         }
-                        className="w-full accent-primary"
-                      />
+                        className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
+                      >
+                        <option value="linear">Linear</option>
+                        <option value="radial">Radial</option>
+                      </select>
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-xs font-medium mb-2">
-                      Color 1
-                    </label>
-                    <input
-                      type="color"
-                      value={selectedSection.gradient.colors[0]}
-                      onChange={(e) => {
-                        const newColors = [...selectedSection.gradient!.colors];
-                        newColors[0] = e.target.value;
-                        updateSection(selectedSection.id, {
-                          gradient: {
-                            ...selectedSection.gradient!,
-                            colors: newColors,
-                          },
-                        });
-                      }}
-                      className="w-full h-10 rounded-md border border-input cursor-pointer"
-                    />
-                  </div>
+                    {selectedSection.gradient.type === "linear" && (
+                      <div>
+                        <label className="block text-xs font-medium mb-2">
+                          Angle: {selectedSection.gradient.angle || 90}°
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="360"
+                          step="1"
+                          value={selectedSection.gradient.angle || 90}
+                          onChange={(e) =>
+                            updateSection(selectedSection.id, {
+                              gradient: {
+                                ...selectedSection.gradient!,
+                                angle: Number.parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="w-full accent-primary"
+                        />
+                      </div>
+                    )}
 
-                  <div>
-                    <label className="block text-xs font-medium mb-2">
-                      Color 2
-                    </label>
-                    <input
-                      type="color"
-                      value={selectedSection.gradient.colors[1]}
-                      onChange={(e) => {
-                        const newColors = [...selectedSection.gradient!.colors];
-                        newColors[1] = e.target.value;
-                        updateSection(selectedSection.id, {
-                          gradient: {
-                            ...selectedSection.gradient!,
-                            colors: newColors,
-                          },
-                        });
-                      }}
-                      className="w-full h-10 rounded-md border border-input cursor-pointer"
-                    />
-                  </div>
-
-                  {selectedSection.gradient.colors.length > 2 && (
                     <div>
                       <label className="block text-xs font-medium mb-2">
-                        Color 3
+                        Color 1
                       </label>
                       <input
                         type="color"
-                        value={selectedSection.gradient.colors[2]}
+                        value={selectedSection.gradient.colors[0]}
                         onChange={(e) => {
                           const newColors = [
                             ...selectedSection.gradient!.colors,
                           ];
-                          newColors[2] = e.target.value;
+                          newColors[0] = e.target.value;
                           updateSection(selectedSection.id, {
                             gradient: {
                               ...selectedSection.gradient!,
@@ -491,74 +451,121 @@ export function MaterialEditor() {
                         className="w-full h-10 rounded-md border border-input cursor-pointer"
                       />
                     </div>
-                  )}
 
-                  <div className="flex gap-2">
-                    {selectedSection.gradient.colors.length < 4 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
+                    <div>
+                      <label className="block text-xs font-medium mb-2">
+                        Color 2
+                      </label>
+                      <input
+                        type="color"
+                        value={selectedSection.gradient.colors[1]}
+                        onChange={(e) => {
                           const newColors = [
                             ...selectedSection.gradient!.colors,
-                            "#ffffff",
                           ];
-                          const newStops = [
-                            ...(selectedSection.gradient!.stops || []),
-                          ];
-                          newStops.push(1);
+                          newColors[1] = e.target.value;
                           updateSection(selectedSection.id, {
                             gradient: {
                               ...selectedSection.gradient!,
                               colors: newColors,
-                              stops: newStops,
                             },
                           });
                         }}
-                        className="flex-1"
-                      >
-                        Add Color
-                      </Button>
-                    )}
-                    {selectedSection.gradient.colors.length > 2 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const newColors =
-                            selectedSection.gradient!.colors.slice(0, -1);
-                          const newStops =
-                            selectedSection.gradient!.stops?.slice(0, -1);
-                          updateSection(selectedSection.id, {
-                            gradient: {
-                              ...selectedSection.gradient!,
-                              colors: newColors,
-                              stops: newStops,
-                            },
-                          });
-                        }}
-                        className="flex-1"
-                      >
-                        Remove Color
-                      </Button>
-                    )}
-                  </div>
+                        className="w-full h-10 rounded-md border border-input cursor-pointer"
+                      />
+                    </div>
 
-                  <div className="p-3 rounded-md border border-border/50 bg-secondary/20">
-                    <p className="text-xs font-medium mb-2">Preview</p>
-                    <div
-                      className="w-full h-16 rounded-md"
-                      style={{
-                        background:
-                          selectedSection.gradient.type === "linear"
-                            ? `linear-gradient(${selectedSection.gradient.angle || 90}deg, ${selectedSection.gradient.colors.join(", ")})`
-                            : `radial-gradient(circle, ${selectedSection.gradient.colors.join(", ")})`,
-                      }}
-                    />
+                    {selectedSection.gradient.colors.length > 2 && (
+                      <div>
+                        <label className="block text-xs font-medium mb-2">
+                          Color 3
+                        </label>
+                        <input
+                          type="color"
+                          value={selectedSection.gradient.colors[2]}
+                          onChange={(e) => {
+                            const newColors = [
+                              ...selectedSection.gradient!.colors,
+                            ];
+                            newColors[2] = e.target.value;
+                            updateSection(selectedSection.id, {
+                              gradient: {
+                                ...selectedSection.gradient!,
+                                colors: newColors,
+                              },
+                            });
+                          }}
+                          className="w-full h-10 rounded-md border border-input cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      {selectedSection.gradient.colors.length < 4 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const newColors = [
+                              ...selectedSection.gradient!.colors,
+                              "#ffffff",
+                            ];
+                            const newStops = [
+                              ...(selectedSection.gradient!.stops || []),
+                            ];
+                            newStops.push(1);
+                            updateSection(selectedSection.id, {
+                              gradient: {
+                                ...selectedSection.gradient!,
+                                colors: newColors,
+                                stops: newStops,
+                              },
+                            });
+                          }}
+                          className="flex-1"
+                        >
+                          Add Color
+                        </Button>
+                      )}
+                      {selectedSection.gradient.colors.length > 2 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const newColors =
+                              selectedSection.gradient!.colors.slice(0, -1);
+                            const newStops =
+                              selectedSection.gradient!.stops?.slice(0, -1);
+                            updateSection(selectedSection.id, {
+                              gradient: {
+                                ...selectedSection.gradient!,
+                                colors: newColors,
+                                stops: newStops,
+                              },
+                            });
+                          }}
+                          className="flex-1"
+                        >
+                          Remove Color
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="p-3 rounded-md border border-border/50 bg-secondary/20">
+                      <p className="text-xs font-medium mb-2">Preview</p>
+                      <div
+                        className="w-full h-16 rounded-md"
+                        style={{
+                          background:
+                            selectedSection.gradient.type === "linear"
+                              ? `linear-gradient(${selectedSection.gradient.angle || 90}deg, ${selectedSection.gradient.colors.join(", ")})`
+                              : `radial-gradient(circle, ${selectedSection.gradient.colors.join(", ")})`,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
             )}
           </div>
         </div>
