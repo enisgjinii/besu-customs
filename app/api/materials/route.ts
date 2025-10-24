@@ -24,15 +24,29 @@ async function extractFromGLB(
     const buffer = fs.readFileSync(modelPath);
     const text = buffer.toString("utf8");
 
-    // Extract materials array from JSON
-    const materialsMatch = text.match(/"materials"\s*:\s*\[([^\]]*)\]/);
+    // Extract materials array from JSON by properly handling nested brackets
     const materials: string[] = [];
+    const startIdx = text.indexOf('"materials":[');
+    if (startIdx !== -1) {
+      // Find the end of the materials array by counting brackets
+      let bracketCount = 0;
+      let endIdx = startIdx;
+      for (let i = startIdx; i < text.length; i++) {
+        if (text[i] === '[') bracketCount++;
+        else if (text[i] === ']') {
+          bracketCount--;
+          if (bracketCount === 0) {
+            endIdx = i;
+            break;
+          }
+        }
+      }
+      const materialsSection = text.substring(startIdx + 13, endIdx); // Skip '"materials":['
 
-    if (materialsMatch) {
-      const materialsText = materialsMatch[1];
+      // Extract material names from the materials section
       const materialRegex = /"name"\s*:\s*"([^"]+)"/g;
       let match;
-      while ((match = materialRegex.exec(materialsText)) !== null) {
+      while ((match = materialRegex.exec(materialsSection)) !== null) {
         materials.push(match[1]);
       }
     }
