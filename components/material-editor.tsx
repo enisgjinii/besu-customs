@@ -304,7 +304,7 @@ export function MaterialEditor() {
             </div>
 
             {/* Trim Design Options */}
-            {selectedSection.category === "Trim Options" && (
+            {selectedSection.category === "Trim Options DEMO" && (
               <div className="border-t border-border/50 pt-4">
                 <div className="mb-4">
                   <label className="block text-xs font-medium mb-3">

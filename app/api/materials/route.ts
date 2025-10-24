@@ -72,15 +72,15 @@ export async function GET(request: Request) {
     // Basketball Jersey Top And Long Shorts renaming
     if (modelParam.includes("Basketball Jersey Top And Long Shorts.glb")) {
       // FABRIC materials are actually the jersey parts
-      if (originalName === "FABRIC_1_2842")
-        return "Jersey Sleeve & Collar Trim Color";
-      if (originalName === "FABRIC_1_2845") return "Back of Jersey Color";
-      if (originalName === "FABRIC_1_2848") return "Front of Jersey Color";
-      if (originalName === "FABRIC_1_66694") return "Jersey Side Panel Color";
+      if (originalName === "FABRIC_1_2842") return "Shorts Waist Trim Color";
+      if (originalName === "FABRIC_1_2845") return "Back of Shorts Color";
+      if (originalName === "FABRIC_1_2848") return "Front of Shorts Color";
+      if (originalName === "FABRIC_1_66694") return null;
       // Ble and Body materials are actually the shorts parts
-      if (originalName === "Ble_66685") return "Shorts Waist Trim Color";
-      if (originalName === "Body_B_66682") return "Back of Shorts Color";
-      if (originalName === "Body_F_66679") return "Front of Shorts Color";
+      if (originalName === "Ble_66685")
+        return "Jersey Sleeve & Collar Trim Color";
+      if (originalName === "Body_B_66682") return "Back of Jersey Color";
+      if (originalName === "Body_F_66679") return "Front of Jersey Color";
       // Remove buttons - they don't exist on basketball jerseys
       if (originalName === "Default_Button_66696") return null;
       if (originalName === "Default_Button_66697") return null;
@@ -550,7 +550,13 @@ export async function GET(request: Request) {
     if (modelParam.includes("Flag football top with hoodie.glb")) {
       if (originalName.includes("FABRIC") && !originalName.includes("Zipper"))
         return "Flag Football Jersey & Shorts Colors";
-      if (originalName.includes("Zipper") || originalName.includes("X "))
+      if (originalName === "Material.001")
+        return "Flag Football Jersey & Shorts Colors";
+      if (
+        originalName.includes("Zipper") ||
+        originalName.includes("X ") ||
+        originalName.includes("Trim")
+      )
         return "Flag Football Hoodie & Zipper Colors";
       return "Other";
     }
@@ -599,15 +605,14 @@ export async function GET(request: Request) {
     if (modelParam.includes("Basketball Jersey Top And Long Shorts.glb")) {
       const reordered = [...sections];
 
-      // Define the desired order: Jersey sections first (Front, Back, Trim, Side), then Shorts sections (Front, Back, Waist)
+      // Define the desired order: Jersey sections first (Front, Back, Trim), then Shorts sections (Front, Back, Waist)
       const desiredOrder = [
-        "FABRIC_1_2848", // Front of Jersey Color
-        "FABRIC_1_2845", // Back of Jersey Color
-        "FABRIC_1_2842", // Jersey Sleeve & Collar Trim Color
-        "FABRIC_1_66694", // Jersey Side Panel Color
-        "Body_F_66679", // Front of Shorts Color
-        "Body_B_66682", // Back of Shorts Color
-        "Ble_66685", // Shorts Waist Trim Color
+        "Body_F_66679", // Front of Jersey Color
+        "Body_B_66682", // Back of Jersey Color
+        "Ble_66685", // Jersey Sleeve & Collar Trim Color
+        "FABRIC_1_2848", // Front of Shorts Color
+        "FABRIC_1_2845", // Back of Shorts Color
+        "FABRIC_1_2842", // Shorts Waist Trim Color
       ];
 
       const orderedSections: MaterialSection[] = [];
@@ -1240,7 +1245,10 @@ export async function GET(request: Request) {
       metalness: 0.0,
       wireframe: false,
       customTexture: null,
-    }));
+    }))
+    .filter((section) => {
+      return section.category !== "Other"; // Filter out "Other" category sections
+    });
 
   // Handle combined sections for Basketball shooting shirt with hoodie
   if (
@@ -1278,45 +1286,26 @@ export async function GET(request: Request) {
   // Reorder sections if needed
   sections = reorderSectionsForModel(sections);
 
-  // Add trim line options for Baseball Jersey
-  if (modelParam.includes("Baseball-Jersey.glb")) {
-    const trimSections: MaterialSection[] = [
-      {
-        id: "trim_front_lines",
-        name: "Front Trim Lines",
-        originalName: "Front Trim Lines",
-        category: "Trim Options",
-        color: "#ffffff",
-        roughness: 0.3,
-        metalness: 0.0,
-        wireframe: false,
-        customTexture: null,
-        trimDesign: undefined,
-      },
-      {
-        id: "trim_sleeve_lines",
-        name: "Sleeve Trim Lines",
-        originalName: "Sleeve Trim Lines",
-        category: "Trim Options",
-        color: "#ffffff",
-        roughness: 0.3,
-        metalness: 0.0,
-        wireframe: false,
-        customTexture: null,
-        trimDesign: undefined,
-      },
-    ];
-    sections.push(...trimSections);
-  }
-
   // Add trim line options for Basketball Jersey and Shorts
   if (modelParam.includes("Basketball Jersey and Shorts.glb")) {
     const trimSections: MaterialSection[] = [
       {
-        id: "trim_jersey_side_lines",
-        name: "Jersey Side Trim Lines",
-        originalName: "Jersey Side Trim Lines",
-        category: "Trim Options",
+        id: "trim_jersey_lines",
+        name: "Jersey Trim",
+        originalName: "Jersey Trim",
+        category: "Trim Options DEMO",
+        color: "#ffffff",
+        roughness: 0.3,
+        metalness: 0.0,
+        wireframe: false,
+        customTexture: null,
+        trimDesign: undefined,
+      },
+      {
+        id: "trim_shorts_lines",
+        name: "Pants Trim",
+        originalName: "Pants Trim",
+        category: "Trim Options DEMO",
         color: "#ffffff",
         roughness: 0.3,
         metalness: 0.0,

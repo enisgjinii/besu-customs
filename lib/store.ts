@@ -32,7 +32,7 @@ export interface MaterialSection {
     | "Panels"
     | "Piping/Trim"
     | "Other"
-    | "Trim Options"
+    | "Trim Options DEMO"
     | "Long Sleeve Shooting Shirt"
     | "Basketball Shooting Shirt with Hoodie"
     | "Basketball Shooting Shirt Short Sleeve"
@@ -308,7 +308,7 @@ function generateAllProducts(): Product[] {
     },
     {
       id: "long-pants",
-      title: "Long Pants",
+      title: "Long Shorts",
       modelUrl: "/models/long pants.glb",
       category: "Shorts",
     },

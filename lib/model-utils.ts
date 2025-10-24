@@ -634,14 +634,20 @@ export function applyBasketballJerseyNaming(
     modelId.toLowerCase().includes("duffle") ||
     modelId.toLowerCase().includes("duffel")
   ) {
-    console.log("ℹ️ Duffle Bag detected — applying Duffle Bag-specific mappings");
+    console.log(
+      "ℹ️ Duffle Bag detected — applying Duffle Bag-specific mappings",
+    );
 
     // Find and rename the main fabric material
     updatedSections.forEach((s) => {
       const on = (s.originalName || "").toLowerCase();
 
       // Check if this is the main fabric material (FABRIC 2_612766 or similar fabric materials)
-      if (on.includes("fabric") || on.startsWith("fabric") || on.includes("material")) {
+      if (
+        on.includes("fabric") ||
+        on.startsWith("fabric") ||
+        on.includes("material")
+      ) {
         s.name = "Duffle Bag Color";
         s.category = "Bags";
       }
@@ -1140,6 +1146,25 @@ export function applyMaterialUpdates(
                 material.map = texture;
                 material.needsUpdate = true;
               });
+            } else if (section.trimDesign && section.trimDesign !== "none") {
+              // Apply trim design texture
+              const trimTexture = createTrimDesignTexture(
+                section.trimDesign,
+                section.color,
+                "#ffffff", // Use white for trim lines by default
+              );
+              if (trimTexture) {
+                material.map = trimTexture;
+                material.needsUpdate = true;
+              } else {
+                // Fallback to solid color if trim texture creation fails
+                if (material.map) {
+                  material.map.dispose();
+                  material.map = null;
+                }
+                material.color.set(section.color);
+                material.needsUpdate = true;
+              }
             } else if (section.gradient?.enabled) {
               // Apply gradient texture
               const gradientTexture = createGradientTexture(section.gradient);
@@ -1149,7 +1174,7 @@ export function applyMaterialUpdates(
                 material.needsUpdate = true;
               }
             } else {
-              // Use base color if no texture or gradient
+              // Use base color if no texture, gradient, or trim design
               if (material.map) {
                 material.map.dispose();
                 material.map = null;
@@ -1191,4 +1216,109 @@ export function getMeshByMaterialId(
   });
 
   return foundMesh;
+}
+
+export function createTrimDesignTexture(
+  trimDesign: string,
+  baseColor: string,
+  trimColor: string = "#ffffff",
+): THREE.Texture | null {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  canvas.width = 512;
+  canvas.height = 512;
+
+  // Fill with base color
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Apply trim design
+  ctx.strokeStyle = trimColor;
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  switch (trimDesign) {
+    case "single-line":
+      // Single horizontal line in the middle
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+      break;
+
+    case "double-line":
+      // Two horizontal lines
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 3);
+      ctx.lineTo(canvas.width, canvas.height / 3);
+      ctx.moveTo(0, (canvas.height * 2) / 3);
+      ctx.lineTo(canvas.width, (canvas.height * 2) / 3);
+      ctx.stroke();
+      break;
+
+    case "triple-line":
+      // Three horizontal lines
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 4);
+      ctx.lineTo(canvas.width, canvas.height / 4);
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.moveTo(0, (canvas.height * 3) / 4);
+      ctx.lineTo(canvas.width, (canvas.height * 3) / 4);
+      ctx.stroke();
+      break;
+
+    case "dashed-line":
+      // Dashed horizontal line
+      ctx.setLineDash([20, 10]);
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+      break;
+
+    case "dotted-line":
+      // Dotted horizontal line
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+      break;
+
+    case "zigzag":
+      // Zigzag pattern
+      ctx.beginPath();
+      let x = 0;
+      let direction = 1;
+      while (x < canvas.width) {
+        ctx.lineTo(x, canvas.height / 2 + direction * 30);
+        x += 30;
+        direction *= -1;
+      }
+      ctx.stroke();
+      break;
+
+    case "wave":
+      // Wave pattern
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      for (let x = 0; x <= canvas.width; x += 10) {
+        const y = canvas.height / 2 + Math.sin(x * 0.1) * 30;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      break;
+
+    default:
+      return null;
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
 }
