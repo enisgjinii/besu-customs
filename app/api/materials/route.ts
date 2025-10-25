@@ -402,35 +402,34 @@ export async function GET(request: Request) {
 
     // Flag Football Top with Hoodie renaming
     if (modelParam.includes("Flag football top with hoodie.glb")) {
-      if (originalName === "FABRIC 1_10070542")
-        return "Football Jersey Main Color";
-      if (originalName === "Zipper 4_TapeFabric_10234985")
-        return "Zipper Outline Color";
-      if (originalName === "Zipper 4_Teeth_10235089")
+      if (originalName === "FABRIC_1_10070542")
+        return "Jersey Main Color";
+      if (originalName === "Zipper_4_TapeFabric_10234985")
+        return "Zipper Tape Color";
+      if (originalName === "Zipper_4_Teeth_10235089")
         return "Zipper Teeth Color";
-      if (originalName === "X 1_10070714")
-        return "Neck Collar, Top of Hoodie, and Side of Jersey Stitching Color";
-      if (originalName === "X 2_10070836")
-        return "Hoodie Face Area Stitching Color";
-      if (originalName === "Zipper 4_Slider_10235018")
+      if (originalName === "Zipper_4_Slider_10235018")
         return "Zipper Slider Color";
-      if (originalName === "Zipper 4_Puller_10235037")
+      if (originalName === "Zipper_4_Puller_10235037")
         return "Zipper Puller Color";
-      if (originalName === "Zipper 4_TopStopper_10235055")
-        return "Zipper Top Stopper Color Left Side";
-      if (originalName === "Zipper 4_TopStopper_10235057")
-        return "Zipper Top Stopper Color Right Side";
-      if (originalName === "Zipper 4_BottomStopper_10235075")
-        return "Zipper Bottom Stopper Color Left Side";
-      if (originalName === "Zipper 4_BottomStopper_10235077")
-        return "Zipper Bottom Stopper Color Right Side";
+      if (originalName === "Zipper_4_TopStopper_10235055")
+        return "Zipper Top Stoppers Color";
+      if (originalName === "Zipper_4_TopStopper_10235057")
+        return "Zipper Top Stoppers Color";
+      if (originalName === "Zipper_4_BottomStopper_10235075")
+        return "Zipper Bottom Stoppers Color";
+      if (originalName === "Zipper_4_BottomStopper_10235077")
+        return "Zipper Bottom Stoppers Color";
       if (originalName === "FABRIC_1_2587") return "Shorts Waist Color";
       if (originalName === "FABRIC_1_2590") return "Shorts Back Color";
-      if (originalName === "Material.001") return "Shorts Front Color";
-      if (originalName === "Trim_11533042_10233938") return "Trim Color";
-      // Remove cord ends as they don't change anything
-      if (originalName === "Cord end_01_10233876") return null;
-      if (originalName === "Cord end_01_10233907") return null;
+      if (originalName === "Material_001") return "Shorts Front Color";
+      if (originalName === "X_1_10070714")
+        return "Jersey & Hoodie Stitching Color";
+      if (originalName === "X_2_10070836")
+        return "Hoodie Face Stitching Color";
+      // Remove cord ends as they don't change anything visually
+      if (originalName === "Cord_end_01_10233876") return null;
+      if (originalName === "Cord_end_01_10233907") return null;
     }
 
     // Backpack renaming
@@ -622,15 +621,16 @@ export async function GET(request: Request) {
     // Flag Football Top with Hoodie categories
     if (modelParam.includes("Flag football top with hoodie.glb")) {
       if (originalName.includes("FABRIC") && !originalName.includes("Zipper"))
-        return "Flag Football Jersey & Shorts Colors";
-      if (originalName === "Material.001")
-        return "Flag Football Jersey & Shorts Colors";
+        return "Jersey & Shorts Colors";
+      if (originalName === "Material_001")
+        return "Jersey & Shorts Colors";
       if (
         originalName.includes("Zipper") ||
-        originalName.includes("X ") ||
-        originalName.includes("Trim")
+        originalName.includes("X_") ||
+        originalName.includes("Trim") ||
+        originalName.includes("Cord_end")
       )
-        return "Flag Football Hoodie & Zipper Colors";
+        return "Hoodie & Zipper Colors";
       return "Other";
     }
 
@@ -715,8 +715,8 @@ export async function GET(request: Request) {
 
       // Define the desired order: Jersey Main, Shorts Front, Shorts Back, Shorts Waist, then others
       const desiredOrder = [
-        "FABRIC 1_10070542", // Football Jersey Main Color
-        "Material.001", // Shorts Front Color (moved to top)
+        "FABRIC_1_10070542", // Jersey Main Color
+        "Material_001", // Shorts Front Color
         "FABRIC_1_2590", // Shorts Back Color
         "FABRIC_1_2587", // Shorts Waist Color
       ];
