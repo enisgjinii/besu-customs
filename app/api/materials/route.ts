@@ -66,6 +66,15 @@ async function extractFromGLB(
   }
 }
 
+function normalizeNames(names: string[]): string[] {
+  return names
+    .map((n) => (n || "").trim())
+    .filter(Boolean)
+    .map((n) => n.replace(/\s+/g, " "))
+    .map((n) => n.replace(/[\u0000-\u001F]/g, ""))
+    .map((n) => n.replace(/^[#\-\._]+/, ""));
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const modelParam = url.searchParams.get("model");
@@ -91,14 +100,18 @@ export async function GET(request: Request) {
   // Extract materials and meshes directly from the GLB file
   const { materials, meshes } = await extractFromGLB(glbPath);
 
+  // Normalize the extracted names
+  const normalizedMaterials = normalizeNames(materials);
+  const normalizedMeshes = normalizeNames(meshes);
+
   // For volleyball models, we want individual nodes for coloring
   let lines: string[];
   if (modelParam.includes("Volleyball short sleeve tops.glb")) {
-    lines = meshes; // Use meshes for short sleeve
+    lines = normalizedMeshes; // Use meshes for short sleeve
   } else if (modelParam.includes("Volleyball long sleeve tops.glb")) {
-    lines = [...materials, ...meshes]; // Use both materials and meshes for long sleeve
+    lines = [...normalizedMaterials, ...normalizedMeshes]; // Use both materials and meshes for long sleeve
   } else {
-    lines = materials; // For other models, just use materials
+    lines = normalizedMaterials; // For other models, just use materials
   }
 
   // Function to rename sections for specific models
@@ -337,14 +350,13 @@ export async function GET(request: Request) {
     // Volleyball Short Sleeve Tops mesh renaming
     if (modelParam.includes("Volleyball short sleeve tops.glb")) {
       if (originalName === "Ribbing") return "Neck Collar";
-      if (originalName === "Body_Back_1") return "Left Back Sleeve";
-      if (originalName === "Body_Back_3") return "Right Back Sleeve";
-      if (originalName === "Body_Front_2") return "Right Sleeve Front";
-      if (originalName === "Body_Front_3") return "Left Sleeve Front";
+      // Combine all sleeve options into single "Arm Sleeves"
+      if (originalName === "Body_Back_1" || originalName === "Body_Back_3" ||
+          originalName === "Body_Front_2" || originalName === "Body_Front_3") return "Arm Sleeves";
+      // Combine bottom trim options into single "Bottom Trim"
+      if (originalName === "Body_Front_5" || originalName === "Body_Back_5") return "Bottom Trim";
       if (originalName === "Body_Front_4") return "Front Color";
-      if (originalName === "Body_Front_5") return "Bottom Trim Color Front";
       if (originalName === "Body_Back_4") return "Back Color";
-      if (originalName === "Body_Back_5") return "Bottom Trim Color Back";
     }
 
     // Volleyball Long Sleeve Tops renaming (materials and meshes)
@@ -433,9 +445,9 @@ export async function GET(request: Request) {
       if (originalName === "M_00018_156636") return "Left Slider Color";
       if (originalName === "M_00018_156667") return "Right Slider Color";
       if (originalName === "Zipper_Teeth_01_79381") return "Zipper Teeth";
-      if (originalName === "79499") return "Strap Stitching Color";
-      if (originalName === "79612") return "Total Backpack Stitching Color";
-      if (originalName === "79725") return "Back of Backpack Stitching Color";
+      if (originalName === "79499") return "Strap and Hook Stitching";
+      if (originalName === "79612") return "Front and Side Stitching";
+      if (originalName === "79725") return "Back Stitching";
       // Remove materials that don't change anything
       if (originalName === "Material5104_78706") return null; // Unknown/doesn't edit anything
       if (originalName === "Slider_01_156698") return null; // Doesn't change
@@ -1275,6 +1287,8 @@ export async function GET(request: Request) {
         category = "Back";
       } else if (displayName.toLowerCase().includes("sleeve")) {
         category = "Fronts"; // Sleeves go in Fronts category
+      } else if (displayName.toLowerCase().includes("trim")) {
+        category = "Piping/Trim"; // Trim options go in Piping/Trim category
       }
 
       return {
@@ -1332,6 +1346,35 @@ export async function GET(request: Request) {
     // Create final sections, keeping only one instance of each combined section
     sections = Array.from(groupedSections.entries()).map(
       ([name, sectionGroup]) => {
+        // For combined sections, use the first one but store all original names for material mapping
+        const primarySection = sectionGroup[0];
+        if (sectionGroup.length > 1) {
+          // This is a combined section - we'll handle the material mapping in the model loader
+          primarySection.combinedOriginalNames = sectionGroup.map(
+            (s) => s.originalName,
+          );
+        }
+        return primarySection;
+      },
+    );
+  }
+
+  // Handle combined sections for Volleyball Short Sleeve Tops (combine sleeve meshes)
+  if (modelParam.includes("Volleyball short sleeve tops.glb")) {
+    // Group sections with the same name (combined sleeves)
+    const groupedSections = new Map<string, MaterialSection[]>();
+
+    sections.forEach((section) => {
+      const key = section.name;
+      if (!groupedSections.has(key)) {
+        groupedSections.set(key, []);
+      }
+      groupedSections.get(key)!.push(section);
+    });
+
+    // Create final sections, keeping only one instance of each combined section
+    sections = Array.from(groupedSections.entries()).map(
+      ([_, sectionGroup]) => {
         // For combined sections, use the first one but store all original names for material mapping
         const primarySection = sectionGroup[0];
         if (sectionGroup.length > 1) {

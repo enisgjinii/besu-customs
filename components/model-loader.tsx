@@ -123,6 +123,37 @@ function Model({
 
           mappedSections = (json.sections as MaterialSection[]).map(
             (section) => {
+              // Handle combined sections (like Arm Sleeves) - collect material IDs
+              if (
+                section.combinedOriginalNames &&
+                section.combinedOriginalNames.length > 1
+              ) {
+                const materialIds: string[] = [];
+
+                // Create unique materials for each mesh in the combined section
+                section.combinedOriginalNames.forEach((originalName) => {
+                  const mesh = meshNameMap.get(originalName);
+                  if (mesh) {
+                    // Create a unique material for this mesh by cloning its current material
+                    const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
+                    const newMaterial = originalMaterial.clone();
+                    newMaterial.name = `${originalName}_unique`;
+
+                    // Replace the mesh's material with the new unique material
+                    mesh.material = newMaterial;
+                    materialIds.push(newMaterial.uuid);
+                  }
+                });
+
+                if (materialIds.length > 0) {
+                  return {
+                    ...section,
+                    id: materialIds[0], // Use first material as primary ID
+                    combinedMaterialIds: materialIds, // Store all material IDs
+                  };
+                }
+              }
+
               // First, try to find a mesh with this name
               const mesh = meshNameMap.get(section.originalName);
               if (mesh) {
