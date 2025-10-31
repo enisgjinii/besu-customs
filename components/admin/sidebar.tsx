@@ -16,6 +16,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  Image as ImageIcon,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -47,6 +48,11 @@ const sidebarItems = [
     title: "Orders",
     href: "/admin/orders",
     icon: FileText,
+  },
+  {
+    title: "AI Generator",
+    href: "/admin/ai-generator",
+    icon: ImageIcon,
   },
   {
     title: "Security",
