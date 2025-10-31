@@ -9,10 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, Search, Filter, Eye, EyeOff, Star, Trash2, Edit, Plus, RefreshCw } from "lucide-react";
+import { MoreHorizontal, Search, Filter, Eye, EyeOff, Star, StarOff, Trash2, Edit, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface ModelsTableProps {
@@ -39,18 +39,25 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
       setIsToggling(prev => ({ ...prev, [id]: false }));
     }
   };
-    }
-  };
+
+  // alias used by the UI
+  const handleToggleActive = handleToggle;
 
   const handleToggleFeatured = async (id: string, currentStatus: boolean) => {
     try {
-      await ModelsService.toggleFeaturedStatus(id, !currentStatus);
-      setModels((prev) =>
-        prev.map((model) =>
-          model.id === id ? { ...model, is_featured: !currentStatus } : model,
-        ),
-      );
-      toast.success(`Model ${!currentStatus ? "featured" : "unfeatured"}`);
+      // Attempt to toggle featured status via API; fallback to toast on failure.
+      const res = await fetch(`/api/models/${encodeURIComponent(id)}/featured`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featured: !currentStatus }),
+      });
+      if (res.ok) {
+        toast.success(`Model ${!currentStatus ? "featured" : "unfeatured"}`);
+        // Simple refresh to reflect server state
+        window.location.reload();
+      } else {
+        toast.error("Failed to update featured status");
+      }
     } catch (error) {
       toast.error("Failed to update featured status");
       console.error(error);
@@ -61,9 +68,13 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
     if (!confirm("Are you sure you want to delete this model?")) return;
 
     try {
-      await ModelsService.deleteModel(id);
-      setModels((prev) => prev.filter((model) => model.id !== id));
-      toast.success("Model deleted successfully");
+      const res = await fetch(`/api/models/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Model deleted successfully");
+        window.location.reload();
+      } else {
+        toast.error("Failed to delete model");
+      }
     } catch (error) {
       toast.error("Failed to delete model");
       console.error(error);
@@ -72,7 +83,6 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
 
   const handleSyncFromJson = async () => {
     try {
-      setLoading(true);
       const response = await fetch("/api/models/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,7 +91,8 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
 
       if (response.ok) {
         toast.success("Models imported from models.json successfully");
-        await loadModels(); // Refresh the table
+        // Refresh the page to reload models after import
+        window.location.reload();
       } else {
         toast.error("Failed to import models");
       }
@@ -89,7 +100,7 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
       toast.error("Failed to sync models");
       console.error(error);
     } finally {
-      setLoading(false);
+      // noop
     }
   };
 
@@ -164,12 +175,7 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
               size="sm"
               disabled={Object.values(isToggling).some(Boolean)}
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${
-                Object.values(isToggling).some(Boolean) ? 'animate-spin' : ''
-              }`} />
-                  Object.values(isToggling).some(Boolean) ? "animate-spin" : ""
-                }`}
-              />
+              <RefreshCw className={`mr-2 h-4 w-4 ${Object.values(isToggling).some(Boolean) ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button size="sm">
@@ -178,10 +184,14 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
             </Button>
           </div>
         </div>
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+
+        <div className="flex items-center gap-2 mt-3">
+          <Input
+            placeholder="Search models..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
 
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[180px]">

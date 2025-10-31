@@ -6,6 +6,7 @@ import { OnboardingWelcome } from "@/components/onboarding-welcome";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { OnboardingKeyboardHandler } from "@/components/onboarding-keyboard-handler";
 import { AuthProvider } from "@/lib/auth-context";
+import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -35,7 +36,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <QueryProvider>
+              {children}
+            </QueryProvider>
             <Toaster />
             <OnboardingWelcome />
             <OnboardingTour />
