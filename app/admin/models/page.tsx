@@ -1,47 +1,56 @@
 "use client";
 
-import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { ModelsTable } from "@/components/admin/models-table";
 import { ModelsStats } from "@/components/admin/models-stats";
 import { ModelsSyncStatus } from "@/components/admin/models-sync-status";
 import { ConfiguratorPreview } from "@/components/admin/configurator-preview";
-import { DatabaseDebug } from "@/components/admin/database-debug";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
-import { ModelsService, Model } from "@/lib/models-service";
+import { useModels } from "@/hooks/use-models";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function ModelsPage() {
-  const [models, setModels] = useState<Model[]>([]);
+  const { 
+    models, 
+    activeModels, 
+    stats, 
+    isLoading, 
+    toggleModelStatus 
+  } = useModels();
 
-  useEffect(() => {
-    loadModels();
-  }, []);
-
-  const loadModels = async () => {
+  const handleModelToggle = async (modelId: string, isActive: boolean) => {
     try {
-      const data = await ModelsService.getAllModels();
-      setModels(data);
+      await toggleModelStatus({ id: modelId, isActive });
+      
+      // Trigger configurator update
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("modelsUpdated"));
+      }
     } catch (error) {
-      console.error("Failed to load models:", error);
+      console.error("Failed to toggle model status:", error);
     }
   };
 
-  const handleModelToggle = (modelId: string, isActive: boolean) => {
-    // Update local state for immediate UI feedback (database update is handled by ModelsTable)
-    setModels((prev) =>
-      prev.map((model) =>
-        model.id === modelId ? { ...model, is_active: isActive } : model,
-      ),
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <Tabs defaultValue="overview" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="manage">Manage Models</TabsTrigger>
+              <TabsTrigger value="preview">Configurator Preview</TabsTrigger>
+              <TabsTrigger value="sync">Sync Status</TabsTrigger>
+            </TabsList>
+            <div className="space-y-4">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </Tabs>
+        </div>
+      </AdminLayout>
     );
-
-    // Trigger configurator update
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("modelsUpdated"));
-    }
-
-    console.log(`Model ${modelId} is now ${isActive ? "active" : "inactive"}`);
-  };
+  }
 
   return (
     <AdminLayout>
@@ -59,15 +68,19 @@ function ModelsPage() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <ModelsStats />
+            <ModelsStats stats={stats} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="manage" className="space-y-4">
-            <ModelsTable onModelToggle={handleModelToggle} />
+            <ModelsTable 
+              models={models} 
+              onModelToggle={handleModelToggle} 
+              isLoading={isLoading} 
+            />
           </TabsContent>
 
           <TabsContent value="preview" className="space-y-4">
-            <ConfiguratorPreview models={models} />
+            <ConfiguratorPreview models={activeModels} />
           </TabsContent>
 
           <TabsContent value="sync" className="space-y-4">
@@ -79,10 +92,4 @@ function ModelsPage() {
   );
 }
 
-export default function Models() {
-  return (
-    <ProtectedRoute>
-      <ModelsPage />
-    </ProtectedRoute>
-  );
-}
+export default ModelsPage;

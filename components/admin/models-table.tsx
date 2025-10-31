@@ -1,126 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ModelsService, Model } from "@/lib/models-service";
-import { supabase } from "@/lib/supabase";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useState } from "react";
+import { Model } from "@/lib/models-service";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  MoreHorizontal,
-  Search,
-  Filter,
-  Eye,
-  EyeOff,
-  Star,
-  StarOff,
-  Trash2,
-  Edit,
-  Plus,
-  RefreshCw,
-  Upload,
-  Download,
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MoreHorizontal, Search, Filter, Eye, EyeOff, Star, Trash2, Edit, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface ModelsTableProps {
-  onModelToggle?: (modelId: string, isActive: boolean) => void;
+  models: Model[];
+  onModelToggle: (modelId: string, isActive: boolean) => Promise<void>;
+  isLoading?: boolean;
 }
 
-export function ModelsTable({ onModelToggle }: ModelsTableProps) {
-  const [models, setModels] = useState<Model[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ModelsTable({ models = [], onModelToggle, isLoading = false }: ModelsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isToggling, setIsToggling] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    loadModels();
-  }, []);
-
-  const loadModels = async () => {
+  const handleToggle = async (id: string, currentStatus: boolean) => {
     try {
-      setLoading(true);
-      const data = await ModelsService.getAllModels();
-      setModels(data);
+      setIsToggling(prev => ({ ...prev, [id]: true }));
+      await onModelToggle(id, !currentStatus);
+      toast.success(`Model ${!currentStatus ? "activated" : "deactivated"}`);
     } catch (error) {
-      toast.error("Failed to load models");
-      console.error(error);
+      console.error("Error toggling model status:", error);
+      toast.error("Failed to update model status");
     } finally {
-      setLoading(false);
+      setIsToggling(prev => ({ ...prev, [id]: false }));
     }
   };
-
-  const handleToggleActive = async (id: string, currentStatus: boolean) => {
-    console.log("Toggle clicked:", {
-      id,
-      currentStatus,
-      newStatus: !currentStatus,
-    });
-
-    // Check authentication status
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    console.log("Current user:", user);
-
-    try {
-      await ModelsService.toggleModelStatus(id, !currentStatus);
-      console.log("Supabase update completed successfully");
-
-      setModels((prev) =>
-        prev.map((model) =>
-          model.id === id ? { ...model, is_active: !currentStatus } : model,
-        ),
-      );
-      onModelToggle?.(id, !currentStatus);
-      toast.success(`Model ${!currentStatus ? "activated" : "deactivated"}`);
-
-      // Verify the update by fetching the model
-      setTimeout(async () => {
-        try {
-          const updatedModels = await ModelsService.getAllModels();
-          const updatedModel = updatedModels.find((m) => m.id === id);
-          console.log("Verification - model after update:", updatedModel);
-        } catch (error) {
-          console.error("Verification failed:", error);
-        }
-      }, 1000);
-    } catch (error) {
-      toast.error("Failed to update model status");
-      console.error("Toggle error:", error);
     }
   };
 
@@ -220,7 +138,7 @@ export function ModelsTable({ onModelToggle }: ModelsTableProps) {
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-64">
@@ -235,44 +153,31 @@ export function ModelsTable({ onModelToggle }: ModelsTableProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>3D Models Management</CardTitle>
+            <CardTitle>3D Models</CardTitle>
             <CardDescription>
-              Manage your 3D models visibility and settings
+              {models.length} {models.length === 1 ? 'model' : 'models'} in total
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={handleSyncFromJson}
-              disabled={loading}
+              size="sm"
+              disabled={Object.values(isToggling).some(Boolean)}
             >
-              <Upload className="mr-2 h-4 w-4" />
-              Import from JSON
-            </Button>
-            <Button variant="outline" onClick={handleUpdateJson}>
-              <Download className="mr-2 h-4 w-4" />
-              Update JSON
-            </Button>
-            <Button onClick={loadModels} disabled={loading}>
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              <RefreshCw className={`mr-2 h-4 w-4 ${
+                Object.values(isToggling).some(Boolean) ? 'animate-spin' : ''
+              }`} />
+                  Object.values(isToggling).some(Boolean) ? "animate-spin" : ""
+                }`}
               />
               Refresh
             </Button>
-            <Button>
+            <Button size="sm">
               <Plus className="mr-2 h-4 w-4" />
               Add Model
             </Button>
           </div>
         </div>
-
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mt-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search models..."
-              value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />

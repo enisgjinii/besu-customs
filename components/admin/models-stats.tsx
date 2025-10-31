@@ -24,27 +24,13 @@ import {
 } from "recharts";
 import { Package, Eye, EyeOff, Star, Layers } from "lucide-react";
 
-export function ModelsStats() {
-  const [stats, setStats] = useState<ModelStats | null>(null);
-  const [loading, setLoading] = useState(true);
+interface ModelsStatsProps {
+  stats?: ModelStats;
+  isLoading: boolean;
+}
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const data = await ModelsService.getModelStats();
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to load model stats:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading || !stats) {
+export function ModelsStats({ stats, isLoading }: ModelsStatsProps) {
+  if (isLoading || !stats) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
