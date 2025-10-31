@@ -15,6 +15,7 @@ import {
   FileImage,
   Film,
   Package2,
+  Map,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -26,11 +27,12 @@ import {
 } from "@/components/ui/select";
 import { MaterialEditor } from "./material-editor";
 
-type TabType = "materials" | "texture" | "export" | null;
+type TabType = "materials" | "uv-map" | "texture" | "export" | null;
 
 export function MobileBottomNav() {
   const [activeTab, setActiveTab] = useState<TabType>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const products = useConfiguratorStore((state) => state.products);
   const selectedProductId = useConfiguratorStore(
@@ -47,6 +49,12 @@ export function MobileBottomNav() {
     (state) => state.cameraControlsRef,
   );
   const glRef = useConfiguratorStore((state) => state.glRef);
+  const completeUVMap = useConfiguratorStore(
+    (state) => (state as unknown as { completeUVMap: string | null }).completeUVMap,
+  );
+  const selectedSectionId = useConfiguratorStore((state) => state.selectedSectionId);
+  const sections = useConfiguratorStore((state) => state.sections);
+  const selectedSection = sections.find(s => s.id === selectedSectionId);
 
   const handleTabClick = (tab: TabType) => {
     if (activeTab === tab) {
@@ -105,7 +113,6 @@ export function MobileBottomNav() {
   };
 
   const handleDownloadUVMap = () => {
-    const completeUVMap = useConfiguratorStore.getState().completeUVMap;
     if (!completeUVMap) {
       alert("UV Map not available yet");
       return;
@@ -119,11 +126,17 @@ export function MobileBottomNav() {
     document.body.removeChild(link);
   };
 
+  const handleStartRecording = () => {
+    // TODO: Implement screen recording
+    setIsRecording(true);
+    setTimeout(() => {
+      setIsRecording(false);
+      alert("Screen recording would start here. This is a placeholder.");
+    }, 1000);
+  };
+
   return (
-    <div
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
-      data-tour="mobile-nav"
-    >
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50" data-tour="mobile-nav">
       {/* Expanded Panel */}
       <div
         className={`bg-card border-t border-border/50 transition-all duration-300 ease-in-out overflow-hidden ${
@@ -136,6 +149,7 @@ export function MobileBottomNav() {
             <h3 className="font-semibold text-sm">
               {activeTab === "materials" && "Materials"}
               {activeTab === "texture" && "Texture"}
+              {activeTab === "uv-map" && "UV Map"}
               {activeTab === "export" && "Export & Controls"}
             </h3>
             <Button
@@ -250,41 +264,29 @@ export function MobileBottomNav() {
                     </Button>
                   </div>
                 </div>
-
-                {/* Export Options */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-medium text-muted-foreground">
-                    Export
-                  </h4>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                    >
-                      <FileImage className="w-4 h-4 mr-2" />
-                      Export Images
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                    >
-                      <Film className="w-4 h-4 mr-2" />
-                      Record Video
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                    >
-                      <Package2 className="w-4 h-4 mr-2" />
-                      Export Model
-                    </Button>
-                  </div>
-                  <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                    Full export options available on desktop
-                  </div>
+                
+                <div className="space-y-2 w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={handleScreenshot}
+                  >
+                    <FileImage className="h-4 w-4" />
+                    Take Screenshot
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={handleStartRecording}
+                    disabled={isRecording}
+                  >
+                    <Film className="h-4 w-4" />
+                    {isRecording ? "Recording..." : "Record Video"}
+                  </Button>
+                </div>
+                
+                <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
+                  Full export options available on desktop
                 </div>
               </div>
             )}
@@ -293,7 +295,7 @@ export function MobileBottomNav() {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="mobile-bottom-nav bg-card/95 backdrop-blur-sm border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg">
+      <div className="bg-card/95 backdrop-blur-sm border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg">
         <button
           onClick={() => handleTabClick("materials")}
           className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${
@@ -316,6 +318,19 @@ export function MobileBottomNav() {
         >
           <Paintbrush className="w-5 h-5" />
           <span className="text-[10px] font-medium">Texture</span>
+        </button>
+
+        <button
+          onClick={() => handleTabClick("uv-map")}
+          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${
+            activeTab === "uv-map"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+          }`}
+          disabled={!completeUVMap}
+        >
+          <Map className="w-5 h-5" />
+          <span className="text-[10px] font-medium">UV Map</span>
         </button>
 
         <button

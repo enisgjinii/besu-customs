@@ -14,7 +14,9 @@ import {
   Undo2,
   Redo2,
   Layers,
+  Map,
 } from "lucide-react";
+import { UVMapViewer } from "./uv-map-viewer";
 
 export function UVEditor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,6 +24,7 @@ export function UVEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [historyStep, setHistoryStep] = useState(-1);
+  const [showUVMap, setShowUVMap] = useState(false);
 
   const selectedSectionId = useConfiguratorStore(
     (state) => state.selectedSectionId,
@@ -215,6 +218,31 @@ export function UVEditor() {
 
   return (
     <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm text-muted-foreground">
+          {selectedSection ? `Editing: ${selectedSection.name}` : 'UV Map Editor'}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowUVMap(true)}
+          className="gap-2"
+        >
+          <Map className="h-4 w-4" />
+          View UV Map
+        </Button>
+      </div>
+      <div className="flex-1 relative">
+        <canvas ref={canvasRef} className="border rounded-md w-full h-full" />
+      </div>
+      
+      {completeUVMap && (
+        <UVMapViewer
+          uvMapUrl={completeUVMap}
+          sectionName={selectedSection?.name}
+          onClose={() => setShowUVMap(false)}
+        />
+      )}
       <div className="p-3 border-b border-border/50 space-y-2">
         <h3 className="font-semibold text-xs truncate">
           {isCompleteView
