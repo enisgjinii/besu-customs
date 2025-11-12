@@ -1137,15 +1137,42 @@ export function applyMaterialUpdates(
           }
 
           if (section) {
-            // Apply custom texture if available
+            // Apply custom texture if available (optimized for real-time updates)
             if (section.customTexture) {
+              console.log(`✅ Applying custom texture to material ${material.uuid} for section ${section.name}`);
+              
+              // Dispose of old texture to prevent memory leaks
+              if (material.map) {
+                material.map.dispose();
+              }
+              
               const loader = new THREE.TextureLoader();
-              loader.load(section.customTexture, (texture) => {
-                texture.colorSpace = THREE.SRGBColorSpace;
-                texture.flipY = false;
-                material.map = texture;
-                material.needsUpdate = true;
-              });
+              loader.load(
+                section.customTexture, 
+                (texture) => {
+                  console.log(`✅ Custom texture loaded successfully for ${section.name}`);
+                  texture.colorSpace = THREE.SRGBColorSpace;
+                  texture.flipY = false;
+                  texture.wrapS = THREE.RepeatWrapping;
+                  texture.wrapT = THREE.RepeatWrapping;
+                  texture.minFilter = THREE.LinearFilter;
+                  texture.magFilter = THREE.LinearFilter;
+                  material.map = texture;
+                  material.color.set("#ffffff"); // Set to white to show texture properly
+                  material.needsUpdate = true;
+                },
+                undefined,
+                (error) => {
+                  console.error("❌ Failed to load custom texture for", section.name, error);
+                  // Fallback to base color on error
+                  if (material.map) {
+                    material.map.dispose();
+                    material.map = null;
+                  }
+                  material.color.set(section.color);
+                  material.needsUpdate = true;
+                }
+              );
             } else if (section.trimDesign && section.trimDesign !== "none") {
               // Apply trim design texture
               const trimTexture = createTrimDesignTexture(

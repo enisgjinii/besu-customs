@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * Extract UV map from a mesh and render it to a canvas
+ * Extract UV map from a mesh and render it to a canvas (optimized)
  */
 export function extractUVMap(
   mesh: THREE.Mesh,
@@ -18,7 +18,10 @@ export function extractUVMap(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { 
+    alpha: true,
+    willReadFrequently: false 
+  });
 
   if (!ctx) return null;
 
@@ -26,12 +29,16 @@ export function extractUVMap(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
-  // Draw UV wireframe
+  // Draw UV wireframe with optimized settings
   ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 0.5;
+  ctx.globalAlpha = 0.3;
 
   const uvAttribute = geometry.attributes.uv;
   const indexAttribute = geometry.index;
+
+  // Batch drawing for better performance
+  ctx.beginPath();
 
   if (indexAttribute) {
     // Indexed geometry
@@ -47,12 +54,10 @@ export function extractUVMap(
       const u3 = uvAttribute.getX(i3) * width;
       const v3 = (1 - uvAttribute.getY(i3)) * height;
 
-      ctx.beginPath();
       ctx.moveTo(u1, v1);
       ctx.lineTo(u2, v2);
       ctx.lineTo(u3, v3);
-      ctx.closePath();
-      ctx.stroke();
+      ctx.lineTo(u1, v1);
     }
   } else {
     // Non-indexed geometry
@@ -64,20 +69,20 @@ export function extractUVMap(
       const u3 = uvAttribute.getX(i + 2) * width;
       const v3 = (1 - uvAttribute.getY(i + 2)) * height;
 
-      ctx.beginPath();
       ctx.moveTo(u1, v1);
       ctx.lineTo(u2, v2);
       ctx.lineTo(u3, v3);
-      ctx.closePath();
-      ctx.stroke();
+      ctx.lineTo(u1, v1);
     }
   }
+
+  ctx.stroke();
 
   return canvas.toDataURL("image/png");
 }
 
 /**
- * Extract UV map from all meshes with a specific material ID
+ * Extract UV map from all meshes with a specific material ID (optimized)
  * This combines UV maps from multiple meshes that share the same material
  */
 export function extractUVMapForMaterial(
@@ -89,7 +94,10 @@ export function extractUVMapForMaterial(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { 
+    alpha: true,
+    willReadFrequently: false 
+  });
 
   if (!ctx) return null;
 
@@ -97,11 +105,15 @@ export function extractUVMapForMaterial(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
-  // Draw UV wireframe
+  // Draw UV wireframe with optimized settings
   ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 0.5;
+  ctx.globalAlpha = 0.3;
 
   let hasUVs = false;
+  
+  // Batch drawing for better performance
+  ctx.beginPath();
 
   // Traverse all meshes in the scene
   scene.traverse((child) => {
@@ -137,12 +149,10 @@ export function extractUVMapForMaterial(
               const u3 = uvAttribute.getX(i3) * width;
               const v3 = (1 - uvAttribute.getY(i3)) * height;
 
-              ctx.beginPath();
               ctx.moveTo(u1, v1);
               ctx.lineTo(u2, v2);
               ctx.lineTo(u3, v3);
-              ctx.closePath();
-              ctx.stroke();
+              ctx.lineTo(u1, v1);
             }
           } else {
             // Non-indexed geometry
@@ -154,12 +164,10 @@ export function extractUVMapForMaterial(
               const u3 = uvAttribute.getX(i + 2) * width;
               const v3 = (1 - uvAttribute.getY(i + 2)) * height;
 
-              ctx.beginPath();
               ctx.moveTo(u1, v1);
               ctx.lineTo(u2, v2);
               ctx.lineTo(u3, v3);
-              ctx.closePath();
-              ctx.stroke();
+              ctx.lineTo(u1, v1);
             }
           }
         }
@@ -172,11 +180,12 @@ export function extractUVMapForMaterial(
     return null;
   }
 
+  ctx.stroke();
   return canvas.toDataURL("image/png");
 }
 
 /**
- * Extract UV map from the entire 3D model (all meshes combined)
+ * Extract UV map from the entire 3D model (all meshes combined, optimized)
  */
 export function extractCompleteUVMap(
   scene: THREE.Group,
@@ -186,7 +195,10 @@ export function extractCompleteUVMap(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { 
+    alpha: true,
+    willReadFrequently: false 
+  });
 
   if (!ctx) return null;
 
@@ -194,20 +206,24 @@ export function extractCompleteUVMap(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
-  // Use different colors for different materials
+  // Use different colors for different materials (lighter colors for better visibility)
   const colors = [
-    "#000000",
-    "#ff0000",
-    "#00ff00",
-    "#0000ff",
-    "#ff00ff",
-    "#00ffff",
-    "#ffff00",
+    "#666666",
+    "#ff6b6b",
+    "#4ecdc4",
+    "#45b7d1",
+    "#f093fb",
+    "#4facfe",
+    "#feca57",
   ];
   let colorIndex = 0;
   const materialColors = new Map<string, string>();
 
   let hasUVs = false;
+  
+  // Optimized rendering settings
+  ctx.lineWidth = 0.5;
+  ctx.globalAlpha = 0.4;
 
   // Traverse all meshes in the scene
   scene.traverse((child) => {
@@ -232,10 +248,12 @@ export function extractCompleteUVMap(
         }
 
         ctx.strokeStyle = materialColors.get(material.uuid)!;
-        ctx.lineWidth = 1;
 
         const uvAttribute = geometry.attributes.uv;
         const indexAttribute = geometry.index;
+
+        // Batch drawing for this material
+        ctx.beginPath();
 
         if (indexAttribute) {
           // Indexed geometry
@@ -251,12 +269,10 @@ export function extractCompleteUVMap(
             const u3 = uvAttribute.getX(i3) * width;
             const v3 = (1 - uvAttribute.getY(i3)) * height;
 
-            ctx.beginPath();
             ctx.moveTo(u1, v1);
             ctx.lineTo(u2, v2);
             ctx.lineTo(u3, v3);
-            ctx.closePath();
-            ctx.stroke();
+            ctx.lineTo(u1, v1);
           }
         } else {
           // Non-indexed geometry
@@ -268,14 +284,14 @@ export function extractCompleteUVMap(
             const u3 = uvAttribute.getX(i + 2) * width;
             const v3 = (1 - uvAttribute.getY(i + 2)) * height;
 
-            ctx.beginPath();
             ctx.moveTo(u1, v1);
             ctx.lineTo(u2, v2);
             ctx.lineTo(u3, v3);
-            ctx.closePath();
-            ctx.stroke();
+            ctx.lineTo(u1, v1);
           }
         }
+
+        ctx.stroke();
       });
     }
   });
