@@ -534,7 +534,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-card w-full">
+    <div className="flex flex-col bg-card w-full rounded-2xl shadow-2xl border border-border/20 backdrop-blur-sm max-h-[calc(100vh-2rem)] overflow-hidden">
       {/* Header with Model Selector */}
       <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -628,7 +628,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {activeTab === "materials" && (
           <div className="p-4">
             <MaterialEditor />

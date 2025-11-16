@@ -4,13 +4,11 @@ import { Scene } from "@/components/scene";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import {
-  PanelLeft,
   Camera,
   Download,
   Video,
   Square,
   Save,
-  Share2,
   Upload,
   Settings,
   List,
@@ -21,13 +19,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function Home() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(420);
-  const [isResizing, setIsResizing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-  const sidebarRef = useRef<HTMLDivElement>(null);
   const [showUploadPanel, setShowUploadPanel] = useState(false);
 
   const currentModelUrl = useConfiguratorStore(
@@ -36,44 +30,16 @@ export default function Home() {
   const exportPreset = useConfiguratorStore((state) => state.exportPreset);
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
 
-  // For testing purposes - add a button to trigger the tour
-
-  // Handle mouse events for resizing
-  const startResizing = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
-
-  const stopResizing = useCallback(() => {
-    setIsResizing(false);
-  }, []);
-
-  const resize = useCallback(
-    (e: MouseEvent) => {
-      if (isResizing && sidebarRef.current) {
-        const newWidth =
-          e.clientX - sidebarRef.current.getBoundingClientRect().left;
-        if (newWidth > 300 && newWidth < 800) {
-          // Min 300px, max 800px
-          setSidebarWidth(newWidth);
-        }
-      }
-    },
-    [isResizing],
-  );
-
-  // Add event listeners for resizing
   useEffect(() => {
-    if (isResizing) {
-      document.addEventListener("mousemove", resize);
-      document.addEventListener("mouseup", stopResizing);
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", resize);
-      document.removeEventListener("mouseup", stopResizing);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Removed setSidebarOpen(false) as sidebarOpen state is removed
+      }
     };
-  }, [isResizing, resize, stopResizing]);
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleScreenshot = () => {
     // Use the canvas element directly instead of calling renderer.render()
@@ -235,104 +201,12 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden">
-      {/* Desktop: Unified Left Sidebar with Resizable Handle */}
-      <div className="hidden md:flex h-full" ref={sidebarRef}>
-        <aside
-          className={`flex-col h-full border-r border-border/50 bg-card transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "opacity-100" : "opacity-0 w-0"
-          }`}
-          style={{ width: sidebarOpen ? `${sidebarWidth}px` : "0px" }}
-          data-tour="sidebar"
-        >
-          <div className={`h-full ${sidebarOpen ? "block" : "hidden"}`}>
-            <UnifiedSidebar
-              sidebarOpen={sidebarOpen}
-              onToggleSidebar={setSidebarOpen}
-            />
-          </div>
-        </aside>
-
-        {/* Resizable Handle */}
-        {sidebarOpen && (
-          <div
-            className="w-2 cursor-col-resize bg-border/30 hover:bg-primary/30 transition-colors flex items-center justify-center"
-            onMouseDown={startResizing}
-          >
-            <div className="w-0.5 h-8 bg-border/50 rounded-full"></div>
-          </div>
-        )}
-      </div>
-
-      {/* Expand sidebar button when collapsed */}
-      {!sidebarOpen && (
-        <div className="hidden md:flex flex-col absolute top-4 left-4 z-50 gap-2">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
-            title="Show sidebar"
-          >
-            <PanelLeft className="w-4 h-4" />
-          </button>
-
-          {/* Additional buttons when sidebar is collapsed */}
-          <button
-            onClick={handleScreenshot}
-            className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
-            title="Take screenshot"
-          >
-            <Camera className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={handleExportModel}
-            className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
-            title="Export model"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-
-          {!isRecording ? (
-            <button
-              onClick={handleStartRecording}
-              className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
-              title="Start recording"
-            >
-              <Video className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleStopRecording}
-              className="flex items-center justify-center h-8 w-8 rounded-md bg-red-500/80 backdrop-blur-sm border border-red-500 text-white hover:bg-red-600"
-              title="Stop recording"
-            >
-              <Square className="w-4 h-4" />
-            </button>
-          )}
-
-          <button
-            onClick={handleSaveAsJSON}
-            className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
-            title="Save as JSON"
-          >
-            <Save className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={handleShareLink}
-            className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
-            title="Share link"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-
-          <Link
-            href="/materials"
-            className="flex items-center justify-center h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground hover:bg-background"
-          >
-            <List className="w-4 h-4" />
-          </Link>
+      {/* Desktop: Unified Left Sidebar */}
+      <div className="hidden md:block fixed top-4 left-4 z-40">
+        <div style={{ width: '420px' }}>
+          <UnifiedSidebar />
         </div>
-      )}
+      </div>
 
       {/* Main 3D Viewer */}
       <main className="flex-1 relative min-w-0 pb-20 md:pb-0">
