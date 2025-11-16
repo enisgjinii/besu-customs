@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { Scene } from "@/components/scene";
+import dynamic from "next/dynamic";
+
+// Dynamic import for Scene component to prevent static generation issues
+const Scene = dynamic(() => import("@/components/scene").then((mod) => ({ default: mod.Scene })), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+  ),
+});
 import { MaterialEditor } from "@/components/material-editor";
 import { useConfiguratorStore } from "@/lib/store";
 
