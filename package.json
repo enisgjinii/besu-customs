@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "description": "3D Model Configurator with React Three Fiber - Deployment Fix Applied",
-  "overrides": {
-    "react-reconciler": "0.28.0"
-  },
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -48,7 +45,7 @@
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
     "@react-three/drei": "9.80.0",
-    "@react-three/fiber": "8.13.7",
+    "@react-three/fiber": "8.15.12",
     "@runware/sdk-js": "^1.1.46",
     "@supabase/supabase-js": "^2.76.1",
     "@tanstack/react-query": "^5.90.5",
