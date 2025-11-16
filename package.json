@@ -2,6 +2,7 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
+  "description": "3D Model Configurator with React Three Fiber - Deployment Fix Applied",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
