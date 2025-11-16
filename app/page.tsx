@@ -32,13 +32,13 @@ export default function Home() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         // Removed setSidebarOpen(false) as sidebarOpen state is removed
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleScreenshot = () => {
@@ -203,7 +203,7 @@ export default function Home() {
     <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden">
       {/* Desktop: Unified Left Sidebar */}
       <div className="hidden md:block fixed top-4 left-4 z-40">
-        <div style={{ width: '420px' }}>
+        <div style={{ width: "420px" }}>
           <UnifiedSidebar />
         </div>
       </div>

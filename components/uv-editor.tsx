@@ -41,7 +41,9 @@ export function UVEditor() {
     const currentSectionId = useConfiguratorStore.getState().selectedSectionId;
     const currentSections = useConfiguratorStore.getState().sections;
     const currentUvMaps = useConfiguratorStore.getState().uvMaps;
-    const currentCompleteUvMap = (useConfiguratorStore.getState() as any)
+    const currentCompleteUvMap = (useConfiguratorStore.getState() as {
+      completeUVMap: string | null;
+    })
       .completeUVMap;
     const currentUvMapUrl = currentSectionId
       ? currentUvMaps.get(currentSectionId)
@@ -389,6 +391,7 @@ export function UVEditor() {
     link.href = fabricCanvasRef.current.toDataURL({
       format: "png",
       quality: 1,
+      multiplier: 1,
     });
     link.download = selectedSectionId
       ? `uv-map-${selectedSection?.name || selectedSectionId}.png`

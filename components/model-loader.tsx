@@ -8,11 +8,16 @@ import { GLTF } from "three-stdlib";
 import { applyMaterialUpdates, extractSections } from "@/lib/model-utils";
 import { useConfiguratorStore, MaterialSection } from "@/lib/store";
 import { TextureDecal } from "@/components/texture-decal";
+import {
+  EntranceAnimation,
+  useCameraEntrance,
+  ParticleEffect,
+} from "@/components/entrance-animation";
 
 // Preload frequently used models for faster loading
 useGLTF.preload("/models/Backpack.glb");
 
-type Props = { controlsRef?: React.RefObject<any> };
+type Props = { controlsRef?: React.RefObject<unknown> };
 
 export function ModelLoader({ controlsRef }: Props) {
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
@@ -30,7 +35,7 @@ function Model({
   controlsRef,
 }: {
   url: string;
-  controlsRef?: React.RefObject<any>;
+  controlsRef?: React.RefObject<unknown>;
 }) {
   const setSections = useConfiguratorStore((s) => s.setSections);
   const setUVMap = useConfiguratorStore((s) => s.setUVMap);
@@ -39,8 +44,16 @@ function Model({
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const sections = useConfiguratorStore((s) => s.sections);
   const decals = useConfiguratorStore((s) => s.decals);
+  const removeDecal = useConfiguratorStore((s) => s.removeDecal);
+  const entranceAnimation = useConfiguratorStore((s) => s.entranceAnimation);
+  const enableEntranceAnimation = useConfiguratorStore(
+    (s) => s.enableEntranceAnimation,
+  );
   const { invalidate } = useThree();
   const defaultMeshRef = useRef<THREE.Mesh | null>(null);
+
+  // Use camera entrance animation
+  useCameraEntrance(enableEntranceAnimation ? entranceAnimation : "fadeIn");
 
   const gltf = useGLTF(url) as unknown as GLTF & {
     nodes: Record<string, THREE.Mesh>;
@@ -350,11 +363,12 @@ function Model({
       }
 
       if (controlsRef?.current) {
-        const controls = controlsRef.current;
-        if (controls.target && typeof controls.target.set === "function") {
-          controls.target.set(0, 0, 0);
-        }
-        if (typeof controls.update === "function") controls.update();
+        const controls = controlsRef.current as {
+          target: { set: (x: number, y: number, z: number) => void };
+          update: () => void;
+        };
+        controls.target.set(0, 0, 0);
+        controls.update();
       }
     } catch (err) {
       console.warn("Fit-to-view failed:", err);
@@ -440,32 +454,68 @@ function Model({
 
   return (
     <>
-      <primitive object={clonedScene.current} />
-      {decals.map((decal) => {
-        let targetMesh: THREE.Mesh | null = null;
-        if (decal.meshUuid) {
-          clonedScene.current.traverse((child) => {
-            if (
-              !targetMesh &&
-              child instanceof THREE.Mesh &&
-              child.uuid === decal.meshUuid
-            ) {
-              targetMesh = child;
+      {enableEntranceAnimation ? (
+        <EntranceAnimation animationType={entranceAnimation}>
+          <primitive object={clonedScene.current} />
+          {decals.map((decal) => {
+            let targetMesh: THREE.Mesh | null = null;
+            if (decal.meshUuid) {
+              clonedScene.current.traverse((child) => {
+                if (
+                  !targetMesh &&
+                  child instanceof THREE.Mesh &&
+                  child.uuid === decal.meshUuid
+                ) {
+                  targetMesh = child;
+                }
+              });
             }
-          });
-        }
-        if (!targetMesh) targetMesh = defaultMeshRef.current;
-        return targetMesh ? (
-          <TextureDecal
-            key={decal.id}
-            textureUrl={decal.textureUrl}
-            position={decal.position}
-            rotation={decal.rotation}
-            scale={decal.scale}
-            mesh={targetMesh}
-          />
-        ) : null;
-      })}
+            if (!targetMesh) return null;
+
+            return (
+              <TextureDecal
+                key={decal.id}
+                textureUrl={decal.textureUrl}
+                position={decal.position}
+                rotation={decal.rotation}
+                scale={decal.scale}
+                mesh={targetMesh}
+              />
+            );
+          })}
+        </EntranceAnimation>
+      ) : (
+        <>
+          <primitive object={clonedScene.current} />
+          {decals.map((decal) => {
+            let targetMesh: THREE.Mesh | null = null;
+            if (decal.meshUuid) {
+              clonedScene.current.traverse((child) => {
+                if (
+                  !targetMesh &&
+                  child instanceof THREE.Mesh &&
+                  child.uuid === decal.meshUuid
+                ) {
+                  targetMesh = child;
+                }
+              });
+            }
+            if (!targetMesh) return null;
+
+            return (
+              <TextureDecal
+                key={decal.id}
+                textureUrl={decal.textureUrl}
+                position={decal.position}
+                rotation={decal.rotation}
+                scale={decal.scale}
+                mesh={targetMesh}
+              />
+            );
+          })}
+        </>
+      )}
+      {enableEntranceAnimation && <ParticleEffect />}
     </>
   );
 }

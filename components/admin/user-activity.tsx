@@ -20,7 +20,7 @@ interface UserActivity {
   type: ActivityType;
   target: string;
   timestamp: Date;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 const activityData: UserActivity[] = [

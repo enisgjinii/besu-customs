@@ -267,7 +267,7 @@ export function DecalEditor() {
       </Button>
 
       <p className="text-xs text-gray-500 text-center">
-        Create text or add images, then click "Apply Decal to Model" to project
+        Create text or add images, then click &quot;Apply Decal to Model&quot; to project
         onto your 3D model
       </p>
     </div>

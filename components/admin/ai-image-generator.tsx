@@ -48,7 +48,7 @@ type AIGenerationResult = {
   url: string;
   model: string;
   provider: AIImageProvider;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
 };
 
@@ -368,7 +368,7 @@ export function AIImageGenerator() {
                   >
                     <img
                       src={img.url}
-                      alt={img.metadata.prompt || "Generated image"}
+                      alt={String((img.metadata as Record<string, unknown>).prompt || "Generated image")}
                       className="w-full h-32 object-cover"
                     />
                     {selectedImage === img.id && (
@@ -381,7 +381,7 @@ export function AIImageGenerator() {
                             e.stopPropagation();
                             handleDownload(
                               img.url,
-                              img.metadata.prompt || "ai-generated",
+                              String((img.metadata as Record<string, unknown>).prompt || "ai-generated"),
                             );
                           }}
                         >
@@ -476,21 +476,21 @@ export function AIImageGenerator() {
                     {new Date(selectedImageData.created_at).toLocaleString()}
                   </span>
                 </div>
-                {selectedImageData.metadata.prompt && (
+                {Boolean((selectedImageData.metadata as Record<string, unknown>).prompt) && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-muted-foreground mb-1">Prompt:</p>
                     <p className="text-sm bg-muted/20 p-2 rounded">
-                      {selectedImageData.metadata.prompt}
+                      {String((selectedImageData.metadata as Record<string, unknown>).prompt)}
                     </p>
                   </div>
                 )}
-                {selectedImageData.metadata.negative_prompt && (
+                {Boolean((selectedImageData.metadata as Record<string, unknown>).negative_prompt) && (
                   <div className="mt-2">
                     <p className="text-muted-foreground text-sm mb-1">
                       Negative Prompt:
                     </p>
                     <p className="text-xs bg-muted/20 p-2 rounded line-clamp-3">
-                      {selectedImageData.metadata.negative_prompt}
+                      {String((selectedImageData.metadata as Record<string, unknown>).negative_prompt)}
                     </p>
                   </div>
                 )}

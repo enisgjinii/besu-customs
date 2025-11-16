@@ -17,7 +17,7 @@ type AIGenerationResult = {
   url: string;
   model: string;
   provider: AIImageProvider;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
 };
 
@@ -112,7 +112,7 @@ export class AIService {
     }
   }
 
-  private async generateWithOpenRouter(params: any) {
+  private async generateWithOpenRouter(params: unknown) {
     const response = await fetch(
       "https://openrouter.ai/api/v1/images/generations",
       {
@@ -123,7 +123,7 @@ export class AIService {
         },
         body: JSON.stringify({
           model: "stability-ai/sd-xl-10",
-          ...params,
+          ...(params as Record<string, unknown>),
         }),
       },
     );
@@ -138,7 +138,7 @@ export class AIService {
     return response.json();
   }
 
-  private async generateWithDALLE(params: any) {
+  private async generateWithDALLE(params: unknown) {
     const response = await fetch(
       "https://api.openai.com/v1/images/generations",
       {
@@ -149,7 +149,7 @@ export class AIService {
         },
         body: JSON.stringify({
           model: "dall-e-3",
-          ...params,
+          ...(params as Record<string, unknown>),
         }),
       },
     );
@@ -168,7 +168,7 @@ export class AIService {
     };
   }
 
-  private async generateWithFlux(params: any) {
+  private async generateWithFlux(params: unknown) {
     const response = await fetch("https://api.flux.dev/v1/images/generations", {
       method: "POST",
       headers: {

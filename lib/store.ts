@@ -1,7 +1,9 @@
 // Clean Zustand store for the configurator. Single, self-contained file.
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { Model } from "./models-service";
 import * as THREE from "three";
+import type { EntranceAnimationType } from "@/components/entrance-animation";
 
 export type Category =
   | "Jerseys"
@@ -133,6 +135,12 @@ export interface ConfiguratorState {
   setModelLoading: (loading: boolean) => void;
   modelError: string | null;
   setModelError: (err: string | null) => void;
+
+  // Entrance Animation Settings
+  entranceAnimation: EntranceAnimationType;
+  setEntranceAnimation: (animation: EntranceAnimationType) => void;
+  enableEntranceAnimation: boolean;
+  setEnableEntranceAnimation: (enabled: boolean) => void;
 
   // Presets
   presets: Array<{
@@ -512,6 +520,14 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   setModelLoading: (loading: boolean) => set({ modelLoading: loading }),
   modelError: null,
   setModelError: (err: string | null) => set({ modelError: err }),
+
+  // Entrance Animation Settings
+  entranceAnimation: "zoomRotate" as EntranceAnimationType,
+  setEntranceAnimation: (animation: EntranceAnimationType) =>
+    set({ entranceAnimation: animation }),
+  enableEntranceAnimation: true,
+  setEnableEntranceAnimation: (enabled: boolean) =>
+    set({ enableEntranceAnimation: enabled }),
 
   // Recent colors
   recentColors: [],

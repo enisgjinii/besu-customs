@@ -13,9 +13,21 @@ import { ModelLoader } from "./model-loader";
 import { DecalPlacer } from "./decal-placer";
 import { useConfiguratorStore } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
+import { useTheme } from "next-themes";
+
+// Helper function to get theme-aware background color
+const getThemeBackgroundColor = (theme: string | undefined, backgroundColor: string) => {
+  // If user has set a custom background color, use it
+  if (backgroundColor && backgroundColor !== "#ffffff" && backgroundColor !== "#000000") {
+    return backgroundColor;
+  }
+  // Otherwise use theme-based background
+  return theme === "dark" ? "#0f0f0f" : "#f0f0f0";
+};
 
 // Background component that handles color, image, and video backgrounds
 function Background() {
+  const { theme } = useTheme();
   const backgroundColor = useConfiguratorStore(
     (state) => state.backgroundColor,
   );
@@ -34,9 +46,9 @@ function Background() {
   // Handle background color
   useEffect(() => {
     if (!backgroundImage && !backgroundVideo) {
-      scene.background = new THREE.Color(backgroundColor);
+      scene.background = new THREE.Color(getThemeBackgroundColor(theme, backgroundColor));
     }
-  }, [backgroundColor, backgroundImage, backgroundVideo, scene]);
+  }, [backgroundColor, backgroundImage, backgroundVideo, scene, theme]);
 
   // Handle background image with performance optimizations
   useEffect(() => {
@@ -66,7 +78,7 @@ function Background() {
           error,
         );
         // Fallback to solid color background
-        scene.background = new THREE.Color(backgroundColor);
+        scene.background = new THREE.Color(getThemeBackgroundColor(theme, backgroundColor));
       },
     );
 
@@ -78,7 +90,7 @@ function Background() {
         textureRef.current = null;
       }
     };
-  }, [backgroundImage, backgroundColor, scene]);
+  }, [backgroundImage, backgroundColor, scene, theme]);
 
   // Handle background video with performance optimizations
   useEffect(() => {
@@ -127,7 +139,7 @@ function Background() {
         video.play().catch((e) => {
           console.warn("Video play failed:", e);
           // Fallback to solid color on play failure
-          scene.background = new THREE.Color(backgroundColor);
+          scene.background = new THREE.Color(getThemeBackgroundColor(theme, backgroundColor));
         });
       }, 50);
 
@@ -165,7 +177,7 @@ function Background() {
         }
       };
     }
-  }, [backgroundVideo, isVideoPlaying, scene, backgroundColor]);
+  }, [backgroundVideo, isVideoPlaying, scene, backgroundColor, theme]);
 
   return null;
 }

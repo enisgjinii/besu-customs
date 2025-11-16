@@ -7,29 +7,32 @@ import {
   Grid3x3,
   Save,
   Download,
-  Palette,
-  Paintbrush,
-  Camera,
-  Package2,
-  RotateCcw,
-  RotateCw,
+  Upload,
+  FileText,
   Video,
   Play,
-  Square,
-  Maximize2,
-  ChevronDown,
-  FileImage,
-  Film,
+  Pause,
+  RotateCcw,
+  Package2,
   Sparkles,
   PanelLeftClose,
   List,
+  Palette,
+  Paintbrush,
+  Camera,
+  FileImage,
+  RotateCw,
+  Film,
+  Square,
+  Maximize2,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import type { Product } from "@/lib/store";
 import { AIImageGenerator } from "./ai-image-generator";
-import { OnboardingInfoButton } from "./onboarding-info-button";
+import { ThemeToggle } from "./theme-toggle";
 import { DecalEditor } from "./decal-editor";
 import { Button } from "./ui/button";
+import NextImage from "next/image";
 import {
   Select,
   SelectContent,
@@ -103,6 +106,18 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
     (state) => state.setSelectedSection,
   );
   const updateSection = useConfiguratorStore((state) => state.updateSection);
+  const entranceAnimation = useConfiguratorStore(
+    (state) => state.entranceAnimation,
+  );
+  const setEntranceAnimation = useConfiguratorStore(
+    (state) => state.setEntranceAnimation,
+  );
+  const enableEntranceAnimation = useConfiguratorStore(
+    (state) => state.enableEntranceAnimation,
+  );
+  const setEnableEntranceAnimation = useConfiguratorStore(
+    (state) => state.setEnableEntranceAnimation,
+  );
 
   // Load active products on mount
   useEffect(() => {
@@ -534,15 +549,20 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   };
 
   return (
-    <div className="flex flex-col bg-card w-full rounded-2xl shadow-2xl border border-border/20 backdrop-blur-sm max-h-[calc(100vh-2rem)] overflow-hidden">
+    <div className="flex flex-col bg-card w-full rounded-2xl border border-border/20 backdrop-blur-sm max-h-[calc(100vh-2rem)] overflow-hidden">
       {/* Header with Model Selector */}
       <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">3D Configurator</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Customize your model
-            </p>
+          <div className="flex items-center space-x-2">
+            <div className="h-12 w-12 rounded-lg overflow-hidden bg-black p-2">
+              <NextImage
+                src="/LOGO-gg.png"
+                alt="gg logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -552,7 +572,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
             >
               <PanelLeftClose className="w-4 h-4" />
             </button>
-            <OnboardingInfoButton />
+            <ThemeToggle />
           </div>
         </div>
 
@@ -961,6 +981,64 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                     <Package2 className="w-4 h-4" />
                     Export Model & Presets
                   </h3>
+
+                  {/* Entrance Animation Settings */}
+                  <div className="space-y-3 mb-6 p-3 bg-muted/30 rounded-lg">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Entrance Animation
+                    </h4>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        Enable Animation
+                      </span>
+                      <button
+                        onClick={() =>
+                          setEnableEntranceAnimation(!enableEntranceAnimation)
+                        }
+                        className={`w-12 h-6 rounded-full transition-colors ${
+                          enableEntranceAnimation ? "bg-primary" : "bg-muted"
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                            enableEntranceAnimation
+                              ? "translate-x-6"
+                              : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {enableEntranceAnimation && (
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground">
+                          Animation Type
+                        </label>
+                        <select
+                          value={entranceAnimation}
+                          onChange={(e) =>
+                            setEntranceAnimation(e.target.value as "fadeIn" | "scaleUp" | "rotateIn" | "zoomRotate" | "dropIn" | "bounce")
+                          }
+                          className="w-full px-2 py-1.5 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <option value="fadeIn">Fade In</option>
+                          <option value="scaleUp">Scale Up</option>
+                          <option value="rotateIn">Rotate In</option>
+                          <option value="slideIn">Slide In</option>
+                          <option value="bounce">Bounce</option>
+                          <option value="spin">Spin</option>
+                          <option value="dropIn">Drop In</option>
+                          <option value="zoomRotate">Zoom Rotate</option>
+                          <option value="glow">Glow</option>
+                          <option value="particleReveal">
+                            Particle Reveal
+                          </option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Export Presets Section */}
                   <div className="space-y-2 mb-4">
