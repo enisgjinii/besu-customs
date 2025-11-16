@@ -1,6 +1,7 @@
 // Clean Zustand store for the configurator. Single, self-contained file.
 import { create } from "zustand";
 import { Model } from "./models-service";
+import * as THREE from "three";
 
 export type Category =
   | "Jerseys"
@@ -58,6 +59,14 @@ export interface MaterialSection {
     stops?: number[];
   } | null;
 }
+export interface DecalData {
+  id: string;
+  textureUrl: string;
+  meshUuid?: string;
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+  scale: THREE.Vector3;
+}
 
 export interface CameraState {
   position?: [number, number, number];
@@ -86,6 +95,14 @@ export interface ConfiguratorState {
   addRecentColor: (color: string) => void;
   // Product updates
   updateProduct: (id: string, updates: Partial<Product>) => void;
+
+  // Decal management
+  decals: DecalData[];
+  addDecal: (decal: DecalData) => void;
+  removeDecal: (id: string) => void;
+  clearDecals: () => void;
+  lastDecalTexture: string | null;
+  setLastDecalTexture: (url: string | null) => void;
 
   // UV map management
   uvMaps: Map<string, string>;
@@ -394,7 +411,21 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   sections: [],
   selectedSectionId: null,
   linkedSections: new Set<string>(),
-  setSections: (sections: MaterialSection[]) => set({ sections }),
+  setSections: (sections: MaterialSection[]) => {
+    console.log("🏪 Store.setSections called:", {
+      count: sections.length,
+      withTextures: sections.filter((s) => s.customTexture).length,
+      sampleSection: sections[0]
+        ? {
+            id: sections[0].id,
+            name: sections[0].name,
+            hasTexture: !!sections[0].customTexture,
+            textureLength: sections[0].customTexture?.length || 0,
+          }
+        : null,
+    });
+    return set({ sections });
+  },
   updateSection: (id: string, updates: Partial<MaterialSection>) =>
     set((state) => {
       const idsToUpdate = state.linkedSections.has(id)
@@ -429,6 +460,20 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         p.id === id ? { ...p, ...updates } : p,
       ),
     })),
+
+  // Decal management
+  decals: [],
+  addDecal: (decal: DecalData) =>
+    set((state) => ({
+      decals: [...state.decals, decal],
+    })),
+  removeDecal: (id: string) =>
+    set((state) => ({
+      decals: state.decals.filter((d) => d.id !== id),
+    })),
+  clearDecals: () => set({ decals: [] }),
+  lastDecalTexture: null,
+  setLastDecalTexture: (url: string | null) => set({ lastDecalTexture: url }),
 
   // UV map management
   uvMaps: new Map<string, string>(),

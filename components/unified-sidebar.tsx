@@ -28,7 +28,7 @@ import { MaterialEditor } from "./material-editor";
 import type { Product } from "@/lib/store";
 import { AIImageGenerator } from "./ai-image-generator";
 import { OnboardingInfoButton } from "./onboarding-info-button";
-import { UVEditor } from "./uv-editor";
+import { DecalEditor } from "./decal-editor";
 import { Button } from "./ui/button";
 import {
   Select,
@@ -145,7 +145,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   useEffect(() => {
     if (activeTab !== "texture") return;
     setSelectedSection(null);
-    
+
     // Clear any existing custom textures so model shows original appearance
     sections.forEach((section) => {
       if (section.customTexture) {
@@ -634,9 +634,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
             <MaterialEditor />
           </div>
         )}
-        {activeTab === "texture" && (
-          <UVEditor />
-        )}
+        {activeTab === "texture" && <DecalEditor />}
         {activeTab === "view" && (
           <div className="p-4 space-y-3">
             <Tabs defaultValue="view">

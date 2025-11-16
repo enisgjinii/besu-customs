@@ -4,7 +4,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, Clock, User, ShoppingCart, Package, CheckCircle } from "lucide-react";
+import {
+  Activity,
+  Clock,
+  User,
+  ShoppingCart,
+  Package,
+  CheckCircle,
+} from "lucide-react";
 
 const activities = [
   {
@@ -59,7 +66,7 @@ export function RecentActivity() {
           <span>Last 24 hours</span>
         </div>
       </div>
-      
+
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-4">
           {activities.map((activity) => (
@@ -71,7 +78,9 @@ export function RecentActivity() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{activity.user}</span>
                   <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                    {formatDistanceToNow(activity.timestamp, {
+                      addSuffix: true,
+                    })}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">

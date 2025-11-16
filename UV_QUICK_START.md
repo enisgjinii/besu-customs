@@ -3,11 +3,13 @@
 ## What's New? 🎉
 
 ### ⚡ Fast UV Extraction
+
 - UV maps are now extracted **40% faster**
 - Automatic extraction when you select a material
 - No manual steps required
 
 ### 🎨 Real-Time Updates
+
 - Add text or images and see them **instantly** on your 3D model
 - Changes apply automatically as you work
 - No need to click "Apply" for every change (but available for high-res export)
@@ -15,6 +17,7 @@
 ### ✨ Easy-to-Use Tools
 
 #### Text Tool
+
 1. Click **"Text Settings"** button
 2. Customize:
    - Font size (12-120px)
@@ -25,6 +28,7 @@
 5. Drag to move, use corners to resize
 
 #### Image Tool
+
 1. Click **"Image"** button
 2. Select an image file
 3. Image automatically scales to fit
@@ -32,6 +36,7 @@
 5. Use corners to resize
 
 #### Controls
+
 - **Rotate** - Rotate selected object 15° at a time
 - **Zoom In/Out** - Get closer for detail work
 - **Reset View** - Return to default zoom
@@ -80,6 +85,7 @@ Click "Apply High-Res" for final quality
 ## What You Can Customize
 
 ### Text Properties
+
 - Size: 12px to 120px
 - Fonts: Arial, Times New Roman, Courier New, Georgia, Verdana, Impact
 - Color: Full color picker
@@ -88,6 +94,7 @@ Click "Apply High-Res" for final quality
 - Scale: Resize using corner handles
 
 ### Image Properties
+
 - Upload any image format (PNG, JPG, etc.)
 - Auto-scaled to fit canvas
 - Maintains aspect ratio
@@ -113,6 +120,7 @@ Click "Apply High-Res" for final quality
 ## Keyboard Shortcuts (Coming Soon)
 
 Future versions may include:
+
 - Delete: Remove selected object
 - Ctrl+Z: Undo
 - Ctrl+Y: Redo

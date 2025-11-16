@@ -10,6 +10,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { ModelLoader } from "./model-loader";
+import { DecalPlacer } from "./decal-placer";
 import { useConfiguratorStore } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -265,6 +266,7 @@ export function Scene() {
 
         <Suspense fallback={<LoadingFallback />}>
           <ModelLoader controlsRef={controlsRef} />
+          <DecalPlacer />
         </Suspense>
       </Canvas>
 

@@ -19,9 +19,9 @@ export function UVEditor() {
   const fabricCanvasRef = useRef<Canvas | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const selectedSectionId = useConfiguratorStore(
-    (state) => state.selectedSectionId
+    (state) => state.selectedSectionId,
   );
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
@@ -39,43 +39,56 @@ export function UVEditor() {
   const applyTextureToModel = () => {
     // Get fresh values from store
     const currentSectionId = useConfiguratorStore.getState().selectedSectionId;
+    const currentSections = useConfiguratorStore.getState().sections;
     const currentUvMaps = useConfiguratorStore.getState().uvMaps;
-    const currentCompleteUvMap = (useConfiguratorStore.getState() as any).completeUVMap;
-    const currentUvMapUrl = currentSectionId 
+    const currentCompleteUvMap = (useConfiguratorStore.getState() as any)
+      .completeUVMap;
+    const currentUvMapUrl = currentSectionId
       ? currentUvMaps.get(currentSectionId)
       : currentCompleteUvMap;
 
-    console.log('🎯 applyTextureToModel called:', { 
-      hasFabricCanvas: !!fabricCanvasRef.current, 
-      currentSectionId, 
-      hasUvMapUrl: !!currentUvMapUrl 
+    console.log("🎯 applyTextureToModel called:", {
+      hasFabricCanvas: !!fabricCanvasRef.current,
+      currentSectionId,
+      hasUvMapUrl: !!currentUvMapUrl,
+      mode: currentSectionId ? "single-section" : "complete-model",
     });
 
-    if (!fabricCanvasRef.current || !currentSectionId || !currentUvMapUrl) {
-      console.warn('⚠️ Cannot apply: missing requirements', {
+    if (!fabricCanvasRef.current || !currentUvMapUrl) {
+      console.warn("⚠️ Cannot apply: missing requirements", {
         hasFabricCanvas: !!fabricCanvasRef.current,
-        hasSectionId: !!currentSectionId,
-        hasUvMapUrl: !!currentUvMapUrl
+        hasUvMapUrl: !!currentUvMapUrl,
       });
       return;
     }
 
     // Create a temporary canvas to composite UV map + overlays
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
     if (!tempCtx) return;
 
     // Set canvas size to match fabric canvas
     tempCanvas.width = fabricCanvasRef.current.width || 1024;
     tempCanvas.height = fabricCanvasRef.current.height || 1024;
 
-    console.log('📏 Canvas dimensions:', tempCanvas.width, 'x', tempCanvas.height);
+    console.log(
+      "📏 Canvas dimensions:",
+      tempCanvas.width,
+      "x",
+      tempCanvas.height,
+    );
 
     // Load and draw the UV map base
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.onload = () => {
-      console.log('🖼️ UV map base image loaded');
+      console.log("🖼️ UV map base image loaded", {
+        width: img.width,
+        height: img.height,
+        canvasWidth: tempCanvas.width,
+        canvasHeight: tempCanvas.height,
+      });
+
       // Draw UV map as base layer
       tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
 
@@ -86,12 +99,16 @@ export function UVEditor() {
 
       // Draw text/images on top
       const overlayDataUrl = fabricCanvasRef.current!.toDataURL({
-        format: 'png',
+        format: "png",
         quality: 1,
         multiplier: 1,
       });
 
-      console.log('🎨 Overlay extracted, length:', overlayDataUrl.length);
+      console.log("🎨 Overlay extracted", {
+        length: overlayDataUrl.length,
+        hasObjects: fabricCanvasRef.current!.getObjects().length > 0,
+        objectCount: fabricCanvasRef.current!.getObjects().length,
+      });
 
       // Restore background
       fabricCanvasRef.current!.backgroundImage = originalBackground;
@@ -100,34 +117,91 @@ export function UVEditor() {
       // Draw overlay on temp canvas
       const overlayImg = new Image();
       overlayImg.onload = () => {
-        console.log('✨ Overlay image loaded, drawing composite');
+        console.log("✨ Overlay image loaded, drawing composite");
         tempCtx.drawImage(overlayImg, 0, 0);
-        
+
         // Export final composite
-        const finalDataUrl = tempCanvas.toDataURL('image/png', 1.0);
-        
-        console.log('🎨 Final composite created, size:', finalDataUrl.length);
-        console.log('📍 Applying to section:', currentSectionId);
-        
-        // Get current store state to verify
-        const currentSections = useConfiguratorStore.getState().sections;
-        const targetSection = currentSections.find(s => s.id === currentSectionId);
-        console.log('📦 Target section before update:', targetSection?.name, 'has texture:', !!targetSection?.customTexture);
-        
-        // Apply the texture
-        useConfiguratorStore.getState().updateSection(currentSectionId, { customTexture: finalDataUrl });
-        
+        const finalDataUrl = tempCanvas.toDataURL("image/png", 1.0);
+
+        console.log("🎨 Final composite created", {
+          dataUrlLength: finalDataUrl.length,
+          isValidDataUrl: finalDataUrl.startsWith("data:image/png"),
+          sectionId: currentSectionId,
+          applyMode: currentSectionId ? "single-section" : "all-sections",
+        });
+
+        if (currentSectionId) {
+          // Apply to specific section
+          const targetSection = currentSections.find(
+            (s) => s.id === currentSectionId,
+          );
+          console.log("📦 Applying to single section:", {
+            name: targetSection?.name,
+            id: targetSection?.id,
+          });
+
+          useConfiguratorStore
+            .getState()
+            .updateSection(currentSectionId, { customTexture: finalDataUrl });
+        } else {
+          // Apply to ALL sections (complete model) - update all at once
+          console.log("🌍 Applying to ALL sections (complete model texture)", {
+            totalSections: currentSections.length,
+            texturePreview: finalDataUrl.substring(0, 50) + "...",
+          });
+
+          // Update all sections in a single state update for efficiency
+          const updatedSections = currentSections.map((section) => ({
+            ...section,
+            customTexture: finalDataUrl,
+          }));
+
+          console.log("📝 Batch updating all sections with texture", {
+            updatedCount: updatedSections.length,
+            firstSectionHasTexture: !!updatedSections[0]?.customTexture,
+            textureLength: updatedSections[0]?.customTexture?.length,
+          });
+
+          useConfiguratorStore.getState().setSections(updatedSections);
+
+          // Immediate verification
+          const immediateCheck = useConfiguratorStore.getState().sections;
+          console.log("🔍 Immediate check after setSections:", {
+            sectionsCount: immediateCheck.length,
+            hasTextures: immediateCheck.filter((s) => s.customTexture).length,
+            firstSection: {
+              id: immediateCheck[0]?.id,
+              name: immediateCheck[0]?.name,
+              hasTexture: !!immediateCheck[0]?.customTexture,
+              textureLength: immediateCheck[0]?.customTexture?.length || 0,
+            },
+          });
+        }
+
+        console.log("✅ Texture update dispatched to store");
+
         // Verify update
         setTimeout(() => {
           const updatedSections = useConfiguratorStore.getState().sections;
-          const updatedSection = updatedSections.find(s => s.id === currentSectionId);
-          console.log('✅ Target section after update:', updatedSection?.name, 'has texture:', !!updatedSection?.customTexture, 'texture length:', updatedSection?.customTexture?.length);
+          const sectionsWithTexture = updatedSections.filter(
+            (s) => s.customTexture,
+          );
+          console.log("✅ Update complete (delayed check):", {
+            totalSections: updatedSections.length,
+            sectionsWithTexture: sectionsWithTexture.length,
+            sectionNames: sectionsWithTexture.map((s) => s.name),
+            allSections: updatedSections.map((s) => ({
+              name: s.name,
+              hasTexture: !!s.customTexture,
+              textureLen: s.customTexture?.length || 0,
+            })),
+          });
         }, 100);
       };
       overlayImg.src = overlayDataUrl;
     };
     img.onerror = (err) => {
-      console.error('❌ Failed to load UV map image:', err);
+      console.error("❌ Failed to load UV map image:", err);
     };
     img.src = currentUvMapUrl;
   };
@@ -214,8 +288,8 @@ export function UVEditor() {
         fabricCanvasRef.current.backgroundImage = img;
         fabricCanvasRef.current.renderAll();
         setIsExtracting(false);
-        
-        console.log('📐 UV Map loaded:', { 
+
+        console.log("📐 UV Map loaded:", {
           uvMapSize: `${imgWidth}x${imgHeight}`,
           canvasSize: `${fabricCanvasRef.current.width}x${fabricCanvasRef.current.height}`,
         });
@@ -241,14 +315,14 @@ export function UVEditor() {
     fabricCanvasRef.current.setActiveObject(text);
     fabricCanvasRef.current.renderAll();
     setNewText("");
-    
-    console.log('✏️ Text added to canvas');
-    console.log('📍 Current selectedSectionId:', selectedSectionId);
-    console.log('🗺️ Current uvMapUrl:', uvMapUrl ? 'exists' : 'missing');
-    
+
+    console.log("✏️ Text added to canvas");
+    console.log("📍 Current selectedSectionId:", selectedSectionId);
+    console.log("🗺️ Current uvMapUrl:", uvMapUrl ? "exists" : "missing");
+
     // Trigger immediate application
     setTimeout(() => {
-      console.log('⏰ Calling applyToModel after text add');
+      console.log("⏰ Calling applyToModel after text add");
       applyToModel();
     }, 100);
   };
@@ -276,8 +350,8 @@ export function UVEditor() {
         fabricCanvasRef.current.add(img);
         fabricCanvasRef.current.setActiveObject(img);
         fabricCanvasRef.current.renderAll();
-        
-        console.log('🖼️ Image added to canvas, will apply to model');
+
+        console.log("🖼️ Image added to canvas, will apply to model");
         // Trigger immediate application
         applyToModel();
       });
@@ -300,7 +374,7 @@ export function UVEditor() {
 
   const handleClearAll = () => {
     if (!fabricCanvasRef.current) return;
-    
+
     const objects = fabricCanvasRef.current.getObjects();
     objects.forEach((obj) => {
       fabricCanvasRef.current?.remove(obj);
@@ -326,6 +400,15 @@ export function UVEditor() {
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
       <div className="p-3 border-b border-border space-y-3">
+        {!selectedSectionId && sections.length > 0 && (
+          <div className="p-2 bg-green-500/10 border border-green-500/20 rounded-md">
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-2">
+              <Layers className="w-3.5 h-3.5" />
+              Complete Model Mode: Changes will apply to entire 3D model
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-sm">UV Map Editor</h3>
           <div className="flex gap-2">
@@ -367,6 +450,7 @@ export function UVEditor() {
               onClick={handleAddText}
               disabled={!newText.trim() || !uvMapUrl}
               className="h-8 px-3"
+              title="Add text"
             >
               <Type className="w-3.5 h-3.5" />
             </Button>
@@ -406,6 +490,7 @@ export function UVEditor() {
             onClick={() => fileInputRef.current?.click()}
             disabled={!uvMapUrl}
             className="w-full h-8"
+            title="Upload image"
           >
             <ImageIcon className="w-3.5 h-3.5 mr-2" />
             Upload Image
@@ -419,11 +504,11 @@ export function UVEditor() {
           />
         </div>
 
-        {selectedSectionId && (
+        {uvMapUrl && (
           <Button
             size="sm"
             onClick={() => {
-              console.log('🔘 Apply button clicked');
+              console.log("🔘 Apply button clicked");
               applyTextureToModel();
             }}
             className="w-full h-8"
@@ -434,13 +519,15 @@ export function UVEditor() {
 
         {selectedSectionId ? (
           <p className="text-[10px] text-muted-foreground">
-            Editing: <span className="font-medium">{selectedSection?.name}</span> • Drag & resize elements
+            Editing:{" "}
+            <span className="font-medium">{selectedSection?.name}</span> • Drag
+            & resize elements
           </p>
-        ) : (
+        ) : sections.length > 0 ? (
           <p className="text-[10px] text-muted-foreground">
-            Select a material to edit its texture
+            Complete model editing • Changes apply to entire 3D model
           </p>
-        )}
+        ) : null}
       </div>
 
       {/* Content */}
@@ -449,11 +536,13 @@ export function UVEditor() {
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-xs text-muted-foreground">Extracting UV Map...</p>
+              <p className="text-xs text-muted-foreground">
+                Extracting UV Map...
+              </p>
             </div>
           </div>
         )}
-        
+
         <div className="flex items-center justify-center min-h-full">
           {uvMapUrl ? (
             <div className="max-w-full">
@@ -480,15 +569,11 @@ export function UVEditor() {
       </div>
 
       {/* Footer Info */}
-      {uvMapUrl && selectedSectionId && (
+      {uvMapUrl && (
         <div className="p-2 bg-green-500/10 text-[10px] text-green-600 dark:text-green-400 border-t border-border/50">
-          Changes applied to model automatically
-        </div>
-      )}
-      
-      {!uvMapUrl && sections.length > 0 && (
-        <div className="p-2 bg-muted/30 text-[10px] text-muted-foreground border-t border-border/50">
-          Select a material to edit its texture
+          {selectedSectionId
+            ? "Changes applied to selected section automatically"
+            : "Changes applied to entire model automatically"}
         </div>
       )}
     </div>

@@ -36,9 +36,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <QueryProvider>
-              {children}
-            </QueryProvider>
+            <QueryProvider>{children}</QueryProvider>
             <Toaster />
             <OnboardingWelcome />
             <OnboardingTour />

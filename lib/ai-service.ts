@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
-export type AIImageProvider = 'openrouter' | 'dalle' | 'flux';
+export type AIImageProvider = "openrouter" | "dalle" | "flux";
 
 type AIGenerationParams = {
   prompt: string;
@@ -24,7 +24,7 @@ type AIGenerationResult = {
 export class AIService {
   private static instance: AIService;
   private apiKey: string | null = null;
-  private provider: AIImageProvider = 'openrouter';
+  private provider: AIImageProvider = "openrouter";
 
   private constructor() {}
 
@@ -35,23 +35,32 @@ export class AIService {
     return AIService.instance;
   }
 
-  public initialize(apiKey: string, provider: AIImageProvider = 'openrouter') {
+  public initialize(apiKey: string, provider: AIImageProvider = "openrouter") {
     this.apiKey = apiKey;
     this.provider = provider;
   }
 
-  public async generateImage(params: AIGenerationParams): Promise<AIGenerationResult> {
+  public async generateImage(
+    params: AIGenerationParams,
+  ): Promise<AIGenerationResult> {
     if (!this.apiKey) {
-      throw new Error('AI Service not initialized. Please provide an API key.');
+      throw new Error("AI Service not initialized. Please provide an API key.");
     }
 
-    const { prompt, negative_prompt, width = 512, height = 512, num_images = 1, style_preset } = params;
-    
+    const {
+      prompt,
+      negative_prompt,
+      width = 512,
+      height = 512,
+      num_images = 1,
+      style_preset,
+    } = params;
+
     try {
       let response;
-      
+
       switch (this.provider) {
-        case 'openrouter':
+        case "openrouter":
           response = await this.generateWithOpenRouter({
             prompt,
             negative_prompt,
@@ -60,16 +69,16 @@ export class AIService {
             num_images,
           });
           break;
-          
-        case 'dalle':
+
+        case "dalle":
           response = await this.generateWithDALLE({
             prompt,
             n: num_images,
             size: `${width}x${height}`,
           });
           break;
-          
-        case 'flux':
+
+        case "flux":
           response = await this.generateWithFlux({
             prompt,
             negative_prompt,
@@ -79,11 +88,11 @@ export class AIService {
             style_preset,
           });
           break;
-          
+
         default:
           throw new Error(`Unsupported AI provider: ${this.provider}`);
       }
-      
+
       return {
         id: uuidv4(),
         url: response.url || URL.createObjectURL(await response.blob()),
@@ -95,73 +104,85 @@ export class AIService {
         },
         created_at: new Date().toISOString(),
       };
-      
     } catch (error) {
-      console.error('AI Image Generation Error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error("AI Image Generation Error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to generate image: ${errorMessage}`);
     }
   }
 
   private async generateWithOpenRouter(params: any) {
-    const response = await fetch('https://openrouter.ai/api/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "stability-ai/sd-xl-10",
+          ...params,
+        }),
       },
-      body: JSON.stringify({
-        model: 'stability-ai/sd-xl-10',
-        ...params,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to generate image with OpenRouter');
+      throw new Error(
+        error.error?.message || "Failed to generate image with OpenRouter",
+      );
     }
 
     return response.json();
   }
 
   private async generateWithDALLE(params: any) {
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+    const response = await fetch(
+      "https://api.openai.com/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          ...params,
+        }),
       },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        ...params,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to generate image with DALL-E');
+      throw new Error(
+        error.error?.message || "Failed to generate image with DALL-E",
+      );
     }
 
     const data = await response.json();
     return {
       ...data.data[0],
-      model: 'dall-e-3',
+      model: "dall-e-3",
     };
   }
 
   private async generateWithFlux(params: any) {
-    const response = await fetch('https://api.flux.dev/v1/images/generations', {
-      method: 'POST',
+    const response = await fetch("https://api.flux.dev/v1/images/generations", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(params),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to generate image with Flux');
+      throw new Error(
+        error.error?.message || "Failed to generate image with Flux",
+      );
     }
 
     return response.json();

@@ -18,9 +18,9 @@ export function extractUVMap(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d", { 
+  const ctx = canvas.getContext("2d", {
     alpha: true,
-    willReadFrequently: false 
+    willReadFrequently: false,
   });
 
   if (!ctx) return null;
@@ -94,9 +94,9 @@ export function extractUVMapForMaterial(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d", { 
+  const ctx = canvas.getContext("2d", {
     alpha: true,
-    willReadFrequently: false 
+    willReadFrequently: false,
   });
 
   if (!ctx) return null;
@@ -111,7 +111,7 @@ export function extractUVMapForMaterial(
   ctx.globalAlpha = 0.3;
 
   let hasUVs = false;
-  
+
   // Batch drawing for better performance
   ctx.beginPath();
 
@@ -195,9 +195,9 @@ export function extractCompleteUVMap(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d", { 
+  const ctx = canvas.getContext("2d", {
     alpha: true,
-    willReadFrequently: false 
+    willReadFrequently: false,
   });
 
   if (!ctx) return null;
@@ -220,7 +220,7 @@ export function extractCompleteUVMap(
   const materialColors = new Map<string, string>();
 
   let hasUVs = false;
-  
+
   // Optimized rendering settings
   ctx.lineWidth = 0.5;
   ctx.globalAlpha = 0.4;

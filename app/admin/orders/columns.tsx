@@ -12,7 +12,7 @@ export interface Order {
   date: string;
   amount: number;
   items: number;
-};
+}
 
 export const columns: ColumnDef<Order>[] = [
   {
@@ -33,7 +33,13 @@ export const columns: ColumnDef<Order>[] = [
         pending: "outline",
         processing: "secondary",
         cancelled: "destructive",
-      }[status] as "default" | "outline" | "secondary" | "destructive" | null | undefined;
+      }[status] as
+        | "default"
+        | "outline"
+        | "secondary"
+        | "destructive"
+        | null
+        | undefined;
 
       return (
         <Badge variant={variant} className="capitalize">

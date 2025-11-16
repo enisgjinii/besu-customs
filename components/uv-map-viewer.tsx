@@ -16,7 +16,11 @@ interface UVMapViewerProps {
   onClose: () => void;
 }
 
-export function UVMapViewer({ uvMapUrl, sectionName, onClose }: UVMapViewerProps) {
+export function UVMapViewer({
+  uvMapUrl,
+  sectionName,
+  onClose,
+}: UVMapViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [imageData, setImageData] = useState<string | null>(null);
@@ -28,34 +32,34 @@ export function UVMapViewer({ uvMapUrl, sectionName, onClose }: UVMapViewerProps
     img.crossOrigin = "anonymous";
     img.onload = () => {
       if (!canvasRef.current) return;
-      
+
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      
+
       // Set canvas size to match image
       canvas.width = img.width;
       canvas.height = img.height;
-      
+
       // Draw the image
       ctx.drawImage(img, 0, 0);
-      
+
       // Store the image data for download
-      setImageData(canvas.toDataURL('image/png'));
+      setImageData(canvas.toDataURL("image/png"));
       setIsLoading(false);
     };
-    
+
     img.src = uvMapUrl;
   }, [uvMapUrl]);
 
   const handleDownload = () => {
     if (!imageData) return;
-    
-    const link = document.createElement('a');
-    const fileName = sectionName 
-      ? `uv-map-${sectionName.toLowerCase().replace(/\s+/g, '-')}.png`
-      : 'uv-map.png';
-      
+
+    const link = document.createElement("a");
+    const fileName = sectionName
+      ? `uv-map-${sectionName.toLowerCase().replace(/\s+/g, "-")}.png`
+      : "uv-map.png";
+
     link.href = imageData;
     link.download = fileName;
     document.body.appendChild(link);
@@ -70,10 +74,10 @@ export function UVMapViewer({ uvMapUrl, sectionName, onClose }: UVMapViewerProps
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex justify-between items-center">
-            <span>UV Map {sectionName ? `- ${sectionName}` : ''}</span>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <span>UV Map {sectionName ? `- ${sectionName}` : ""}</span>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onClose}
               className="h-8 w-8"
             >
@@ -81,7 +85,7 @@ export function UVMapViewer({ uvMapUrl, sectionName, onClose }: UVMapViewerProps
             </Button>
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="flex-1 relative border rounded-md overflow-hidden bg-gray-50">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -89,16 +93,16 @@ export function UVMapViewer({ uvMapUrl, sectionName, onClose }: UVMapViewerProps
             </div>
           ) : (
             <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
-              <canvas 
-                ref={canvasRef} 
+              <canvas
+                ref={canvasRef}
                 className="max-w-full max-h-full border border-gray-200"
               />
             </div>
           )}
         </div>
-        
+
         <div className="flex justify-end gap-2 pt-4">
-          <Button 
+          <Button
             onClick={handleDownload}
             disabled={isLoading || !imageData}
             className="gap-2"

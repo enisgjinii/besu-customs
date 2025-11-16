@@ -79,6 +79,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "three": "latest",
+    "three-stdlib": "^2.36.1",
     "use-sync-external-store": "latest",
     "uuid": "^13.0.0",
     "vaul": "^0.9.9",

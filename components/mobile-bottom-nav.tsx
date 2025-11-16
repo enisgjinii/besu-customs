@@ -50,11 +50,14 @@ export function MobileBottomNav() {
   );
   const glRef = useConfiguratorStore((state) => state.glRef);
   const completeUVMap = useConfiguratorStore(
-    (state) => (state as unknown as { completeUVMap: string | null }).completeUVMap,
+    (state) =>
+      (state as unknown as { completeUVMap: string | null }).completeUVMap,
   );
-  const selectedSectionId = useConfiguratorStore((state) => state.selectedSectionId);
+  const selectedSectionId = useConfiguratorStore(
+    (state) => state.selectedSectionId,
+  );
   const sections = useConfiguratorStore((state) => state.sections);
-  const selectedSection = sections.find(s => s.id === selectedSectionId);
+  const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
   const handleTabClick = (tab: TabType) => {
     if (activeTab === tab) {
@@ -136,7 +139,10 @@ export function MobileBottomNav() {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50" data-tour="mobile-nav">
+    <div
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+      data-tour="mobile-nav"
+    >
       {/* Expanded Panel */}
       <div
         className={`bg-card border-t border-border/50 transition-all duration-300 ease-in-out overflow-hidden ${
@@ -264,7 +270,7 @@ export function MobileBottomNav() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2 w-full">
                   <Button
                     variant="outline"
@@ -284,7 +290,7 @@ export function MobileBottomNav() {
                     {isRecording ? "Recording..." : "Record Video"}
                   </Button>
                 </div>
-                
+
                 <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
                   Full export options available on desktop
                 </div>

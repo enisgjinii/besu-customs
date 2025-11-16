@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { AdminLayout } from '@/components/admin/admin-layout';
-import { AIImageGenerator } from '@/components/admin/ai-image-generator';
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { AIImageGenerator } from "@/components/admin/ai-image-generator";
 
 export default function AIGeneratorPage() {
   return (

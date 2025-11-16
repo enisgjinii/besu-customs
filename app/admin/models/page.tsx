@@ -10,18 +10,13 @@ import { useModels } from "@/hooks/use-models";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function ModelsPage() {
-  const { 
-    models, 
-    activeModels, 
-    stats, 
-    isLoading, 
-    toggleModelStatus 
-  } = useModels();
+  const { models, activeModels, stats, isLoading, toggleModelStatus } =
+    useModels();
 
   const handleModelToggle = async (modelId: string, isActive: boolean) => {
     try {
       await toggleModelStatus({ id: modelId, isActive });
-      
+
       // Trigger configurator update
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("modelsUpdated"));
@@ -72,10 +67,10 @@ function ModelsPage() {
           </TabsContent>
 
           <TabsContent value="manage" className="space-y-4">
-            <ModelsTable 
-              models={models} 
-              onModelToggle={handleModelToggle} 
-              isLoading={isLoading} 
+            <ModelsTable
+              models={models}
+              onModelToggle={handleModelToggle}
+              isLoading={isLoading}
             />
           </TabsContent>
 

@@ -13,18 +13,18 @@ import { RecentActivity } from "@/components/admin/recent-activity";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  RefreshCw, 
-  Download, 
-  Filter, 
-  DollarSign, 
-  Users as UsersIcon, 
-  ShoppingCart, 
-  Activity, 
+import {
+  RefreshCw,
+  Download,
+  Filter,
+  DollarSign,
+  Users as UsersIcon,
+  ShoppingCart,
+  Activity,
   TrendingUp,
   Package as PackageIcon,
   CheckCircle,
-  Clock
+  Clock,
 } from "lucide-react";
 import { ModelsService } from "@/lib/models-service";
 import { useAuth } from "@/lib/auth-context";
@@ -71,14 +71,23 @@ function AdminDashboard() {
         {/* Header with title and actions */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Dashboard Overview
+            </h1>
             <p className="text-muted-foreground">
-              Welcome back, {user?.user_metadata?.full_name || 'Admin'}
+              Welcome back, {user?.user_metadata?.full_name || "Admin"}
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
             <Button variant="outline" size="sm">

@@ -3,16 +3,54 @@
 import { useState } from "react";
 import { Model } from "@/lib/models-service";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, Search, Filter, Eye, EyeOff, Star, StarOff, Trash2, Edit, Plus, RefreshCw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  MoreHorizontal,
+  Search,
+  Filter,
+  Eye,
+  EyeOff,
+  Star,
+  StarOff,
+  Trash2,
+  Edit,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface ModelsTableProps {
@@ -21,7 +59,11 @@ interface ModelsTableProps {
   isLoading?: boolean;
 }
 
-export function ModelsTable({ models = [], onModelToggle, isLoading = false }: ModelsTableProps) {
+export function ModelsTable({
+  models = [],
+  onModelToggle,
+  isLoading = false,
+}: ModelsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -29,14 +71,14 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
 
   const handleToggle = async (id: string, currentStatus: boolean) => {
     try {
-      setIsToggling(prev => ({ ...prev, [id]: true }));
+      setIsToggling((prev) => ({ ...prev, [id]: true }));
       await onModelToggle(id, !currentStatus);
       toast.success(`Model ${!currentStatus ? "activated" : "deactivated"}`);
     } catch (error) {
       console.error("Error toggling model status:", error);
       toast.error("Failed to update model status");
     } finally {
-      setIsToggling(prev => ({ ...prev, [id]: false }));
+      setIsToggling((prev) => ({ ...prev, [id]: false }));
     }
   };
 
@@ -46,11 +88,14 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
   const handleToggleFeatured = async (id: string, currentStatus: boolean) => {
     try {
       // Attempt to toggle featured status via API; fallback to toast on failure.
-      const res = await fetch(`/api/models/${encodeURIComponent(id)}/featured`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ featured: !currentStatus }),
-      });
+      const res = await fetch(
+        `/api/models/${encodeURIComponent(id)}/featured`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ featured: !currentStatus }),
+        },
+      );
       if (res.ok) {
         toast.success(`Model ${!currentStatus ? "featured" : "unfeatured"}`);
         // Simple refresh to reflect server state
@@ -68,7 +113,9 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
     if (!confirm("Are you sure you want to delete this model?")) return;
 
     try {
-      const res = await fetch(`/api/models/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const res = await fetch(`/api/models/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         toast.success("Model deleted successfully");
         window.location.reload();
@@ -166,7 +213,8 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
           <div>
             <CardTitle>3D Models</CardTitle>
             <CardDescription>
-              {models.length} {models.length === 1 ? 'model' : 'models'} in total
+              {models.length} {models.length === 1 ? "model" : "models"} in
+              total
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -175,7 +223,9 @@ export function ModelsTable({ models = [], onModelToggle, isLoading = false }: M
               size="sm"
               disabled={Object.values(isToggling).some(Boolean)}
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${Object.values(isToggling).some(Boolean) ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${Object.values(isToggling).some(Boolean) ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
             <Button size="sm">

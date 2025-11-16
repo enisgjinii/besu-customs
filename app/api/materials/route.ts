@@ -32,8 +32,8 @@ async function extractFromGLB(
       let bracketCount = 0;
       let endIdx = startIdx;
       for (let i = startIdx; i < text.length; i++) {
-        if (text[i] === '[') bracketCount++;
-        else if (text[i] === ']') {
+        if (text[i] === "[") bracketCount++;
+        else if (text[i] === "]") {
           bracketCount--;
           if (bracketCount === 0) {
             endIdx = i;
@@ -351,10 +351,16 @@ export async function GET(request: Request) {
     if (modelParam.includes("Volleyball short sleeve tops.glb")) {
       if (originalName === "Ribbing") return "Neck Collar";
       // Combine all sleeve options into single "Arm Sleeves"
-      if (originalName === "Body_Back_1" || originalName === "Body_Back_3" ||
-          originalName === "Body_Front_2" || originalName === "Body_Front_3") return "Arm Sleeves";
+      if (
+        originalName === "Body_Back_1" ||
+        originalName === "Body_Back_3" ||
+        originalName === "Body_Front_2" ||
+        originalName === "Body_Front_3"
+      )
+        return "Arm Sleeves";
       // Combine bottom trim options into single "Bottom Trim"
-      if (originalName === "Body_Front_5" || originalName === "Body_Back_5") return "Bottom Trim";
+      if (originalName === "Body_Front_5" || originalName === "Body_Back_5")
+        return "Bottom Trim";
       if (originalName === "Body_Front_4") return "Front Color";
       if (originalName === "Body_Back_4") return "Back Color";
     }
@@ -402,8 +408,7 @@ export async function GET(request: Request) {
 
     // Flag Football Top with Hoodie renaming
     if (modelParam.includes("Flag football top with hoodie.glb")) {
-      if (originalName === "FABRIC_1_10070542")
-        return "Jersey Main Color";
+      if (originalName === "FABRIC_1_10070542") return "Jersey Main Color";
       if (originalName === "Zipper_4_TapeFabric_10234985")
         return "Zipper Tape Color";
       if (originalName === "Zipper_4_Teeth_10235089")
@@ -425,8 +430,7 @@ export async function GET(request: Request) {
       if (originalName === "Material_001") return "Shorts Front Color";
       if (originalName === "X_1_10070714")
         return "Jersey & Hoodie Stitching Color";
-      if (originalName === "X_2_10070836")
-        return "Hoodie Face Stitching Color";
+      if (originalName === "X_2_10070836") return "Hoodie Face Stitching Color";
       // Remove cord ends as they don't change anything visually
       if (originalName === "Cord_end_01_10233876") return null;
       if (originalName === "Cord_end_01_10233907") return null;
@@ -622,8 +626,7 @@ export async function GET(request: Request) {
     if (modelParam.includes("Flag football top with hoodie.glb")) {
       if (originalName.includes("FABRIC") && !originalName.includes("Zipper"))
         return "Jersey & Shorts Colors";
-      if (originalName === "Material_001")
-        return "Jersey & Shorts Colors";
+      if (originalName === "Material_001") return "Jersey & Shorts Colors";
       if (
         originalName.includes("Zipper") ||
         originalName.includes("X_") ||
