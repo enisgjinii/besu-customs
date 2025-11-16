@@ -1101,7 +1101,6 @@ function createGradientTexture(
   ctx.fillRect(0, 0, 512, 512);
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
 
   return texture;
@@ -1111,7 +1110,30 @@ export function applyMaterialUpdates(
   scene: THREE.Group,
   sections: MaterialSection[],
 ) {
+
+  // Collect all material UUIDs in the scene for debugging
+  const materialUuids = new Set<string>();
+  const materialDetails: Array<{uuid: string, name: string}> = [];
+  scene.traverse((child) => {
+    if (child instanceof THREE.Mesh && child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat) => {
+        if (mat instanceof THREE.MeshStandardMaterial) {
+          materialUuids.add(mat.uuid);
+          materialDetails.push({uuid: mat.uuid.substring(0, 8), name: mat.name || 'unnamed'});
+        }
+      });
+    }
+  });
+  
   const sectionMap = new Map(sections.map((s) => [s.id, s]));
+  
+  console.log(`🗺️ applyMaterialUpdates: Processing ${sections.length} sections`);
+  sections.forEach(s => {
+    if (s.customTexture) {
+      console.log(`  - Section: ${s.name} (id: ${s.id.substring(0, 8)}..., has texture: ${s.customTexture.length} chars)`);
+    }
+  });
 
   scene.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
@@ -1137,10 +1159,10 @@ export function applyMaterialUpdates(
           }
 
           if (section) {
+            console.log(`🎯 Found section for material uuid ${material.uuid.substring(0, 8)}: ${section.name}`);
             // Apply custom texture if available (optimized for real-time updates)
             if (section.customTexture) {
-              console.log(`✅ Applying custom texture to material ${material.uuid} for section ${section.name}`);
-              
+              console.log(`🎨 Applying custom texture to ${section.name}`);
               // Dispose of old texture to prevent memory leaks
               if (material.map) {
                 material.map.dispose();
@@ -1150,28 +1172,94 @@ export function applyMaterialUpdates(
               loader.load(
                 section.customTexture, 
                 (texture) => {
-                  console.log(`✅ Custom texture loaded successfully for ${section.name}`);
-                  texture.colorSpace = THREE.SRGBColorSpace;
+                  console.log(`✅ Texture loaded successfully for ${section.name}`);
+                  // IMPORTANT: flipY should be FALSE for Fabric.js canvas data URLs
+                  // because Fabric.js already outputs in the correct orientation
                   texture.flipY = false;
-                  texture.wrapS = THREE.RepeatWrapping;
-                  texture.wrapT = THREE.RepeatWrapping;
-                  texture.minFilter = THREE.LinearFilter;
+                  texture.wrapS = THREE.ClampToEdgeWrapping;
+                  texture.wrapT = THREE.ClampToEdgeWrapping;
+                  // Use mipmaps for smoother rendering and better LOD
+                  texture.generateMipmaps = true;
+                  texture.minFilter = THREE.LinearMipmapLinearFilter;
                   texture.magFilter = THREE.LinearFilter;
+                  // Ensure format is RGBA so alpha isn't discarded unexpectedly
+                  texture.format = THREE.RGBAFormat;
+                  texture.colorSpace = THREE.SRGBColorSpace;
+                  texture.needsUpdate = true;
+
                   material.map = texture;
-                  material.color.set("#ffffff"); // Set to white to show texture properly
+                  material.map.needsUpdate = true;
+                  // Ensure the material will show the map as intended
+                  material.color.set("#ffffff"); // white so texture isn't darkened
+                  // Keep existing roughness/metalness but ensure updates
                   material.needsUpdate = true;
+                  
+                  // Log successful application
+                  console.log(`🗄️ Texture applied to material: ${material.name || 'unnamed'}`);
                 },
                 undefined,
-                (error) => {
-                  console.error("❌ Failed to load custom texture for", section.name, error);
-                  // Fallback to base color on error
-                  if (material.map) {
-                    material.map.dispose();
-                    material.map = null;
+                  (error) => {
+                    console.error("❌ Failed to load custom texture for", section.name, error);
+                    // Attempt a more compatible fallback for data URLs (some Three builds
+                    // or environments have issues with TextureLoader + data URLs).
+                    if (section.customTexture) {
+                      try {
+                        const img = new Image();
+                        img.crossOrigin = "anonymous";
+                        img.onload = () => {
+                          try {
+                            const tex = new THREE.Texture(img);
+                            tex.flipY = false; // match UV orientation for generated textures
+                            tex.wrapS = THREE.ClampToEdgeWrapping;
+                            tex.wrapT = THREE.ClampToEdgeWrapping;
+                            tex.generateMipmaps = true;
+                            tex.minFilter = THREE.LinearMipmapLinearFilter;
+                            tex.magFilter = THREE.LinearFilter;
+                            tex.format = THREE.RGBAFormat;
+                            tex.colorSpace = THREE.SRGBColorSpace;
+                            tex.needsUpdate = true;
+
+                            if (material.map) {
+                              material.map.dispose();
+                            }
+                            material.map = tex;
+                            material.color.set("#ffffff");
+                            material.needsUpdate = true;
+                            console.log(`✅ Fallback image texture applied for ${section.name}`);
+                          } catch (innerErr) {
+                            console.error("Fallback image -> texture creation failed:", innerErr);
+                          }
+                        };
+                        img.onerror = (imgErr) => {
+                          console.error("Fallback image load failed:", imgErr);
+                          // Final fallback to flat color
+                          if (material.map) {
+                            material.map.dispose();
+                            material.map = null;
+                          }
+                          material.color.set(section.color);
+                          material.needsUpdate = true;
+                        };
+                        img.src = section.customTexture;
+                      } catch (ex) {
+                        console.error("Fallback path failed for customTexture:", ex);
+                        if (material.map) {
+                          material.map.dispose();
+                          material.map = null;
+                        }
+                        material.color.set(section.color);
+                        material.needsUpdate = true;
+                      }
+                    } else {
+                      // If no customTexture data, fallback to color
+                      if (material.map) {
+                        material.map.dispose();
+                        material.map = null;
+                      }
+                      material.color.set(section.color);
+                      material.needsUpdate = true;
+                    }
                   }
-                  material.color.set(section.color);
-                  material.needsUpdate = true;
-                }
               );
             } else if (section.trimDesign && section.trimDesign !== "none") {
               // Apply trim design texture
@@ -1345,7 +1433,6 @@ export function createTrimDesignTexture(
   }
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
 }

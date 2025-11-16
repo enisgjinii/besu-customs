@@ -102,6 +102,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const setSelectedSection = useConfiguratorStore(
     (state) => state.setSelectedSection,
   );
+  const updateSection = useConfiguratorStore((state) => state.updateSection);
 
   // Load active products on mount
   useEffect(() => {
@@ -137,15 +138,21 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
     }
   }, [productsLoaded, products.length, setProducts]);
 
-  // When switching to the Texture tab, ensure a section is selected so
-  // the UV map shows immediately and edits reflect on the 3D model.
+  // When switching to the Texture tab, default to the COMPLETE UV MAP
+  // by clearing any selected section. This shows the full UV but does NOT
+  // automatically apply a blank texture (user adds text/image first).
+  // Also clear any existing customTexture so the model shows original materials.
   useEffect(() => {
     if (activeTab !== "texture") return;
-    // Auto-select first available section if none selected yet
-    if (!selectedSectionId && sections.length > 0) {
-      setSelectedSection(sections[0].id);
-    }
-  }, [activeTab, selectedSectionId, sections, setSelectedSection]);
+    setSelectedSection(null);
+    
+    // Clear any existing custom textures so model shows original appearance
+    sections.forEach((section) => {
+      if (section.customTexture) {
+        updateSection(section.id, { customTexture: undefined });
+      }
+    });
+  }, [activeTab, sections, setSelectedSection, updateSection]);
 
   // Group products by category for the model selector
   const groupedProducts = (products as Product[])

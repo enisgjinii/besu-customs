@@ -3,15 +3,16 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useGLTF, OrbitControls } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import { GLTF } from "three-stdlib";
 import { extractUVMapForMaterial, extractCompleteUVMap } from "@/lib/uv-utils";
-import { applyMaterialUpdates } from "@/lib/model-utils";
+import { applyMaterialUpdates, extractSections } from "@/lib/model-utils";
 import { useConfiguratorStore, MaterialSection } from "@/lib/store";
 
 // Preload frequently used models for faster loading
 useGLTF.preload("/models/Backpack.glb");
 
-type Props = { controlsRef?: React.RefObject<OrbitControls> };
+type Props = { controlsRef?: React.RefObject<any> };
 
 export function ModelLoader({ controlsRef }: Props) {
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
@@ -29,7 +30,7 @@ function Model({
   controlsRef,
 }: {
   url: string;
-  controlsRef?: React.RefObject<OrbitControls>;
+  controlsRef?: React.RefObject<any>;
 }) {
   const setSections = useConfiguratorStore((s) => s.setSections);
   const setUVMap = useConfiguratorStore((s) => s.setUVMap);
@@ -37,8 +38,9 @@ function Model({
   const setModelLoading = useConfiguratorStore((s) => s.setModelLoading);
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const sections = useConfiguratorStore((s) => s.sections);
+  const { invalidate } = useThree();
 
-  const gltf = useGLTF(url) as GLTF & {
+  const gltf = useGLTF(url) as unknown as GLTF & {
     nodes: Record<string, THREE.Mesh>;
     materials: Record<string, THREE.Material>;
   };
@@ -57,7 +59,8 @@ function Model({
     async function load() {
       setModelLoading(true);
       setModelError(null);
-      setSections([]);
+      // Don't clear sections immediately - preserve them until we have new ones
+      // setSections([]);
 
       try {
         const resp = await fetch(
@@ -66,15 +69,66 @@ function Model({
         if (!mounted) return;
 
         if (!resp.ok) {
-          setSections([]);
-          setModelError("No precomputed materials found for this model");
+          // No precomputed materials - fall back to extracting sections from the model client-side
+          const clientSections = extractSections(clonedScene.current, url);
+          if (!mounted) return;
+          setSections(clientSections);
+
+          try {
+            const completeUV = extractCompleteUVMap(clonedScene.current);
+            if (completeUV) setCompleteUVMap(completeUV);
+          } catch (e) {
+            console.debug("Failed to extract complete UV:", e);
+          }
+
+          for (const section of clientSections) {
+            try {
+              const uv = extractUVMapForMaterial(clonedScene.current, section.id);
+              if (uv) setUVMap(section.id, uv);
+            } catch {
+              // ignore
+            }
+          }
+
+          try {
+            applyMaterialUpdates(clonedScene.current, clientSections);
+          } catch (e) {
+            console.debug("applyMaterialUpdates failed (clientSections):", e);
+          }
+
           return;
         }
 
         const json = await resp.json();
         if (!json?.sections) {
-          setSections([]);
-          setModelError("No precomputed materials found for this model");
+          // If the API returned no sections, also fall back to client extraction
+          console.warn("Precomputed response had no sections, falling back to client-side extraction");
+          const clientSections = extractSections(clonedScene.current, url);
+          if (!mounted) return;
+          setSections(clientSections);
+
+          try {
+            const completeUV = extractCompleteUVMap(clonedScene.current);
+            if (completeUV) setCompleteUVMap(completeUV);
+          } catch (e) {
+            console.debug("Failed to extract complete UV:", e);
+          }
+
+          for (const section of clientSections) {
+            try {
+              const uv = extractUVMapForMaterial(clonedScene.current, section.id);
+              if (uv) setUVMap(section.id, uv);
+            } catch {
+              // ignore
+            }
+          }
+
+          try {
+            applyMaterialUpdates(clonedScene.current, clientSections);
+          } catch (e) {
+            console.debug("applyMaterialUpdates failed (clientSections):", e);
+          }
+
           return;
         }
 
@@ -233,7 +287,43 @@ function Model({
           );
         }
 
-        setSections(mappedSections);
+        // Merge with existing sections to preserve customTexture
+        // IMPORTANT: Get the LATEST state right before setting, not at the start of load()
+        // This prevents race conditions where UV editor updates happen during model loading
+        const existingSections = useConfiguratorStore.getState().sections;
+        
+
+        // Build a map of existing textures by originalName
+        const existingTextureMap = new Map<string, string>();
+        const existingByOriginalName = new Map<string, MaterialSection>();
+        
+        existingSections.forEach(s => {
+          existingByOriginalName.set(s.originalName, s);
+          if (s.customTexture) {
+            existingTextureMap.set(s.originalName, s.customTexture);
+          }
+        });
+        
+        // Merge mapped sections with existing data, preserving customTexture and other user changes
+        const mergedSections = mappedSections.map(section => {
+          const existing = existingByOriginalName.get(section.originalName);
+          if (existing) {
+            // Preserve user-modified fields from existing section
+            const merged = {
+              ...section, // New structure from JSON (id, name, etc.)
+              customTexture: existing.customTexture, // Preserve texture
+              color: existing.color, // Preserve color changes
+              roughness: existing.roughness, // Preserve material changes
+              metalness: existing.metalness,
+              wireframe: existing.wireframe,
+              gradient: existing.gradient,
+            };
+            return merged;
+          }
+          return section;
+        });
+        
+        setSections(mergedSections);
 
         try {
           const completeUV = extractCompleteUVMap(clonedScene.current);
@@ -316,10 +406,56 @@ function Model({
   }, [url, controlsRef]);
 
   useEffect(() => {
+    if (!clonedScene.current) return;
+    
+    console.log(`🔄 Model Loader: Sections changed, count=${sections.length}`);
+    
+    if (sections.length === 0) {
+      console.log('⚠️ Model Loader: No sections, skipping material update');
+      return;
+    }
+    
+    // Log sections with custom textures
+    const sectionsWithTextures = sections.filter(s => s.customTexture);
+    console.log(`🖼️ Model Loader: ${sectionsWithTextures.length} sections have custom textures`);
+    sectionsWithTextures.forEach(s => {
+      console.log(`  - ${s.name}: texture length = ${s.customTexture?.length || 0}`);
+    });
+    
     try {
-      applyMaterialUpdates(clonedScene.current, sections);
+      // Re-map section IDs to current material UUIDs by matching originalName
+      // This is necessary because material UUIDs can change between renders
+      const materialsByOriginalName = new Map<string, THREE.MeshStandardMaterial>();
+      clonedScene.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial && mat.name) {
+              materialsByOriginalName.set(mat.name, mat);
+            }
+          });
+        }
+      });
+      
+      console.log(`🎭 Model Loader: Found ${materialsByOriginalName.size} materials in scene`);
+      
+      // Create remapped sections with current material UUIDs
+      const remappedSections = sections.map((section: MaterialSection) => {
+        const currentMaterial = materialsByOriginalName.get(section.originalName);
+        if (currentMaterial) {
+          return { ...section, id: currentMaterial.uuid };
+        }
+        return section;
+      });
+      
+      console.log(`⚙️ Model Loader: Applying material updates...`);
+      applyMaterialUpdates(clonedScene.current, remappedSections);
+      console.log(`✅ Model Loader: Material updates applied`);
+      
+      // Force Three.js to re-render the scene
+      invalidate();
     } catch (e) {
-      console.error("Failed to apply material updates:", e);
+      console.error("❌ Model Loader: Material update error:", e);
     }
   }, [sections]);
 

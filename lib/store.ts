@@ -78,6 +78,7 @@ export interface ConfiguratorState {
   linkedSections: Set<string>;
   setSections: (sections: MaterialSection[]) => void;
   updateSection: (id: string, updates: Partial<MaterialSection>) => void;
+  updateAllSections: (updates: Partial<MaterialSection>) => void;
   setSelectedSection: (id: string | null) => void;
   toggleSectionLink: (sectionId: string) => void;
   clearSectionLinks: () => void;
@@ -406,6 +407,11 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         ),
       };
     }),
+  updateAllSections: (updates: Partial<MaterialSection>) => {
+    set((state) => ({
+      sections: state.sections.map((s) => ({ ...s, ...updates })),
+    }));
+  },
   setSelectedSection: (id: string | null) => set({ selectedSectionId: id }),
   toggleSectionLink: (sectionId: string) =>
     set((state) => {
