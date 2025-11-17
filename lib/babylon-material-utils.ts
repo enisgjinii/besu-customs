@@ -152,6 +152,55 @@ function createTrimDesignTexture(
   return dynamicTexture;
 }
 
+// Helper function to find matching section with improved logic
+function findMatchingSection(
+  mesh: Mesh,
+  material: StandardMaterial,
+  sectionMap: Map<string, MaterialSection>,
+  sections: MaterialSection[]
+): MaterialSection | null {
+  // Strategy 1: Direct material name match
+  let section = sectionMap.get(material.name);
+  if (section) return section;
+  
+  // Strategy 2: Direct mesh name match
+  section = sectionMap.get(mesh.name);
+  if (section) return section;
+  
+  // Strategy 3: Match by originalName
+  for (const sectionData of sections) {
+    if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
+      return sectionData;
+    }
+  }
+  
+  // Strategy 4: Check combined sections
+  for (const sectionData of sections) {
+    if (sectionData.combinedOriginalNames) {
+      if (sectionData.combinedOriginalNames.includes(material.name) ||
+          sectionData.combinedOriginalNames.includes(mesh.name)) {
+        return sectionData;
+      }
+    }
+  }
+  
+  // Strategy 5: Partial name matching (case-insensitive)
+  const materialNameLower = material.name.toLowerCase();
+  const meshNameLower = mesh.name.toLowerCase();
+  
+  for (const sectionData of sections) {
+    const sectionNameLower = sectionData.originalName.toLowerCase();
+    if (materialNameLower.includes(sectionNameLower) || 
+        sectionNameLower.includes(materialNameLower) ||
+        meshNameLower.includes(sectionNameLower) ||
+        sectionNameLower.includes(meshNameLower)) {
+      return sectionData;
+    }
+  }
+  
+  return null;
+}
+
 // Apply materials to model based on sections
 export function applyMaterialsToModel(
   rootMesh: AbstractMesh,
@@ -165,14 +214,17 @@ export function applyMaterialsToModel(
   sections.forEach((section) => {
     sectionMap.set(section.originalName, section);
     sectionMap.set(section.id, section);
-    sectionMap.set(section.name, section); // Also map by display name
+    sectionMap.set(section.name, section);
   });
   
-  console.log("🗺️ Section map keys:", Array.from(sectionMap.keys()));
+  console.log("🗺️ Section map keys:", Array.from(sectionMap.keys()).slice(0, 10));
 
   // Traverse all meshes
   const meshes = rootMesh.getChildMeshes(false);
   meshes.push(rootMesh);
+
+  let appliedCount = 0;
+  let skippedCount = 0;
 
   meshes.forEach((mesh) => {
     if (!(mesh instanceof Mesh)) return;
@@ -185,44 +237,17 @@ export function applyMaterialsToModel(
       mesh.material = material;
     }
 
-    // Find matching section - try multiple strategies
-    let section = sectionMap.get(material.name); // Try material name first
-    
-    if (!section) {
-      section = sectionMap.get(mesh.name); // Try mesh name
-    }
-    
-    if (!section) {
-      // Try to find by originalName matching material name
-      for (const [, sectionData] of sectionMap.entries()) {
-        if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
-          section = sectionData;
-          break;
-        }
-      }
-    }
+    // Find matching section with improved algorithm
+    const section = findMatchingSection(mesh, material, sectionMap, sections);
 
     if (!section) {
-      // Check combined sections
-      for (const [, sectionData] of sectionMap.entries()) {
-        if (
-          sectionData.combinedOriginalNames &&
-          (sectionData.combinedOriginalNames.includes(material.name) ||
-            sectionData.combinedOriginalNames.includes(mesh.name))
-        ) {
-          section = sectionData;
-          break;
-        }
-      }
-    }
-
-    if (!section) {
-      console.log(`⚠️ No section found for mesh: ${mesh.name}, material: ${material.name}`);
-      console.log(`   Available section keys:`, Array.from(sectionMap.keys()).slice(0, 5));
+      console.log(`⚠️ No section found for mesh: "${mesh.name}", material: "${material.name}"`);
+      skippedCount++;
       return;
     }
 
     console.log(`🎯 Applying material to: ${mesh.name} (${material.name}), color: ${section.color}`);
+    appliedCount++;
 
     // Dispose old texture if exists
     if (material.diffuseTexture) {
@@ -322,13 +347,14 @@ export function applyMaterialsToModel(
     console.log(`  ✅ Material updated and forced refresh`);
   });
 
-  console.log(`✅ Finished applying materials to ${meshes.length} meshes`);
+  console.log(`✅ Finished applying materials: ${appliedCount} applied, ${skippedCount} skipped out of ${meshes.length} meshes`);
   
   // Force scene to render multiple times to ensure visual update
   scene.render();
   requestAnimationFrame(() => scene.render());
   setTimeout(() => scene.render(), 10);
   setTimeout(() => scene.render(), 50);
+  setTimeout(() => scene.render(), 100);
 
   console.log("✅ Materials applied successfully");
 }
@@ -338,7 +364,10 @@ export function extractSectionsFromModel(
   rootMesh: AbstractMesh,
   modelUrl: string,
 ): MaterialSection[] {
-  console.log("🔍 Extracting sections from model");
+  console.log("🔍 Extracting sections from model with intelligent parsing");
+
+  // Import the parser dynamically
+  const { parseMaterialName } = require("./material-name-parser");
 
   const sections: MaterialSection[] = [];
   const processedMaterials = new Set<string>();
@@ -363,21 +392,36 @@ export function extractSectionsFromModel(
     if (processedMaterials.has(materialName)) return;
     processedMaterials.add(materialName);
 
-    // Get current color
-    const color = material.diffuseColor || new Color3(0.8, 0.8, 0.8);
-    const hexColor = `#${Math.round(color.r * 255)
-      .toString(16)
-      .padStart(2, "0")}${Math.round(color.g * 255)
-      .toString(16)
-      .padStart(2, "0")}${Math.round(color.b * 255)
-      .toString(16)
-      .padStart(2, "0")}`;
+    // Parse the material name intelligently
+    const parsed = parseMaterialName(materialName);
+
+    // Get current color from material, or use intelligent default
+    const materialColor = material.diffuseColor;
+    let hexColor: string;
+    
+    // Check if material has a meaningful color (not default gray/white)
+    if (materialColor && 
+        (materialColor.r !== materialColor.g || 
+         materialColor.g !== materialColor.b ||
+         (materialColor.r < 0.7 || materialColor.r > 0.9))) {
+      // Use existing color if it's not default
+      hexColor = `#${Math.round(materialColor.r * 255)
+        .toString(16)
+        .padStart(2, "0")}${Math.round(materialColor.g * 255)
+        .toString(16)
+        .padStart(2, "0")}${Math.round(materialColor.b * 255)
+        .toString(16)
+        .padStart(2, "0")}`;
+    } else {
+      // Use intelligent default color based on material type
+      hexColor = parsed.defaultColor;
+    }
 
     const section: MaterialSection = {
       id: materialName, // Use material name as ID for easier matching
-      name: materialName,
-      originalName: materialName,
-      category: "Other",
+      name: parsed.displayName, // Use friendly display name
+      originalName: materialName, // Keep original for matching
+      category: parsed.category,
       color: hexColor,
       roughness: material.specularPower ? 1 - material.specularPower / 128 : 0.5,
       metalness: material.specularColor ? material.specularColor.r : 0.5,
@@ -385,9 +429,16 @@ export function extractSectionsFromModel(
     };
 
     sections.push(section);
-    console.log(`📋 Extracted section: ${materialName}, color: ${hexColor}`);
+    console.log(`📋 Extracted: "${parsed.displayName}" (${materialName}) -> ${hexColor}`);
   });
 
-  console.log(`✅ Extracted ${sections.length} sections`);
+  // Sort sections by priority (body parts first, hardware last)
+  sections.sort((a, b) => {
+    const priorityA = parseMaterialName(a.originalName).priority;
+    const priorityB = parseMaterialName(b.originalName).priority;
+    return priorityA - priorityB;
+  });
+
+  console.log(`✅ Extracted ${sections.length} sections with intelligent naming`);
   return sections;
 }

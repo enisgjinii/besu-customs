@@ -12,6 +12,7 @@ import {
   Color3,
   SceneLoader,
   AbstractMesh,
+  Mesh,
   StandardMaterial,
   Texture,
 } from "@babylonjs/core";
@@ -196,7 +197,7 @@ export function BabylonScene() {
     }
   }, [autoRotate]);
 
-  // Apply materials when sections change
+  // Apply materials when sections change OR when highlight changes
   useEffect(() => {
     if (!currentMeshRef.current || !sceneRef.current || sections.length === 0) {
       console.log("⚠️ Cannot apply materials:", {
@@ -207,87 +208,84 @@ export function BabylonScene() {
       return;
     }
 
-    console.log("🎨 Sections changed, applying materials...", {
+    console.log("🎨 Applying materials and highlights...", {
       sectionsCount: sections.length,
-      sampleSection: sections[0],
+      highlightedId: highlightedSectionId,
+      sampleSections: sections.slice(0, 3).map(s => ({
+        id: s.id,
+        name: s.name,
+        originalName: s.originalName,
+        color: s.color
+      }))
     });
     
+    // Apply materials first
     applyMaterialsToModel(currentMeshRef.current, sections, sceneRef.current);
+    
+    // Then apply highlight effect on top
+    if (highlightedSectionId) {
+      const scene = sceneRef.current;
+      const rootMesh = currentMeshRef.current;
+      
+      // Get all meshes
+      const meshes = rootMesh.getChildMeshes(false);
+      meshes.push(rootMesh);
+
+      // Create section map for quick lookup
+      const sectionMap = new Map<string, typeof sections[0]>();
+      sections.forEach((section) => {
+        sectionMap.set(section.originalName, section);
+        sectionMap.set(section.id, section);
+        sectionMap.set(section.name, section);
+      });
+
+      // Apply highlight to the hovered section
+      meshes.forEach((mesh) => {
+        if (!(mesh instanceof Mesh)) return;
+
+        const material = mesh.material as StandardMaterial;
+        if (!material) return;
+
+        // Find matching section
+        let section = sectionMap.get(material.name) || sectionMap.get(mesh.name);
+        
+        if (!section) {
+          for (const [, sectionData] of sectionMap.entries()) {
+            if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
+              section = sectionData;
+              break;
+            }
+          }
+        }
+
+        if (!section) {
+          for (const [, sectionData] of sectionMap.entries()) {
+            if (
+              sectionData.combinedOriginalNames &&
+              (sectionData.combinedOriginalNames.includes(material.name) ||
+                sectionData.combinedOriginalNames.includes(mesh.name))
+            ) {
+              section = sectionData;
+              break;
+            }
+          }
+        }
+
+        if (!section) return;
+
+        // Apply highlight if this section is hovered
+        if (highlightedSectionId === section.id) {
+          // Add emissive glow for highlight
+          material.emissiveColor = new Color3(0.3, 0.3, 0.3);
+        }
+      });
+    }
     
     // Force scene to re-render
     if (sceneRef.current) {
       sceneRef.current.render();
     }
-  }, [sections]);
-
-  // Apply highlight effect when hovering over material sections
-  useEffect(() => {
-    if (!currentMeshRef.current || !sceneRef.current || sections.length === 0) {
-      return;
-    }
-
-    const scene = sceneRef.current;
-    const rootMesh = currentMeshRef.current;
-    
-    // Get all meshes
-    const meshes = rootMesh.getChildMeshes(false);
-    meshes.push(rootMesh);
-
-    // Create section map for quick lookup
-    const sectionMap = new Map<string, typeof sections[0]>();
-    sections.forEach((section) => {
-      sectionMap.set(section.originalName, section);
-      sectionMap.set(section.id, section);
-      sectionMap.set(section.name, section);
-    });
-
-    // Apply or remove highlight
-    meshes.forEach((mesh) => {
-      if (!(mesh instanceof Mesh)) return;
-
-      const material = mesh.material as StandardMaterial;
-      if (!material) return;
-
-      // Find matching section
-      let section = sectionMap.get(material.name) || sectionMap.get(mesh.name);
-      
-      if (!section) {
-        for (const [, sectionData] of sectionMap.entries()) {
-          if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
-            section = sectionData;
-            break;
-          }
-        }
-      }
-
-      if (!section) {
-        for (const [, sectionData] of sectionMap.entries()) {
-          if (
-            sectionData.combinedOriginalNames &&
-            (sectionData.combinedOriginalNames.includes(material.name) ||
-              sectionData.combinedOriginalNames.includes(mesh.name))
-          ) {
-            section = sectionData;
-            break;
-          }
-        }
-      }
-
-      if (!section) return;
-
-      // Apply highlight if this section is hovered
-      if (highlightedSectionId === section.id) {
-        // Add emissive glow for highlight
-        material.emissiveColor = new Color3(0.3, 0.3, 0.3);
-      } else {
-        // Remove highlight
-        material.emissiveColor = new Color3(0, 0, 0);
-      }
-    });
-
-    // Force render
-    scene.render();
-  }, [highlightedSectionId, sections]);
+  }, [sections, highlightedSectionId]);
 
   // Load 3D model
   useEffect(() => {
@@ -322,55 +320,158 @@ export function BabylonScene() {
         const rootMesh = meshes[0];
         currentMeshRef.current = rootMesh;
 
-        // Calculate proper bounding box for all meshes
-        let min = new Vector3(Infinity, Infinity, Infinity);
-        let max = new Vector3(-Infinity, -Infinity, -Infinity);
+        // Advanced centering and auto-sizing algorithm
+        console.log("📐 Starting advanced model normalization...");
+        
+        // Step 1: Force update all mesh world matrices
+        rootMesh.computeWorldMatrix(true);
+        meshes.forEach((mesh) => {
+          mesh.computeWorldMatrix(true);
+        });
+
+        // Step 2: Calculate accurate bounding box for ALL meshes
+        let globalMin = new Vector3(Infinity, Infinity, Infinity);
+        let globalMax = new Vector3(-Infinity, -Infinity, -Infinity);
+        let validMeshCount = 0;
         
         meshes.forEach((mesh) => {
           if (mesh.getBoundingInfo) {
-            const boundingInfo = mesh.getBoundingInfo();
-            const meshMin = boundingInfo.boundingBox.minimumWorld;
-            const meshMax = boundingInfo.boundingBox.maximumWorld;
-            
-            min = Vector3.Minimize(min, meshMin);
-            max = Vector3.Maximize(max, meshMax);
-          }
-        });
-
-        // Calculate center and size
-        const center = Vector3.Center(min, max);
-        const size = max.subtract(min);
-        const maxDim = Math.max(size.x, size.y, size.z);
-        
-        // Scale model to fit in view
-        if (maxDim > 0) {
-          const targetSize = 2.5;
-          const scale = targetSize / maxDim;
-          rootMesh.scaling = new Vector3(scale, scale, scale);
-          
-          // Recalculate center after scaling
-          rootMesh.computeWorldMatrix(true);
-          meshes.forEach(m => m.computeWorldMatrix(true));
-          
-          min = new Vector3(Infinity, Infinity, Infinity);
-          max = new Vector3(-Infinity, -Infinity, -Infinity);
-          
-          meshes.forEach((mesh) => {
-            if (mesh.getBoundingInfo) {
+            try {
               const boundingInfo = mesh.getBoundingInfo();
               const meshMin = boundingInfo.boundingBox.minimumWorld;
               const meshMax = boundingInfo.boundingBox.maximumWorld;
               
-              min = Vector3.Minimize(min, meshMin);
-              max = Vector3.Maximize(max, meshMax);
+              // Validate bounds (skip invalid meshes)
+              if (isFinite(meshMin.x) && isFinite(meshMax.x)) {
+                globalMin = Vector3.Minimize(globalMin, meshMin);
+                globalMax = Vector3.Maximize(globalMax, meshMax);
+                validMeshCount++;
+              }
+            } catch (e) {
+              console.warn(`Could not get bounds for mesh: ${mesh.name}`);
+            }
+          }
+        });
+
+        console.log(`📊 Analyzed ${validMeshCount} valid meshes out of ${meshes.length}`);
+
+        // Step 3: Calculate original dimensions
+        const originalSize = globalMax.subtract(globalMin);
+        const originalCenter = Vector3.Center(globalMin, globalMax);
+        const maxDimension = Math.max(originalSize.x, originalSize.y, originalSize.z);
+        const minDimension = Math.min(originalSize.x, originalSize.y, originalSize.z);
+        const aspectRatio = maxDimension / (minDimension || 1);
+        
+        console.log("📐 Original model metrics:", {
+          size: { 
+            x: originalSize.x.toFixed(3), 
+            y: originalSize.y.toFixed(3), 
+            z: originalSize.z.toFixed(3) 
+          },
+          center: { 
+            x: originalCenter.x.toFixed(3), 
+            y: originalCenter.y.toFixed(3), 
+            z: originalCenter.z.toFixed(3) 
+          },
+          maxDim: maxDimension.toFixed(3),
+          minDim: minDimension.toFixed(3),
+          aspectRatio: aspectRatio.toFixed(2)
+        });
+        
+        // Step 4: Intelligent scaling based on model characteristics
+        let targetSize: number;
+        
+        if (maxDimension < 0.1) {
+          // Very small model - scale up significantly
+          targetSize = 3.5;
+          console.log("🔍 Detected very small model, using large target size");
+        } else if (maxDimension < 1) {
+          // Small model - scale up moderately
+          targetSize = 3.2;
+          console.log("📏 Detected small model, using moderate target size");
+        } else if (maxDimension > 100) {
+          // Very large model - scale down significantly
+          targetSize = 2.5;
+          console.log("🏔️ Detected very large model, using small target size");
+        } else if (aspectRatio > 5) {
+          // Elongated model - use smaller target to fit better
+          targetSize = 2.8;
+          console.log("📏 Detected elongated model, adjusting target size");
+        } else {
+          // Normal sized model
+          targetSize = 3.0;
+          console.log("✅ Normal model size detected");
+        }
+        
+        // Step 5: Apply uniform scaling
+        if (maxDimension > 0) {
+          const scaleFactor = targetSize / maxDimension;
+          rootMesh.scaling = new Vector3(scaleFactor, scaleFactor, scaleFactor);
+          
+          console.log("📏 Applied scale factor:", scaleFactor.toFixed(4));
+          
+          // Step 6: Recalculate bounds after scaling
+          rootMesh.computeWorldMatrix(true);
+          meshes.forEach((mesh) => {
+            mesh.computeWorldMatrix(true);
+          });
+          
+          // Recalculate global bounds
+          globalMin = new Vector3(Infinity, Infinity, Infinity);
+          globalMax = new Vector3(-Infinity, -Infinity, -Infinity);
+          
+          meshes.forEach((mesh) => {
+            if (mesh.getBoundingInfo) {
+              try {
+                const boundingInfo = mesh.getBoundingInfo();
+                const meshMin = boundingInfo.boundingBox.minimumWorld;
+                const meshMax = boundingInfo.boundingBox.maximumWorld;
+                
+                if (isFinite(meshMin.x) && isFinite(meshMax.x)) {
+                  globalMin = Vector3.Minimize(globalMin, meshMin);
+                  globalMax = Vector3.Maximize(globalMax, meshMax);
+                }
+              } catch (e) {
+                // Skip invalid meshes
+              }
             }
           });
           
-          const newCenter = Vector3.Center(min, max);
-          rootMesh.position = newCenter.negate();
+          // Step 7: Center the model perfectly at world origin
+          const scaledCenter = Vector3.Center(globalMin, globalMax);
+          rootMesh.position = scaledCenter.negate();
+          
+          console.log("🎯 Centered model at origin with offset:", {
+            x: scaledCenter.x.toFixed(3),
+            y: scaledCenter.y.toFixed(3),
+            z: scaledCenter.z.toFixed(3)
+          });
+          
+          // Step 8: Final world matrix update
+          rootMesh.computeWorldMatrix(true);
+          meshes.forEach((mesh) => {
+            mesh.computeWorldMatrix(true);
+          });
+          
+          // Step 9: Verify final position
+          const finalSize = globalMax.subtract(globalMin);
+          const finalMaxDim = Math.max(finalSize.x, finalSize.y, finalSize.z);
+          console.log("✅ Final model size:", finalMaxDim.toFixed(3));
         }
 
+        // Step 10: Calculate optimal camera distance with intelligent positioning
+        const finalSize = globalMax.subtract(globalMin);
+        const finalMaxDim = Math.max(finalSize.x, finalSize.y, finalSize.z);
+        
+        // Use field of view and model size to calculate perfect camera distance
+        const fov = Math.PI / 3; // 60 degrees default
+        const optimalDistance = (finalMaxDim / 2) / Math.tan(fov / 2) * 1.5;
+        const optimalCameraDistance = Math.max(4, Math.min(optimalDistance, 12));
+        
+        console.log("📷 Optimal camera distance:", optimalCameraDistance.toFixed(2));
+
         // Entrance animation - zoom in with fade
+        const finalScale = rootMesh.scaling.x; // Use the already calculated scale
         rootMesh.scaling = Vector3.Zero();
         rootMesh.visibility = 0;
         
@@ -381,9 +482,7 @@ export function BabylonScene() {
           if (!rootMesh || frame >= animationDuration) {
             if (rootMesh) {
               rootMesh.visibility = 1;
-              const targetSize = 2.5;
-              const scale = targetSize / maxDim;
-              rootMesh.scaling = new Vector3(scale, scale, scale);
+              rootMesh.scaling = new Vector3(finalScale, finalScale, finalScale);
             }
             return;
           }
@@ -392,8 +491,7 @@ export function BabylonScene() {
           const progress = frame / animationDuration;
           const easeProgress = 1 - Math.pow(1 - progress, 3); // ease out cubic
           
-          const targetSize = 2.5;
-          const scale = (targetSize / maxDim) * easeProgress;
+          const scale = finalScale * easeProgress;
           rootMesh.scaling = new Vector3(scale, scale, scale);
           rootMesh.visibility = easeProgress;
           
@@ -402,12 +500,16 @@ export function BabylonScene() {
         
         animateEntrance();
 
-        // Reset camera to look at center
+        // Reset camera to look at center with optimal distance
         if (cameraRef.current) {
           cameraRef.current.setTarget(Vector3.Zero());
           cameraRef.current.alpha = Math.PI / 2;
           cameraRef.current.beta = Math.PI / 3;
-          cameraRef.current.radius = 5;
+          cameraRef.current.radius = optimalCameraDistance;
+          
+          // Update camera limits based on model size
+          cameraRef.current.lowerRadiusLimit = optimalCameraDistance * 0.3;
+          cameraRef.current.upperRadiusLimit = optimalCameraDistance * 2.5;
         }
 
         // Extract material sections from the actual model
