@@ -11,6 +11,8 @@ import {
   MeshBuilder,
   Ray,
   Color3,
+  ActionManager,
+  ExecuteCodeAction,
 } from "@babylonjs/core";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -21,6 +23,7 @@ interface BabylonDecalsProps {
 
 export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
   const decals = useConfiguratorStore((s) => s.decals);
+  const setSelectedDecal = useConfiguratorStore((s) => s.setSelectedDecal);
 
   useEffect(() => {
     if (!scene || !rootMesh || decals.length === 0) return;
@@ -136,7 +139,18 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
 
         decalMesh.material = decalMaterial;
         decalMesh.renderingGroupId = 1;
-        decalMesh.isPickable = false;
+        decalMesh.isPickable = true;
+
+        // Add click interaction to select decal
+        decalMesh.actionManager = new ActionManager(scene);
+        decalMesh.actionManager.registerAction(
+          new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
+            setSelectedDecal(decal.id);
+          })
+        );
+
+        // Store decal data on mesh for position tracking
+        (decalMesh as any).decalData = decal;
 
         console.log(`✅ Decal projected: ${decal.id}`);
       } catch (error) {
@@ -154,7 +168,7 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
         d.dispose();
       });
     };
-  }, [decals, scene, rootMesh]);
+  }, [decals, scene, rootMesh, setSelectedDecal]);
 
   return null;
 }

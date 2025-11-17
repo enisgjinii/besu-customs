@@ -36,6 +36,7 @@ import { AIImageGenerator } from "./ai-image-generator";
 import { ThemeToggle } from "./theme-toggle";
 import { DecalEditor } from "./decal-editor";
 import { TextureLayers } from "./texture-layers";
+import { DecalsList } from "./decals-list";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -837,7 +838,14 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             <MaterialEditor />
           </div>
         )}
-        {activeTab === "texture" && <TextureLayers />}
+        {activeTab === "texture" && (
+          <div className="space-y-3">
+            <TextureLayers />
+            <div className="px-4 pb-4">
+              <DecalsList />
+            </div>
+          </div>
+        )}
         {activeTab === "view" && (
           <div className="p-4 space-y-3">
             <Tabs defaultValue="view">

@@ -132,9 +132,13 @@ export interface ConfiguratorState {
 
   // Decal management
   decals: DecalData[];
+  selectedDecalId: string | null;
   addDecal: (decal: DecalData) => void;
+  updateDecal: (id: string, updates: Partial<DecalData>) => void;
+  duplicateDecal: (id: string) => void;
   removeDecal: (id: string) => void;
   clearDecals: () => void;
+  setSelectedDecal: (id: string | null) => void;
   lastDecalTexture: string | null;
   setLastDecalTexture: (url: string | null) => void;
 
@@ -518,15 +522,43 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
 
   // Decal management
   decals: [],
+  selectedDecalId: null,
   addDecal: (decal: DecalData) =>
     set((state) => ({
       decals: [...state.decals, decal],
+      selectedDecalId: decal.id,
     })),
+  updateDecal: (id: string, updates: Partial<DecalData>) =>
+    set((state) => ({
+      decals: state.decals.map((d) =>
+        d.id === id ? { ...d, ...updates } : d,
+      ),
+    })),
+  duplicateDecal: (id: string) =>
+    set((state) => {
+      const original = state.decals.find((d) => d.id === id);
+      if (!original) return state;
+      const newDecal: DecalData = {
+        ...original,
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        position: {
+          x: original.position.x + 0.1,
+          y: original.position.y + 0.1,
+          z: original.position.z,
+        },
+      };
+      return {
+        decals: [...state.decals, newDecal],
+        selectedDecalId: newDecal.id,
+      };
+    }),
   removeDecal: (id: string) =>
     set((state) => ({
       decals: state.decals.filter((d) => d.id !== id),
+      selectedDecalId: state.selectedDecalId === id ? null : state.selectedDecalId,
     })),
-  clearDecals: () => set({ decals: [] }),
+  clearDecals: () => set({ decals: [], selectedDecalId: null }),
+  setSelectedDecal: (id: string | null) => set({ selectedDecalId: id }),
   lastDecalTexture: null,
   setLastDecalTexture: (url: string | null) => set({ lastDecalTexture: url }),
 

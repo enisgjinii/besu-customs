@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { DecalOverlayControls } from "@/components/decal-overlay-controls";
 
 // Dynamic import for BabylonScene component to prevent static generation issues
 const Scene = dynamic(
@@ -238,6 +239,9 @@ export default function Home() {
       >
         <Scene />
       </main>
+
+        {/* Decal overlay controls */}
+        <DecalOverlayControls />
 
       {/* Mobile: Bottom Navigation */}
       <MobileBottomNav />
