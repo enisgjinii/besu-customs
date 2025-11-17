@@ -25,6 +25,10 @@ import {
   Film,
   Square,
   Maximize2,
+  Copy,
+  Eye,
+  FileJson,
+  Settings,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import type { Product } from "@/lib/store";
@@ -33,6 +37,12 @@ import { ThemeToggle } from "./theme-toggle";
 import { DecalEditor } from "./decal-editor";
 import { TextureLayers } from "./texture-layers";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Separator } from "./ui/separator";
+import { Badge } from "./ui/badge";
 import NextImage from "next/image";
 import {
   Select,
@@ -43,13 +53,14 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { ColorPickerModal } from "./color-picker-modal";
+import { toast } from "sonner";
 
 interface UnifiedSidebarProps {
   sidebarOpen?: boolean;
   onToggleSidebar?: (open: boolean) => void;
 }
 
-export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
+export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarProps) {
   const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
     "materials",
   );
@@ -58,6 +69,10 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState("");
   const [productsLoaded, setProductsLoaded] = useState(false);
+  const [exportFileName, setExportFileName] = useState("model-export");
+  const [imageQuality, setImageQuality] = useState<"standard" | "high" | "ultra">("high");
+  const [videoFormat, setVideoFormat] = useState<"webm" | "mp4">("webm");
+  const [includeMetadata, setIncludeMetadata] = useState(true);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -191,14 +206,24 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const glRef = useConfiguratorStore((state) => state.glRef);
 
   const handleExport = () => {
-    const json = exportPreset();
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "preset.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const json = exportPreset();
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${exportFileName || "preset"}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Preset exported successfully", {
+        description: `Saved as ${exportFileName}.json`,
+      });
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export preset", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,19 +231,46 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const json = event.target?.result as string;
-        importPreset(json);
+        try {
+          const json = event.target?.result as string;
+          importPreset(json);
+          toast.success("Preset imported successfully", {
+            description: `Loaded from ${file.name}`,
+          });
+        } catch (error) {
+          console.error("Import failed:", error);
+          toast.error("Failed to import preset", {
+            description: "Invalid preset file format",
+          });
+        }
       };
       reader.readAsText(file);
     }
+    // Reset input so same file can be selected again
+    e.target.value = "";
   };
 
   const handleExportModel = () => {
-    if (!currentModelUrl) return;
-    const link = document.createElement("a");
-    link.download = "configured-model.glb";
-    link.href = currentModelUrl;
-    link.click();
+    if (!currentModelUrl) {
+      toast.error("No model loaded", {
+        description: "Please load a model before exporting",
+      });
+      return;
+    }
+    try {
+      const link = document.createElement("a");
+      link.download = `${exportFileName || "configured-model"}.glb`;
+      link.href = currentModelUrl;
+      link.click();
+      toast.success("Model exported successfully", {
+        description: `Saved as ${exportFileName}.glb`,
+      });
+    } catch (error) {
+      console.error("Model export failed:", error);
+      toast.error("Failed to export model", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   };
 
   const handleScreenshot = () => {
@@ -227,33 +279,44 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
       render: () => void;
     } | null;
     if (!renderer) {
-      alert("WebGL renderer not available");
+      toast.error("Renderer not available", {
+        description: "WebGL renderer is not ready",
+      });
       return;
     }
 
     try {
+      const toastId = toast.loading("Capturing screenshot...");
       // Force a render and then capture
       requestAnimationFrame(() => {
         const canvas = renderer.domElement;
         if (!canvas) {
-          alert("Canvas not found");
+          toast.dismiss(toastId);
+          toast.error("Canvas not found");
           return;
         }
 
         // Ensure the canvas is up to date
         renderer.render();
 
-        const dataURL = canvas.toDataURL("image/png", 1.0);
+        const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
+        const dataURL = canvas.toDataURL("image/png", quality);
         const link = document.createElement("a");
-        link.download = `model-screenshot-${Date.now()}.png`;
+        link.download = `${exportFileName || "screenshot"}.png`;
         link.href = dataURL;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        toast.dismiss(toastId);
+        toast.success("Screenshot captured", {
+          description: `Saved as ${exportFileName}.png (${imageQuality} quality)`,
+        });
       });
     } catch (error) {
       console.error("Screenshot failed:", error);
-      alert("Failed to capture screenshot");
+      toast.error("Screenshot failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -263,15 +326,19 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
       render: () => void;
     } | null;
     if (!renderer) {
-      alert("WebGL renderer not available");
+      toast.error("Renderer not available", {
+        description: "WebGL renderer is not ready",
+      });
       return;
     }
 
     try {
+      const toastId = toast.loading("Exporting high-resolution image...");
       requestAnimationFrame(() => {
         const canvas = renderer.domElement;
         if (!canvas) {
-          alert("Canvas not found");
+          toast.dismiss(toastId);
+          toast.error("Canvas not found");
           return;
         }
 
@@ -289,7 +356,8 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
 
         const ctx = tempCanvas.getContext("2d");
         if (!ctx) {
-          alert("Failed to create canvas context");
+          toast.dismiss(toastId);
+          toast.error("Failed to create canvas context");
           return;
         }
 
@@ -298,17 +366,24 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
         ctx.scale(scale, scale);
         ctx.drawImage(canvas, 0, 0);
 
-        const dataURL = tempCanvas.toDataURL("image/png", 1.0);
+        const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
+        const dataURL = tempCanvas.toDataURL("image/png", quality);
         const link = document.createElement("a");
-        link.download = `model-2x-${Date.now()}.png`;
+        link.download = `${exportFileName || "model"}-2x.png`;
         link.href = dataURL;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        toast.dismiss(toastId);
+        toast.success("High-res image exported", {
+          description: `Saved as ${exportFileName}-2x.png (${tempCanvas.width}x${tempCanvas.height})`,
+        });
       });
     } catch (error) {
       console.error("High-res export failed:", error);
-      alert("Failed to export high-res image");
+      toast.error("High-res export failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -318,15 +393,19 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
       render: () => void;
     } | null;
     if (!renderer) {
-      alert("WebGL renderer not available");
+      toast.error("Renderer not available", {
+        description: "WebGL renderer is not ready",
+      });
       return;
     }
 
     try {
+      const toastId = toast.loading("Exporting 4K image (this may take a moment)...");
       requestAnimationFrame(() => {
         const canvas = renderer.domElement;
         if (!canvas) {
-          alert("Canvas not found");
+          toast.dismiss(toastId);
+          toast.error("Canvas not found");
           return;
         }
 
@@ -344,7 +423,8 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
 
         const ctx = tempCanvas.getContext("2d");
         if (!ctx) {
-          alert("Failed to create canvas context");
+          toast.dismiss(toastId);
+          toast.error("Failed to create canvas context");
           return;
         }
 
@@ -353,17 +433,24 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
         ctx.scale(scale, scale);
         ctx.drawImage(canvas, 0, 0);
 
-        const dataURL = tempCanvas.toDataURL("image/png", 1.0);
+        const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
+        const dataURL = tempCanvas.toDataURL("image/png", quality);
         const link = document.createElement("a");
-        link.download = `model-4k-${Date.now()}.png`;
+        link.download = `${exportFileName || "model"}-4x.png`;
         link.href = dataURL;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        toast.dismiss(toastId);
+        toast.success("4K image exported", {
+          description: `Saved as ${exportFileName}-4x.png (${tempCanvas.width}x${tempCanvas.height})`,
+        });
       });
     } catch (error) {
       console.error("4K export failed:", error);
-      alert("Failed to export 4K image");
+      toast.error("4K export failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -420,13 +507,17 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   const handleStartRecording = async (format: "webm" | "mp4") => {
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
     if (!canvas) {
-      alert("Canvas not found");
+      toast.error("Canvas not found", {
+        description: "Unable to start recording",
+      });
       return;
     }
 
     try {
       if (!canvas.captureStream) {
-        alert("Video recording is not supported in your browser");
+        toast.error("Video recording not supported", {
+          description: "Your browser doesn't support video capture",
+        });
         return;
       }
 
@@ -443,7 +534,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
           options.mimeType = "video/webm;codecs=h264";
           fileExtension = "mp4";
         } else {
-          alert("MP4 format not supported. Using WebM instead.");
+          toast.warning("MP4 not supported, using WebM", {
+            description: "Your browser doesn't support MP4 recording",
+          });
           format = "webm";
         }
       }
@@ -456,7 +549,9 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
         } else if (MediaRecorder.isTypeSupported("video/webm")) {
           options.mimeType = "video/webm";
         } else {
-          alert("No supported video format found");
+          toast.error("No supported video format", {
+            description: "Your browser doesn't support video recording",
+          });
           return;
         }
         fileExtension = "webm";
@@ -477,35 +572,46 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
         });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.download = `model-video-${Date.now()}.${fileExtension}`;
+        link.download = `${exportFileName || "model-video"}.${fileExtension}`;
         link.href = url;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         setIsRecording(false);
+        toast.success("Video exported successfully", {
+          description: `Saved as ${exportFileName}.${fileExtension}`,
+        });
       };
 
       mediaRecorder.onerror = (event) => {
         console.error("MediaRecorder error:", event);
-        alert("Recording failed");
+        toast.error("Recording failed", {
+          description: "An error occurred during recording",
+        });
         setIsRecording(false);
       };
 
       mediaRecorder.start(100);
       mediaRecorderRef.current = mediaRecorder;
       setIsRecording(true);
+      toast.success("Recording started", {
+        description: `Recording in ${format.toUpperCase()} format`,
+      });
     } catch (error) {
       console.error("Failed to start recording:", error);
-      alert(
-        `Video recording failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      toast.error("Video recording failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
+      toast.info("Stopping recording...", {
+        description: "Processing video...",
+      });
     }
   };
 
@@ -573,72 +679,82 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
     setIsColorPickerOpen(false);
   };
 
+  const isCollapsed = sidebarOpen === false;
+
   return (
     <div className="flex flex-col bg-card w-full rounded-2xl border border-border/20 backdrop-blur-sm max-h-[calc(100vh-2rem)] overflow-hidden">
       {/* Header with Model Selector */}
       <div className="p-4 border-b border-border/50 space-y-3 bg-gradient-to-b from-card to-card/50 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="h-12 w-12 rounded-lg overflow-hidden bg-black p-2">
-              <NextImage
-                src="/LOGO-gg.png"
-                alt="gg logo"
-                width={32}
-                height={32}
-                className="w-full h-full object-cover"
-              />
+          {!isCollapsed && (
+            <div className="flex items-center space-x-2">
+              <div className="h-12 w-12 rounded-lg overflow-hidden bg-black p-2">
+                <NextImage
+                  src="/LOGO-gg.png"
+                  alt="gg logo"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          )}
+          <div className={`flex items-center gap-2 ${isCollapsed ? "mx-auto" : ""}`}>
             <button
-              onClick={() => onToggleSidebar?.(false)}
+              onClick={() => onToggleSidebar?.(!sidebarOpen)}
               className="h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background"
-              title="Collapse sidebar"
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              <PanelLeftClose className="w-4 h-4" />
+              <PanelLeftClose
+                className={`w-4 h-4 transition-transform duration-300 ${
+                  isCollapsed ? "rotate-180" : ""
+                }`}
+              />
             </button>
-            <ThemeToggle />
+            {!isCollapsed && <ThemeToggle />}
           </div>
         </div>
 
         {/* Model Dropdown */}
-        <div data-tour="model-loader">
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            <div className="flex items-baseline justify-between">
-              <span>Select Model</span>
-              <span className="text-xs text-muted-foreground">
-                {products.length} active models
-              </span>
-            </div>
-          </label>
-          <Select
-            value={selectedProductId || ""}
-            onValueChange={setSelectedProduct}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose a model..." />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(groupedProducts).map(([category, items]) => (
-                <div key={category} className="py-1">
-                  <div className="px-3 py-1 text-xs text-muted-foreground font-semibold">
-                    {category}
+        {!isCollapsed && (
+          <div data-tour="model-loader">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+              <div className="flex items-baseline justify-between">
+                <span>Select Model</span>
+                <span className="text-xs text-muted-foreground">
+                  {products.length} active models
+                </span>
+              </div>
+            </label>
+            <Select
+              value={selectedProductId || ""}
+              onValueChange={setSelectedProduct}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose a model..." />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(groupedProducts).map(([category, items]) => (
+                  <div key={category} className="py-1">
+                    <div className="px-3 py-1 text-xs text-muted-foreground font-semibold">
+                      {category}
+                    </div>
+                    {items.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.title}
+                      </SelectItem>
+                    ))}
                   </div>
-                  {items.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.title}
-                    </SelectItem>
-                  ))}
-                </div>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Materials Page Link removed per user request */}
 
         {/* Tab Navigation */}
-        <div className="grid grid-cols-3 gap-1.5">
+        {!isCollapsed && <div className="grid grid-cols-3 gap-1.5">
           <Button
             variant={activeTab === "materials" ? "default" : "outline"}
             size="sm"
@@ -669,11 +785,53 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
             <Camera className="w-4 h-4 mb-1" />
             <span className="text-xs">Export</span>
           </Button>
-        </div>
+        </div>}
+
+        {/* Collapsed Quick Access Icons */}
+        {isCollapsed && (
+          <div className="flex flex-col gap-2 mt-2">
+            <Button
+              variant={activeTab === "materials" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setActiveTab("materials");
+                onToggleSidebar?.(true);
+              }}
+              className="w-full aspect-square p-2"
+              title="Materials"
+            >
+              <Palette className="w-5 h-5" />
+            </Button>
+            <Button
+              variant={activeTab === "texture" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setActiveTab("texture");
+                onToggleSidebar?.(true);
+              }}
+              className="w-full aspect-square p-2"
+              title="Texture"
+            >
+              <Paintbrush className="w-5 h-5" />
+            </Button>
+            <Button
+              variant={activeTab === "view" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setActiveTab("view");
+                onToggleSidebar?.(true);
+              }}
+              className="w-full aspect-square p-2"
+              title="Export"
+            >
+              <Camera className="w-5 h-5" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      {!isCollapsed && <div className="flex-1 overflow-y-auto min-h-0">
         {activeTab === "materials" && (
           <div className="p-4">
             <MaterialEditor />
@@ -1000,86 +1158,161 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                 </div>
               </TabsContent>
 
-              <TabsContent value="export" className="mt-4 space-y-4">
-                <div>
-                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                    <Package2 className="w-4 h-4" />
-                    Export Model & Presets
-                  </h3>
+              <TabsContent value="export" className="mt-4 space-y-3">
+                {/* Export Settings Card */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Export Settings
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Configure export options and file naming
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* File Name Input */}
+                    <div className="space-y-2">
+                      <Label htmlFor="export-filename" className="text-xs">
+                        File Name
+                      </Label>
+                      <Input
+                        id="export-filename"
+                        value={exportFileName}
+                        onChange={(e) => setExportFileName(e.target.value)}
+                        placeholder="model-export"
+                        className="h-8 text-xs"
+                      />
+                    </div>
 
-                  {/* Entrance Animation Settings */}
-                  <div className="space-y-3 mb-6 p-3 bg-muted/30 rounded-lg">
-                    <h4 className="font-medium text-sm flex items-center gap-2">
+                    {/* Image Quality */}
+                    <div className="space-y-2">
+                      <Label htmlFor="image-quality" className="text-xs">
+                        Image Quality
+                      </Label>
+                      <Select value={imageQuality} onValueChange={(value: "standard" | "high" | "ultra") => setImageQuality(value)}>
+                        <SelectTrigger id="image-quality" className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard (80%)</SelectItem>
+                          <SelectItem value="high">High (95%)</SelectItem>
+                          <SelectItem value="ultra">Ultra (100%)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Video Format */}
+                    <div className="space-y-2">
+                      <Label htmlFor="video-format" className="text-xs">
+                        Video Format
+                      </Label>
+                      <Select value={videoFormat} onValueChange={(value: "webm" | "mp4") => setVideoFormat(value)}>
+                        <SelectTrigger id="video-format" className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="webm">WebM</SelectItem>
+                          <SelectItem value="mp4">MP4 (if supported)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Separator />
+
+                    {/* Include Metadata Toggle */}
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="metadata" className="text-xs">Include Metadata</Label>
+                        <p className="text-[10px] text-muted-foreground">
+                          Add configuration data to exports
+                        </p>
+                      </div>
+                      <Switch
+                        id="metadata"
+                        checked={includeMetadata}
+                        onCheckedChange={setIncludeMetadata}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Entrance Animation Card */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
                       Entrance Animation
-                    </h4>
-
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Configure model loading animation
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
+                      <Label htmlFor="enable-animation" className="text-xs">
                         Enable Animation
-                      </span>
-                      <button
-                        onClick={() =>
-                          setEnableEntranceAnimation(!enableEntranceAnimation)
-                        }
-                        className={`w-12 h-6 rounded-full transition-colors ${
-                          enableEntranceAnimation ? "bg-primary" : "bg-muted"
-                        }`}
-                      >
-                        <div
-                          className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
-                            enableEntranceAnimation
-                              ? "translate-x-6"
-                              : "translate-x-0.5"
-                          }`}
-                        />
-                      </button>
+                      </Label>
+                      <Switch
+                        id="enable-animation"
+                        checked={enableEntranceAnimation}
+                        onCheckedChange={setEnableEntranceAnimation}
+                      />
                     </div>
 
                     {enableEntranceAnimation && (
                       <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">
+                        <Label htmlFor="animation-type" className="text-xs">
                           Animation Type
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           value={entranceAnimation}
-                          onChange={(e) =>
+                          onValueChange={(value) =>
                             setEntranceAnimation(
-                              e.target.value as
+                              value as
                                 | "fadeIn"
                                 | "scaleUp"
                                 | "rotateIn"
                                 | "zoomRotate"
                                 | "dropIn"
-                                | "bounce",
+                                | "bounce"
                             )
                           }
-                          className="w-full px-2 py-1.5 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                         >
-                          <option value="fadeIn">Fade In</option>
-                          <option value="scaleUp">Scale Up</option>
-                          <option value="rotateIn">Rotate In</option>
-                          <option value="slideIn">Slide In</option>
-                          <option value="bounce">Bounce</option>
-                          <option value="spin">Spin</option>
-                          <option value="dropIn">Drop In</option>
-                          <option value="zoomRotate">Zoom Rotate</option>
-                          <option value="glow">Glow</option>
-                          <option value="particleReveal">
-                            Particle Reveal
-                          </option>
-                        </select>
+                          <SelectTrigger id="animation-type" className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fadeIn">Fade In</SelectItem>
+                            <SelectItem value="scaleUp">Scale Up</SelectItem>
+                            <SelectItem value="rotateIn">Rotate In</SelectItem>
+                            <SelectItem value="slideIn">Slide In</SelectItem>
+                            <SelectItem value="bounce">Bounce</SelectItem>
+                            <SelectItem value="spin">Spin</SelectItem>
+                            <SelectItem value="dropIn">Drop In</SelectItem>
+                            <SelectItem value="zoomRotate">Zoom Rotate</SelectItem>
+                            <SelectItem value="glow">Glow</SelectItem>
+                            <SelectItem value="particleReveal">Particle Reveal</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  {/* Export Presets Section */}
-                  <div className="space-y-2 mb-4">
-                    <p className="text-xs text-muted-foreground">
-                      Export your current configuration. You can preview or copy
-                      the preset JSON before downloading.
-                    </p>
-                    <div className="grid grid-cols-3 gap-1">
+                {/* Export Presets Card */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FileJson className="w-4 h-4" />
+                      Configuration Presets
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Save and load your configurations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -1087,14 +1320,19 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                           try {
                             const json = exportPreset();
                             navigator.clipboard?.writeText(json);
-                            alert("Preset JSON copied to clipboard");
+                            toast.success("Copied to clipboard", {
+                              description: "Preset JSON copied successfully",
+                            });
                           } catch (err) {
                             console.error("Copy failed:", err);
-                            alert("Failed to copy preset JSON");
+                            toast.error("Failed to copy", {
+                              description: "Unable to copy to clipboard",
+                            });
                           }
                         }}
-                        className="w-full justify-center text-xs h-8"
+                        className="justify-center text-xs h-8"
                       >
+                        <Copy className="w-3 h-3 mr-1" />
                         Copy
                       </Button>
 
@@ -1106,61 +1344,43 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                             const json = exportPreset();
                             const preview = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
                             window.open(preview, "_blank");
+                            toast.success("Preview opened", {
+                              description: "Preset opened in new tab",
+                            });
                           } catch (err) {
                             console.error("Preview failed:", err);
-                            alert("Failed to open preview");
+                            toast.error("Failed to preview", {
+                              description: "Unable to open preview",
+                            });
                           }
                         }}
-                        className="w-full justify-center text-xs h-8"
+                        className="justify-center text-xs h-8"
                       >
+                        <Eye className="w-3 h-3 mr-1" />
                         Preview
                       </Button>
 
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={handleExport}
-                        className="w-full justify-center text-xs h-8"
+                        className="justify-center text-xs h-8"
                         data-tour="export-options"
                       >
                         <Download className="w-3 h-3 mr-1" />
-                        Download
+                        Export
                       </Button>
                     </div>
-                  </div>
 
-                  {/* Export Model Section */}
-                  <div className="space-y-2 mb-4">
-                    <Button
-                      variant={currentModelUrl ? "outline" : "ghost"}
-                      size="sm"
-                      onClick={handleExportModel}
-                      className="w-full justify-start text-xs h-8"
-                      disabled={!currentModelUrl}
-                      title={
-                        currentModelUrl
-                          ? "Download configured model"
-                          : "No model loaded"
-                      }
-                    >
-                      <Package2 className="w-3 h-3 mr-2" />
-                      Export Model (GLB)
-                    </Button>
-                    <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                      Additional formats (OBJ, FBX) planned — contact us if you
-                      need a specific export.
-                    </div>
-                  </div>
+                    <Separator />
 
-                  {/* Import Preset Section */}
-                  <div className="space-y-2">
                     <label className="block">
                       <Button
                         variant="outline"
                         size="sm"
                         className="w-full justify-start text-xs h-8 cursor-pointer"
                       >
-                        <Save className="w-3 h-3 mr-2" />
+                        <Upload className="w-3 h-3 mr-2" />
                         Import Preset
                       </Button>
                       <input
@@ -1170,8 +1390,41 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                         className="hidden"
                       />
                     </label>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
+
+                {/* Export Model Card */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Package2 className="w-4 h-4" />
+                      3D Model Export
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Download configured 3D model
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button
+                      variant={currentModelUrl ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleExportModel}
+                      className="w-full justify-start text-xs h-9"
+                      disabled={!currentModelUrl}
+                    >
+                      <Download className="w-3 h-3 mr-2" />
+                      Export Model (GLB)
+                      {!currentModelUrl && (
+                        <Badge variant="secondary" className="ml-auto text-[10px]">
+                          No Model
+                        </Badge>
+                      )}
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground px-2 py-1.5 bg-muted/50 rounded-md">
+                      <strong>Note:</strong> Additional formats (OBJ, FBX, USDZ) are planned for future releases.
+                    </p>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
@@ -1182,7 +1435,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
           currentColor={backgroundColor}
           onColorChange={handleApplyBackgroundColor}
         />
-      </div>
+      </div>}
     </div>
   );
 }

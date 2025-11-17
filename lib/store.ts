@@ -129,6 +129,8 @@ export interface ConfiguratorState {
   // UV map management
   uvMaps: Map<string, string>;
   setUVMap: (sectionId: string, uvMapUrl: string | null) => void;
+  completeUVMap: string | null;
+  setCompleteUVMap: (url: string | null) => void;
 
   // Global texture apply
   globalCustomTexture: string | null;
@@ -525,6 +527,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       else newMaps.set(sectionId, uvMapUrl);
       return { uvMaps: newMaps };
     }),
+  completeUVMap: null,
+  setCompleteUVMap: (url: string | null) => set({ completeUVMap: url }),
 
   // Global texture apply
   globalCustomTexture: null,

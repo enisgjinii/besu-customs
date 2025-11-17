@@ -39,6 +39,7 @@ export default function Home() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const [showUploadPanel, setShowUploadPanel] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
@@ -218,14 +219,23 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden">
       {/* Desktop: Unified Left Sidebar */}
-      <div className="hidden md:block fixed top-4 left-4 z-40">
-        <div style={{ width: "420px" }}>
-          <UnifiedSidebar />
-        </div>
+      <div
+        className={`hidden md:block fixed top-4 left-4 z-40 transition-all duration-300 ${
+          sidebarCollapsed ? "w-[60px]" : "w-[420px]"
+        }`}
+      >
+        <UnifiedSidebar
+          sidebarOpen={!sidebarCollapsed}
+          onToggleSidebar={(open) => setSidebarCollapsed(!open)}
+        />
       </div>
 
       {/* Main 3D Viewer - Account for sidebar width on desktop */}
-      <main className="flex-1 relative min-w-0 pb-20 md:pb-0 md:pl-[440px]">
+      <main
+        className={`flex-1 relative min-w-0 pb-20 md:pb-0 transition-all duration-300 ${
+          sidebarCollapsed ? "md:pl-[80px]" : "md:pl-[440px]"
+        }`}
+      >
         <Scene />
       </main>
 
