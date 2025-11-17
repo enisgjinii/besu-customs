@@ -615,6 +615,7 @@ export function BabylonScene() {
   // Click-to-place decals in Babylon scene when a lastDecalTexture exists
   const addDecal = useConfiguratorStore((s) => s.addDecal);
   const lastDecalTexture = useConfiguratorStore((s) => s.lastDecalTexture);
+  const setSelectedDecal = useConfiguratorStore((s) => s.setSelectedDecal);
   useEffect(() => {
     if (!sceneRef.current || !currentMeshRef.current) return;
     const scene = sceneRef.current;
@@ -643,6 +644,23 @@ export function BabylonScene() {
       if (observer) scene.onPointerObservable.remove(observer);
     };
   }, [lastDecalTexture, addDecal]);
+
+  useEffect(() => {
+    if (!sceneRef.current) return;
+    const scene = sceneRef.current;
+    const observer = scene.onPointerObservable.add((pi) => {
+      if (pi.type !== PointerEventTypes.POINTERDOWN) return;
+      if (lastDecalTexture) return;
+      const pick = scene.pick(scene.pointerX, scene.pointerY);
+      if (pick?.hit && pick.pickedMesh?.name?.startsWith("decal_")) {
+        return;
+      }
+      setSelectedDecal(null);
+    });
+    return () => {
+      if (observer) scene.onPointerObservable.remove(observer);
+    };
+  }, [lastDecalTexture, setSelectedDecal]);
 
   // Optional: expose clear function for future UI
   const clearGlobalTexture = () => {

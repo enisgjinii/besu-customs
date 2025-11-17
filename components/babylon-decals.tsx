@@ -139,18 +139,15 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
 
         decalMesh.material = decalMaterial;
         decalMesh.renderingGroupId = 1;
-        decalMesh.isPickable = true;
 
-        // Add click interaction to select decal
+        decalMesh.isPickable = true;
+        decalMesh.metadata = { decalId: decal.id };
         decalMesh.actionManager = new ActionManager(scene);
         decalMesh.actionManager.registerAction(
           new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
             setSelectedDecal(decal.id);
-          })
+          }),
         );
-
-        // Store decal data on mesh for position tracking
-        (decalMesh as any).decalData = decal;
 
         console.log(`✅ Decal projected: ${decal.id}`);
       } catch (error) {

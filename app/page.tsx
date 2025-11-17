@@ -238,10 +238,8 @@ export default function Home() {
         }`}
       >
         <Scene />
-      </main>
-
-        {/* Decal overlay controls */}
         <DecalOverlayControls />
+      </main>
 
       {/* Mobile: Bottom Navigation */}
       <MobileBottomNav />

@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useConfiguratorStore } from "@/lib/store";
-import { Button } from "./ui/button";
-import { RotateCcw, RotateCw, ZoomIn, ZoomOut, Trash2, X } from "lucide-react";
+import { Copy, RotateCw, Trash2, ZoomIn, ZoomOut, X } from "lucide-react";
 import { toast } from "sonner";
 import { Matrix, Vector3 } from "@babylonjs/core";
 
@@ -18,20 +23,21 @@ export function DecalOverlayControls() {
   const selectedDecalId = useConfiguratorStore((s) => s.selectedDecalId);
   const decals = useConfiguratorStore((s) => s.decals);
   const updateDecal = useConfiguratorStore((s) => s.updateDecal);
+  const duplicateDecal = useConfiguratorStore((s) => s.duplicateDecal);
   const removeDecal = useConfiguratorStore((s) => s.removeDecal);
   const setSelectedDecal = useConfiguratorStore((s) => s.setSelectedDecal);
   const cameraControlsRef = useConfiguratorStore((s) => s.cameraControlsRef);
-
-  const [overlayBox, setOverlayBox] = useState<OverlayBox | null>(null);
-  const rafRef = useRef<number | null>(null);
 
   const selectedDecal = useMemo(
     () => decals.find((decal) => decal.id === selectedDecalId),
     [decals, selectedDecalId],
   );
 
+  const [overlayBox, setOverlayBox] = useState<OverlayBox | null>(null);
+  const rafRef = useRef<number | null>(null);
+
   const updateOverlay = useCallback(() => {
-    if (!selectedDecal || !cameraControlsRef) {
+    if (!selectedDecalId || !cameraControlsRef) {
       setOverlayBox(null);
       return;
     }
@@ -44,7 +50,7 @@ export function DecalOverlayControls() {
     }
 
     const decalMesh = scene.meshes.find(
-      (mesh: any) => mesh.name === `decal_${selectedDecal.id}`,
+      (mesh: any) => mesh.name === `decal_${selectedDecalId}`,
     );
     if (!decalMesh) {
       setOverlayBox(null);
@@ -58,16 +64,20 @@ export function DecalOverlayControls() {
       engine.getRenderHeight(),
     );
 
-    const corners = decalMesh.getBoundingInfo().boundingBox.vectorsWorld;
-    const projected: Vector3[] = corners.map((corner: Vector3) =>
+    const corners: Vector3[] =
+      decalMesh.getBoundingInfo().boundingBox.vectorsWorld;
+    const projected = corners.map((corner) =>
       Vector3.Project(corner, Matrix.Identity(), transformMatrix, viewport),
     );
 
     if (
-      projected.some((p: Vector3) =>
+      projected.some(
+        (p) =>
           !p ||
           !Number.isFinite(p.x) ||
           !Number.isFinite(p.y) ||
+          Number.isNaN(p.x) ||
+          Number.isNaN(p.y) ||
           p.z < 0 ||
           p.z > 1,
       )
@@ -76,18 +86,18 @@ export function DecalOverlayControls() {
       return;
     }
 
-    const minX = Math.min(...projected.map((p: Vector3) => p.x));
-    const maxX = Math.max(...projected.map((p: Vector3) => p.x));
-    const minY = Math.min(...projected.map((p: Vector3) => p.y));
-    const maxY = Math.max(...projected.map((p: Vector3) => p.y));
+    const minX = Math.min(...projected.map((p) => p.x));
+    const maxX = Math.max(...projected.map((p) => p.x));
+    const minY = Math.min(...projected.map((p) => p.y));
+    const maxY = Math.max(...projected.map((p) => p.y));
 
     setOverlayBox({
       left: minX,
       top: minY,
-      width: Math.max(32, maxX - minX),
-      height: Math.max(32, maxY - minY),
+      width: Math.max(48, maxX - minX),
+      height: Math.max(48, maxY - minY),
     });
-  }, [cameraControlsRef, selectedDecal]);
+  }, [cameraControlsRef, selectedDecalId]);
 
   useEffect(() => {
     if (!selectedDecalId) {
@@ -110,33 +120,6 @@ export function DecalOverlayControls() {
     };
   }, [selectedDecalId, updateOverlay]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!selectedDecalId) return;
-
-      if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-
-      switch (event.key) {
-        case "Delete":
-        case "Backspace":
-          event.preventDefault();
-          handleDelete();
-          break;
-        case "Escape":
-          setSelectedDecal(null);
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedDecalId, setSelectedDecal]);
-
   const handleRotate = useCallback(
     (angle: number) => {
       if (!selectedDecalId || !selectedDecal) return;
@@ -146,7 +129,7 @@ export function DecalOverlayControls() {
       });
       toast.success("Rotated", {
         description: `${angle > 0 ? "+" : ""}${Math.round(angle * (180 / Math.PI))}°`,
-        duration: 1200,
+        duration: 1100,
       });
     },
     [selectedDecalId, selectedDecal, updateDecal],
@@ -161,29 +144,67 @@ export function DecalOverlayControls() {
         z: selectedDecal.scale.z,
       };
       updateDecal(selectedDecalId, { scale: scaled });
-      toast.success("Scaled", {
-        description: `${factor > 1 ? "+" : "-"}10%`,
-        duration: 1200,
+      toast.success("Resized", {
+        description: `${factor > 1 ? "+" : ""}${Math.round((factor - 1) * 100)}%`,
+        duration: 1100,
       });
     },
     [selectedDecalId, selectedDecal, updateDecal],
   );
 
+  const handleDuplicate = useCallback(() => {
+    if (!selectedDecalId) return;
+    duplicateDecal(selectedDecalId);
+    toast.success("Duplicated", { description: "Copy created" });
+  }, [duplicateDecal, selectedDecalId]);
+
   const handleDelete = useCallback(() => {
     if (!selectedDecalId) return;
     removeDecal(selectedDecalId);
-    toast.success("Deleted", {
-      description: "Decal removed",
-      duration: 1200,
-    });
+    toast.success("Deleted", { description: "Decal removed" });
   }, [removeDecal, selectedDecalId]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!selectedDecalId) return;
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      switch (event.key) {
+        case "Escape":
+          setSelectedDecal(null);
+          break;
+        case "Delete":
+        case "Backspace":
+          event.preventDefault();
+          handleDelete();
+          break;
+        default:
+          if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d") {
+            event.preventDefault();
+            handleDuplicate();
+          }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleDelete, handleDuplicate, selectedDecalId, setSelectedDecal]);
 
   if (!selectedDecalId || !selectedDecal || !overlayBox) {
     return null;
   }
 
+  const buttonClass =
+    "pointer-events-auto h-9 w-9 rounded-full border border-white/70 bg-background/95 text-foreground shadow-lg flex items-center justify-center transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+
   return (
-    <div className="fixed inset-0 pointer-events-none z-50 select-none">
+    <div className="fixed inset-0 pointer-events-none z-40 select-none">
       <div
         className="absolute pointer-events-none"
         style={{
@@ -193,104 +214,79 @@ export function DecalOverlayControls() {
           height: overlayBox.height,
         }}
       >
-        {/* Bounding box */}
-        <div className="absolute inset-0 border border-dashed border-primary/80 bg-primary/5" />
+        <div className="absolute inset-0 rounded-sm border-2 border-white shadow-[0_0_18px_rgba(0,0,0,0.35)] bg-primary/5" />
 
-        {/* Close control */}
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 pointer-events-auto">
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-8 w-8 rounded-full shadow"
-            onClick={(event) => {
-              event.stopPropagation();
-              setSelectedDecal(null);
-            }}
-            title="Deselect"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Deselect */}
+        <button
+          className={`${buttonClass} absolute -top-12 left-1/2 -translate-x-1/2`}
+          onClick={(event) => {
+            event.stopPropagation();
+            setSelectedDecal(null);
+          }}
+          aria-label="Deselect decal"
+        >
+          <X className="h-4 w-4" />
+        </button>
 
-        {/* Rotate left */}
-        <div className="absolute -top-3 -left-3 pointer-events-auto">
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-8 w-8 rounded-full shadow"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleRotate(-Math.PI / 12);
-            }}
-            title="Rotate -15°"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Rotate right */}
-        <div className="absolute -top-3 -right-3 pointer-events-auto">
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-8 w-8 rounded-full shadow"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleRotate(Math.PI / 12);
-            }}
-            title="Rotate +15°"
-          >
-            <RotateCw className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Scale up */}
-        <div className="absolute -bottom-3 -right-3 pointer-events-auto">
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-8 w-8 rounded-full shadow"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleScale(1.1);
-            }}
-            title="Scale up"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Scale down */}
-        <div className="absolute -bottom-3 -left-3 pointer-events-auto">
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-8 w-8 rounded-full shadow"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleScale(0.9);
-            }}
-            title="Scale down"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Duplicate */}
+        <button
+          className={`${buttonClass} absolute -top-5 -left-5`}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleDuplicate();
+          }}
+          aria-label="Duplicate decal"
+        >
+          <Copy className="h-4 w-4" />
+        </button>
 
         {/* Delete */}
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 pointer-events-auto">
-          <Button
-            size="icon"
-            variant="destructive"
-            className="h-9 w-9 rounded-full shadow"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleDelete();
-            }}
-            title="Delete decal"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <button
+          className={`${buttonClass} absolute -bottom-5 -left-5 bg-destructive text-destructive-foreground border-destructive/40`}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleDelete();
+          }}
+          aria-label="Delete decal"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+
+        {/* Rotate */}
+        <button
+          className={`${buttonClass} absolute -top-5 -right-5`}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleRotate(Math.PI / 12);
+          }}
+          aria-label="Rotate decal"
+        >
+          <RotateCw className="h-4 w-4" />
+        </button>
+
+        {/* Scale Up */}
+        <button
+          className={`${buttonClass} absolute -bottom-5 -right-5`}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleScale(1.1);
+          }}
+          aria-label="Scale decal up"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </button>
+
+        {/* Scale Down */}
+        <button
+          className={`${buttonClass} absolute -bottom-16 left-1/2 -translate-x-1/2`}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleScale(0.9);
+          }}
+          aria-label="Scale decal down"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );
