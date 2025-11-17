@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
-import { OnboardingWelcome } from "@/components/onboarding-welcome";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { OnboardingKeyboardHandler } from "@/components/onboarding-keyboard-handler";
 import { AuthProvider } from "@/lib/auth-context";
@@ -38,7 +37,6 @@ export default function RootLayout({
           <AuthProvider>
             <QueryProvider>{children}</QueryProvider>
             <Toaster />
-            <OnboardingWelcome />
             <OnboardingTour />
             <OnboardingKeyboardHandler />
           </AuthProvider>

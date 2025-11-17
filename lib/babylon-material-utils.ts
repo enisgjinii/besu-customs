@@ -160,12 +160,15 @@ export function applyMaterialsToModel(
 ): void {
   console.log("🎨 Applying materials to model, sections:", sections.length);
 
-  // Create a map of sections by material name
+  // Create a map of sections by material name and ID
   const sectionMap = new Map<string, MaterialSection>();
   sections.forEach((section) => {
     sectionMap.set(section.originalName, section);
     sectionMap.set(section.id, section);
+    sectionMap.set(section.name, section); // Also map by display name
   });
+  
+  console.log("🗺️ Section map keys:", Array.from(sectionMap.keys()));
 
   // Traverse all meshes
   const meshes = rootMesh.getChildMeshes(false);
@@ -182,10 +185,21 @@ export function applyMaterialsToModel(
       mesh.material = material;
     }
 
-    // Find matching section by material name or mesh name
-    let section = sectionMap.get(material.name);
+    // Find matching section - try multiple strategies
+    let section = sectionMap.get(material.name); // Try material name first
+    
     if (!section) {
-      section = sectionMap.get(mesh.name);
+      section = sectionMap.get(mesh.name); // Try mesh name
+    }
+    
+    if (!section) {
+      // Try to find by originalName matching material name
+      for (const [, sectionData] of sectionMap.entries()) {
+        if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
+          section = sectionData;
+          break;
+        }
+      }
     }
 
     if (!section) {
@@ -204,6 +218,7 @@ export function applyMaterialsToModel(
 
     if (!section) {
       console.log(`⚠️ No section found for mesh: ${mesh.name}, material: ${material.name}`);
+      console.log(`   Available section keys:`, Array.from(sectionMap.keys()).slice(0, 5));
       return;
     }
 
@@ -211,8 +226,9 @@ export function applyMaterialsToModel(
 
     // Dispose old texture if exists
     if (material.diffuseTexture) {
-      material.diffuseTexture.dispose();
+      const oldTexture = material.diffuseTexture;
       material.diffuseTexture = null;
+      oldTexture.dispose();
     }
 
     // Apply custom texture if available
@@ -256,8 +272,33 @@ export function applyMaterialsToModel(
         material.diffuseColor = new Color3(1, 1, 1);
       }
     } else {
-      // Apply solid color
-      material.diffuseColor = hexToColor3(section.color);
+      // Apply solid color - make sure no texture is blocking it
+      const existingTexture = material.diffuseTexture;
+      if (existingTexture) {
+        material.diffuseTexture = null;
+        try {
+          (existingTexture as Texture).dispose();
+        } catch (e) {
+          console.warn("Could not dispose texture:", e);
+        }
+      }
+      
+      const newColor = hexToColor3(section.color);
+      
+      // FORCE color update by creating new Color3 instance
+      material.diffuseColor = new Color3(newColor.r, newColor.g, newColor.b);
+      material.emissiveColor = new Color3(0, 0, 0);
+      material.ambientColor = new Color3(0, 0, 0);
+      material.specularColor = new Color3(0.2, 0.2, 0.2);
+      material.alpha = 1.0;
+      material.backFaceCulling = true;
+      
+      // Force material properties
+      material.useAlphaFromDiffuseTexture = false;
+      material.transparencyMode = null;
+      
+      console.log(`  ✓ Set color to ${section.color} (RGB: ${newColor.r.toFixed(2)}, ${newColor.g.toFixed(2)}, ${newColor.b.toFixed(2)})`);
+      console.log(`  ✓ Material diffuseColor is now: (${material.diffuseColor.r.toFixed(2)}, ${material.diffuseColor.g.toFixed(2)}, ${material.diffuseColor.b.toFixed(2)})`);
     }
 
     // Apply material properties
@@ -270,7 +311,24 @@ export function applyMaterialsToModel(
     
     // Wireframe
     material.wireframe = section.wireframe ?? false;
+    
+    // CRITICAL: Force material and mesh to update
+    material.markDirty();
+    material.freeze(); // Freeze to force update
+    material.unfreeze(); // Then unfreeze
+    mesh.refreshBoundingInfo();
+    mesh.computeWorldMatrix(true);
+    
+    console.log(`  ✅ Material updated and forced refresh`);
   });
+
+  console.log(`✅ Finished applying materials to ${meshes.length} meshes`);
+  
+  // Force scene to render multiple times to ensure visual update
+  scene.render();
+  requestAnimationFrame(() => scene.render());
+  setTimeout(() => scene.render(), 10);
+  setTimeout(() => scene.render(), 50);
 
   console.log("✅ Materials applied successfully");
 }

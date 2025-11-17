@@ -143,15 +143,15 @@ export async function GET(request: Request) {
       if (originalName === "FABRIC_1_2842") return "Shorts Waist Trim Color";
       if (originalName === "FABRIC_1_2845") return "Back of Shorts Color";
       if (originalName === "FABRIC_1_2848") return "Front of Shorts Color";
-      if (originalName === "FABRIC_1_66694") return null;
+      if (originalName === "FABRIC_1_66694") return "Jersey Side Panels Color";
       // Ble and Body materials are actually the shorts parts
       if (originalName === "Ble_66685")
         return "Jersey Sleeve & Collar Trim Color";
       if (originalName === "Body_B_66682") return "Back of Jersey Color";
       if (originalName === "Body_F_66679") return "Front of Jersey Color";
-      // Remove buttons - they don't exist on basketball jerseys
-      if (originalName === "Default_Button_66696") return null;
-      if (originalName === "Default_Button_66697") return null;
+      // Button materials
+      if (originalName === "Default_Button_66696") return "Jersey Button 1 Color";
+      if (originalName === "Default_Button_66697") return "Jersey Button 2 Color";
     }
 
     // Basketball Jersey and Shorts renaming
@@ -470,6 +470,9 @@ export async function GET(request: Request) {
       // Body_ and Ble_ materials are actually the shorts parts
       if (originalName.includes("Body_") || originalName === "Ble_66685")
         return "Basketball Shorts Colors";
+      // Button materials
+      if (originalName.includes("Default_Button_"))
+        return "Basketball Jersey Colors";
       return "Other";
     }
 
@@ -681,11 +684,14 @@ export async function GET(request: Request) {
     if (modelParam.includes("Basketball Jersey Top And Long Shorts.glb")) {
       const reordered = [...sections];
 
-      // Define the desired order: Jersey sections first (Front, Back, Trim), then Shorts sections (Front, Back, Waist)
+      // Define the desired order: Jersey sections first (Front, Back, Trim, Side Panels, Buttons), then Shorts sections (Front, Back, Waist)
       const desiredOrder = [
         "Body_F_66679", // Front of Jersey Color
         "Body_B_66682", // Back of Jersey Color
         "Ble_66685", // Jersey Sleeve & Collar Trim Color
+        "FABRIC_1_66694", // Jersey Side Panels Color
+        "Default_Button_66696", // Jersey Button 1 Color
+        "Default_Button_66697", // Jersey Button 2 Color
         "FABRIC_1_2848", // Front of Shorts Color
         "FABRIC_1_2845", // Back of Shorts Color
         "FABRIC_1_2842", // Shorts Waist Trim Color

@@ -9,11 +9,11 @@ import {
   DirectionalLight,
   Vector3,
   Color4,
+  Color3,
   SceneLoader,
   AbstractMesh,
   StandardMaterial,
   Texture,
-  Color3,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { useConfiguratorStore } from "@/lib/store";
@@ -102,6 +102,7 @@ export function BabylonScene() {
     // Set background color
     const bgColor = getThemeBackgroundColor(theme, backgroundColor);
     scene.clearColor = hexToColor4(bgColor);
+    scene.ambientColor = new Color3(0.25, 0.25, 0.25); // Balanced ambient lighting
 
     // Create camera
     const camera = new ArcRotateCamera(
@@ -122,27 +123,31 @@ export function BabylonScene() {
     // Store camera ref for external control
     setCameraControlsRef(camera);
 
-    // Create lights
+    // Create lights - balanced for realistic and visible colors
     const hemisphericLight = new HemisphericLight(
       "hemisphericLight",
       new Vector3(0, 1, 0),
       scene,
     );
-    hemisphericLight.intensity = 0.8;
+    hemisphericLight.intensity = 0.9; // Balanced
+    hemisphericLight.diffuse = new Color3(1, 1, 1);
+    hemisphericLight.specular = new Color3(0.3, 0.3, 0.3);
 
     const directionalLight = new DirectionalLight(
       "directionalLight",
       new Vector3(-1, -2, -1),
       scene,
     );
-    directionalLight.intensity = 1.2;
+    directionalLight.intensity = 1.0; // Balanced
+    directionalLight.diffuse = new Color3(1, 1, 1);
 
     const directionalLight2 = new DirectionalLight(
       "directionalLight2",
       new Vector3(1, 1, 1),
       scene,
     );
-    directionalLight2.intensity = 0.5;
+    directionalLight2.intensity = 0.5; // Balanced
+    directionalLight2.diffuse = new Color3(1, 1, 1);
 
     // Start render loop
     engine.runRenderLoop(() => {
@@ -166,7 +171,15 @@ export function BabylonScene() {
       sceneRef.current = null;
       cameraRef.current = null;
     };
-  }, [theme, backgroundColor, setCameraControlsRef]);
+  }, [setCameraControlsRef]);
+
+  // Handle background color changes without recreating the scene
+  useEffect(() => {
+    if (!sceneRef.current) return;
+    
+    const bgColor = getThemeBackgroundColor(theme, backgroundColor);
+    sceneRef.current.clearColor = hexToColor4(bgColor);
+  }, [theme, backgroundColor]);
 
   // Handle auto-rotation
   useEffect(() => {
@@ -184,10 +197,26 @@ export function BabylonScene() {
 
   // Apply materials when sections change
   useEffect(() => {
-    if (!currentMeshRef.current || !sceneRef.current || sections.length === 0) return;
+    if (!currentMeshRef.current || !sceneRef.current || sections.length === 0) {
+      console.log("⚠️ Cannot apply materials:", {
+        hasMesh: !!currentMeshRef.current,
+        hasScene: !!sceneRef.current,
+        sectionsCount: sections.length,
+      });
+      return;
+    }
 
-    console.log("🎨 Sections changed, applying materials...");
+    console.log("🎨 Sections changed, applying materials...", {
+      sectionsCount: sections.length,
+      sampleSection: sections[0],
+    });
+    
     applyMaterialsToModel(currentMeshRef.current, sections, sceneRef.current);
+    
+    // Force scene to re-render
+    if (sceneRef.current) {
+      sceneRef.current.render();
+    }
   }, [sections]);
 
   // Load 3D model
@@ -311,23 +340,57 @@ export function BabylonScene() {
           cameraRef.current.radius = 5;
         }
 
-        // Extract material sections
+        // Extract material sections from the actual model
         const extractedSections = extractSectionsFromModel(rootMesh, currentModelUrl);
+        
+        console.log("📋 Extracted sections from model:", extractedSections.map(s => ({
+          name: s.name,
+          originalName: s.originalName,
+          id: s.id,
+        })));
         
         // Try to fetch precomputed sections from API
         fetch(`/api/materials?model=${encodeURIComponent(currentModelUrl)}`)
           .then((resp) => resp.json())
           .then((data) => {
             if (data?.sections && data.sections.length > 0) {
-              console.log("📋 Using precomputed sections from API");
-              setSections(data.sections);
+              console.log("📋 API returned sections:", data.sections.map((s: any) => ({
+                name: s.name,
+                originalName: s.originalName,
+              })));
+              
+              // Map API sections to extracted sections by matching originalName
+              const mappedSections = data.sections.map((apiSection: any) => {
+                // Find matching extracted section
+                const match = extractedSections.find(
+                  (extracted) => 
+                    extracted.originalName === apiSection.originalName ||
+                    extracted.name === apiSection.originalName
+                );
+                
+                if (match) {
+                  console.log(`✓ Mapped "${apiSection.name}" to material "${match.originalName}"`);
+                  // Use API section data but with extracted material ID
+                  return {
+                    ...apiSection,
+                    id: match.id, // Use the actual material name as ID
+                    originalName: match.originalName, // Use actual material name
+                  };
+                } else {
+                  console.warn(`⚠️ No match found for API section "${apiSection.name}" (${apiSection.originalName})`);
+                  return apiSection;
+                }
+              });
+              
+              console.log("📋 Using mapped sections from API");
+              setSections(mappedSections);
             } else {
-              console.log("📋 Using extracted sections");
+              console.log("📋 Using extracted sections (no API data)");
               setSections(extractedSections);
             }
           })
-          .catch(() => {
-            console.log("📋 Using extracted sections (API failed)");
+          .catch((err) => {
+            console.log("📋 Using extracted sections (API failed):", err);
             setSections(extractedSections);
           });
 
