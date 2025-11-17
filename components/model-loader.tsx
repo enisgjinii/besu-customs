@@ -51,7 +51,6 @@ function Model({
 }) {
   const setSections = useConfiguratorStore((s) => s.setSections);
   const setUVMap = useConfiguratorStore((s) => s.setUVMap);
-  const setCompleteUVMap = useConfiguratorStore((s) => s.setCompleteUVMap);
   const setModelLoading = useConfiguratorStore((s) => s.setModelLoading);
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const sections = useConfiguratorStore((state) => state.sections);
@@ -350,14 +349,7 @@ function Model({
     return () => {
       mounted = false;
     };
-  }, [
-    url,
-    setSections,
-    setUVMap,
-    setCompleteUVMap,
-    setModelLoading,
-    setModelError,
-  ]);
+  }, [url, setSections, setUVMap, setModelLoading, setModelError]);
 
   useEffect(() => {
     try {
