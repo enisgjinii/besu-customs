@@ -11,6 +11,7 @@ When you changed "Front of Jersey Color" in the UI, the 3D model didn't update b
 ## The Solution
 
 ### 1. Section Mapping System
+
 Created intelligent mapping between API sections and actual materials:
 
 ```typescript
@@ -20,7 +21,9 @@ Created intelligent mapping between API sections and actual materials:
 ```
 
 ### 2. Multi-Strategy Matching
+
 Material matching now tries multiple strategies:
+
 1. Match by material name
 2. Match by mesh name
 3. Match by originalName
@@ -28,7 +31,9 @@ Material matching now tries multiple strategies:
 5. Match by display name
 
 ### 3. Better Logging
+
 Added detailed logs to see what's happening:
+
 - `📋 Extracted sections from model` - Shows actual material names
 - `📋 API returned sections` - Shows API section names
 - `✓ Mapped "Front of Jersey Color" to material "Body_F_66679"` - Shows mapping
@@ -37,6 +42,7 @@ Added detailed logs to see what's happening:
 ## How It Works Now
 
 ### Step 1: Model Loads
+
 ```
 1. Extract materials from model: ["Body_F_66679", "FABRIC_1_2842", ...]
 2. Fetch API sections: ["Front of Jersey Color", "Back of Jersey Color", ...]
@@ -45,6 +51,7 @@ Added detailed logs to see what's happening:
 ```
 
 ### Step 2: You Change Color
+
 ```
 1. UI updates section: "Front of Jersey Color" → #FF0000
 2. Store triggers material update
@@ -57,6 +64,7 @@ Added detailed logs to see what's happening:
 ## What You'll See in Console
 
 ### On Model Load:
+
 ```
 📋 Extracted sections from model: [
   { name: "Body_F_66679", originalName: "Body_F_66679", id: "Body_F_66679" },
@@ -78,6 +86,7 @@ Added detailed logs to see what's happening:
 ```
 
 ### On Color Change:
+
 ```
 🎨 Sections changed, applying materials... {sectionsCount: 6, ...}
 🎨 Applying materials to model, sections: 6
@@ -130,12 +139,14 @@ Open browser console and run:
 ```javascript
 // Check current sections
 const sections = useConfiguratorStore.getState().sections;
-console.table(sections.map(s => ({
-  name: s.name,
-  originalName: s.originalName,
-  id: s.id,
-  color: s.color
-})));
+console.table(
+  sections.map((s) => ({
+    name: s.name,
+    originalName: s.originalName,
+    id: s.id,
+    color: s.color,
+  })),
+);
 
 // Force a color change
 const store = useConfiguratorStore.getState();
@@ -146,10 +157,12 @@ store.updateSection(firstSection.id, { color: "#FF0000" });
 ## Technical Details
 
 ### Files Modified:
+
 - `components/babylon-scene.tsx` - Added section mapping logic
 - `lib/babylon-material-utils.ts` - Improved material matching
 
 ### Key Changes:
+
 1. Map API sections to extracted sections by originalName
 2. Use actual material names as section IDs
 3. Multi-strategy material matching
@@ -159,6 +172,7 @@ store.updateSection(firstSection.id, { color: "#FF0000" });
 ## Success Indicators
 
 When working correctly, you should see:
+
 - ✅ All sections mapped successfully
 - ✅ No "No section found" warnings
 - ✅ Material updates logged for each change

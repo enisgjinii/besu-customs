@@ -1,6 +1,7 @@
 # WebGL Context Loss Fix
 
 ## Problem
+
 The application was experiencing repeated WebGL context loss errors, causing the 3D renderer to fail. This was happening due to excessive GPU memory usage from large textures and improper resource management.
 
 ## Root Causes
@@ -13,22 +14,26 @@ The application was experiencing repeated WebGL context loss errors, causing the
 ## Fixes Applied
 
 ### 1. Aggressively Reduced Texture Sizes (components/uv-editor.tsx)
+
 - Limited canvas size to 256x256 (down from 1024x1024) - **93% reduction**
 - Reduced fabric canvas size to 256px max (down from 600px)
 - This reduces memory usage by ~93% per texture
 
 ### 2. Optimized Texture Format
+
 - Changed from PNG (lossless) to JPEG at 70% quality (down from 100%)
 - Significantly reduces data URL size while maintaining acceptable visual quality
 - Faster to encode and decode
 - Applied to both UV editor and decal editor
 
 ### 3. Increased Debounce Delay
+
 - Increased update delay from 300ms to 800ms
 - Reduces frequency of texture updates during editing
 - Gives GPU more time to process and clean up resources
 
 ### 4. Improved Context Loss Handling (components/scene.tsx)
+
 - Added `preventDefault()` to context loss handler
 - Disabled `preserveDrawingBuffer` (reduces memory)
 - Disabled antialiasing (improves performance)
@@ -36,11 +41,13 @@ The application was experiencing repeated WebGL context loss errors, causing the
 - Reduced DPR limit to 1.5 (down from 2)
 
 ### 5. Added Memory Cleanup
+
 - Temp canvases are now properly disposed after use
 - Added error handlers to prevent memory leaks
 - Disabled auto-render in fabric canvas
 
 ### 6. Removed Redundant Material Updates (components/model-loader.tsx)
+
 - Removed material update code that was causing excessive re-renders
 - Let React Three Fiber handle material updates naturally
 

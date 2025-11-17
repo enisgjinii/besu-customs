@@ -1,25 +1,31 @@
 # Final WebGL Context Loss Fix
 
 ## The Problem
+
 Even after optimizations, WebGL context was still being lost. Root cause: **memory leaks from improper cleanup of 3D models**.
 
 ## Critical Issues Found
 
 ### 1. Model Cloning Without Cleanup
+
 Every time the model URL changed or scene updated, a new clone was created but the old one was never disposed:
+
 ```typescript
 clonedScene.current = scene.clone(); // Old scene leaked!
 ```
 
 ### 2. Missing Geometry/Material Disposal
+
 When models were replaced, their geometries, materials, and textures remained in GPU memory.
 
 ### 3. Environment HDR Still Too Heavy
+
 The "studio" preset loads large HDR textures that push memory limits.
 
 ## Final Fixes Applied
 
 ### 1. Proper Model Cleanup (components/model-loader.tsx)
+
 ```typescript
 // Dispose old scene before cloning
 if (clonedScene.current) {
@@ -37,37 +43,44 @@ if (clonedScene.current) {
 ```
 
 ### 2. Unmount Cleanup
+
 Added cleanup effect that runs when component unmounts to dispose all resources.
 
 ### 3. Lighter Environment (components/scene.tsx)
+
 - Changed from "studio" to "city" preset (smaller HDR)
 - Reduced environment intensity to 0.5
 - This cuts HDR memory usage by ~60%
 
 ### 4. Fixed Device Pixel Ratio
+
 - Changed from `dpr={[1, 1.5]}` to `dpr={1}`
 - Prevents high-DPI displays from using 4x memory
 
 ### 5. Performance Monitoring
+
 Added GPU memory logging every 10 seconds to track:
+
 - Number of geometries
 - Number of textures
 - Number of shader programs
 
 ### 6. Adaptive Performance
+
 ```typescript
 performance={{ min: 0.5 }}
 ```
+
 Allows Three.js to reduce quality under load to prevent context loss.
 
 ## Memory Usage Comparison
 
-| Component | Before | After | Savings |
-|-----------|--------|-------|---------|
-| Environment HDR | ~40MB | ~15MB | 62% |
-| Model Clones | Leaked | Cleaned | 100% |
-| DPR Rendering | 4x pixels | 1x pixels | 75% |
-| Decal Canvas | 512x512 | 256x256 | 75% |
+| Component       | Before    | After     | Savings |
+| --------------- | --------- | --------- | ------- |
+| Environment HDR | ~40MB     | ~15MB     | 62%     |
+| Model Clones    | Leaked    | Cleaned   | 100%    |
+| DPR Rendering   | 4x pixels | 1x pixels | 75%     |
+| Decal Canvas    | 512x512   | 256x256   | 75%     |
 
 **Total GPU Memory Reduction: ~85%**
 

@@ -2,15 +2,19 @@
 
 import { useRef, Suspense, useEffect } from "react";
 import { Canvas, useThree, useLoader, extend } from "@react-three/fiber";
-import { OrbitControls, Environment, PerspectiveCamera } from "@react-three/drei";
-import { 
-  Color, 
-  Texture, 
-  TextureLoader, 
-  SRGBColorSpace, 
-  LinearFilter, 
+import {
+  OrbitControls,
+  Environment,
+  PerspectiveCamera,
+} from "@react-three/drei";
+import {
+  Color,
+  Texture,
+  TextureLoader,
+  SRGBColorSpace,
+  LinearFilter,
   VideoTexture,
-  TOUCH 
+  TOUCH,
 } from "three";
 import { ModelLoader } from "./model-loader";
 import { DecalPlacer } from "./decal-placer";
@@ -19,9 +23,16 @@ import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 
 // Helper function to get theme-aware background color
-const getThemeBackgroundColor = (theme: string | undefined, backgroundColor: string) => {
+const getThemeBackgroundColor = (
+  theme: string | undefined,
+  backgroundColor: string,
+) => {
   // If user has set a custom background color, use it
-  if (backgroundColor && backgroundColor !== "#ffffff" && backgroundColor !== "#000000") {
+  if (
+    backgroundColor &&
+    backgroundColor !== "#ffffff" &&
+    backgroundColor !== "#000000"
+  ) {
     return backgroundColor;
   }
   // Otherwise use theme-based background
@@ -49,7 +60,9 @@ function Background() {
   // Handle background color
   useEffect(() => {
     if (!backgroundImage && !backgroundVideo) {
-      scene.background = new Color(getThemeBackgroundColor(theme, backgroundColor));
+      scene.background = new Color(
+        getThemeBackgroundColor(theme, backgroundColor),
+      );
     }
   }, [backgroundColor, backgroundImage, backgroundVideo, scene, theme]);
 
@@ -81,7 +94,9 @@ function Background() {
           err,
         );
         // Fallback to solid color background
-        scene.background = new Color(getThemeBackgroundColor(theme, backgroundColor));
+        scene.background = new Color(
+          getThemeBackgroundColor(theme, backgroundColor),
+        );
       },
     );
 
@@ -142,7 +157,9 @@ function Background() {
         video.play().catch((e) => {
           console.warn("Video play failed:", e);
           // Fallback to solid color on play failure
-          scene.background = new Color(getThemeBackgroundColor(theme, backgroundColor));
+          scene.background = new Color(
+            getThemeBackgroundColor(theme, backgroundColor),
+          );
         });
       }, 50);
 
@@ -240,37 +257,40 @@ export function Scene() {
         }}
         onCreated={({ gl, scene: threeScene }) => {
           setGlRef(gl);
-          
+
           // Optimize renderer settings
           gl.setPixelRatio(Math.min(window.devicePixelRatio, 1));
-          
+
           // Handle context loss
           const canvas = gl.domElement;
           const handleContextLoss = (e: Event) => {
             e.preventDefault();
-            console.warn('WebGL context lost, attempting to restore...');
+            console.warn("WebGL context lost, attempting to restore...");
           };
-          
+
           const handleContextRestored = () => {
-            console.log('WebGL context restored');
+            console.log("WebGL context restored");
             // Force re-render after restoration
             gl.render(threeScene, gl.xr.getCamera());
           };
-          
-          canvas.addEventListener('webglcontextlost', handleContextLoss);
-          canvas.addEventListener('webglcontextrestored', handleContextRestored);
-          
+
+          canvas.addEventListener("webglcontextlost", handleContextLoss);
+          canvas.addEventListener(
+            "webglcontextrestored",
+            handleContextRestored,
+          );
+
           // Periodic cleanup to prevent memory buildup
           const cleanupInterval = setInterval(() => {
             if (gl.info.programs) {
-              console.log('GPU Memory:', {
+              console.log("GPU Memory:", {
                 geometries: gl.info.memory.geometries,
                 textures: gl.info.memory.textures,
-                programs: gl.info.programs.length
+                programs: gl.info.programs.length,
               });
             }
           }, 10000);
-          
+
           return () => {
             clearInterval(cleanupInterval);
           };
@@ -299,7 +319,11 @@ export function Scene() {
         />
 
         <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} castShadow={false} />
+        <directionalLight
+          position={[10, 10, 5]}
+          intensity={1}
+          castShadow={false}
+        />
 
         <Environment preset="city" environmentIntensity={0.5} />
 

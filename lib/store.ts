@@ -2,7 +2,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Model } from "./models-service";
-import { Vector3, Euler } from "three";
 import type { EntranceAnimationType } from "@/components/entrance-animation";
 
 export type Category =
@@ -65,9 +64,9 @@ export interface DecalData {
   id: string;
   textureUrl: string;
   meshUuid?: string;
-  position: Vector3;
-  rotation: Euler;
-  scale: Vector3;
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  scale: { x: number; y: number; z: number };
 }
 
 export interface TextureLayer {
@@ -484,7 +483,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     }));
   },
   setSelectedSection: (id: string | null) => set({ selectedSectionId: id }),
-  setHighlightedSection: (id: string | null) => set({ highlightedSectionId: id }),
+  setHighlightedSection: (id: string | null) =>
+    set({ highlightedSectionId: id }),
   toggleSectionLink: (sectionId: string) =>
     set((state) => {
       const newLinked = new Set(state.linkedSections);
@@ -528,7 +528,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
 
   // Global texture apply
   globalCustomTexture: null,
-  setGlobalCustomTexture: (url: string | null) => set({ globalCustomTexture: url }),
+  setGlobalCustomTexture: (url: string | null) =>
+    set({ globalCustomTexture: url }),
 
   // Texture layers management
   textureLayers: [],

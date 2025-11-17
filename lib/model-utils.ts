@@ -1,13 +1,13 @@
-import { 
-  Group, 
-  Mesh, 
-  MeshStandardMaterial, 
-  CanvasTexture, 
-  Texture, 
-  ClampToEdgeWrapping, 
-  LinearFilter, 
-  RGBAFormat, 
-  SRGBColorSpace 
+import {
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  CanvasTexture,
+  Texture,
+  ClampToEdgeWrapping,
+  LinearFilter,
+  RGBAFormat,
+  SRGBColorSpace,
 } from "three";
 import type { MaterialSection } from "./store";
 

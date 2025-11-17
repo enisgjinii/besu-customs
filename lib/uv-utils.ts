@@ -1,10 +1,4 @@
-import { 
-  Mesh, 
-  Group, 
-  Texture, 
-  TextureLoader, 
-  SRGBColorSpace 
-} from "three";
+import { Mesh, Group, Texture, TextureLoader, SRGBColorSpace } from "three";
 
 /**
  * Extract UV map from a mesh and render it to a canvas (optimized)
@@ -313,9 +307,7 @@ export function extractCompleteUVMap(
 /**
  * Create a texture from a data URL
  */
-export function createTextureFromDataURL(
-  dataUrl: string,
-): Promise<Texture> {
+export function createTextureFromDataURL(dataUrl: string): Promise<Texture> {
   return new Promise((resolve, reject) => {
     const loader = new TextureLoader();
     loader.load(

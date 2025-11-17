@@ -36,13 +36,13 @@ export function DecalEditor() {
     ctx.font = `bold ${fontSize * 2}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    
+
     // Add text shadow for better visibility
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowColor = "rgba(0,0,0,0.5)";
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
-    
+
     ctx.fillText(newText, 512, 512);
 
     const dataUrl = canvas.toDataURL("image/png");
@@ -84,8 +84,8 @@ export function DecalEditor() {
             onKeyDown={(e) => e.key === "Enter" && createTextDecal()}
             className="flex-1"
           />
-          <Button 
-            onClick={createTextDecal} 
+          <Button
+            onClick={createTextDecal}
             size="lg"
             disabled={!newText.trim()}
           >
@@ -144,7 +144,8 @@ export function DecalEditor() {
       </div>
 
       <p className="text-xs text-muted-foreground text-center pt-4 border-t">
-        💡 After clicking "Add Text" or "Upload Image", click anywhere on the 3D model to place your decal
+        💡 After clicking "Add Text" or "Upload Image", click anywhere on the 3D
+        model to place your decal
       </p>
     </div>
   );

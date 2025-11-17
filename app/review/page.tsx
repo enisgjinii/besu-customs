@@ -4,14 +4,20 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 
 // Dynamic import for BabylonScene component to prevent static generation issues
-const Scene = dynamic(() => import("@/components/babylon-scene").then((mod) => ({ default: mod.BabylonScene })), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    </div>
-  ),
-});
+const Scene = dynamic(
+  () =>
+    import("@/components/babylon-scene").then((mod) => ({
+      default: mod.BabylonScene,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    ),
+  },
+);
 import { MaterialEditor } from "@/components/material-editor";
 import { useConfiguratorStore } from "@/lib/store";
 

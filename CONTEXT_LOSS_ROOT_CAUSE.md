@@ -49,6 +49,7 @@ WebGL contexts have a limited amount of GPU memory available. When you exceed th
 ## The Fix
 
 ### Removed/Disabled
+
 - ❌ Environment HDR textures
 - ❌ Shadow rendering
 - ❌ Antialiasing
@@ -56,11 +57,13 @@ WebGL contexts have a limited amount of GPU memory available. When you exceed th
 - ❌ Continuous frameloop
 
 ### Reduced
+
 - 📉 Decal canvas: 512x512 → 256x256
 - 📉 Max DPR: 2.0 → 1.5
 - 📉 Texture quality: PNG 100% → JPEG 70-80%
 
 ### Added
+
 - ✅ Simple directional + ambient + hemisphere lighting
 - ✅ Demand-based rendering (only when needed)
 - ✅ Proper canvas disposal in decal editor

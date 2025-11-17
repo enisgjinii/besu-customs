@@ -1,17 +1,17 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useMemo } from "react";
-import { 
-  Group, 
-  Object3D, 
-  Mesh, 
-  MeshStandardMaterial, 
+import {
+  Group,
+  Object3D,
+  Mesh,
+  MeshStandardMaterial,
   Color,
   AdditiveBlending,
   Points,
   PointsMaterial,
   BufferGeometry,
-  BufferAttribute
+  BufferAttribute,
 } from "three";
 import { useFrame } from "@react-three/fiber";
 import { useConfiguratorStore } from "@/lib/store";
@@ -204,17 +204,19 @@ export function EntranceAnimation({
     if (progress >= 1) {
       setIsAnimating(false);
       // Reset any modified properties
-      groupRef.current.traverse((child: Object3D & { material?: MeshStandardMaterial }) => {
-        if (child instanceof Mesh) {
-          const material = child.material as MeshStandardMaterial;
-          material.transparent = false;
-          material.opacity = 1;
-          material.emissive = new Color(0x000000);
-          material.emissiveIntensity = 0;
-          material.needsUpdate = true;
-          child.scale.setScalar(1);
-        }
-      });
+      groupRef.current.traverse(
+        (child: Object3D & { material?: MeshStandardMaterial }) => {
+          if (child instanceof Mesh) {
+            const material = child.material as MeshStandardMaterial;
+            material.transparent = false;
+            material.opacity = 1;
+            material.emissive = new Color(0x000000);
+            material.emissiveIntensity = 0;
+            material.needsUpdate = true;
+            child.scale.setScalar(1);
+          }
+        },
+      );
       groupRef.current.position.set(0, 0, 0);
       groupRef.current.rotation.set(0, 0, 0);
       groupRef.current.scale.setScalar(1);

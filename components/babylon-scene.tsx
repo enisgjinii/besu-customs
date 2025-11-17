@@ -20,7 +20,6 @@ import {
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { useConfiguratorStore } from "@/lib/store";
-import { Texture } from "@babylonjs/core";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import {
@@ -81,10 +80,16 @@ export function BabylonScene() {
   );
   const sections = useConfiguratorStore((s) => s.sections);
   const setSections = useConfiguratorStore((s) => s.setSections);
-  const highlightedSectionId = useConfiguratorStore((s) => s.highlightedSectionId);
+  const highlightedSectionId = useConfiguratorStore(
+    (s) => s.highlightedSectionId,
+  );
   const selectedSectionId = useConfiguratorStore((s) => s.selectedSectionId);
-  const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
-  const clearGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
+  const globalCustomTexture = useConfiguratorStore(
+    (s) => s.globalCustomTexture,
+  );
+  const clearGlobalCustomTexture = useConfiguratorStore(
+    (s) => s.setGlobalCustomTexture,
+  );
 
   // Track applied global texture to dispose when replaced
   const appliedGlobalTextureRef = useRef<Texture | null>(null);
@@ -118,8 +123,8 @@ export function BabylonScene() {
     // Create camera
     const camera = new ArcRotateCamera(
       "camera",
-      Math.PI / 2,
-      Math.PI / 3,
+      -Math.PI / 2, // Alpha: rotated to show front of model
+      Math.PI / 2.5, // Beta: vertical angle (eye-level view)
       5,
       Vector3.Zero(),
       scene,
@@ -187,7 +192,7 @@ export function BabylonScene() {
   // Handle background color changes without recreating the scene
   useEffect(() => {
     if (!sceneRef.current) return;
-    
+
     const bgColor = getThemeBackgroundColor(theme, backgroundColor);
     sceneRef.current.clearColor = hexToColor4(bgColor);
   }, [theme, backgroundColor]);
@@ -195,7 +200,7 @@ export function BabylonScene() {
   // Handle auto-rotation
   useEffect(() => {
     if (!cameraRef.current) return;
-    
+
     if (autoRotate) {
       cameraRef.current.useAutoRotationBehavior = true;
       if (cameraRef.current.autoRotationBehavior) {
@@ -245,9 +250,18 @@ export function BabylonScene() {
       console.log(
         `🎭 Babylon Scene: Found ${materialsByOriginalName.size} materials in scene`,
       );
-      console.log(`   Material names:`, Array.from(materialsByOriginalName.keys()));
-      console.log(`   Section originalNames:`, sections.map(s => s.originalName));
-      console.log(`   Section ids:`, sections.map(s => s.id));
+      console.log(
+        `   Material names:`,
+        Array.from(materialsByOriginalName.keys()),
+      );
+      console.log(
+        `   Section originalNames:`,
+        sections.map((s) => s.originalName),
+      );
+      console.log(
+        `   Section ids:`,
+        sections.map((s) => s.id),
+      );
 
       // Apply global texture first if present
       const globalTexture = globalCustomTexture;
@@ -264,8 +278,18 @@ export function BabylonScene() {
 
         materialsByOriginalName.forEach((material) => {
           // Dispose previous base textures if any
-          if (material.albedoTexture) { try { material.albedoTexture.dispose(); } catch {} material.albedoTexture = null; }
-          if (material.diffuseTexture) { try { material.diffuseTexture.dispose(); } catch {} material.diffuseTexture = null; }
+          if (material.albedoTexture) {
+            try {
+              material.albedoTexture.dispose();
+            } catch {}
+            material.albedoTexture = null;
+          }
+          if (material.diffuseTexture) {
+            try {
+              material.diffuseTexture.dispose();
+            } catch {}
+            material.diffuseTexture = null;
+          }
           if (material.albedoColor !== undefined) {
             material.albedoTexture = tex;
             material.albedoColor = new Color3(1, 1, 1);
@@ -290,24 +314,28 @@ export function BabylonScene() {
       // Apply material properties from sections to actual Babylon materials when no global texture
       let appliedCount = 0;
       let notFoundCount = 0;
-      
+
       sections.forEach((section) => {
         // Try to find material by originalName
         let material = materialsByOriginalName.get(section.originalName);
-        
+
         // If not found, try by id
         if (!material) {
           material = materialsByOriginalName.get(section.id);
         }
-        
+
         // If still not found, try partial matching
         if (!material) {
           const originalNameLower = section.originalName.toLowerCase();
           for (const [matName, mat] of materialsByOriginalName.entries()) {
-            if (matName.toLowerCase().includes(originalNameLower) || 
-                originalNameLower.includes(matName.toLowerCase())) {
+            if (
+              matName.toLowerCase().includes(originalNameLower) ||
+              originalNameLower.includes(matName.toLowerCase())
+            ) {
               material = mat;
-              console.log(`✓ Found material via partial match: "${matName}" for section "${section.originalName}"`);
+              console.log(
+                `✓ Found material via partial match: "${matName}" for section "${section.originalName}"`,
+              );
               break;
             }
           }
@@ -317,25 +345,36 @@ export function BabylonScene() {
           console.warn(
             `⚠️ Babylon Scene: No material found for section "${section.name}" (originalName: "${section.originalName}", id: "${section.id}")`,
           );
-          console.warn(`   Available materials:`, Array.from(materialsByOriginalName.keys()).slice(0, 5));
+          console.warn(
+            `   Available materials:`,
+            Array.from(materialsByOriginalName.keys()).slice(0, 5),
+          );
           notFoundCount++;
           return;
         }
-        
+
         appliedCount++;
 
         // Remove highlight behavior: always use neutral emissive
         material.emissiveColor = new Color3(0, 0, 0);
 
         // Apply color if no custom texture or gradient is enabled
-        if (section.color && !section.customTexture && !section.gradient?.enabled) {
+        if (
+          section.color &&
+          !section.customTexture &&
+          !section.gradient?.enabled
+        ) {
           // Remove any existing base texture first
           if (material.albedoTexture) {
-            try { material.albedoTexture.dispose(); } catch {}
+            try {
+              material.albedoTexture.dispose();
+            } catch {}
             material.albedoTexture = null;
           }
           if (material.diffuseTexture) {
-            try { material.diffuseTexture.dispose(); } catch {}
+            try {
+              material.diffuseTexture.dispose();
+            } catch {}
             material.diffuseTexture = null;
           }
 
@@ -350,14 +389,26 @@ export function BabylonScene() {
             material.alpha = 1.0;
             material.backFaceCulling = true;
           }
-          console.log(`🎨 Applied color ${section.color} to material ${section.originalName}`);
+          console.log(
+            `🎨 Applied color ${section.color} to material ${section.originalName}`,
+          );
         }
 
         // Apply gradient if enabled
         if (section.gradient?.enabled && !section.customTexture) {
           // Dispose old texture if exists
-          if (material.albedoTexture) { try { material.albedoTexture.dispose(); } catch {}; material.albedoTexture = null; }
-          if (material.diffuseTexture) { try { material.diffuseTexture.dispose(); } catch {}; material.diffuseTexture = null; }
+          if (material.albedoTexture) {
+            try {
+              material.albedoTexture.dispose();
+            } catch {}
+            material.albedoTexture = null;
+          }
+          if (material.diffuseTexture) {
+            try {
+              material.diffuseTexture.dispose();
+            } catch {}
+            material.diffuseTexture = null;
+          }
 
           // Create gradient texture
           const size = 512;
@@ -414,14 +465,26 @@ export function BabylonScene() {
             material.diffuseTexture = dynamicTexture;
             material.diffuseColor = new Color3(1, 1, 1);
           }
-          console.log(`🌈 Applied gradient to material ${section.originalName}`);
+          console.log(
+            `🌈 Applied gradient to material ${section.originalName}`,
+          );
         }
 
         // Apply custom texture if available
         if (section.customTexture) {
           // Dispose old texture if exists
-          if (material.albedoTexture) { try { material.albedoTexture.dispose(); } catch {}; material.albedoTexture = null; }
-          if (material.diffuseTexture) { try { material.diffuseTexture.dispose(); } catch {}; material.diffuseTexture = null; }
+          if (material.albedoTexture) {
+            try {
+              material.albedoTexture.dispose();
+            } catch {}
+            material.albedoTexture = null;
+          }
+          if (material.diffuseTexture) {
+            try {
+              material.diffuseTexture.dispose();
+            } catch {}
+            material.diffuseTexture = null;
+          }
 
           const texture = new Texture(
             section.customTexture,
@@ -449,14 +512,18 @@ export function BabylonScene() {
             material.diffuseTexture = texture;
             material.diffuseColor = new Color3(1, 1, 1);
           }
-          console.log(`🖼️ Applied custom texture to material ${section.originalName}`);
+          console.log(
+            `🖼️ Applied custom texture to material ${section.originalName}`,
+          );
         }
 
         // Apply other material properties
         if (material.albedoColor !== undefined) {
           // PBR
-          if (section.roughness !== undefined) material.roughness = section.roughness;
-          if (section.metalness !== undefined) material.metallic = section.metalness;
+          if (section.roughness !== undefined)
+            material.roughness = section.roughness;
+          if (section.metalness !== undefined)
+            material.metallic = section.metalness;
         } else {
           // Standard
           if (section.roughness !== undefined) {
@@ -478,7 +545,9 @@ export function BabylonScene() {
         material.markDirty();
       });
 
-      console.log(`✅ Material update complete: ${appliedCount} applied, ${notFoundCount} not found`);
+      console.log(
+        `✅ Material update complete: ${appliedCount} applied, ${notFoundCount} not found`,
+      );
 
       // Force scene to re-render multiple times
       scene.render();
@@ -501,7 +570,9 @@ export function BabylonScene() {
     try {
       // Dispose previous global texture
       if (appliedGlobalTextureRef.current) {
-        try { appliedGlobalTextureRef.current.dispose(); } catch {}
+        try {
+          appliedGlobalTextureRef.current.dispose();
+        } catch {}
         appliedGlobalTextureRef.current = null;
       }
 
@@ -521,17 +592,19 @@ export function BabylonScene() {
       const meshes = rootMesh.getChildMeshes(false);
       meshes.push(rootMesh);
       let applied = 0;
-      meshes.forEach(m => {
+      meshes.forEach((m) => {
         const material: any = m.material;
         if (!material) return;
         // Apply as emissive overlay; preserve base colors & textures
         material.emissiveTexture = tex;
-        material.emissiveColor = new Color3(1,1,1); // ensure overlay visible
+        material.emissiveColor = new Color3(1, 1, 1); // ensure overlay visible
         // For PBR, avoid altering albedoColor; for Standard, leave diffuseColor
         material.markDirty();
         applied++;
       });
-      console.log(`🌍 Global overlay texture applied (emissive) to ${applied} meshes`);
+      console.log(
+        `🌍 Global overlay texture applied (emissive) to ${applied} meshes`,
+      );
       scene.render();
       requestAnimationFrame(() => scene.render());
     } catch (e) {
@@ -548,16 +621,22 @@ export function BabylonScene() {
     const observer = scene.onPointerObservable.add((pi) => {
       if (pi.type !== PointerEventTypes.POINTERDOWN) return;
       if (!lastDecalTexture) return;
-      const pick = scene.pick(scene.pointerX, scene.pointerY, (m) => m && !m.name?.startsWith("decal_"));
+      const pick = scene.pick(
+        scene.pointerX,
+        scene.pointerY,
+        (m) => m && !m.name?.startsWith("decal_"),
+      );
       if (!pick?.hit || !pick.pickedPoint || !pick.pickedMesh) return;
       const n = pick.getNormal(true) || new Vector3(0, 0, 1);
+      const pos = pick.pickedPoint;
+      const scale = new Vector3(0.5, 0.5, 0.5);
       addDecal({
         id: `decal-${Date.now()}`,
         textureUrl: lastDecalTexture,
         meshUuid: String((pick.pickedMesh as any).uniqueId ?? ""),
-        position: pick.pickedPoint.clone(),
-        rotation: { x: 0, y: 0, z: 0 } as any,
-        scale: new Vector3(0.5, 0.5, 0.5),
+        position: { x: pos.x, y: pos.y, z: pos.z },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: scale.x, y: scale.y, z: scale.z },
       });
     });
     return () => {
@@ -568,7 +647,9 @@ export function BabylonScene() {
   // Optional: expose clear function for future UI
   const clearGlobalTexture = () => {
     if (appliedGlobalTextureRef.current) {
-      try { appliedGlobalTextureRef.current.dispose(); } catch {}
+      try {
+        appliedGlobalTextureRef.current.dispose();
+      } catch {}
       appliedGlobalTextureRef.current = null;
     }
     clearGlobalCustomTexture(null);
@@ -610,7 +691,7 @@ export function BabylonScene() {
 
         // Advanced centering and auto-sizing algorithm
         console.log("📐 Starting advanced model normalization...");
-        
+
         // Step 1: Force update all mesh world matrices
         rootMesh.computeWorldMatrix(true);
         meshes.forEach((mesh) => {
@@ -621,14 +702,14 @@ export function BabylonScene() {
         let globalMin = new Vector3(Infinity, Infinity, Infinity);
         let globalMax = new Vector3(-Infinity, -Infinity, -Infinity);
         let validMeshCount = 0;
-        
+
         meshes.forEach((mesh) => {
           if (mesh.getBoundingInfo) {
             try {
               const boundingInfo = mesh.getBoundingInfo();
               const meshMin = boundingInfo.boundingBox.minimumWorld;
               const meshMax = boundingInfo.boundingBox.maximumWorld;
-              
+
               // Validate bounds (skip invalid meshes)
               if (isFinite(meshMin.x) && isFinite(meshMax.x)) {
                 globalMin = Vector3.Minimize(globalMin, meshMin);
@@ -641,34 +722,44 @@ export function BabylonScene() {
           }
         });
 
-        console.log(`📊 Analyzed ${validMeshCount} valid meshes out of ${meshes.length}`);
+        console.log(
+          `📊 Analyzed ${validMeshCount} valid meshes out of ${meshes.length}`,
+        );
 
         // Step 3: Calculate original dimensions
         const originalSize = globalMax.subtract(globalMin);
         const originalCenter = Vector3.Center(globalMin, globalMax);
-        const maxDimension = Math.max(originalSize.x, originalSize.y, originalSize.z);
-        const minDimension = Math.min(originalSize.x, originalSize.y, originalSize.z);
+        const maxDimension = Math.max(
+          originalSize.x,
+          originalSize.y,
+          originalSize.z,
+        );
+        const minDimension = Math.min(
+          originalSize.x,
+          originalSize.y,
+          originalSize.z,
+        );
         const aspectRatio = maxDimension / (minDimension || 1);
-        
+
         console.log("📐 Original model metrics:", {
-          size: { 
-            x: originalSize.x.toFixed(3), 
-            y: originalSize.y.toFixed(3), 
-            z: originalSize.z.toFixed(3) 
+          size: {
+            x: originalSize.x.toFixed(3),
+            y: originalSize.y.toFixed(3),
+            z: originalSize.z.toFixed(3),
           },
-          center: { 
-            x: originalCenter.x.toFixed(3), 
-            y: originalCenter.y.toFixed(3), 
-            z: originalCenter.z.toFixed(3) 
+          center: {
+            x: originalCenter.x.toFixed(3),
+            y: originalCenter.y.toFixed(3),
+            z: originalCenter.z.toFixed(3),
           },
           maxDim: maxDimension.toFixed(3),
           minDim: minDimension.toFixed(3),
-          aspectRatio: aspectRatio.toFixed(2)
+          aspectRatio: aspectRatio.toFixed(2),
         });
-        
+
         // Step 4: Intelligent scaling based on model characteristics
         let targetSize: number;
-        
+
         if (maxDimension < 0.1) {
           // Very small model - scale up significantly
           targetSize = 3.5;
@@ -690,31 +781,31 @@ export function BabylonScene() {
           targetSize = 3.0;
           console.log("✅ Normal model size detected");
         }
-        
+
         // Step 5: Apply uniform scaling
         if (maxDimension > 0) {
           const scaleFactor = targetSize / maxDimension;
           rootMesh.scaling = new Vector3(scaleFactor, scaleFactor, scaleFactor);
-          
+
           console.log("📏 Applied scale factor:", scaleFactor.toFixed(4));
-          
+
           // Step 6: Recalculate bounds after scaling
           rootMesh.computeWorldMatrix(true);
           meshes.forEach((mesh) => {
             mesh.computeWorldMatrix(true);
           });
-          
+
           // Recalculate global bounds
           globalMin = new Vector3(Infinity, Infinity, Infinity);
           globalMax = new Vector3(-Infinity, -Infinity, -Infinity);
-          
+
           meshes.forEach((mesh) => {
             if (mesh.getBoundingInfo) {
               try {
                 const boundingInfo = mesh.getBoundingInfo();
                 const meshMin = boundingInfo.boundingBox.minimumWorld;
                 const meshMax = boundingInfo.boundingBox.maximumWorld;
-                
+
                 if (isFinite(meshMin.x) && isFinite(meshMax.x)) {
                   globalMin = Vector3.Minimize(globalMin, meshMin);
                   globalMax = Vector3.Maximize(globalMax, meshMax);
@@ -724,23 +815,23 @@ export function BabylonScene() {
               }
             }
           });
-          
+
           // Step 7: Center the model perfectly at world origin
           const scaledCenter = Vector3.Center(globalMin, globalMax);
           rootMesh.position = scaledCenter.negate();
-          
+
           console.log("🎯 Centered model at origin with offset:", {
             x: scaledCenter.x.toFixed(3),
             y: scaledCenter.y.toFixed(3),
-            z: scaledCenter.z.toFixed(3)
+            z: scaledCenter.z.toFixed(3),
           });
-          
+
           // Step 8: Final world matrix update
           rootMesh.computeWorldMatrix(true);
           meshes.forEach((mesh) => {
             mesh.computeWorldMatrix(true);
           });
-          
+
           // Step 9: Verify final position
           const finalSize = globalMax.subtract(globalMin);
           const finalMaxDim = Math.max(finalSize.x, finalSize.y, finalSize.z);
@@ -750,104 +841,109 @@ export function BabylonScene() {
         // Step 10: Calculate optimal camera distance with intelligent positioning
         const finalSize = globalMax.subtract(globalMin);
         const finalMaxDim = Math.max(finalSize.x, finalSize.y, finalSize.z);
-        
+
         // Use field of view and model size to calculate perfect camera distance
         const fov = Math.PI / 3; // 60 degrees default
-        const optimalDistance = (finalMaxDim / 2) / Math.tan(fov / 2) * 1.5;
-        const optimalCameraDistance = Math.max(4, Math.min(optimalDistance, 12));
-        
-        console.log("📷 Optimal camera distance:", optimalCameraDistance.toFixed(2));
+        const optimalDistance = (finalMaxDim / 2 / Math.tan(fov / 2)) * 1.5;
+        const optimalCameraDistance = Math.max(
+          4,
+          Math.min(optimalDistance, 12),
+        );
+
+        console.log(
+          "📷 Optimal camera distance:",
+          optimalCameraDistance.toFixed(2),
+        );
 
         // Entrance animation - zoom in with fade
         const finalScale = rootMesh.scaling.x; // Use the already calculated scale
         rootMesh.scaling = Vector3.Zero();
         rootMesh.visibility = 0;
-        
+
         const animationDuration = 60; // frames
         let frame = 0;
-        
+
         const animateEntrance = () => {
           if (!rootMesh || frame >= animationDuration) {
             if (rootMesh) {
               rootMesh.visibility = 1;
-              rootMesh.scaling = new Vector3(finalScale, finalScale, finalScale);
+              rootMesh.scaling = new Vector3(
+                finalScale,
+                finalScale,
+                finalScale,
+              );
             }
             return;
           }
-          
+
           frame++;
           const progress = frame / animationDuration;
           const easeProgress = 1 - Math.pow(1 - progress, 3); // ease out cubic
-          
+
           const scale = finalScale * easeProgress;
           rootMesh.scaling = new Vector3(scale, scale, scale);
           rootMesh.visibility = easeProgress;
-          
+
           requestAnimationFrame(animateEntrance);
         };
-        
+
         animateEntrance();
 
         // Reset camera to look at center with optimal distance
         if (cameraRef.current) {
           cameraRef.current.setTarget(Vector3.Zero());
-          cameraRef.current.alpha = Math.PI / 2;
-          cameraRef.current.beta = Math.PI / 3;
+          cameraRef.current.alpha = -Math.PI / 2; // Front view
+          cameraRef.current.beta = Math.PI / 2.5; // Eye-level view
           cameraRef.current.radius = optimalCameraDistance;
-          
+
           // Update camera limits based on model size
           cameraRef.current.lowerRadiusLimit = optimalCameraDistance * 0.3;
           cameraRef.current.upperRadiusLimit = optimalCameraDistance * 2.5;
         }
 
-        // Subtle framing tweak: nudge model slightly to the right of screen center
-        // Uses camera right-vector so it works for any orbit angle
-        if (currentMeshRef.current && cameraRef.current) {
-          try {
-            const cam = cameraRef.current;
-            // Camera local +X is screen-right; get world-space vector
-            const rightVec = cam.getDirection(new Vector3(1, 0, 0));
-            const sizeVec = globalMax.subtract(globalMin);
-            const horizSize = Math.max(Math.abs(sizeVec.x), Math.abs(sizeVec.z));
-            const offsetAmount = 0.10 * horizSize; // ~10% of horizontal size
-            const offset = rightVec.scale(offsetAmount);
-            currentMeshRef.current.position.addInPlace(offset);
-            currentMeshRef.current.computeWorldMatrix(true);
-          } catch (e) {
-            console.warn("Could not apply right-offset framing tweak", e);
-          }
-        }
+        // Model is centered at origin - no offset needed
 
         // Extract material sections from the actual model
-        const extractedSections = extractSectionsFromModel(rootMesh, currentModelUrl);
-        
-        console.log("📋 Extracted sections from model:", extractedSections.map(s => ({
-          name: s.name,
-          originalName: s.originalName,
-          id: s.id,
-        })));
-        
+        const extractedSections = extractSectionsFromModel(
+          rootMesh,
+          currentModelUrl,
+        );
+
+        console.log(
+          "📋 Extracted sections from model:",
+          extractedSections.map((s) => ({
+            name: s.name,
+            originalName: s.originalName,
+            id: s.id,
+          })),
+        );
+
         // Try to fetch precomputed sections from API
         fetch(`/api/materials?model=${encodeURIComponent(currentModelUrl)}`)
           .then((resp) => resp.json())
           .then((data) => {
             if (data?.sections && data.sections.length > 0) {
-              console.log("📋 API returned sections:", data.sections.map((s: any) => ({
-                name: s.name,
-                originalName: s.originalName,
-              })));
-              
+              console.log(
+                "📋 API returned sections:",
+                data.sections.map((s: any) => ({
+                  name: s.name,
+                  originalName: s.originalName,
+                })),
+              );
+
               // Map API sections to extracted sections by matching originalName
               const mappedSections = data.sections.map((apiSection: any) => {
                 // Find matching extracted section
                 const match = extractedSections.find(
-                  (extracted) => 
+                  (extracted) =>
                     extracted.originalName === apiSection.originalName ||
-                    extracted.name === apiSection.originalName
+                    extracted.name === apiSection.originalName,
                 );
-                
+
                 if (match) {
-                  console.log(`✓ Mapped "${apiSection.name}" to material "${match.originalName}"`);
+                  console.log(
+                    `✓ Mapped "${apiSection.name}" to material "${match.originalName}"`,
+                  );
                   // Use API section data but with extracted material ID
                   return {
                     ...apiSection,
@@ -855,11 +951,13 @@ export function BabylonScene() {
                     originalName: match.originalName, // Use actual material name
                   };
                 } else {
-                  console.warn(`⚠️ No match found for API section "${apiSection.name}" (${apiSection.originalName})`);
+                  console.warn(
+                    `⚠️ No match found for API section "${apiSection.name}" (${apiSection.originalName})`,
+                  );
                   return apiSection;
                 }
               });
-              
+
               console.log("📋 Using mapped sections from API");
               setSections(mappedSections);
             } else {
@@ -884,7 +982,8 @@ export function BabylonScene() {
       },
       (scene, message, exception) => {
         console.error("❌ Model loading error:", { message, exception });
-        const errorMsg = message || exception?.message || "Failed to load model";
+        const errorMsg =
+          message || exception?.message || "Failed to load model";
         setModelError(errorMsg);
         setModelLoading(false);
       },
@@ -898,7 +997,7 @@ export function BabylonScene() {
         className="w-full h-full outline-none"
         style={{ touchAction: "none" }}
       />
-      
+
       {/* Render decals */}
       {sceneRef.current && currentMeshRef.current && (
         <BabylonDecals

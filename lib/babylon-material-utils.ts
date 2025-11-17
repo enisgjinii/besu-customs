@@ -165,42 +165,49 @@ function findMatchingSection(
   // Strategy 1: Direct material name match
   let section = sectionMap.get(material.name);
   if (section) return section;
-  
+
   // Strategy 2: Direct mesh name match
   section = sectionMap.get(mesh.name);
   if (section) return section;
-  
+
   // Strategy 3: Match by originalName
   for (const sectionData of sections) {
-    if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
+    if (
+      sectionData.originalName === material.name ||
+      sectionData.originalName === mesh.name
+    ) {
       return sectionData;
     }
   }
-  
+
   // Strategy 4: Check combined sections
   for (const sectionData of sections) {
     if (sectionData.combinedOriginalNames) {
-      if (sectionData.combinedOriginalNames.includes(material.name) ||
-          sectionData.combinedOriginalNames.includes(mesh.name)) {
+      if (
+        sectionData.combinedOriginalNames.includes(material.name) ||
+        sectionData.combinedOriginalNames.includes(mesh.name)
+      ) {
         return sectionData;
       }
     }
   }
-  
+
   // Strategy 5: Partial name matching (case-insensitive)
   const materialNameLower = (material.name || "").toLowerCase();
   const meshNameLower = mesh.name.toLowerCase();
-  
+
   for (const sectionData of sections) {
     const sectionNameLower = sectionData.originalName.toLowerCase();
-    if (materialNameLower.includes(sectionNameLower) || 
-        sectionNameLower.includes(materialNameLower) ||
-        meshNameLower.includes(sectionNameLower) ||
-        sectionNameLower.includes(meshNameLower)) {
+    if (
+      materialNameLower.includes(sectionNameLower) ||
+      sectionNameLower.includes(materialNameLower) ||
+      meshNameLower.includes(sectionNameLower) ||
+      sectionNameLower.includes(meshNameLower)
+    ) {
       return sectionData;
     }
   }
-  
+
   return null;
 }
 
@@ -236,7 +243,12 @@ export function applyMaterialsToModel(
       mesh.material = material;
     }
 
-    const section = findMatchingSection(mesh, material as any, sectionMap, sections);
+    const section = findMatchingSection(
+      mesh,
+      material as any,
+      sectionMap,
+      sections,
+    );
     if (!section) {
       skippedCount++;
       return;
@@ -248,21 +260,33 @@ export function applyMaterialsToModel(
     if (isPBR) {
       const pbr = material as PBRMaterial;
       if (pbr.albedoTexture) {
-        try { pbr.albedoTexture.dispose(); } catch {}
+        try {
+          pbr.albedoTexture.dispose();
+        } catch {}
         pbr.albedoTexture = null as any;
       }
     } else {
       const std = material as StandardMaterial;
       if (std.diffuseTexture) {
-        try { std.diffuseTexture.dispose(); } catch {}
+        try {
+          std.diffuseTexture.dispose();
+        } catch {}
         std.diffuseTexture = null as any;
       }
     }
 
     // Apply texture/gradient/solid color
     if (section.customTexture) {
-      console.log(`[BabylonMaterial] Applying customTexture to ${section.name}`);
-      const tex = new Texture(section.customTexture, scene, false, true, Texture.TRILINEAR_SAMPLINGMODE);
+      console.log(
+        `[BabylonMaterial] Applying customTexture to ${section.name}`,
+      );
+      const tex = new Texture(
+        section.customTexture,
+        scene,
+        false,
+        true,
+        Texture.TRILINEAR_SAMPLINGMODE,
+      );
       tex.hasAlpha = true;
       if (isPBR) {
         const pbr = material as PBRMaterial;
@@ -275,7 +299,12 @@ export function applyMaterialsToModel(
         std.diffuseColor = new Color3(1, 1, 1);
       }
     } else if (section.trimDesign && section.trimDesign !== "none") {
-      const tex = createTrimDesignTexture(scene, section.trimDesign, section.color, "#ffffff");
+      const tex = createTrimDesignTexture(
+        scene,
+        section.trimDesign,
+        section.color,
+        "#ffffff",
+      );
       if (tex) {
         if (isPBR) {
           const pbr = material as PBRMaterial;
@@ -327,7 +356,11 @@ export function applyMaterialsToModel(
     } else {
       const std = material as StandardMaterial;
       std.specularPower = (1 - (section.roughness ?? 0.5)) * 128;
-      std.specularColor = new Color3(section.metalness ?? 0.5, section.metalness ?? 0.5, section.metalness ?? 0.5);
+      std.specularColor = new Color3(
+        section.metalness ?? 0.5,
+        section.metalness ?? 0.5,
+        section.metalness ?? 0.5,
+      );
     }
 
     // Wireframe
@@ -339,7 +372,9 @@ export function applyMaterialsToModel(
     appliedCount++;
   });
 
-  console.log(`✅ Finished applying materials: ${appliedCount} applied, ${skippedCount} skipped out of ${meshes.length} meshes`);
+  console.log(
+    `✅ Finished applying materials: ${appliedCount} applied, ${skippedCount} skipped out of ${meshes.length} meshes`,
+  );
 
   scene.render();
   requestAnimationFrame(() => scene.render());
@@ -383,7 +418,8 @@ export function extractSectionsFromModel(
       baseColor &&
       (baseColor.r !== baseColor.g ||
         baseColor.g !== baseColor.b ||
-        (baseColor.r < 0.7 || baseColor.r > 0.9))
+        baseColor.r < 0.7 ||
+        baseColor.r > 0.9)
     ) {
       hexColor = `#${Math.round(baseColor.r * 255)
         .toString(16)
@@ -405,12 +441,20 @@ export function extractSectionsFromModel(
       category: parsed.category,
       color: hexColor,
       roughness: isPBR
-        ? (typeof pbr.roughness === "number" ? pbr.roughness : 0.5)
-        : (typeof std.specularPower === "number" ? 1 - std.specularPower / 128 : 0.5),
+        ? typeof pbr.roughness === "number"
+          ? pbr.roughness
+          : 0.5
+        : typeof std.specularPower === "number"
+          ? 1 - std.specularPower / 128
+          : 0.5,
       metalness: isPBR
-        ? (typeof pbr.metallic === "number" ? pbr.metallic : 0.5)
-        : (std.specularColor ? std.specularColor.r : 0.5),
-      wireframe: !!((material as any).wireframe),
+        ? typeof pbr.metallic === "number"
+          ? pbr.metallic
+          : 0.5
+        : std.specularColor
+          ? std.specularColor.r
+          : 0.5,
+      wireframe: !!(material as any).wireframe,
     };
 
     sections.push(section);

@@ -61,9 +61,13 @@ export function TextureLayers() {
   const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
   const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
   const removeTextureLayer = useConfiguratorStore((s) => s.removeTextureLayer);
-  const reorderTextureLayers = useConfiguratorStore((s) => s.reorderTextureLayers);
-  const setLastDecalTexture = useConfiguratorStore((s) => s.setLastDecalTexture);
-  
+  const reorderTextureLayers = useConfiguratorStore(
+    (s) => s.reorderTextureLayers,
+  );
+  const setLastDecalTexture = useConfiguratorStore(
+    (s) => s.setLastDecalTexture,
+  );
+
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set());
   const [newLayerName, setNewLayerName] = useState("");
@@ -298,9 +302,7 @@ export function TextureLayers() {
                   <Card
                     key={layer.id}
                     className={`transition-all ${
-                      isSelected
-                        ? "ring-2 ring-primary"
-                        : "hover:bg-accent/50"
+                      isSelected ? "ring-2 ring-primary" : "hover:bg-accent/50"
                     } ${!layer.visible ? "opacity-60" : ""}`}
                   >
                     <Collapsible
@@ -402,7 +404,8 @@ export function TextureLayers() {
                                 value={layer.blendMode}
                                 onValueChange={(value) =>
                                   updateLayer(layer.id, {
-                                    blendMode: value as TextureLayer["blendMode"],
+                                    blendMode:
+                                      value as TextureLayer["blendMode"],
                                   })
                                 }
                                 disabled={layer.locked}

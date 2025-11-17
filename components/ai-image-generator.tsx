@@ -30,7 +30,9 @@ export function AIImageGenerator() {
   const [generatedImages, setGeneratedImages] = useState<
     Array<{ imageURL: string; imageUUID: string }>
   >([]);
-  const [selectedSection, setSelectedSection] = useState<string | undefined>(undefined);
+  const [selectedSection, setSelectedSection] = useState<string | undefined>(
+    undefined,
+  );
   const [usage, setUsage] = useState<{
     limit: number;
     used: number;

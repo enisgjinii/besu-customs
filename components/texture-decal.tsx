@@ -2,14 +2,14 @@
 
 import { useRef, useEffect } from "react";
 import { useThree } from "@react-three/fiber";
-import { 
-  Vector3, 
-  Euler, 
-  Mesh, 
+import {
+  Vector3,
+  Euler,
+  Mesh,
   TextureLoader,
   Texture,
   MeshPhysicalMaterial,
-  Material
+  Material,
 } from "three";
 import { DecalGeometry } from "three-stdlib";
 

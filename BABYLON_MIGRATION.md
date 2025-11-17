@@ -5,11 +5,13 @@
 ### What's Been Done
 
 #### 1. Dependencies Installed
+
 ```bash
 npm install @babylonjs/core @babylonjs/loaders @babylonjs/materials react-babylonjs
 ```
 
 #### 2. Core Scene Component Created
+
 - ✅ `components/babylon-scene.tsx` - New Babylon.js scene component
 - ✅ Replaces `components/scene.tsx` (Three.js)
 - ✅ Features implemented:
@@ -23,13 +25,16 @@ npm install @babylonjs/core @babylonjs/loaders @babylonjs/materials react-babylo
   - Automatic model centering and scaling
 
 #### 3. Updated Components
+
 - ✅ `app/page.tsx` - Now uses BabylonScene
 - ✅ `app/review/page.tsx` - Now uses BabylonScene
 - ✅ `lib/store.ts` - Updated Vector3/Euler types for Babylon
 - ✅ `components/decal-editor.tsx` - Updated to use Babylon Vector3
 
 #### 4. Backups Created
+
 All original Three.js components backed up to `backup/threejs-components/`:
+
 - scene.tsx
 - model-loader.tsx
 - texture-decal.tsx
@@ -63,12 +68,14 @@ All original Three.js components backed up to `backup/threejs-components/`:
 - ✅ Real-time material updates
 
 #### Phase 3: Decals
+
 - ⏳ Decal placement system
 - ⏳ Click-to-place decals
 - ⏳ Decal transformation (move, scale, rotate)
 - ⏳ Multiple decals support
 
 #### Phase 4: Advanced Features
+
 - ⏳ Entrance animations
 - ⏳ Particle effects
 - ⏳ Background images/videos
@@ -77,19 +84,20 @@ All original Three.js components backed up to `backup/threejs-components/`:
 
 ### Key Differences: Three.js vs Babylon.js
 
-| Feature | Three.js | Babylon.js |
-|---------|----------|------------|
-| Scene Setup | Manual | Built-in Engine |
-| Camera | PerspectiveCamera | ArcRotateCamera |
-| Rotation | Euler | Vector3 (euler angles) |
-| Model Loading | useGLTF hook | SceneLoader.ImportMesh |
-| Render Loop | useFrame hook | engine.runRenderLoop |
-| Materials | MeshStandardMaterial | StandardMaterial |
-| Context Loss | Frequent | Rare (better memory management) |
+| Feature       | Three.js             | Babylon.js                      |
+| ------------- | -------------------- | ------------------------------- |
+| Scene Setup   | Manual               | Built-in Engine                 |
+| Camera        | PerspectiveCamera    | ArcRotateCamera                 |
+| Rotation      | Euler                | Vector3 (euler angles)          |
+| Model Loading | useGLTF hook         | SceneLoader.ImportMesh          |
+| Render Loop   | useFrame hook        | engine.runRenderLoop            |
+| Materials     | MeshStandardMaterial | StandardMaterial                |
+| Context Loss  | Frequent             | Rare (better memory management) |
 
 ### Performance Improvements
 
 Babylon.js has better built-in memory management:
+
 - ✅ Automatic garbage collection
 - ✅ Better WebGL context handling
 - ✅ Built-in scene optimization
@@ -141,6 +149,7 @@ Babylon.js has better built-in memory management:
 If issues occur, original Three.js components are in `backup/threejs-components/`.
 
 To rollback:
+
 1. Copy files from backup back to components/
 2. Revert app/page.tsx and app/review/page.tsx imports
 3. Revert lib/store.ts types

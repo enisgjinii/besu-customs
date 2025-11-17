@@ -368,6 +368,18 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   };
 
   const handleRotateLeft = () => {
+    // Check if it's a Babylon.js ArcRotateCamera
+    const babylonCamera = cameraControlsRef as {
+      alpha?: number;
+    } | null;
+
+    if (babylonCamera && typeof babylonCamera.alpha === "number") {
+      // Babylon.js camera - rotate left (decrease alpha)
+      babylonCamera.alpha -= Math.PI / 4;
+      return;
+    }
+
+    // Three.js camera controls
     const controls = cameraControlsRef as {
       object?: unknown;
       getAzimuthalAngle: () => number;
@@ -379,6 +391,18 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
   };
 
   const handleRotateRight = () => {
+    // Check if it's a Babylon.js ArcRotateCamera
+    const babylonCamera = cameraControlsRef as {
+      alpha?: number;
+    } | null;
+
+    if (babylonCamera && typeof babylonCamera.alpha === "number") {
+      // Babylon.js camera - rotate right (increase alpha)
+      babylonCamera.alpha += Math.PI / 4;
+      return;
+    }
+
+    // Three.js camera controls
     const controls = cameraControlsRef as {
       object?: unknown;
       getAzimuthalAngle: () => number;
@@ -1020,7 +1044,15 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
                         <select
                           value={entranceAnimation}
                           onChange={(e) =>
-                            setEntranceAnimation(e.target.value as "fadeIn" | "scaleUp" | "rotateIn" | "zoomRotate" | "dropIn" | "bounce")
+                            setEntranceAnimation(
+                              e.target.value as
+                                | "fadeIn"
+                                | "scaleUp"
+                                | "rotateIn"
+                                | "zoomRotate"
+                                | "dropIn"
+                                | "bounce",
+                            )
                           }
                           className="w-full px-2 py-1.5 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                         >
@@ -1161,11 +1193,30 @@ function ResetCameraButton() {
   );
 
   const handleReset = () => {
-    const controls = cameraControlsRef as {
-      reset: (enableTransition: boolean) => void;
+    // Check if it's a Babylon.js ArcRotateCamera
+    const babylonCamera = cameraControlsRef as {
+      alpha?: number;
+      beta?: number;
+      radius?: number;
+      setTarget?: (target: { x: number; y: number; z: number }) => void;
     } | null;
-    if (controls) {
-      // Reset to default position
+
+    if (babylonCamera && typeof babylonCamera.alpha === "number") {
+      // Babylon.js camera - reset to front view
+      babylonCamera.alpha = -Math.PI / 2; // Front view
+      babylonCamera.beta = Math.PI / 2.5; // Eye-level view
+      babylonCamera.radius = 5;
+      if (babylonCamera.setTarget) {
+        babylonCamera.setTarget({ x: 0, y: 0, z: 0 });
+      }
+      return;
+    }
+
+    // Three.js camera controls
+    const controls = cameraControlsRef as {
+      reset?: (enableTransition: boolean) => void;
+    } | null;
+    if (controls?.reset) {
       controls.reset(true);
     }
   };

@@ -7,17 +7,20 @@
 **Problem:** Materials weren't being created or updated properly.
 
 **Root Causes:**
+
 - Some meshes didn't have materials assigned
 - Section IDs weren't matching material names
 - Material properties weren't being set correctly
 
 **Fixes Applied:**
+
 1. **Auto-create materials** - If a mesh doesn't have a material, create one
 2. **Better ID matching** - Use material name as section ID for easier matching
 3. **Improved logging** - Added detailed console logs to track material application
 4. **Default values** - Set sensible defaults for color, roughness, metalness
 
 **How to Test:**
+
 ```
 1. Load a model
 2. Check console for "Extracted section" logs
@@ -34,6 +37,7 @@
 **Solution:** Created `components/babylon-decals.tsx`
 
 **Features:**
+
 - Automatic decal placement
 - Texture loading with transparency
 - Position, rotation, and scale support
@@ -41,6 +45,7 @@
 - Automatic cleanup
 
 **How to Test:**
+
 ```
 1. Go to Texture tab
 2. Create a decal (add text or image)
@@ -54,6 +59,7 @@
 **Problem:** Some GLB files have issues with Babylon's loader.
 
 **Improvements:**
+
 - Better error handling
 - Progress logging
 - Detailed error messages
@@ -62,6 +68,7 @@
 ## Console Logs to Watch
 
 ### Material System
+
 ```
 📋 Extracted section: [name], color: [hex]
 🎨 Sections changed, applying materials...
@@ -70,12 +77,14 @@
 ```
 
 ### Decal System
+
 ```
 🎯 Applying [N] decals to model
 ✅ Decal applied: [id]
 ```
 
 ### Model Loading
+
 ```
 📦 Loading model: [url]
 Loading: [percent]%
@@ -88,6 +97,7 @@ Loading: [percent]%
 ### If Colors Still Don't Change:
 
 1. **Check Console Logs**
+
    ```
    Look for: "Extracted section" - Are sections being extracted?
    Look for: "Applying material to" - Are materials being applied?
@@ -95,6 +105,7 @@ Loading: [percent]%
    ```
 
 2. **Check Section Data**
+
    ```javascript
    // In browser console:
    window.__sections = useConfiguratorStore.getState().sections;
@@ -111,6 +122,7 @@ Loading: [percent]%
 ### If Decals Don't Appear:
 
 1. **Check Decal Data**
+
    ```javascript
    // In browser console:
    window.__decals = useConfiguratorStore.getState().decals;
@@ -118,6 +130,7 @@ Loading: [percent]%
    ```
 
 2. **Check Scene**
+
    ```
    Look for: "Applying [N] decals" - Is the decal system running?
    Look for: "Decal applied" - Are decals being created?
@@ -133,20 +146,26 @@ Loading: [percent]%
 ## Known Issues
 
 ### Model Loading Error
+
 If you see: "Cannot read properties of undefined"
+
 - The GLB file may be corrupted
 - Try a different model
 - Check the file path is correct
 - Ensure the file is accessible
 
 ### Materials Not Matching
+
 If materials don't match sections:
+
 - Check material names in console logs
 - Verify section originalName matches material name
 - Try reloading the model
 
 ### Decals Behind Model
+
 If decals appear behind the model:
+
 - Adjust position.z in decal data
 - Increase the offset in babylon-decals.tsx
 - Check mesh normals
@@ -154,11 +173,13 @@ If decals appear behind the model:
 ## File Changes
 
 ### Modified Files
+
 - `lib/babylon-material-utils.ts` - Improved material system
 - `components/babylon-scene.tsx` - Added decal integration
 - `components/babylon-decals.tsx` - NEW: Decal system
 
 ### Key Improvements
+
 1. Auto-create materials if missing
 2. Better section ID matching
 3. Detailed logging for debugging
@@ -187,6 +208,7 @@ If issues persist:
 ## Support
 
 If problems continue:
+
 1. Share console logs
 2. Share model file (if possible)
 3. Share screenshot of issue

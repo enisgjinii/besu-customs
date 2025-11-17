@@ -18,22 +18,22 @@ export interface ParsedMaterial {
 export function parseMaterialName(materialName: string): ParsedMaterial {
   const name = materialName.trim();
   const nameLower = name.toLowerCase();
-  
+
   // Remove trailing numbers (like _301116, _79203)
-  const nameWithoutNumbers = name.replace(/_\d+$/, '');
-  
+  const nameWithoutNumbers = name.replace(/_\d+$/, "");
+
   let displayName = nameWithoutNumbers;
   let category = "Other";
   let partType = "unknown";
   let defaultColor = "#808080"; // Default gray
   let priority = 100;
-  
+
   // Pattern 1: Body parts (Body_F_, Body_B_, Body_1, etc.)
   if (nameLower.includes("body")) {
     category = "Body";
     partType = "body";
     priority = 10;
-    
+
     if (nameLower.includes("_f") || nameLower.includes("front")) {
       displayName = "Body Front";
       defaultColor = "#3b82f6"; // Blue
@@ -62,13 +62,13 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
       }
     }
   }
-  
+
   // Pattern 2: Fabric sections (FABRIC_1_, FABRIC_2_, etc.)
   else if (nameLower.includes("fabric")) {
     category = "Fabric";
     partType = "fabric";
     priority = 20;
-    
+
     const match = name.match(/FABRIC[_\s]*(\d+)/i);
     if (match) {
       const fabricNum = parseInt(match[1]);
@@ -80,7 +80,7 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
       defaultColor = "#6366f1";
     }
   }
-  
+
   // Pattern 3: Sleeves
   else if (nameLower.includes("sleeve")) {
     category = "Sleeves";
@@ -89,7 +89,7 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     defaultColor = "#8b5cf6"; // Purple
     priority = 30;
   }
-  
+
   // Pattern 4: Collar
   else if (nameLower.includes("collar")) {
     category = "Collar";
@@ -98,12 +98,12 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     defaultColor = "#ec4899"; // Pink
     priority = 40;
   }
-  
+
   // Pattern 5: Zipper parts
   else if (nameLower.includes("zipper") || nameLower.includes("slider")) {
     category = "Hardware";
     partType = "zipper";
-    
+
     if (nameLower.includes("teeth")) {
       displayName = "Zipper Teeth";
       defaultColor = "#94a3b8"; // Light gray
@@ -116,12 +116,12 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     }
     priority = 90;
   }
-  
+
   // Pattern 6: Buttons
   else if (nameLower.includes("button")) {
     category = "Hardware";
     partType = "button";
-    
+
     if (nameLower.includes("hole")) {
       displayName = "Buttonhole";
       defaultColor = "#1e293b"; // Very dark
@@ -131,7 +131,7 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     }
     priority = 91;
   }
-  
+
   // Pattern 7: Ble (Binding/Edge)
   else if (nameLower.startsWith("ble")) {
     category = "Trim";
@@ -140,7 +140,7 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     defaultColor = "#14b8a6"; // Teal
     priority = 50;
   }
-  
+
   // Pattern 8: Material with numbers (M_00005, etc.)
   else if (nameLower.match(/^m_\d+/)) {
     category = "Hardware";
@@ -149,7 +149,7 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     defaultColor = "#78716c"; // Stone
     priority = 92;
   }
-  
+
   // Pattern 9: Pure numbers (79499, etc.)
   else if (/^\d+$/.test(name)) {
     category = "Other";
@@ -158,7 +158,7 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     defaultColor = "#a8a29e"; // Light stone
     priority = 95;
   }
-  
+
   // Pattern 10: Material.001, Material.002, etc.
   else if (nameLower.match(/^material\.?\d*/)) {
     const match = name.match(/(\d+)/);
@@ -175,14 +175,14 @@ export function parseMaterialName(materialName: string): ParsedMaterial {
     category = "Material";
     partType = "material";
   }
-  
+
   // Pattern 11: Default - keep original name
   else {
     displayName = nameWithoutNumbers || name;
     defaultColor = "#9ca3af";
     priority = 100;
   }
-  
+
   return {
     originalName: name,
     displayName,
@@ -211,7 +211,7 @@ function getColorByIndex(index: number): string {
     "#a855f7", // Violet
     "#f43f5e", // Rose
   ];
-  
+
   return colors[index % colors.length];
 }
 
@@ -220,7 +220,7 @@ function getColorByIndex(index: number): string {
  */
 export function parseMaterialNames(materialNames: string[]): ParsedMaterial[] {
   const parsed = materialNames.map(parseMaterialName);
-  
+
   // Sort by priority (lower number = higher priority)
   return parsed.sort((a, b) => a.priority - b.priority);
 }
@@ -229,16 +229,16 @@ export function parseMaterialNames(materialNames: string[]): ParsedMaterial[] {
  * Group materials by category
  */
 export function groupMaterialsByCategory(
-  materials: ParsedMaterial[]
+  materials: ParsedMaterial[],
 ): Record<string, ParsedMaterial[]> {
   const grouped: Record<string, ParsedMaterial[]> = {};
-  
+
   materials.forEach((material) => {
     if (!grouped[material.category]) {
       grouped[material.category] = [];
     }
     grouped[material.category].push(material);
   });
-  
+
   return grouped;
 }

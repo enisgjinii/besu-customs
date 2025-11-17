@@ -368,7 +368,10 @@ export function AIImageGenerator() {
                   >
                     <img
                       src={img.url}
-                      alt={String((img.metadata as Record<string, unknown>).prompt || "Generated image")}
+                      alt={String(
+                        (img.metadata as Record<string, unknown>).prompt ||
+                          "Generated image",
+                      )}
                       className="w-full h-32 object-cover"
                     />
                     {selectedImage === img.id && (
@@ -381,7 +384,10 @@ export function AIImageGenerator() {
                             e.stopPropagation();
                             handleDownload(
                               img.url,
-                              String((img.metadata as Record<string, unknown>).prompt || "ai-generated"),
+                              String(
+                                (img.metadata as Record<string, unknown>)
+                                  .prompt || "ai-generated",
+                              ),
                             );
                           }}
                         >
@@ -476,21 +482,33 @@ export function AIImageGenerator() {
                     {new Date(selectedImageData.created_at).toLocaleString()}
                   </span>
                 </div>
-                {Boolean((selectedImageData.metadata as Record<string, unknown>).prompt) && (
+                {Boolean(
+                  (selectedImageData.metadata as Record<string, unknown>)
+                    .prompt,
+                ) && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-muted-foreground mb-1">Prompt:</p>
                     <p className="text-sm bg-muted/20 p-2 rounded">
-                      {String((selectedImageData.metadata as Record<string, unknown>).prompt)}
+                      {String(
+                        (selectedImageData.metadata as Record<string, unknown>)
+                          .prompt,
+                      )}
                     </p>
                   </div>
                 )}
-                {Boolean((selectedImageData.metadata as Record<string, unknown>).negative_prompt) && (
+                {Boolean(
+                  (selectedImageData.metadata as Record<string, unknown>)
+                    .negative_prompt,
+                ) && (
                   <div className="mt-2">
                     <p className="text-muted-foreground text-sm mb-1">
                       Negative Prompt:
                     </p>
                     <p className="text-xs bg-muted/20 p-2 rounded line-clamp-3">
-                      {String((selectedImageData.metadata as Record<string, unknown>).negative_prompt)}
+                      {String(
+                        (selectedImageData.metadata as Record<string, unknown>)
+                          .negative_prompt,
+                      )}
                     </p>
                   </div>
                 )}

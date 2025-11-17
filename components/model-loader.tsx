@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef, useMemo } from "react";
-import { 
-  Mesh, 
-  Material, 
-  Group, 
+import {
+  Mesh,
+  Material,
+  Group,
   MeshStandardMaterial,
   Box3,
   Vector3,
@@ -12,7 +12,7 @@ import {
   Texture,
   TextureLoader,
   SRGBColorSpace,
-  Color
+  Color,
 } from "three";
 import { useGLTF, OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
@@ -97,7 +97,7 @@ function Model({
         }
       });
     }
-    
+
     clonedScene.current = scene.clone();
   }, [scene, url]);
 
@@ -222,8 +222,7 @@ function Model({
               const mesh = meshNameMap.get(section.originalName);
               if (mesh) {
                 // Create a unique material for this mesh by cloning its current material
-                const originalMaterial =
-                  mesh.material as MeshStandardMaterial;
+                const originalMaterial = mesh.material as MeshStandardMaterial;
                 const newMaterial = originalMaterial.clone();
                 newMaterial.name = `${section.originalName}_unique`;
 
@@ -413,10 +412,7 @@ function Model({
 
     try {
       // Re-map section IDs to current material UUIDs by matching originalName
-      const materialsByOriginalName = new Map<
-        string,
-        MeshStandardMaterial
-      >();
+      const materialsByOriginalName = new Map<string, MeshStandardMaterial>();
       clonedScene.current.traverse((child) => {
         if (child instanceof Mesh && child.material) {
           const materials = Array.isArray(child.material)
@@ -438,14 +434,16 @@ function Model({
       sections.forEach((section) => {
         const material = materialsByOriginalName.get(section.originalName);
         if (!material) {
-          console.warn(`⚠️ Model Loader: No material found for section ${section.originalName}`);
+          console.warn(
+            `⚠️ Model Loader: No material found for section ${section.originalName}`,
+          );
           return;
         }
 
         // Apply highlighting if this section is highlighted
         const isHighlighted = highlightedSectionId === section.id;
         const isSelected = selectedSectionId === section.id;
-        
+
         if (isHighlighted || isSelected) {
           // Create a bright emissive color for highlighting
           material.emissive = new Color(0xffff00);
@@ -457,53 +455,72 @@ function Model({
         }
 
         // Apply color if no custom texture or gradient is enabled
-        if (section.color && !section.customTexture && !section.gradient?.enabled) {
+        if (
+          section.color &&
+          !section.customTexture &&
+          !section.gradient?.enabled
+        ) {
           material.color.set(section.color);
-          console.log(`🎨 Applied color ${section.color} to material ${section.originalName}`);
+          console.log(
+            `🎨 Applied color ${section.color} to material ${section.originalName}`,
+          );
         }
 
         // Apply gradient if enabled
         if (section.gradient?.enabled && !section.customTexture) {
           // Create a simple gradient texture using canvas
-          const canvas = document.createElement('canvas');
+          const canvas = document.createElement("canvas");
           canvas.width = 256;
           canvas.height = 256;
-          const context = canvas.getContext('2d')!;
-          
-          if (section.gradient.type === 'linear') {
-            const angle = (section.gradient.angle || 90) * Math.PI / 180;
+          const context = canvas.getContext("2d")!;
+
+          if (section.gradient.type === "linear") {
+            const angle = ((section.gradient.angle || 90) * Math.PI) / 180;
             const x1 = 128 - Math.cos(angle) * 128;
             const y1 = 128 - Math.sin(angle) * 128;
             const x2 = 128 + Math.cos(angle) * 128;
             const y2 = 128 + Math.sin(angle) * 128;
-            
+
             const gradient = context.createLinearGradient(x1, y1, x2, y2);
             section.gradient!.colors.forEach((color, index) => {
-              const stop = section.gradient!.stops?.[index] ?? (index / (section.gradient!.colors.length - 1));
+              const stop =
+                section.gradient!.stops?.[index] ??
+                index / (section.gradient!.colors.length - 1);
               gradient.addColorStop(stop, color);
             });
-            
+
             context.fillStyle = gradient;
           } else {
             // Radial gradient
-            const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
+            const gradient = context.createRadialGradient(
+              128,
+              128,
+              0,
+              128,
+              128,
+              128,
+            );
             section.gradient!.colors.forEach((color, index) => {
-              const stop = section.gradient!.stops?.[index] ?? (index / (section.gradient!.colors.length - 1));
+              const stop =
+                section.gradient!.stops?.[index] ??
+                index / (section.gradient!.colors.length - 1);
               gradient.addColorStop(stop, color);
             });
-            
+
             context.fillStyle = gradient;
           }
-          
+
           context.fillRect(0, 0, 256, 256);
-          
+
           // Create texture from canvas
           const texture = new Texture(canvas);
           texture.needsUpdate = true;
           texture.colorSpace = SRGBColorSpace;
-          
+
           material.map = texture;
-          console.log(`🌈 Applied gradient to material ${section.originalName}`);
+          console.log(
+            `🌈 Applied gradient to material ${section.originalName}`,
+          );
         }
 
         // Apply custom texture if available
@@ -512,11 +529,13 @@ function Model({
           if (material.map) {
             material.map.dispose();
           }
-          
+
           const texture = new TextureLoader().load(section.customTexture);
           texture.colorSpace = SRGBColorSpace;
           material.map = texture;
-          console.log(`🖼️ Applied custom texture to material ${section.originalName}`);
+          console.log(
+            `🖼️ Applied custom texture to material ${section.originalName}`,
+          );
         }
 
         // Apply other material properties

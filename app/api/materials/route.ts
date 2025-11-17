@@ -150,8 +150,10 @@ export async function GET(request: Request) {
       if (originalName === "Body_B_66682") return "Back of Jersey Color";
       if (originalName === "Body_F_66679") return "Front of Jersey Color";
       // Button materials
-      if (originalName === "Default_Button_66696") return "Jersey Button 1 Color";
-      if (originalName === "Default_Button_66697") return "Jersey Button 2 Color";
+      if (originalName === "Default_Button_66696")
+        return "Jersey Button 1 Color";
+      if (originalName === "Default_Button_66697")
+        return "Jersey Button 2 Color";
     }
 
     // Basketball Jersey and Shorts renaming

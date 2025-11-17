@@ -36,7 +36,7 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
       try {
         // Find target mesh
         let targetMesh: Mesh | null = null;
-        
+
         if (decal.meshUuid) {
           // Try to find by UUID
           const found = scene.getMeshByUniqueId(parseInt(decal.meshUuid));
@@ -44,7 +44,7 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
             targetMesh = found;
           }
         }
-        
+
         // If not found, use root mesh or first child
         if (!targetMesh) {
           const meshes = rootMesh.getChildMeshes(false);
@@ -61,13 +61,27 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
         }
 
         // Compute a robust hit point and normal using a raycast toward the mesh
-        const meshCenter = targetMesh.getBoundingInfo().boundingSphere.centerWorld.clone();
-        const guessDir = meshCenter.subtract(new Vector3(decal.position.x, decal.position.y, decal.position.z)).normalize();
-        const origin = new Vector3(decal.position.x, decal.position.y, decal.position.z).add(guessDir.scale(-0.2));
+        const meshCenter = targetMesh
+          .getBoundingInfo()
+          .boundingSphere.centerWorld.clone();
+        const guessDir = meshCenter
+          .subtract(
+            new Vector3(decal.position.x, decal.position.y, decal.position.z),
+          )
+          .normalize();
+        const origin = new Vector3(
+          decal.position.x,
+          decal.position.y,
+          decal.position.z,
+        ).add(guessDir.scale(-0.2));
         const ray = new Ray(origin, guessDir, 1000);
         const pick = scene.pickWithRay(ray, (m) => m === targetMesh, false);
 
-        let hitPoint = new Vector3(decal.position.x, decal.position.y, decal.position.z);
+        let hitPoint = new Vector3(
+          decal.position.x,
+          decal.position.y,
+          decal.position.z,
+        );
         let hitNormal = new Vector3(0, 0, 1);
         if (pick?.hit && pick.pickedPoint) {
           hitPoint = pick.pickedPoint.clone();
@@ -79,9 +93,9 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
         const size = new Vector3(
           Math.max(0.3, decal.scale.x),
           Math.max(0.3, decal.scale.y),
-          0.3 // Projection depth
+          0.3, // Projection depth
         );
-        
+
         const angle = decal.rotation?.z ?? 0;
         const decalMesh = MeshBuilder.CreateDecal(
           `decal_${decal.id}`,
@@ -95,12 +109,21 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
         );
 
         // Decal material with proper visibility
-        const decalMaterial = new StandardMaterial(`decalMat_${decal.id}`, scene);
-        const texture = new Texture(decal.textureUrl, scene, false, true, Texture.TRILINEAR_SAMPLINGMODE);
+        const decalMaterial = new StandardMaterial(
+          `decalMat_${decal.id}`,
+          scene,
+        );
+        const texture = new Texture(
+          decal.textureUrl,
+          scene,
+          false,
+          true,
+          Texture.TRILINEAR_SAMPLINGMODE,
+        );
         texture.hasAlpha = true;
         texture.wrapU = Texture.CLAMP_ADDRESSMODE;
         texture.wrapV = Texture.CLAMP_ADDRESSMODE;
-        
+
         decalMaterial.diffuseTexture = texture;
         decalMaterial.opacityTexture = texture;
         decalMaterial.specularColor = new Color3(0, 0, 0);

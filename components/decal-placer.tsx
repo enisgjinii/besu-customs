@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useThree } from "@react-three/fiber";
-import { 
+import {
   Raycaster,
   Vector2,
   Vector3,
@@ -10,7 +10,7 @@ import {
   Quaternion,
   Euler,
   Mesh,
-  Object3D
+  Object3D,
 } from "three";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -38,7 +38,9 @@ export function DecalPlacer() {
         scene.children,
         true,
       );
-      const hit = intersects.find((i: { object: Object3D }) => i.object instanceof Mesh);
+      const hit = intersects.find(
+        (i: { object: Object3D }) => i.object instanceof Mesh,
+      );
       if (!hit || !(hit.object instanceof Mesh)) return;
 
       const obj = hit.object as Mesh;

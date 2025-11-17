@@ -15,13 +15,13 @@ const testMaterials = [
   "Default_Button_6792128",
   "Default_Buttonhole_6792189",
   "Ble_4559165",
-  
+
   // Soccer Jersey
   "Body_F_279881",
   "Body_B_301116",
   "Sleeves_365053",
   "Collar_Stand_441436",
-  
+
   // Backpack
   "FABRIC_3_79203",
   "FABRIC_4_79209",
@@ -29,18 +29,18 @@ const testMaterials = [
   "Zipper_Teeth_01_79381",
   "Slider_01_156698",
   "79499",
-  
+
   // Volleyball
   "Body_1486550",
   "Body_1337391",
   "Material.001",
-  
+
   // Duffle Bag
   "FABRIC 2_612766",
 ];
 
 console.log("🧪 Material Name Parser Test\n");
-console.log("=" .repeat(80));
+console.log("=".repeat(80));
 
 testMaterials.forEach((materialName) => {
   const parsed = parseMaterialName(materialName);
@@ -57,6 +57,6 @@ console.log("\n📊 Sorted by Priority:\n");
 const sorted = parseMaterialNames(testMaterials);
 sorted.forEach((material, index) => {
   console.log(
-    `${(index + 1).toString().padStart(2)}. [${material.priority.toString().padStart(3)}] ${material.displayName.padEnd(20)} (${material.category}) -> ${material.defaultColor}`
+    `${(index + 1).toString().padStart(2)}. [${material.priority.toString().padStart(3)}] ${material.displayName.padEnd(20)} (${material.category}) -> ${material.defaultColor}`,
   );
 });
