@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Model } from "./models-service";
-import { Vector3 } from "@babylonjs/core";
+import { Vector3, Euler } from "three";
 import type { EntranceAnimationType } from "@/components/entrance-animation";
 
 export type Category =
@@ -66,7 +66,7 @@ export interface DecalData {
   textureUrl: string;
   meshUuid?: string;
   position: Vector3;
-  rotation: Vector3; // Babylon uses Vector3 for rotation (euler angles)
+  rotation: Euler;
   scale: Vector3;
 }
 
@@ -86,11 +86,13 @@ export interface ConfiguratorState {
   setCurrentModelUrl: (url: string | null) => void;
   sections: MaterialSection[];
   selectedSectionId: string | null;
+  highlightedSectionId: string | null;
   linkedSections: Set<string>;
   setSections: (sections: MaterialSection[]) => void;
   updateSection: (id: string, updates: Partial<MaterialSection>) => void;
   updateAllSections: (updates: Partial<MaterialSection>) => void;
   setSelectedSection: (id: string | null) => void;
+  setHighlightedSection: (id: string | null) => void;
   toggleSectionLink: (sectionId: string) => void;
   clearSectionLinks: () => void;
   recentColors: string[];
@@ -418,6 +420,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
 
   sections: [],
   selectedSectionId: null,
+  highlightedSectionId: null,
   linkedSections: new Set<string>(),
   setSections: (sections: MaterialSection[]) => {
     console.log("🏪 Store.setSections called:", {
@@ -452,6 +455,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     }));
   },
   setSelectedSection: (id: string | null) => set({ selectedSectionId: id }),
+  setHighlightedSection: (id: string | null) => set({ highlightedSectionId: id }),
   toggleSectionLink: (sectionId: string) =>
     set((state) => {
       const newLinked = new Set(state.linkedSections);

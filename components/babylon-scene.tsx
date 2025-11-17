@@ -77,6 +77,7 @@ export function BabylonScene() {
   );
   const sections = useConfiguratorStore((s) => s.sections);
   const setSections = useConfiguratorStore((s) => s.setSections);
+  const highlightedSectionId = useConfiguratorStore((s) => s.highlightedSectionId);
 
   // Initialize Babylon.js engine and scene
   useEffect(() => {
@@ -218,6 +219,75 @@ export function BabylonScene() {
       sceneRef.current.render();
     }
   }, [sections]);
+
+  // Apply highlight effect when hovering over material sections
+  useEffect(() => {
+    if (!currentMeshRef.current || !sceneRef.current || sections.length === 0) {
+      return;
+    }
+
+    const scene = sceneRef.current;
+    const rootMesh = currentMeshRef.current;
+    
+    // Get all meshes
+    const meshes = rootMesh.getChildMeshes(false);
+    meshes.push(rootMesh);
+
+    // Create section map for quick lookup
+    const sectionMap = new Map<string, typeof sections[0]>();
+    sections.forEach((section) => {
+      sectionMap.set(section.originalName, section);
+      sectionMap.set(section.id, section);
+      sectionMap.set(section.name, section);
+    });
+
+    // Apply or remove highlight
+    meshes.forEach((mesh) => {
+      if (!(mesh instanceof Mesh)) return;
+
+      const material = mesh.material as StandardMaterial;
+      if (!material) return;
+
+      // Find matching section
+      let section = sectionMap.get(material.name) || sectionMap.get(mesh.name);
+      
+      if (!section) {
+        for (const [, sectionData] of sectionMap.entries()) {
+          if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
+            section = sectionData;
+            break;
+          }
+        }
+      }
+
+      if (!section) {
+        for (const [, sectionData] of sectionMap.entries()) {
+          if (
+            sectionData.combinedOriginalNames &&
+            (sectionData.combinedOriginalNames.includes(material.name) ||
+              sectionData.combinedOriginalNames.includes(mesh.name))
+          ) {
+            section = sectionData;
+            break;
+          }
+        }
+      }
+
+      if (!section) return;
+
+      // Apply highlight if this section is hovered
+      if (highlightedSectionId === section.id) {
+        // Add emissive glow for highlight
+        material.emissiveColor = new Color3(0.3, 0.3, 0.3);
+      } else {
+        // Remove highlight
+        material.emissiveColor = new Color3(0, 0, 0);
+      }
+    });
+
+    // Force render
+    scene.render();
+  }, [highlightedSectionId, sections]);
 
   // Load 3D model
   useEffect(() => {

@@ -46,6 +46,9 @@ export function MaterialEditor() {
   const setSelectedSection = useConfiguratorStore(
     (state) => state.setSelectedSection,
   );
+  const setHighlightedSection = useConfiguratorStore(
+    (state) => state.setHighlightedSection,
+  );
   const updateSection = useConfiguratorStore((state) => state.updateSection);
   const linkedSections = useConfiguratorStore((state) => state.linkedSections);
   const toggleSectionLink = useConfiguratorStore(
@@ -165,9 +168,14 @@ export function MaterialEditor() {
                           className={`group relative rounded-lg transition-all ${
                             isLinked ? "ring-2 ring-blue-500/50" : ""
                           }`}
+                          onMouseEnter={() => setHighlightedSection(section.id)}
+                          onMouseLeave={() => setHighlightedSection(null)}
                         >
                           <button
-                            onClick={() => setSelectedSection(section.id)}
+                            onClick={() => {
+                              setSelectedSection(section.id);
+                              setHighlightedSection(section.id);
+                            }}
                             className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
                               isSelected
                                 ? "bg-accent text-accent-foreground shadow-sm"

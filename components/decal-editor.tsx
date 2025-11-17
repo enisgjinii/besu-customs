@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Vector3 } from "@babylonjs/core";
+import { Vector3, Euler } from "three";
 
 export function DecalEditor() {
   const [newText, setNewText] = useState("");
@@ -136,7 +136,7 @@ export function DecalEditor() {
       id: `decal-${Date.now()}`,
       textureUrl,
       position: new Vector3(0, 0, 1), // Front of model
-      rotation: new Vector3(0, 0, 0), // Babylon uses Vector3 for rotation
+      rotation: new Euler(0, 0, 0), // Use Euler for rotation
       scale: new Vector3(0.5, 0.5, 0.5), // Adjust as needed
     };
 

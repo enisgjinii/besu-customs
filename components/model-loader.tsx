@@ -7,7 +7,12 @@ import {
   Group, 
   MeshStandardMaterial,
   Box3,
-  Vector3
+  Vector3,
+  Euler,
+  Texture,
+  TextureLoader,
+  SRGBColorSpace,
+  Color
 } from "three";
 import { useGLTF, OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
@@ -49,8 +54,14 @@ function Model({
   const setCompleteUVMap = useConfiguratorStore((s) => s.setCompleteUVMap);
   const setModelLoading = useConfiguratorStore((s) => s.setModelLoading);
   const setModelError = useConfiguratorStore((s) => s.setModelError);
-  const sections = useConfiguratorStore((s) => s.sections);
-  const decals = useConfiguratorStore((s) => s.decals);
+  const sections = useConfiguratorStore((state) => state.sections);
+  const selectedSectionId = useConfiguratorStore(
+    (state) => state.selectedSectionId,
+  );
+  const highlightedSectionId = useConfiguratorStore(
+    (state) => state.highlightedSectionId,
+  );
+  const decals = useConfiguratorStore((state) => state.decals);
   const removeDecal = useConfiguratorStore((s) => s.removeDecal);
   const entranceAnimation = useConfiguratorStore((s) => s.entranceAnimation);
   const enableEntranceAnimation = useConfiguratorStore(
@@ -422,6 +433,106 @@ function Model({
       console.log(
         `🎭 Model Loader: Found ${materialsByOriginalName.size} materials in scene`,
       );
+
+      // Apply material properties from sections to actual Three.js materials
+      sections.forEach((section) => {
+        const material = materialsByOriginalName.get(section.originalName);
+        if (!material) {
+          console.warn(`⚠️ Model Loader: No material found for section ${section.originalName}`);
+          return;
+        }
+
+        // Apply highlighting if this section is highlighted
+        const isHighlighted = highlightedSectionId === section.id;
+        const isSelected = selectedSectionId === section.id;
+        
+        if (isHighlighted || isSelected) {
+          // Create a bright emissive color for highlighting
+          material.emissive = new Color(0xffff00);
+          material.emissiveIntensity = isHighlighted ? 0.3 : 0.1;
+        } else {
+          // Reset emissive for non-highlighted sections
+          material.emissive = new Color(0x000000);
+          material.emissiveIntensity = 0;
+        }
+
+        // Apply color if no custom texture or gradient is enabled
+        if (section.color && !section.customTexture && !section.gradient?.enabled) {
+          material.color.set(section.color);
+          console.log(`🎨 Applied color ${section.color} to material ${section.originalName}`);
+        }
+
+        // Apply gradient if enabled
+        if (section.gradient?.enabled && !section.customTexture) {
+          // Create a simple gradient texture using canvas
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 256;
+          const context = canvas.getContext('2d')!;
+          
+          if (section.gradient.type === 'linear') {
+            const angle = (section.gradient.angle || 90) * Math.PI / 180;
+            const x1 = 128 - Math.cos(angle) * 128;
+            const y1 = 128 - Math.sin(angle) * 128;
+            const x2 = 128 + Math.cos(angle) * 128;
+            const y2 = 128 + Math.sin(angle) * 128;
+            
+            const gradient = context.createLinearGradient(x1, y1, x2, y2);
+            section.gradient!.colors.forEach((color, index) => {
+              const stop = section.gradient!.stops?.[index] ?? (index / (section.gradient!.colors.length - 1));
+              gradient.addColorStop(stop, color);
+            });
+            
+            context.fillStyle = gradient;
+          } else {
+            // Radial gradient
+            const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
+            section.gradient!.colors.forEach((color, index) => {
+              const stop = section.gradient!.stops?.[index] ?? (index / (section.gradient!.colors.length - 1));
+              gradient.addColorStop(stop, color);
+            });
+            
+            context.fillStyle = gradient;
+          }
+          
+          context.fillRect(0, 0, 256, 256);
+          
+          // Create texture from canvas
+          const texture = new Texture(canvas);
+          texture.needsUpdate = true;
+          texture.colorSpace = SRGBColorSpace;
+          
+          material.map = texture;
+          console.log(`🌈 Applied gradient to material ${section.originalName}`);
+        }
+
+        // Apply custom texture if available
+        if (section.customTexture) {
+          // Dispose of existing texture if any
+          if (material.map) {
+            material.map.dispose();
+          }
+          
+          const texture = new TextureLoader().load(section.customTexture);
+          texture.colorSpace = SRGBColorSpace;
+          material.map = texture;
+          console.log(`🖼️ Applied custom texture to material ${section.originalName}`);
+        }
+
+        // Apply other material properties
+        if (section.roughness !== undefined) {
+          material.roughness = section.roughness;
+        }
+        if (section.metalness !== undefined) {
+          material.metalness = section.metalness;
+        }
+        if (section.wireframe !== undefined) {
+          material.wireframe = section.wireframe;
+        }
+
+        // Mark material as needing update
+        material.needsUpdate = true;
+      });
 
       // Force Three.js to re-render the scene
       invalidate();
