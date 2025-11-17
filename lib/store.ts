@@ -70,6 +70,25 @@ export interface DecalData {
   scale: Vector3;
 }
 
+export interface TextureLayer {
+  id: string;
+  name: string;
+  type: "text" | "image" | "decal";
+  visible: boolean;
+  locked: boolean;
+  opacity: number;
+  blendMode: "normal" | "multiply" | "screen" | "overlay" | "add";
+  order: number;
+  dataUrl?: string;
+  text?: string;
+  textColor?: string;
+  fontSize?: number;
+  imageUrl?: string;
+  position?: { x: number; y: number; z: number };
+  rotation?: { x: number; y: number; z: number };
+  scale?: { x: number; y: number; z: number };
+}
+
 export interface CameraState {
   position?: [number, number, number];
   target?: [number, number, number];
@@ -111,12 +130,18 @@ export interface ConfiguratorState {
   // UV map management
   uvMaps: Map<string, string>;
   setUVMap: (sectionId: string, uvMapUrl: string | null) => void;
-  completeUVMap: string | null;
-  setCompleteUVMap: (uvMapUrl: string | null) => void;
 
   // Global texture apply
   globalCustomTexture: string | null;
   setGlobalCustomTexture: (url: string | null) => void;
+
+  // Texture layers management
+  textureLayers: TextureLayer[];
+  addTextureLayer: (layer: TextureLayer) => void;
+  updateTextureLayer: (id: string, updates: Partial<TextureLayer>) => void;
+  removeTextureLayer: (id: string) => void;
+  reorderTextureLayers: (layers: TextureLayer[]) => void;
+  clearTextureLayers: () => void;
 
   // Scene controls
   showGrid: boolean;
@@ -500,13 +525,28 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       else newMaps.set(sectionId, uvMapUrl);
       return { uvMaps: newMaps };
     }),
-  completeUVMap: null,
-  setCompleteUVMap: (uvMapUrl: string | null) =>
-    set({ completeUVMap: uvMapUrl }),
 
   // Global texture apply
   globalCustomTexture: null,
   setGlobalCustomTexture: (url: string | null) => set({ globalCustomTexture: url }),
+
+  // Texture layers management
+  textureLayers: [],
+  addTextureLayer: (layer: TextureLayer) =>
+    set((state) => ({ textureLayers: [...state.textureLayers, layer] })),
+  updateTextureLayer: (id: string, updates: Partial<TextureLayer>) =>
+    set((state) => ({
+      textureLayers: state.textureLayers.map((layer) =>
+        layer.id === id ? { ...layer, ...updates } : layer,
+      ),
+    })),
+  removeTextureLayer: (id: string) =>
+    set((state) => ({
+      textureLayers: state.textureLayers.filter((layer) => layer.id !== id),
+    })),
+  reorderTextureLayers: (layers: TextureLayer[]) =>
+    set({ textureLayers: layers }),
+  clearTextureLayers: () => set({ textureLayers: [] }),
 
   // Scene controls
   showGrid: false,

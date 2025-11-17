@@ -1,289 +1,110 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { Canvas, IText, Image as FabricImage } from "fabric";
+import { useState, useRef } from "react";
 import { useConfiguratorStore } from "@/lib/store";
-import { Type, ImageIcon, Trash2, Download } from "lucide-react";
+import { Type, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Vector3, Euler } from "three";
 
 export function DecalEditor() {
   const [newText, setNewText] = useState("");
   const [textColor, setTextColor] = useState("#000000");
-  const [fontSize, setFontSize] = useState(40);
-  const [fontFamily, setFontFamily] = useState("Arial");
-  const [showUVGuide, setShowUVGuide] = useState(true);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<Canvas | null>(null);
+  const [fontSize, setFontSize] = useState(60);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const addDecal = useConfiguratorStore((state) => state.addDecal);
-  const clearDecals = useConfiguratorStore((state) => state.clearDecals);
   const setLastDecalTexture = useConfiguratorStore(
     (s) => s.setLastDecalTexture,
   );
-  const completeUVMap = useConfiguratorStore((s) => s.completeUVMap);
-  const selectedSectionId = useConfiguratorStore((s) => s.selectedSectionId);
-  const updateSection = useConfiguratorStore((s) => s.updateSection);
-  const sections = useConfiguratorStore((s) => s.sections);
-  const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
-  const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
-  
-  const selectedSection = sections.find((s) => s.id === selectedSectionId);
-  useEffect(() => {
-    if (globalCustomTexture) {
-      console.log("🔄 DecalEditor observes active global texture (length)", globalCustomTexture.length);
-    }
-  }, [globalCustomTexture]);
 
-  // Initialize Fabric canvas
-  useEffect(() => {
-    if (!canvasRef.current || fabricCanvasRef.current) return;
+  // Generate text as PNG data URL
+  const createTextDecal = () => {
+    if (!newText.trim()) return;
 
-    const fabricCanvas = new Canvas(canvasRef.current, {
-      width: 256, // Reduced from 512
-      height: 256, // Reduced from 512
-      backgroundColor: "rgba(0,0,0,0)", // Transparent for proper decal alpha
-      renderOnAddRemove: false, // Disable auto-render
-    });
+    // Create canvas to render text
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    fabricCanvasRef.current = fabricCanvas;
+    // Clear with transparency
+    ctx.clearRect(0, 0, 1024, 1024);
 
-    return () => {
-      fabricCanvas.dispose();
-      fabricCanvasRef.current = null;
-    };
-  }, []);
+    // Draw text with better quality
+    ctx.fillStyle = textColor;
+    ctx.font = `bold ${fontSize * 2}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    // Add text shadow for better visibility
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    
+    ctx.fillText(newText, 512, 512);
 
-  // Conditionally set/remove UV background guide
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-    if (!showUVGuide || !completeUVMap) {
-      if (canvas.backgroundImage) {
-        // Remove background for clean export
-        // @ts-ignore
-        canvas.backgroundImage = null;
-        canvas.renderAll();
-      }
-      return;
-    }
-    FabricImage.fromURL(completeUVMap, { crossOrigin: "anonymous" }).then(
-      (img) => {
-        if (!fabricCanvasRef.current) return;
-        const c = fabricCanvasRef.current;
-        const scaleX = (c.getWidth() || 256) / (img.width || 1);
-        const scaleY = (c.getHeight() || 256) / (img.height || 1);
-        img.set({
-          originX: "left",
-          originY: "top",
-          left: 0,
-          top: 0,
-          selectable: false,
-          evented: false,
-          scaleX,
-          scaleY,
-        });
-        c.backgroundImage = img;
-        c.renderAll();
-      },
-    );
-  }, [completeUVMap, showUVGuide]);
-
-  const addTextToCanvas = () => {
-    if (!fabricCanvasRef.current || !newText.trim()) return;
-
-    const text = new IText(newText, {
-      left: 128, // Center of 256px canvas
-      top: 128,  // Center of 256px canvas
-      fontSize: fontSize,
-      fill: textColor,
-      fontFamily: fontFamily,
-      originX: "center",
-      originY: "center",
-    });
-
-    fabricCanvasRef.current.add(text);
-    fabricCanvasRef.current.setActiveObject(text);
-    fabricCanvasRef.current.renderAll();
+    const dataUrl = canvas.toDataURL("image/png");
+    console.log("🎯 Text decal ready: click on model to place");
+    setLastDecalTexture(dataUrl);
     setNewText("");
   };
 
-  // Export without UV guide even if visible
-  const exportCanvasDataUrl = () => {
-    if (!fabricCanvasRef.current) return null;
-    const canvas = fabricCanvasRef.current;
-    const originalBg = canvas.backgroundImage;
-    // Temporarily remove background UV guide from export
-    if (originalBg) {
-      // @ts-ignore
-      canvas.backgroundImage = null;
-    }
-    canvas.renderAll();
-    const dataUrl = canvas.toDataURL({ format: "png", multiplier: 2 });
-    // Restore background
-    if (originalBg && showUVGuide) {
-      canvas.backgroundImage = originalBg;
-    }
-    canvas.renderAll();
-    return dataUrl;
-  };
-
-  const applyTextureToEntireModel = () => {
-    if (!fabricCanvasRef.current) return;
-    const dataUrl = exportCanvasDataUrl();
-    if (!dataUrl) return;
-    console.log(`[DecalEditor] Applying GLOBAL texture to entire model`);
-    console.log(`[DecalEditor] Texture data length: ${dataUrl.length}`);
-    setGlobalCustomTexture(dataUrl);
-  };
-
-  const applyTextureToSelectedSection = () => {
-    if (!fabricCanvasRef.current) return;
-    if (!selectedSectionId) {
-      console.warn("No section selected to apply texture");
-      return;
-    }
-    const dataUrl = exportCanvasDataUrl();
-    if (!dataUrl) return;
-    console.log(`[DecalEditor] Applying texture to section: ${selectedSectionId}`);
-    console.log(`[DecalEditor] Texture data length: ${dataUrl.length}`);
-    updateSection(selectedSectionId, { customTexture: dataUrl });
-  };
-
-  const addImageToCanvas = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !fabricCanvasRef.current) return;
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
       const imgUrl = event.target?.result as string;
-      FabricImage.fromURL(imgUrl, {
-        crossOrigin: "anonymous",
-      }).then((img) => {
-        if (!fabricCanvasRef.current) return;
-
-        img.set({
-          left: 128, // Center of 256px canvas
-          top: 128,  // Center of 256px canvas
-          originX: "center",
-          originY: "center",
-        });
-
-        // Scale image to fit canvas
-        const maxSize = 200;
-        const scale = Math.min(
-          maxSize / (img.width || 1),
-          maxSize / (img.height || 1),
-        );
-        img.scale(scale);
-
-        fabricCanvasRef.current.add(img);
-        fabricCanvasRef.current.setActiveObject(img);
-        fabricCanvasRef.current.renderAll();
-      });
+      console.log("🎯 Image decal ready: click on model to place");
+      setLastDecalTexture(imgUrl);
     };
     reader.readAsDataURL(file);
   };
 
-  const deleteSelected = () => {
-    if (!fabricCanvasRef.current) return;
-    const activeObjects = fabricCanvasRef.current.getActiveObjects();
-    activeObjects.forEach((obj) => fabricCanvasRef.current?.remove(obj));
-    fabricCanvasRef.current.discardActiveObject();
-    fabricCanvasRef.current.renderAll();
-  };
-
-  const clearCanvas = () => {
-    if (!fabricCanvasRef.current) return;
-    fabricCanvasRef.current.clear();
-    fabricCanvasRef.current.backgroundColor = "rgba(0,0,0,0)";
-    fabricCanvasRef.current.renderAll();
-  };
-
-  const applyDecalToModel = () => {
-    if (!fabricCanvasRef.current) {
-      console.warn("No canvas to create decal from");
-      return;
-    }
-    const textureUrl = exportCanvasDataUrl();
-    if (!textureUrl) return;
-
-    console.log("🎯 Creating decal from canvas texture");
-
-    // Remember last texture for click-to-place
-    setLastDecalTexture(textureUrl);
-
-    // Create decal at default position (front of model)
-    const decalData = {
-      id: `decal-${Date.now()}`,
-      textureUrl,
-      position: new Vector3(0, 0, 1), // Front of model
-      rotation: new Euler(0, 0, 0), // Use Euler for rotation
-      scale: new Vector3(0.5, 0.5, 0.5), // Adjust as needed
-    };
-
-    addDecal(decalData);
-    console.log("✅ Decal added to model");
-  };
-
-  const downloadTexture = () => {
-    if (!fabricCanvasRef.current) return;
-
-    const dataUrl = fabricCanvasRef.current.toDataURL({
-      format: "jpeg",
-      quality: 0.8,
-      multiplier: 2,
-    });
-
-    const link = document.createElement("a");
-    link.download = "decal-texture.png";
-    link.href = dataUrl;
-    link.click();
-  };
-
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Decal Designer</h3>
-        <Button variant="outline" size="sm" onClick={clearDecals}>
-          Clear All Decals
-        </Button>
+    <div className="flex flex-col gap-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Add Text or Image</h3>
+        <p className="text-sm text-muted-foreground">
+          Create a decal and click on the 3D model to place it
+        </p>
       </div>
 
-      {/* Canvas */}
-      <div className="border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
-        <canvas ref={canvasRef} />
-      </div>
-
-      {/* Text Controls */}
+      {/* Text Input */}
       <div className="space-y-3">
         <div className="flex gap-2">
           <Input
             placeholder="Enter text..."
             value={newText}
             onChange={(e) => setNewText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addTextToCanvas()}
+            onKeyDown={(e) => e.key === "Enter" && createTextDecal()}
+            className="flex-1"
           />
-          <Button onClick={addTextToCanvas} size="icon">
-            <Type className="h-4 w-4" />
+          <Button 
+            onClick={createTextDecal} 
+            size="lg"
+            disabled={!newText.trim()}
+          >
+            <Type className="h-5 w-5 mr-2" />
+            Add Text
           </Button>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>Font Size</Label>
-            <Slider
-              value={[fontSize]}
-              onValueChange={([val]) => setFontSize(val)}
-              min={10}
-              max={100}
-              step={1}
+            <Label>Font Size: {fontSize}px</Label>
+            <Input
+              type="range"
+              min="20"
+              max="120"
+              value={fontSize}
+              onChange={(e) => setFontSize(Number(e.target.value))}
+              className="w-full"
             />
-            <span className="text-sm text-gray-500">{fontSize}px</span>
           </div>
           <div>
             <Label>Text Color</Label>
@@ -291,25 +112,15 @@ export function DecalEditor() {
               type="color"
               value={textColor}
               onChange={(e) => setTextColor(e.target.value)}
+              className="h-10 w-full"
             />
           </div>
         </div>
+      </div>
 
-        <div>
-          <Label>Font Family</Label>
-          <select
-            className="w-full px-3 py-2 border rounded"
-            value={fontFamily}
-            onChange={(e) => setFontFamily(e.target.value)}
-          >
-            <option value="Arial">Arial</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Verdana">Verdana</option>
-            <option value="Impact">Impact</option>
-          </select>
-        </div>
+      {/* Divider */}
+      <div className="border-t pt-4">
+        <p className="text-sm font-medium mb-3">Or upload an image</p>
       </div>
 
       {/* Image Upload */}
@@ -318,86 +129,22 @@ export function DecalEditor() {
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          onChange={addImageToCanvas}
+          onChange={handleImageUpload}
           className="hidden"
         />
         <Button
           variant="outline"
           className="w-full"
+          size="lg"
           onClick={() => fileInputRef.current?.click()}
         >
-          <ImageIcon className="h-4 w-4 mr-2" />
-          Add Image
+          <ImageIcon className="h-5 w-5 mr-2" />
+          Upload Image
         </Button>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={deleteSelected} className="flex-1">
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete Selected
-        </Button>
-        <Button variant="outline" onClick={clearCanvas} className="flex-1">
-          Clear Canvas
-        </Button>
-      </div>
-
-      {/* Apply Texture */}
-      <div className="space-y-2">
-        <Button 
-          onClick={applyTextureToEntireModel} 
-          className="w-full"
-          size="lg"
-        >
-          Apply Texture To Entire Model
-        </Button>
-        <Button
-          variant={showUVGuide ? "outline" : "secondary"}
-          onClick={() => setShowUVGuide(!showUVGuide)}
-          className="w-full"
-        >
-          {showUVGuide ? "Hide UV Guide" : "Show UV Guide"}
-        </Button>
-        {globalCustomTexture && (
-          <Button
-            variant="outline"
-            onClick={() => setGlobalCustomTexture(null)}
-            className="w-full"
-          >
-            Clear Global Texture
-          </Button>
-        )}
-        
-        {selectedSection && (
-          <Button 
-            variant="outline" 
-            onClick={applyTextureToSelectedSection} 
-            className="w-full"
-          >
-            Apply To "{selectedSection.name}" Only
-          </Button>
-        )}
-      </div>
-
-      {/* Apply As Decal */}
-      <div className="pt-2 border-t">
-        <Button onClick={applyDecalToModel} variant="secondary" className="w-full">
-          Or Apply As Surface Decal
-        </Button>
-      </div>
-
-      {/* Download */}
-      <Button variant="outline" onClick={downloadTexture} className="w-full">
-        <Download className="h-4 w-4 mr-2" />
-        Download Texture
-      </Button>
-
-      <p className="text-xs text-muted-foreground text-center">
-        • Entire Model: One texture mapped over all materials
-        <br />
-        • Section Only: Replace single material texture{selectedSection && ` (${selectedSection.name})`}
-        <br />
-        • Surface Decal: Project at clicked point without replacing base
+      <p className="text-xs text-muted-foreground text-center pt-4 border-t">
+        💡 After clicking "Add Text" or "Upload Image", click anywhere on the 3D model to place your decal
       </p>
     </div>
   );

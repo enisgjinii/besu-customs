@@ -31,6 +31,7 @@ import type { Product } from "@/lib/store";
 import { AIImageGenerator } from "./ai-image-generator";
 import { ThemeToggle } from "./theme-toggle";
 import { DecalEditor } from "./decal-editor";
+import { TextureLayers } from "./texture-layers";
 import { Button } from "./ui/button";
 import NextImage from "next/image";
 import {
@@ -654,7 +655,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
             <MaterialEditor />
           </div>
         )}
-        {activeTab === "texture" && <DecalEditor />}
+        {activeTab === "texture" && <TextureLayers />}
         {activeTab === "view" && (
           <div className="p-4 space-y-3">
             <Tabs defaultValue="view">

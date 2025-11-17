@@ -75,36 +75,44 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
           if (n) hitNormal = n.normalize();
         }
 
-        // Create projected decal mesh
-        const size = new Vector3(Math.max(0.001, decal.scale.x), Math.max(0.001, decal.scale.y), 0.001);
+        // Use CreateDecal for proper surface projection
+        const size = new Vector3(
+          Math.max(0.3, decal.scale.x),
+          Math.max(0.3, decal.scale.y),
+          0.3 // Projection depth
+        );
+        
         const angle = decal.rotation?.z ?? 0;
         const decalMesh = MeshBuilder.CreateDecal(
           `decal_${decal.id}`,
           targetMesh,
           {
-            position: hitPoint.add(hitNormal.scale(0.001)),
+            position: hitPoint,
             normal: hitNormal,
             size,
             angle,
           },
         );
 
-        // Decal material (unlit-style to preserve texture color over varying lights)
+        // Decal material with proper visibility
         const decalMaterial = new StandardMaterial(`decalMat_${decal.id}`, scene);
         const texture = new Texture(decal.textureUrl, scene, false, true, Texture.TRILINEAR_SAMPLINGMODE);
         texture.hasAlpha = true;
         texture.wrapU = Texture.CLAMP_ADDRESSMODE;
         texture.wrapV = Texture.CLAMP_ADDRESSMODE;
+        
         decalMaterial.diffuseTexture = texture;
         decalMaterial.opacityTexture = texture;
         decalMaterial.specularColor = new Color3(0, 0, 0);
         decalMaterial.emissiveColor = new Color3(1, 1, 1);
-        decalMaterial.backFaceCulling = true;
-        // Push slightly to avoid z-fighting
-        // @ts-ignore zOffset exists on StandardMaterial at runtime
-        decalMaterial.zOffset = -2;
+        decalMaterial.useAlphaFromDiffuseTexture = true;
+        decalMaterial.backFaceCulling = false;
+        decalMaterial.needDepthPrePass = true;
+        // @ts-ignore
+        decalMaterial.zOffset = -5;
 
         decalMesh.material = decalMaterial;
+        decalMesh.renderingGroupId = 1;
         decalMesh.isPickable = false;
 
         console.log(`✅ Decal projected: ${decal.id}`);

@@ -16,6 +16,7 @@ import {
   StandardMaterial,
   Texture,
   DynamicTexture,
+  PointerEventTypes,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { useConfiguratorStore } from "@/lib/store";
@@ -27,7 +28,6 @@ import {
   extractSectionsFromModel,
 } from "@/lib/babylon-material-utils";
 import { BabylonDecals } from "./babylon-decals";
-import { extractCompleteUVMapBabylon } from "@/lib/babylon-uv-utils";
 
 // Helper function to get theme-aware background color
 const getThemeBackgroundColor = (
@@ -539,6 +539,32 @@ export function BabylonScene() {
     }
   }, [globalCustomTexture]);
 
+  // Click-to-place decals in Babylon scene when a lastDecalTexture exists
+  const addDecal = useConfiguratorStore((s) => s.addDecal);
+  const lastDecalTexture = useConfiguratorStore((s) => s.lastDecalTexture);
+  useEffect(() => {
+    if (!sceneRef.current || !currentMeshRef.current) return;
+    const scene = sceneRef.current;
+    const observer = scene.onPointerObservable.add((pi) => {
+      if (pi.type !== PointerEventTypes.POINTERDOWN) return;
+      if (!lastDecalTexture) return;
+      const pick = scene.pick(scene.pointerX, scene.pointerY, (m) => m && !m.name?.startsWith("decal_"));
+      if (!pick?.hit || !pick.pickedPoint || !pick.pickedMesh) return;
+      const n = pick.getNormal(true) || new Vector3(0, 0, 1);
+      addDecal({
+        id: `decal-${Date.now()}`,
+        textureUrl: lastDecalTexture,
+        meshUuid: String((pick.pickedMesh as any).uniqueId ?? ""),
+        position: pick.pickedPoint.clone(),
+        rotation: { x: 0, y: 0, z: 0 } as any,
+        scale: new Vector3(0.5, 0.5, 0.5),
+      });
+    });
+    return () => {
+      if (observer) scene.onPointerObservable.remove(observer);
+    };
+  }, [lastDecalTexture, addDecal]);
+
   // Optional: expose clear function for future UI
   const clearGlobalTexture = () => {
     if (appliedGlobalTextureRef.current) {
@@ -845,17 +871,6 @@ export function BabylonScene() {
             console.log("📋 Using extracted sections (API failed):", err);
             setSections(extractedSections);
           });
-
-        // Generate a complete UV map image and store it for the editor
-        try {
-          const uvMap = extractCompleteUVMapBabylon(rootMesh, 1024, 1024);
-          if (uvMap) {
-            useConfiguratorStore.getState().setCompleteUVMap(uvMap);
-            console.log("🗺️ Generated complete UV map for editor");
-          }
-        } catch (e) {
-          console.warn("UV map generation failed", e);
-        }
 
         setModelLoading(false);
         console.log("🎨 Model ready with entrance animation");
