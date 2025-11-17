@@ -2,7 +2,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Model } from "./models-service";
-import type { EntranceAnimationType } from "@/components/entrance-animation";
+
+// Animation types for model entrance
+export type EntranceAnimationType =
+  | "fadeIn"
+  | "scaleUp"
+  | "rotateIn"
+  | "slideIn"
+  | "bounce"
+  | "spin"
+  | "dropIn"
+  | "zoomRotate"
+  | "glow"
+  | "particleReveal";
 
 export type Category =
   | "Jerseys"
