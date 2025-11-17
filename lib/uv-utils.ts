@@ -1,10 +1,16 @@
-import * as THREE from "three";
+import { 
+  Mesh, 
+  Group, 
+  Texture, 
+  TextureLoader, 
+  SRGBColorSpace 
+} from "three";
 
 /**
  * Extract UV map from a mesh and render it to a canvas (optimized)
  */
 export function extractUVMap(
-  mesh: THREE.Mesh,
+  mesh: Mesh,
   width = 1024,
   height = 1024,
 ): string | null {
@@ -86,7 +92,7 @@ export function extractUVMap(
  * This combines UV maps from multiple meshes that share the same material
  */
 export function extractUVMapForMaterial(
-  scene: THREE.Group,
+  scene: Group,
   materialId: string,
   width = 1024,
   height = 1024,
@@ -117,7 +123,7 @@ export function extractUVMapForMaterial(
 
   // Traverse all meshes in the scene
   scene.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.material) {
+    if (child instanceof Mesh && child.material) {
       const materials = Array.isArray(child.material)
         ? child.material
         : [child.material];
@@ -188,7 +194,7 @@ export function extractUVMapForMaterial(
  * Extract UV map from the entire 3D model (all meshes combined, optimized)
  */
 export function extractCompleteUVMap(
-  scene: THREE.Group,
+  scene: Group,
   width = 1024,
   height = 1024,
 ): string | null {
@@ -227,7 +233,7 @@ export function extractCompleteUVMap(
 
   // Traverse all meshes in the scene
   scene.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.material) {
+    if (child instanceof Mesh && child.material) {
       const materials = Array.isArray(child.material)
         ? child.material
         : [child.material];
@@ -309,13 +315,13 @@ export function extractCompleteUVMap(
  */
 export function createTextureFromDataURL(
   dataUrl: string,
-): Promise<THREE.Texture> {
+): Promise<Texture> {
   return new Promise((resolve, reject) => {
-    const loader = new THREE.TextureLoader();
+    const loader = new TextureLoader();
     loader.load(
       dataUrl,
       (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.colorSpace = SRGBColorSpace;
         texture.flipY = false;
         resolve(texture);
       },

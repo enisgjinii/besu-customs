@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import * as THREE from "three";
+import { Vector3 } from "@babylonjs/core";
 
 export function DecalEditor() {
   const [newText, setNewText] = useState("");
@@ -30,9 +30,10 @@ export function DecalEditor() {
     if (!canvasRef.current || fabricCanvasRef.current) return;
 
     const fabricCanvas = new Canvas(canvasRef.current, {
-      width: 512,
-      height: 512,
+      width: 256, // Reduced from 512
+      height: 256, // Reduced from 512
       backgroundColor: "#ffffff",
+      renderOnAddRemove: false, // Disable auto-render
     });
 
     fabricCanvasRef.current = fabricCanvas;
@@ -118,10 +119,10 @@ export function DecalEditor() {
       return;
     }
 
-    // Export canvas as texture
+    // Export canvas as texture with reduced quality to prevent memory issues
     const textureUrl = fabricCanvasRef.current.toDataURL({
-      format: "png",
-      quality: 1,
+      format: "jpeg",
+      quality: 0.8,
       multiplier: 2,
     });
 
@@ -134,9 +135,9 @@ export function DecalEditor() {
     const decalData = {
       id: `decal-${Date.now()}`,
       textureUrl,
-      position: new THREE.Vector3(0, 0, 1), // Front of model
-      rotation: new THREE.Euler(0, 0, 0),
-      scale: new THREE.Vector3(0.5, 0.5, 0.5), // Adjust as needed
+      position: new Vector3(0, 0, 1), // Front of model
+      rotation: new Vector3(0, 0, 0), // Babylon uses Vector3 for rotation
+      scale: new Vector3(0.5, 0.5, 0.5), // Adjust as needed
     };
 
     addDecal(decalData);
@@ -147,8 +148,8 @@ export function DecalEditor() {
     if (!fabricCanvasRef.current) return;
 
     const dataUrl = fabricCanvasRef.current.toDataURL({
-      format: "png",
-      quality: 1,
+      format: "jpeg",
+      quality: 0.8,
       multiplier: 2,
     });
 

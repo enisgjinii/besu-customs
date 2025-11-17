@@ -3,7 +3,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDistanceToNow } from "date-fns";
 import {
   Activity,
   Clock,
@@ -78,9 +77,7 @@ export function RecentActivity() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{activity.user}</span>
                   <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(activity.timestamp, {
-                      addSuffix: true,
-                    })}
+                    {new Date(activity.timestamp).toLocaleDateString()}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">

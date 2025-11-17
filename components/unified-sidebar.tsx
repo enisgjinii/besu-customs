@@ -587,7 +587,7 @@ export function UnifiedSidebar({ onToggleSidebar }: UnifiedSidebarProps) {
             </div>
           </label>
           <Select
-            value={selectedProductId || undefined}
+            value={selectedProductId || ""}
             onValueChange={setSelectedProduct}
           >
             <SelectTrigger className="w-full">

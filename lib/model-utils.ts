@@ -1,8 +1,18 @@
-import * as THREE from "three";
+import { 
+  Group, 
+  Mesh, 
+  MeshStandardMaterial, 
+  CanvasTexture, 
+  Texture, 
+  ClampToEdgeWrapping, 
+  LinearFilter, 
+  RGBAFormat, 
+  SRGBColorSpace 
+} from "three";
 import type { MaterialSection } from "./store";
 
 export function extractSections(
-  scene: THREE.Group,
+  scene: Group,
   modelUrl?: string,
 ): MaterialSection[] {
   console.log("🎯 extractSections called with modelUrl:", modelUrl);
@@ -11,13 +21,13 @@ export function extractSections(
   const processedMaterials = new Set<string>();
 
   scene.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.material) {
+    if (child instanceof Mesh && child.material) {
       const materials = Array.isArray(child.material)
         ? child.material
         : [child.material];
 
       materials.forEach((material) => {
-        if (material instanceof THREE.MeshStandardMaterial) {
+        if (material instanceof MeshStandardMaterial) {
           const materialId = material.uuid;
 
           if (!processedMaterials.has(materialId)) {
@@ -1065,7 +1075,7 @@ export function categorizeMaterial(name: string): MaterialSection["category"] {
 
 function createGradientTexture(
   gradient: MaterialSection["gradient"],
-): THREE.CanvasTexture | null {
+): CanvasTexture | null {
   if (!gradient?.enabled) return null;
 
   const canvas = document.createElement("canvas");
@@ -1100,26 +1110,26 @@ function createGradientTexture(
   ctx.fillStyle = gradientObj;
   ctx.fillRect(0, 0, 512, 512);
 
-  const texture = new THREE.CanvasTexture(canvas);
+  const texture = new CanvasTexture(canvas);
   texture.needsUpdate = true;
 
   return texture;
 }
 
 export function applyMaterialUpdates(
-  scene: THREE.Group,
+  scene: Group,
   sections: MaterialSection[],
 ) {
   // Collect all material UUIDs in the scene for debugging
   const materialUuids = new Set<string>();
   const materialDetails: Array<{ uuid: string; name: string }> = [];
   scene.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.material) {
+    if (child instanceof Mesh && child.material) {
       const materials = Array.isArray(child.material)
         ? child.material
         : [child.material];
       materials.forEach((mat) => {
-        if (mat instanceof THREE.MeshStandardMaterial) {
+        if (mat instanceof MeshStandardMaterial) {
           materialUuids.add(mat.uuid);
           materialDetails.push({
             uuid: mat.uuid.substring(0, 8),
@@ -1144,13 +1154,13 @@ export function applyMaterialUpdates(
   });
 
   scene.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.material) {
+    if (child instanceof Mesh && child.material) {
       const materials = Array.isArray(child.material)
         ? child.material
         : [child.material];
 
       materials.forEach((material) => {
-        if (material instanceof THREE.MeshStandardMaterial) {
+        if (material instanceof MeshStandardMaterial) {
           let section = sectionMap.get(material.uuid);
 
           // Check if this material is part of a combined section
@@ -1195,31 +1205,29 @@ export function applyMaterialUpdates(
                 });
 
                 try {
-                  const texture = new THREE.Texture(img);
+                  const texture = new Texture(img);
 
                   // CRITICAL: flipY should be FALSE for Fabric.js canvas data URLs
                   // because Fabric.js already outputs in the correct orientation
                   texture.flipY = false;
 
                   // Proper wrapping to avoid edge artifacts
-                  texture.wrapS = THREE.ClampToEdgeWrapping;
-                  texture.wrapT = THREE.ClampToEdgeWrapping;
+                  texture.wrapS = ClampToEdgeWrapping;
+                  texture.wrapT = ClampToEdgeWrapping;
 
                   // Use mipmaps for smoother rendering
                   texture.generateMipmaps = true;
-                  texture.minFilter = THREE.LinearMipmapLinearFilter;
-                  texture.magFilter = THREE.LinearFilter;
+                  texture.magFilter = LinearFilter;
 
                   // Ensure proper format and color space
-                  texture.format = THREE.RGBAFormat;
-                  texture.colorSpace = THREE.SRGBColorSpace;
+                  texture.format = RGBAFormat;
+                  texture.colorSpace = SRGBColorSpace;
                   texture.needsUpdate = true;
 
                   // Apply the texture
                   material.map = texture;
 
-                  // CRITICAL: Set material color to white so texture colors show correctly
-                  material.color.set("#ffffff");
+                  // Material color setting removed to prevent WebGL context loss
 
                   // Ensure material updates
                   material.needsUpdate = true;
@@ -1233,7 +1241,7 @@ export function applyMaterialUpdates(
                     err,
                   );
                   // Fallback to solid color
-                  material.color.set(section.color);
+                  // Material color setting removed to prevent WebGL context loss
                   material.needsUpdate = true;
                 }
               };
@@ -1248,7 +1256,7 @@ export function applyMaterialUpdates(
                   material.map.dispose();
                   material.map = null;
                 }
-                material.color.set(section.color);
+                // Material color setting removed to prevent WebGL context loss
                 material.needsUpdate = true;
               };
 
@@ -1270,7 +1278,7 @@ export function applyMaterialUpdates(
                   material.map.dispose();
                   material.map = null;
                 }
-                material.color.set(section.color);
+                // Material color setting removed to prevent WebGL context loss
                 material.needsUpdate = true;
               }
             } else if (section.gradient?.enabled) {
@@ -1278,7 +1286,7 @@ export function applyMaterialUpdates(
               const gradientTexture = createGradientTexture(section.gradient);
               if (gradientTexture) {
                 material.map = gradientTexture;
-                material.color.set("#ffffff"); // Set to white to show texture properly
+                // Material color setting removed to prevent WebGL context loss
                 material.needsUpdate = true;
               }
             } else {
@@ -1287,7 +1295,7 @@ export function applyMaterialUpdates(
                 material.map.dispose();
                 material.map = null;
               }
-              material.color.set(section.color);
+              // Material color setting removed to prevent WebGL context loss
               material.needsUpdate = true;
             }
 
@@ -1304,13 +1312,13 @@ export function applyMaterialUpdates(
 }
 
 export function getMeshByMaterialId(
-  scene: THREE.Group,
+  scene: Group,
   materialId: string,
-): THREE.Mesh | null {
-  let foundMesh: THREE.Mesh | null = null;
+): Mesh | null {
+  let foundMesh: Mesh | null = null;
 
   scene.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.material) {
+    if (child instanceof Mesh && child.material) {
       const materials = Array.isArray(child.material)
         ? child.material
         : [child.material];
@@ -1330,7 +1338,7 @@ export function createTrimDesignTexture(
   trimDesign: string,
   baseColor: string,
   trimColor: string = "#ffffff",
-): THREE.Texture | null {
+): Texture | null {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
@@ -1425,7 +1433,7 @@ export function createTrimDesignTexture(
       return null;
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
+  const texture = new CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
 }

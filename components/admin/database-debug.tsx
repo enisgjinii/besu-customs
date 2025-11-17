@@ -23,6 +23,10 @@ interface DatabaseTestResult {
   error?: string;
   details?: string;
   suggestion?: string;
+  originalStatus?: boolean;
+  newStatus?: boolean;
+  toggleResult?: unknown;
+  modelsResult?: unknown;
 }
 
 export function DatabaseDebug() {

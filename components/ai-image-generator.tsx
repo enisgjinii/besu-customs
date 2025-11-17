@@ -30,7 +30,7 @@ export function AIImageGenerator() {
   const [generatedImages, setGeneratedImages] = useState<
     Array<{ imageURL: string; imageUUID: string }>
   >([]);
-  const [selectedSection, setSelectedSection] = useState<string>("");
+  const [selectedSection, setSelectedSection] = useState<string | undefined>(undefined);
   const [usage, setUsage] = useState<{
     limit: number;
     used: number;
@@ -117,7 +117,7 @@ export function AIImageGenerator() {
   };
 
   const handleApplyToModel = async (imageURL: string) => {
-    if (!selectedSection) {
+    if (!selectedSection || selectedSection === undefined) {
       toast.error("Please select a material section first");
       return;
     }

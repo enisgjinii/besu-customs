@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Model } from "./models-service";
-import * as THREE from "three";
+import { Vector3 } from "@babylonjs/core";
 import type { EntranceAnimationType } from "@/components/entrance-animation";
 
 export type Category =
@@ -65,9 +65,9 @@ export interface DecalData {
   id: string;
   textureUrl: string;
   meshUuid?: string;
-  position: THREE.Vector3;
-  rotation: THREE.Euler;
-  scale: THREE.Vector3;
+  position: Vector3;
+  rotation: Vector3; // Babylon uses Vector3 for rotation (euler angles)
+  scale: Vector3;
 }
 
 export interface CameraState {

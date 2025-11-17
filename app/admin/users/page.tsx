@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, UserCheck, UserX } from "lucide-react";
+import { Users as UsersIcon, UserPlus, UserCheck, UserX } from "lucide-react";
 
 const recentUsers = [
   {
@@ -69,7 +69,7 @@ function UsersPage() {
             value="2,350"
             change="+180 from last month"
             changeType="positive"
-            icon={Users}
+            icon={UsersIcon}
           />
           <StatsCard
             title="Active Users"

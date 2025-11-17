@@ -177,7 +177,7 @@ export function MobileBottomNav() {
                     Select Model
                   </label>
                   <Select
-                    value={selectedProductId || undefined}
+                    value={selectedProductId || ""}
                     onValueChange={setSelectedProduct}
                   >
                     <SelectTrigger className="w-full">

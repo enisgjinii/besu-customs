@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// Dynamic import for Scene component to prevent static generation issues
-const Scene = dynamic(() => import("@/components/scene").then((mod) => ({ default: mod.Scene })), {
+// Dynamic import for BabylonScene component to prevent static generation issues
+const Scene = dynamic(() => import("@/components/babylon-scene").then((mod) => ({ default: mod.BabylonScene })), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full">
