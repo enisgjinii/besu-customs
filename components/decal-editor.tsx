@@ -15,6 +15,7 @@ export function DecalEditor() {
   const [textColor, setTextColor] = useState("#000000");
   const [fontSize, setFontSize] = useState(40);
   const [fontFamily, setFontFamily] = useState("Arial");
+  const [showUVGuide, setShowUVGuide] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<Canvas | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,6 +25,19 @@ export function DecalEditor() {
   const setLastDecalTexture = useConfiguratorStore(
     (s) => s.setLastDecalTexture,
   );
+  const completeUVMap = useConfiguratorStore((s) => s.completeUVMap);
+  const selectedSectionId = useConfiguratorStore((s) => s.selectedSectionId);
+  const updateSection = useConfiguratorStore((s) => s.updateSection);
+  const sections = useConfiguratorStore((s) => s.sections);
+  const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
+  const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
+  
+  const selectedSection = sections.find((s) => s.id === selectedSectionId);
+  useEffect(() => {
+    if (globalCustomTexture) {
+      console.log("🔄 DecalEditor observes active global texture (length)", globalCustomTexture.length);
+    }
+  }, [globalCustomTexture]);
 
   // Initialize Fabric canvas
   useEffect(() => {
@@ -32,7 +46,7 @@ export function DecalEditor() {
     const fabricCanvas = new Canvas(canvasRef.current, {
       width: 256, // Reduced from 512
       height: 256, // Reduced from 512
-      backgroundColor: "#ffffff",
+      backgroundColor: "rgba(0,0,0,0)", // Transparent for proper decal alpha
       renderOnAddRemove: false, // Disable auto-render
     });
 
@@ -44,12 +58,47 @@ export function DecalEditor() {
     };
   }, []);
 
+  // Conditionally set/remove UV background guide
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+    if (!showUVGuide || !completeUVMap) {
+      if (canvas.backgroundImage) {
+        // Remove background for clean export
+        // @ts-ignore
+        canvas.backgroundImage = null;
+        canvas.renderAll();
+      }
+      return;
+    }
+    FabricImage.fromURL(completeUVMap, { crossOrigin: "anonymous" }).then(
+      (img) => {
+        if (!fabricCanvasRef.current) return;
+        const c = fabricCanvasRef.current;
+        const scaleX = (c.getWidth() || 256) / (img.width || 1);
+        const scaleY = (c.getHeight() || 256) / (img.height || 1);
+        img.set({
+          originX: "left",
+          originY: "top",
+          left: 0,
+          top: 0,
+          selectable: false,
+          evented: false,
+          scaleX,
+          scaleY,
+        });
+        c.backgroundImage = img;
+        c.renderAll();
+      },
+    );
+  }, [completeUVMap, showUVGuide]);
+
   const addTextToCanvas = () => {
     if (!fabricCanvasRef.current || !newText.trim()) return;
 
     const text = new IText(newText, {
-      left: 256,
-      top: 256,
+      left: 128, // Center of 256px canvas
+      top: 128,  // Center of 256px canvas
       fontSize: fontSize,
       fill: textColor,
       fontFamily: fontFamily,
@@ -61,6 +110,48 @@ export function DecalEditor() {
     fabricCanvasRef.current.setActiveObject(text);
     fabricCanvasRef.current.renderAll();
     setNewText("");
+  };
+
+  // Export without UV guide even if visible
+  const exportCanvasDataUrl = () => {
+    if (!fabricCanvasRef.current) return null;
+    const canvas = fabricCanvasRef.current;
+    const originalBg = canvas.backgroundImage;
+    // Temporarily remove background UV guide from export
+    if (originalBg) {
+      // @ts-ignore
+      canvas.backgroundImage = null;
+    }
+    canvas.renderAll();
+    const dataUrl = canvas.toDataURL({ format: "png", multiplier: 2 });
+    // Restore background
+    if (originalBg && showUVGuide) {
+      canvas.backgroundImage = originalBg;
+    }
+    canvas.renderAll();
+    return dataUrl;
+  };
+
+  const applyTextureToEntireModel = () => {
+    if (!fabricCanvasRef.current) return;
+    const dataUrl = exportCanvasDataUrl();
+    if (!dataUrl) return;
+    console.log(`[DecalEditor] Applying GLOBAL texture to entire model`);
+    console.log(`[DecalEditor] Texture data length: ${dataUrl.length}`);
+    setGlobalCustomTexture(dataUrl);
+  };
+
+  const applyTextureToSelectedSection = () => {
+    if (!fabricCanvasRef.current) return;
+    if (!selectedSectionId) {
+      console.warn("No section selected to apply texture");
+      return;
+    }
+    const dataUrl = exportCanvasDataUrl();
+    if (!dataUrl) return;
+    console.log(`[DecalEditor] Applying texture to section: ${selectedSectionId}`);
+    console.log(`[DecalEditor] Texture data length: ${dataUrl.length}`);
+    updateSection(selectedSectionId, { customTexture: dataUrl });
   };
 
   const addImageToCanvas = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,8 +167,8 @@ export function DecalEditor() {
         if (!fabricCanvasRef.current) return;
 
         img.set({
-          left: 256,
-          top: 256,
+          left: 128, // Center of 256px canvas
+          top: 128,  // Center of 256px canvas
           originX: "center",
           originY: "center",
         });
@@ -109,7 +200,7 @@ export function DecalEditor() {
   const clearCanvas = () => {
     if (!fabricCanvasRef.current) return;
     fabricCanvasRef.current.clear();
-    fabricCanvasRef.current.backgroundColor = "#ffffff";
+    fabricCanvasRef.current.backgroundColor = "rgba(0,0,0,0)";
     fabricCanvasRef.current.renderAll();
   };
 
@@ -118,13 +209,8 @@ export function DecalEditor() {
       console.warn("No canvas to create decal from");
       return;
     }
-
-    // Export canvas as texture with reduced quality to prevent memory issues
-    const textureUrl = fabricCanvasRef.current.toDataURL({
-      format: "jpeg",
-      quality: 0.8,
-      multiplier: 2,
-    });
+    const textureUrl = exportCanvasDataUrl();
+    if (!textureUrl) return;
 
     console.log("🎯 Creating decal from canvas texture");
 
@@ -256,10 +342,49 @@ export function DecalEditor() {
         </Button>
       </div>
 
-      {/* Apply Decal */}
-      <Button onClick={applyDecalToModel} className="w-full" size="lg">
-        Apply Decal to Model
-      </Button>
+      {/* Apply Texture */}
+      <div className="space-y-2">
+        <Button 
+          onClick={applyTextureToEntireModel} 
+          className="w-full"
+          size="lg"
+        >
+          Apply Texture To Entire Model
+        </Button>
+        <Button
+          variant={showUVGuide ? "outline" : "secondary"}
+          onClick={() => setShowUVGuide(!showUVGuide)}
+          className="w-full"
+        >
+          {showUVGuide ? "Hide UV Guide" : "Show UV Guide"}
+        </Button>
+        {globalCustomTexture && (
+          <Button
+            variant="outline"
+            onClick={() => setGlobalCustomTexture(null)}
+            className="w-full"
+          >
+            Clear Global Texture
+          </Button>
+        )}
+        
+        {selectedSection && (
+          <Button 
+            variant="outline" 
+            onClick={applyTextureToSelectedSection} 
+            className="w-full"
+          >
+            Apply To "{selectedSection.name}" Only
+          </Button>
+        )}
+      </div>
+
+      {/* Apply As Decal */}
+      <div className="pt-2 border-t">
+        <Button onClick={applyDecalToModel} variant="secondary" className="w-full">
+          Or Apply As Surface Decal
+        </Button>
+      </div>
 
       {/* Download */}
       <Button variant="outline" onClick={downloadTexture} className="w-full">
@@ -267,9 +392,12 @@ export function DecalEditor() {
         Download Texture
       </Button>
 
-      <p className="text-xs text-gray-500 text-center">
-        Create text or add images, then click &quot;Apply Decal to Model&quot; to project
-        onto your 3D model
+      <p className="text-xs text-muted-foreground text-center">
+        • Entire Model: One texture mapped over all materials
+        <br />
+        • Section Only: Replace single material texture{selectedSection && ` (${selectedSection.name})`}
+        <br />
+        • Surface Decal: Project at clicked point without replacing base
       </p>
     </div>
   );

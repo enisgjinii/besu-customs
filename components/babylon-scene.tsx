@@ -19,6 +19,7 @@ import {
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { useConfiguratorStore } from "@/lib/store";
+import { Texture } from "@babylonjs/core";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import {
@@ -26,6 +27,7 @@ import {
   extractSectionsFromModel,
 } from "@/lib/babylon-material-utils";
 import { BabylonDecals } from "./babylon-decals";
+import { extractCompleteUVMapBabylon } from "@/lib/babylon-uv-utils";
 
 // Helper function to get theme-aware background color
 const getThemeBackgroundColor = (
@@ -81,6 +83,11 @@ export function BabylonScene() {
   const setSections = useConfiguratorStore((s) => s.setSections);
   const highlightedSectionId = useConfiguratorStore((s) => s.highlightedSectionId);
   const selectedSectionId = useConfiguratorStore((s) => s.selectedSectionId);
+  const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
+  const clearGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
+
+  // Track applied global texture to dispose when replaced
+  const appliedGlobalTextureRef = useRef<Texture | null>(null);
 
   // Initialize Babylon.js engine and scene
   useEffect(() => {
@@ -199,7 +206,7 @@ export function BabylonScene() {
     }
   }, [autoRotate]);
 
-  // Apply materials when sections change (similar to Three.js ModelLoader)
+  // Apply materials when sections or global texture change
   useEffect(() => {
     if (!currentMeshRef.current || !sceneRef.current || sections.length === 0) {
       console.log("⚠️ Cannot apply materials:", {
@@ -242,7 +249,45 @@ export function BabylonScene() {
       console.log(`   Section originalNames:`, sections.map(s => s.originalName));
       console.log(`   Section ids:`, sections.map(s => s.id));
 
-      // Apply material properties from sections to actual Babylon materials
+      // Apply global texture first if present
+      const globalTexture = globalCustomTexture;
+      if (globalTexture) {
+        console.log("🌍 Applying GLOBAL texture to all materials");
+        const tex = new Texture(
+          globalTexture,
+          scene,
+          false,
+          true,
+          Texture.TRILINEAR_SAMPLINGMODE,
+        );
+        tex.hasAlpha = true;
+
+        materialsByOriginalName.forEach((material) => {
+          // Dispose previous base textures if any
+          if (material.albedoTexture) { try { material.albedoTexture.dispose(); } catch {} material.albedoTexture = null; }
+          if (material.diffuseTexture) { try { material.diffuseTexture.dispose(); } catch {} material.diffuseTexture = null; }
+          if (material.albedoColor !== undefined) {
+            material.albedoTexture = tex;
+            material.albedoColor = new Color3(1, 1, 1);
+            // For full-surface textures, ignore alpha for transparency to avoid holes
+            material.useAlphaFromAlbedoTexture = false;
+          } else {
+            material.diffuseTexture = tex;
+            material.diffuseColor = new Color3(1, 1, 1);
+          }
+          material.emissiveColor = new Color3(0, 0, 0);
+          material.markDirty();
+        });
+
+        // Force renders and early return to avoid per-section overrides
+        scene.render();
+        requestAnimationFrame(() => scene.render());
+        setTimeout(() => scene.render(), 10);
+        setTimeout(() => scene.render(), 50);
+        return;
+      }
+
+      // Apply material properties from sections to actual Babylon materials when no global texture
       let appliedCount = 0;
       let notFoundCount = 0;
       
@@ -279,17 +324,8 @@ export function BabylonScene() {
         
         appliedCount++;
 
-        // Apply highlighting if this section is highlighted or selected
-        const isHighlighted = highlightedSectionId === section.id;
-        const isSelected = selectedSectionId === section.id;
-
-        if (isHighlighted || isSelected) {
-          // Create a bright emissive color for highlighting
-          material.emissiveColor = new Color3(0.3, 0.3, 0.3);
-        } else {
-          // Reset emissive for non-highlighted sections
-          material.emissiveColor = new Color3(0, 0, 0);
-        }
+        // Remove highlight behavior: always use neutral emissive
+        material.emissiveColor = new Color3(0, 0, 0);
 
         // Apply color if no custom texture or gradient is enabled
         if (section.color && !section.customTexture && !section.gradient?.enabled) {
@@ -404,10 +440,11 @@ export function BabylonScene() {
             },
           );
 
-          texture.hasAlpha = false;
+          texture.hasAlpha = true;
           if (material.albedoColor !== undefined) {
             material.albedoTexture = texture;
             material.albedoColor = new Color3(1, 1, 1);
+            material.useAlphaFromAlbedoTexture = true;
           } else {
             material.diffuseTexture = texture;
             material.diffuseColor = new Color3(1, 1, 1);
@@ -451,7 +488,66 @@ export function BabylonScene() {
     } catch (e) {
       console.error("❌ Babylon Scene: Material update error:", e);
     }
-  }, [sections, highlightedSectionId, selectedSectionId]);
+  }, [sections, highlightedSectionId, selectedSectionId, globalCustomTexture]);
+
+  // Dedicated effect to apply ONLY the global texture (simpler trigger path)
+  useEffect(() => {
+    if (!globalCustomTexture) return;
+    if (!sceneRef.current || !currentMeshRef.current) return;
+    const scene = sceneRef.current;
+    const rootMesh = currentMeshRef.current;
+    console.log("🌍 Global texture effect triggered");
+
+    try {
+      // Dispose previous global texture
+      if (appliedGlobalTextureRef.current) {
+        try { appliedGlobalTextureRef.current.dispose(); } catch {}
+        appliedGlobalTextureRef.current = null;
+      }
+
+      const tex = new Texture(
+        globalCustomTexture,
+        scene,
+        true, // generate mipmaps for smoother scaling
+        false, // do not invert Y for data URL
+        Texture.TRILINEAR_SAMPLINGMODE,
+        () => console.log("✅ Global overlay texture loaded"),
+        (msg) => console.error("❌ Global overlay texture load failed", msg),
+      );
+      // Keep alpha so transparent areas reveal base garment
+      tex.hasAlpha = true;
+      appliedGlobalTextureRef.current = tex;
+
+      const meshes = rootMesh.getChildMeshes(false);
+      meshes.push(rootMesh);
+      let applied = 0;
+      meshes.forEach(m => {
+        const material: any = m.material;
+        if (!material) return;
+        // Apply as emissive overlay; preserve base colors & textures
+        material.emissiveTexture = tex;
+        material.emissiveColor = new Color3(1,1,1); // ensure overlay visible
+        // For PBR, avoid altering albedoColor; for Standard, leave diffuseColor
+        material.markDirty();
+        applied++;
+      });
+      console.log(`🌍 Global overlay texture applied (emissive) to ${applied} meshes`);
+      scene.render();
+      requestAnimationFrame(() => scene.render());
+    } catch (e) {
+      console.error("❌ Error applying global texture", e);
+    }
+  }, [globalCustomTexture]);
+
+  // Optional: expose clear function for future UI
+  const clearGlobalTexture = () => {
+    if (appliedGlobalTextureRef.current) {
+      try { appliedGlobalTextureRef.current.dispose(); } catch {}
+      appliedGlobalTextureRef.current = null;
+    }
+    clearGlobalCustomTexture(null);
+    console.log("🧹 Cleared global texture");
+  };
 
   // Load 3D model
   useEffect(() => {
@@ -749,6 +845,17 @@ export function BabylonScene() {
             console.log("📋 Using extracted sections (API failed):", err);
             setSections(extractedSections);
           });
+
+        // Generate a complete UV map image and store it for the editor
+        try {
+          const uvMap = extractCompleteUVMapBabylon(rootMesh, 1024, 1024);
+          if (uvMap) {
+            useConfiguratorStore.getState().setCompleteUVMap(uvMap);
+            console.log("🗺️ Generated complete UV map for editor");
+          }
+        } catch (e) {
+          console.warn("UV map generation failed", e);
+        }
 
         setModelLoading(false);
         console.log("🎨 Model ready with entrance animation");

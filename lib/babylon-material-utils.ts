@@ -261,12 +261,14 @@ export function applyMaterialsToModel(
 
     // Apply texture/gradient/solid color
     if (section.customTexture) {
+      console.log(`[BabylonMaterial] Applying customTexture to ${section.name}`);
       const tex = new Texture(section.customTexture, scene, false, true, Texture.TRILINEAR_SAMPLINGMODE);
-      tex.hasAlpha = false;
+      tex.hasAlpha = true;
       if (isPBR) {
         const pbr = material as PBRMaterial;
         pbr.albedoTexture = tex;
         pbr.albedoColor = new Color3(1, 1, 1);
+        pbr.useAlphaFromAlbedoTexture = true;
       } else {
         const std = material as StandardMaterial;
         std.diffuseTexture = tex;

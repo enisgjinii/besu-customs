@@ -9,6 +9,8 @@ import {
   StandardMaterial,
   Texture,
   MeshBuilder,
+  Ray,
+  Color3,
 } from "@babylonjs/core";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -58,48 +60,54 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
           return;
         }
 
-        // Create a simple plane for the decal
-        const decalPlane = MeshBuilder.CreatePlane(
+        // Compute a robust hit point and normal using a raycast toward the mesh
+        const meshCenter = targetMesh.getBoundingInfo().boundingSphere.centerWorld.clone();
+        const guessDir = meshCenter.subtract(new Vector3(decal.position.x, decal.position.y, decal.position.z)).normalize();
+        const origin = new Vector3(decal.position.x, decal.position.y, decal.position.z).add(guessDir.scale(-0.2));
+        const ray = new Ray(origin, guessDir, 1000);
+        const pick = scene.pickWithRay(ray, (m) => m === targetMesh, false);
+
+        let hitPoint = new Vector3(decal.position.x, decal.position.y, decal.position.z);
+        let hitNormal = new Vector3(0, 0, 1);
+        if (pick?.hit && pick.pickedPoint) {
+          hitPoint = pick.pickedPoint.clone();
+          const n = pick.getNormal(true);
+          if (n) hitNormal = n.normalize();
+        }
+
+        // Create projected decal mesh
+        const size = new Vector3(Math.max(0.001, decal.scale.x), Math.max(0.001, decal.scale.y), 0.001);
+        const angle = decal.rotation?.z ?? 0;
+        const decalMesh = MeshBuilder.CreateDecal(
           `decal_${decal.id}`,
+          targetMesh,
           {
-            size: decal.scale.x,
-            sideOrientation: Mesh.DOUBLESIDE,
+            position: hitPoint.add(hitNormal.scale(0.001)),
+            normal: hitNormal,
+            size,
+            angle,
           },
-          scene,
         );
 
-        // Position the decal
-        decalPlane.position = new Vector3(
-          decal.position.x,
-          decal.position.y,
-          decal.position.z,
-        );
-
-        // Rotate the decal
-        decalPlane.rotation = new Vector3(
-          decal.rotation.x,
-          decal.rotation.y,
-          decal.rotation.z,
-        );
-
-        // Create material with texture
-        const decalMaterial = new StandardMaterial(
-          `decalMat_${decal.id}`,
-          scene,
-        );
-        
-        const texture = new Texture(decal.textureUrl, scene);
+        // Decal material (unlit-style to preserve texture color over varying lights)
+        const decalMaterial = new StandardMaterial(`decalMat_${decal.id}`, scene);
+        const texture = new Texture(decal.textureUrl, scene, false, true, Texture.TRILINEAR_SAMPLINGMODE);
         texture.hasAlpha = true;
+        texture.wrapU = Texture.CLAMP_ADDRESSMODE;
+        texture.wrapV = Texture.CLAMP_ADDRESSMODE;
         decalMaterial.diffuseTexture = texture;
         decalMaterial.opacityTexture = texture;
-        decalMaterial.backFaceCulling = false;
-        
-        decalPlane.material = decalMaterial;
+        decalMaterial.specularColor = new Color3(0, 0, 0);
+        decalMaterial.emissiveColor = new Color3(1, 1, 1);
+        decalMaterial.backFaceCulling = true;
+        // Push slightly to avoid z-fighting
+        // @ts-ignore zOffset exists on StandardMaterial at runtime
+        decalMaterial.zOffset = -2;
 
-        // Make it slightly in front of the model
-        decalPlane.position.z += 0.01;
+        decalMesh.material = decalMaterial;
+        decalMesh.isPickable = false;
 
-        console.log(`✅ Decal applied: ${decal.id}`);
+        console.log(`✅ Decal projected: ${decal.id}`);
       } catch (error) {
         console.error(`❌ Failed to apply decal ${decal.id}:`, error);
       }

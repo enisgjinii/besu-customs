@@ -114,6 +114,10 @@ export interface ConfiguratorState {
   completeUVMap: string | null;
   setCompleteUVMap: (uvMapUrl: string | null) => void;
 
+  // Global texture apply
+  globalCustomTexture: string | null;
+  setGlobalCustomTexture: (url: string | null) => void;
+
   // Scene controls
   showGrid: boolean;
   toggleGrid: () => void;
@@ -499,6 +503,10 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   completeUVMap: null,
   setCompleteUVMap: (uvMapUrl: string | null) =>
     set({ completeUVMap: uvMapUrl }),
+
+  // Global texture apply
+  globalCustomTexture: null,
+  setGlobalCustomTexture: (url: string | null) => set({ globalCustomTexture: url }),
 
   // Scene controls
   showGrid: false,
