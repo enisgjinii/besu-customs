@@ -3,11 +3,14 @@ import {
   AbstractMesh,
   Mesh,
   StandardMaterial,
+  PBRMaterial,
+  Material,
   Texture,
   Color3,
   DynamicTexture,
 } from "@babylonjs/core";
 import type { MaterialSection } from "./store";
+import { parseMaterialName } from "./material-name-parser";
 
 // Import Color3 constructor for default values
 const defaultColor = new Color3(0.8, 0.8, 0.8);
@@ -155,9 +158,9 @@ function createTrimDesignTexture(
 // Helper function to find matching section with improved logic
 function findMatchingSection(
   mesh: Mesh,
-  material: StandardMaterial,
+  material: Material,
   sectionMap: Map<string, MaterialSection>,
-  sections: MaterialSection[]
+  sections: MaterialSection[],
 ): MaterialSection | null {
   // Strategy 1: Direct material name match
   let section = sectionMap.get(material.name);
@@ -185,7 +188,7 @@ function findMatchingSection(
   }
   
   // Strategy 5: Partial name matching (case-insensitive)
-  const materialNameLower = material.name.toLowerCase();
+  const materialNameLower = (material.name || "").toLowerCase();
   const meshNameLower = mesh.name.toLowerCase();
   
   for (const sectionData of sections) {
@@ -216,8 +219,6 @@ export function applyMaterialsToModel(
     sectionMap.set(section.id, section);
     sectionMap.set(section.name, section);
   });
-  
-  console.log("🗺️ Section map keys:", Array.from(sectionMap.keys()).slice(0, 10));
 
   // Traverse all meshes
   const meshes = rootMesh.getChildMeshes(false);
@@ -229,134 +230,119 @@ export function applyMaterialsToModel(
   meshes.forEach((mesh) => {
     if (!(mesh instanceof Mesh)) return;
 
-    // Get or create material
-    let material = mesh.material as StandardMaterial;
+    let material = mesh.material as Material | null;
     if (!material) {
-      console.log(`Creating new material for mesh: ${mesh.name}`);
       material = new StandardMaterial(`${mesh.name}_material`, scene);
       mesh.material = material;
     }
 
-    // Find matching section with improved algorithm
-    const section = findMatchingSection(mesh, material, sectionMap, sections);
-
+    const section = findMatchingSection(mesh, material as any, sectionMap, sections);
     if (!section) {
-      console.log(`⚠️ No section found for mesh: "${mesh.name}", material: "${material.name}"`);
       skippedCount++;
       return;
     }
 
-    console.log(`🎯 Applying material to: ${mesh.name} (${material.name}), color: ${section.color}`);
-    appliedCount++;
+    const isPBR = material instanceof PBRMaterial;
 
-    // Dispose old texture if exists
-    if (material.diffuseTexture) {
-      const oldTexture = material.diffuseTexture;
-      material.diffuseTexture = null;
-      oldTexture.dispose();
-    }
-
-    // Apply custom texture if available
-    if (section.customTexture) {
-      console.log(`📸 Applying custom texture to ${section.name}`);
-      
-      const texture = new Texture(
-        section.customTexture,
-        scene,
-        false,
-        true,
-        Texture.TRILINEAR_SAMPLINGMODE,
-        () => {
-          console.log(`✅ Custom texture loaded for ${section.name}`);
-        },
-        (message) => {
-          console.error(`❌ Failed to load texture for ${section.name}:`, message);
-        },
-      );
-      
-      texture.hasAlpha = false;
-      material.diffuseTexture = texture;
-      material.diffuseColor = new Color3(1, 1, 1); // White to show texture properly
-    } else if (section.trimDesign && section.trimDesign !== "none") {
-      // Apply trim design
-      const trimTexture = createTrimDesignTexture(
-        scene,
-        section.trimDesign,
-        section.color,
-        "#ffffff",
-      );
-      if (trimTexture) {
-        material.diffuseTexture = trimTexture;
-        material.diffuseColor = new Color3(1, 1, 1);
-      }
-    } else if (section.gradient?.enabled) {
-      // Apply gradient
-      const gradientTexture = createGradientTexture(scene, section.gradient);
-      if (gradientTexture) {
-        material.diffuseTexture = gradientTexture;
-        material.diffuseColor = new Color3(1, 1, 1);
+    // Clear existing color textures that would override base color
+    if (isPBR) {
+      const pbr = material as PBRMaterial;
+      if (pbr.albedoTexture) {
+        try { pbr.albedoTexture.dispose(); } catch {}
+        pbr.albedoTexture = null as any;
       }
     } else {
-      // Apply solid color - make sure no texture is blocking it
-      const existingTexture = material.diffuseTexture;
-      if (existingTexture) {
-        material.diffuseTexture = null;
-        try {
-          (existingTexture as Texture).dispose();
-        } catch (e) {
-          console.warn("Could not dispose texture:", e);
-        }
+      const std = material as StandardMaterial;
+      if (std.diffuseTexture) {
+        try { std.diffuseTexture.dispose(); } catch {}
+        std.diffuseTexture = null as any;
       }
-      
-      const newColor = hexToColor3(section.color);
-      
-      // FORCE color update by creating new Color3 instance
-      material.diffuseColor = new Color3(newColor.r, newColor.g, newColor.b);
-      material.emissiveColor = new Color3(0, 0, 0);
-      material.ambientColor = new Color3(0, 0, 0);
-      material.specularColor = new Color3(0.2, 0.2, 0.2);
-      material.alpha = 1.0;
-      material.backFaceCulling = true;
-      
-      // Force material properties
-      material.useAlphaFromDiffuseTexture = false;
-      material.transparencyMode = null;
-      
-      console.log(`  ✓ Set color to ${section.color} (RGB: ${newColor.r.toFixed(2)}, ${newColor.g.toFixed(2)}, ${newColor.b.toFixed(2)})`);
-      console.log(`  ✓ Material diffuseColor is now: (${material.diffuseColor.r.toFixed(2)}, ${material.diffuseColor.g.toFixed(2)}, ${material.diffuseColor.b.toFixed(2)})`);
     }
 
-    // Apply material properties
-    material.specularPower = (1 - (section.roughness ?? 0.5)) * 128;
-    material.specularColor = new Color3(
-      section.metalness ?? 0.5,
-      section.metalness ?? 0.5,
-      section.metalness ?? 0.5,
-    );
-    
+    // Apply texture/gradient/solid color
+    if (section.customTexture) {
+      const tex = new Texture(section.customTexture, scene, false, true, Texture.TRILINEAR_SAMPLINGMODE);
+      tex.hasAlpha = false;
+      if (isPBR) {
+        const pbr = material as PBRMaterial;
+        pbr.albedoTexture = tex;
+        pbr.albedoColor = new Color3(1, 1, 1);
+      } else {
+        const std = material as StandardMaterial;
+        std.diffuseTexture = tex;
+        std.diffuseColor = new Color3(1, 1, 1);
+      }
+    } else if (section.trimDesign && section.trimDesign !== "none") {
+      const tex = createTrimDesignTexture(scene, section.trimDesign, section.color, "#ffffff");
+      if (tex) {
+        if (isPBR) {
+          const pbr = material as PBRMaterial;
+          pbr.albedoTexture = tex;
+          pbr.albedoColor = new Color3(1, 1, 1);
+        } else {
+          const std = material as StandardMaterial;
+          std.diffuseTexture = tex;
+          std.diffuseColor = new Color3(1, 1, 1);
+        }
+      }
+    } else if (section.gradient?.enabled) {
+      const tex = createGradientTexture(scene, section.gradient);
+      if (tex) {
+        if (isPBR) {
+          const pbr = material as PBRMaterial;
+          pbr.albedoTexture = tex;
+          pbr.albedoColor = new Color3(1, 1, 1);
+        } else {
+          const std = material as StandardMaterial;
+          std.diffuseTexture = tex;
+          std.diffuseColor = new Color3(1, 1, 1);
+        }
+      }
+    } else {
+      const color = hexToColor3(section.color);
+      if (isPBR) {
+        const pbr = material as PBRMaterial;
+        pbr.albedoColor = new Color3(color.r, color.g, color.b);
+        pbr.emissiveColor = new Color3(0, 0, 0);
+        pbr.alpha = 1;
+      } else {
+        const std = material as StandardMaterial;
+        std.diffuseColor = new Color3(color.r, color.g, color.b);
+        std.emissiveColor = new Color3(0, 0, 0);
+        std.ambientColor = new Color3(0, 0, 0);
+        std.specularColor = new Color3(0.2, 0.2, 0.2);
+        std.alpha = 1;
+        std.backFaceCulling = true;
+        std.useAlphaFromDiffuseTexture = false;
+      }
+    }
+
+    // Roughness/metalness
+    if (isPBR) {
+      const pbr = material as PBRMaterial;
+      if (section.roughness !== undefined) pbr.roughness = section.roughness;
+      if (section.metalness !== undefined) pbr.metallic = section.metalness;
+    } else {
+      const std = material as StandardMaterial;
+      std.specularPower = (1 - (section.roughness ?? 0.5)) * 128;
+      std.specularColor = new Color3(section.metalness ?? 0.5, section.metalness ?? 0.5, section.metalness ?? 0.5);
+    }
+
     // Wireframe
-    material.wireframe = section.wireframe ?? false;
-    
-    // CRITICAL: Force material and mesh to update
+    (material as any).wireframe = section.wireframe ?? false;
+
     material.markDirty();
-    material.freeze(); // Freeze to force update
-    material.unfreeze(); // Then unfreeze
     mesh.refreshBoundingInfo();
     mesh.computeWorldMatrix(true);
-    
-    console.log(`  ✅ Material updated and forced refresh`);
+    appliedCount++;
   });
 
   console.log(`✅ Finished applying materials: ${appliedCount} applied, ${skippedCount} skipped out of ${meshes.length} meshes`);
-  
-  // Force scene to render multiple times to ensure visual update
+
   scene.render();
   requestAnimationFrame(() => scene.render());
   setTimeout(() => scene.render(), 10);
   setTimeout(() => scene.render(), 50);
-  setTimeout(() => scene.render(), 100);
-
-  console.log("✅ Materials applied successfully");
 }
 
 // Extract sections from model
@@ -364,11 +350,6 @@ export function extractSectionsFromModel(
   rootMesh: AbstractMesh,
   modelUrl: string,
 ): MaterialSection[] {
-  console.log("🔍 Extracting sections from model with intelligent parsing");
-
-  // Import the parser dynamically
-  const { parseMaterialName } = require("./material-name-parser");
-
   const sections: MaterialSection[] = [];
   const processedMaterials = new Set<string>();
 
@@ -378,67 +359,66 @@ export function extractSectionsFromModel(
   meshes.forEach((mesh) => {
     if (!(mesh instanceof Mesh)) return;
 
-    let material = mesh.material as StandardMaterial;
-    
-    // Create material if it doesn't exist
+    let material = mesh.material as Material | null;
     if (!material) {
-      console.log(`Creating material for mesh during extraction: ${mesh.name}`);
       material = new StandardMaterial(`${mesh.name}_material`, mesh.getScene());
       mesh.material = material;
     }
 
-    const materialName = material.name || mesh.name || "Unnamed";
-    
+    const materialName = (material.name || mesh.name || "Unnamed").toString();
     if (processedMaterials.has(materialName)) return;
     processedMaterials.add(materialName);
 
-    // Parse the material name intelligently
     const parsed = parseMaterialName(materialName);
 
-    // Get current color from material, or use intelligent default
-    const materialColor = material.diffuseColor;
+    const isPBR = material instanceof PBRMaterial;
+    const baseColor: Color3 | undefined = isPBR
+      ? (material as PBRMaterial).albedoColor
+      : (material as StandardMaterial).diffuseColor;
+
     let hexColor: string;
-    
-    // Check if material has a meaningful color (not default gray/white)
-    if (materialColor && 
-        (materialColor.r !== materialColor.g || 
-         materialColor.g !== materialColor.b ||
-         (materialColor.r < 0.7 || materialColor.r > 0.9))) {
-      // Use existing color if it's not default
-      hexColor = `#${Math.round(materialColor.r * 255)
+    if (
+      baseColor &&
+      (baseColor.r !== baseColor.g ||
+        baseColor.g !== baseColor.b ||
+        (baseColor.r < 0.7 || baseColor.r > 0.9))
+    ) {
+      hexColor = `#${Math.round(baseColor.r * 255)
         .toString(16)
-        .padStart(2, "0")}${Math.round(materialColor.g * 255)
+        .padStart(2, "0")}${Math.round(baseColor.g * 255)
         .toString(16)
-        .padStart(2, "0")}${Math.round(materialColor.b * 255)
+        .padStart(2, "0")}${Math.round(baseColor.b * 255)
         .toString(16)
         .padStart(2, "0")}`;
     } else {
-      // Use intelligent default color based on material type
       hexColor = parsed.defaultColor;
     }
 
+    const std = material as StandardMaterial;
+    const pbr = material as PBRMaterial;
     const section: MaterialSection = {
-      id: materialName, // Use material name as ID for easier matching
-      name: parsed.displayName, // Use friendly display name
-      originalName: materialName, // Keep original for matching
+      id: materialName,
+      name: parsed.displayName,
+      originalName: materialName,
       category: parsed.category,
       color: hexColor,
-      roughness: material.specularPower ? 1 - material.specularPower / 128 : 0.5,
-      metalness: material.specularColor ? material.specularColor.r : 0.5,
-      wireframe: material.wireframe || false,
+      roughness: isPBR
+        ? (typeof pbr.roughness === "number" ? pbr.roughness : 0.5)
+        : (typeof std.specularPower === "number" ? 1 - std.specularPower / 128 : 0.5),
+      metalness: isPBR
+        ? (typeof pbr.metallic === "number" ? pbr.metallic : 0.5)
+        : (std.specularColor ? std.specularColor.r : 0.5),
+      wireframe: !!((material as any).wireframe),
     };
 
     sections.push(section);
-    console.log(`📋 Extracted: "${parsed.displayName}" (${materialName}) -> ${hexColor}`);
   });
 
-  // Sort sections by priority (body parts first, hardware last)
   sections.sort((a, b) => {
     const priorityA = parseMaterialName(a.originalName).priority;
     const priorityB = parseMaterialName(b.originalName).priority;
     return priorityA - priorityB;
   });
 
-  console.log(`✅ Extracted ${sections.length} sections with intelligent naming`);
   return sections;
 }

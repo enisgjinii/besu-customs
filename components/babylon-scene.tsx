@@ -15,6 +15,7 @@ import {
   Mesh,
   StandardMaterial,
   Texture,
+  DynamicTexture,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { useConfiguratorStore } from "@/lib/store";
@@ -79,6 +80,7 @@ export function BabylonScene() {
   const sections = useConfiguratorStore((s) => s.sections);
   const setSections = useConfiguratorStore((s) => s.setSections);
   const highlightedSectionId = useConfiguratorStore((s) => s.highlightedSectionId);
+  const selectedSectionId = useConfiguratorStore((s) => s.selectedSectionId);
 
   // Initialize Babylon.js engine and scene
   useEffect(() => {
@@ -197,7 +199,7 @@ export function BabylonScene() {
     }
   }, [autoRotate]);
 
-  // Apply materials when sections change OR when highlight changes
+  // Apply materials when sections change (similar to Three.js ModelLoader)
   useEffect(() => {
     if (!currentMeshRef.current || !sceneRef.current || sections.length === 0) {
       console.log("⚠️ Cannot apply materials:", {
@@ -208,84 +210,248 @@ export function BabylonScene() {
       return;
     }
 
-    console.log("🎨 Applying materials and highlights...", {
-      sectionsCount: sections.length,
-      highlightedId: highlightedSectionId,
-      sampleSections: sections.slice(0, 3).map(s => ({
-        id: s.id,
-        name: s.name,
-        originalName: s.originalName,
-        color: s.color
-      }))
-    });
-    
-    // Apply materials first
-    applyMaterialsToModel(currentMeshRef.current, sections, sceneRef.current);
-    
-    // Then apply highlight effect on top
-    if (highlightedSectionId) {
-      const scene = sceneRef.current;
-      const rootMesh = currentMeshRef.current;
-      
+    console.log(`🔄 Babylon Scene: Sections changed, count=${sections.length}`);
+
+    const sectionsWithTextures = sections.filter((s) => s.customTexture);
+    console.log(
+      `🖼️ Babylon Scene: ${sectionsWithTextures.length} sections have custom textures`,
+    );
+
+    const scene = sceneRef.current;
+    const rootMesh = currentMeshRef.current;
+
+    try {
       // Get all meshes
       const meshes = rootMesh.getChildMeshes(false);
       meshes.push(rootMesh);
 
-      // Create section map for quick lookup
-      const sectionMap = new Map<string, typeof sections[0]>();
-      sections.forEach((section) => {
-        sectionMap.set(section.originalName, section);
-        sectionMap.set(section.id, section);
-        sectionMap.set(section.name, section);
-      });
-
-      // Apply highlight to the hovered section
+      // Build material map by original name
+      const materialsByOriginalName = new Map<string, StandardMaterial | any>();
       meshes.forEach((mesh) => {
         if (!(mesh instanceof Mesh)) return;
-
-        const material = mesh.material as StandardMaterial;
-        if (!material) return;
-
-        // Find matching section
-        let section = sectionMap.get(material.name) || sectionMap.get(mesh.name);
-        
-        if (!section) {
-          for (const [, sectionData] of sectionMap.entries()) {
-            if (sectionData.originalName === material.name || sectionData.originalName === mesh.name) {
-              section = sectionData;
-              break;
-            }
-          }
-        }
-
-        if (!section) {
-          for (const [, sectionData] of sectionMap.entries()) {
-            if (
-              sectionData.combinedOriginalNames &&
-              (sectionData.combinedOriginalNames.includes(material.name) ||
-                sectionData.combinedOriginalNames.includes(mesh.name))
-            ) {
-              section = sectionData;
-              break;
-            }
-          }
-        }
-
-        if (!section) return;
-
-        // Apply highlight if this section is hovered
-        if (highlightedSectionId === section.id) {
-          // Add emissive glow for highlight
-          material.emissiveColor = new Color3(0.3, 0.3, 0.3);
+        const material = mesh.material as any;
+        if (material && material.name) {
+          materialsByOriginalName.set(material.name, material);
         }
       });
+
+      console.log(
+        `🎭 Babylon Scene: Found ${materialsByOriginalName.size} materials in scene`,
+      );
+      console.log(`   Material names:`, Array.from(materialsByOriginalName.keys()));
+      console.log(`   Section originalNames:`, sections.map(s => s.originalName));
+      console.log(`   Section ids:`, sections.map(s => s.id));
+
+      // Apply material properties from sections to actual Babylon materials
+      let appliedCount = 0;
+      let notFoundCount = 0;
+      
+      sections.forEach((section) => {
+        // Try to find material by originalName
+        let material = materialsByOriginalName.get(section.originalName);
+        
+        // If not found, try by id
+        if (!material) {
+          material = materialsByOriginalName.get(section.id);
+        }
+        
+        // If still not found, try partial matching
+        if (!material) {
+          const originalNameLower = section.originalName.toLowerCase();
+          for (const [matName, mat] of materialsByOriginalName.entries()) {
+            if (matName.toLowerCase().includes(originalNameLower) || 
+                originalNameLower.includes(matName.toLowerCase())) {
+              material = mat;
+              console.log(`✓ Found material via partial match: "${matName}" for section "${section.originalName}"`);
+              break;
+            }
+          }
+        }
+
+        if (!material) {
+          console.warn(
+            `⚠️ Babylon Scene: No material found for section "${section.name}" (originalName: "${section.originalName}", id: "${section.id}")`,
+          );
+          console.warn(`   Available materials:`, Array.from(materialsByOriginalName.keys()).slice(0, 5));
+          notFoundCount++;
+          return;
+        }
+        
+        appliedCount++;
+
+        // Apply highlighting if this section is highlighted or selected
+        const isHighlighted = highlightedSectionId === section.id;
+        const isSelected = selectedSectionId === section.id;
+
+        if (isHighlighted || isSelected) {
+          // Create a bright emissive color for highlighting
+          material.emissiveColor = new Color3(0.3, 0.3, 0.3);
+        } else {
+          // Reset emissive for non-highlighted sections
+          material.emissiveColor = new Color3(0, 0, 0);
+        }
+
+        // Apply color if no custom texture or gradient is enabled
+        if (section.color && !section.customTexture && !section.gradient?.enabled) {
+          // Remove any existing base texture first
+          if (material.albedoTexture) {
+            try { material.albedoTexture.dispose(); } catch {}
+            material.albedoTexture = null;
+          }
+          if (material.diffuseTexture) {
+            try { material.diffuseTexture.dispose(); } catch {}
+            material.diffuseTexture = null;
+          }
+
+          const color = hexToColor3(section.color);
+          if (material.albedoColor !== undefined) {
+            // PBR
+            material.albedoColor = new Color3(color.r, color.g, color.b);
+            material.alpha = 1.0;
+          } else {
+            // Standard
+            material.diffuseColor = new Color3(color.r, color.g, color.b);
+            material.alpha = 1.0;
+            material.backFaceCulling = true;
+          }
+          console.log(`🎨 Applied color ${section.color} to material ${section.originalName}`);
+        }
+
+        // Apply gradient if enabled
+        if (section.gradient?.enabled && !section.customTexture) {
+          // Dispose old texture if exists
+          if (material.albedoTexture) { try { material.albedoTexture.dispose(); } catch {}; material.albedoTexture = null; }
+          if (material.diffuseTexture) { try { material.diffuseTexture.dispose(); } catch {}; material.diffuseTexture = null; }
+
+          // Create gradient texture
+          const size = 512;
+          const dynamicTexture = new DynamicTexture(
+            `gradient_${section.id}`,
+            { width: size, height: size },
+            scene,
+            false,
+          );
+
+          const ctx = dynamicTexture.getContext();
+          let gradientObj: CanvasGradient;
+
+          if (section.gradient.type === "radial") {
+            gradientObj = ctx.createRadialGradient(
+              size / 2,
+              size / 2,
+              0,
+              size / 2,
+              size / 2,
+              size / 2,
+            );
+          } else {
+            // Linear gradient
+            const angle = (section.gradient.angle || 90) * (Math.PI / 180);
+            const x1 = size / 2 - (Math.cos(angle) * size) / 2;
+            const y1 = size / 2 - (Math.sin(angle) * size) / 2;
+            const x2 = size / 2 + (Math.cos(angle) * size) / 2;
+            const y2 = size / 2 + (Math.sin(angle) * size) / 2;
+            gradientObj = ctx.createLinearGradient(x1, y1, x2, y2);
+          }
+
+          const stops =
+            section.gradient.stops ||
+            section.gradient.colors.map(
+              (_, i) => i / (section.gradient!.colors.length - 1),
+            );
+
+          section.gradient.colors.forEach((color, i) => {
+            gradientObj.addColorStop(
+              stops[i] || i / (section.gradient!.colors.length - 1),
+              color,
+            );
+          });
+
+          ctx.fillStyle = gradientObj;
+          ctx.fillRect(0, 0, size, size);
+          dynamicTexture.update();
+
+          if (material.albedoColor !== undefined) {
+            material.albedoTexture = dynamicTexture;
+            material.albedoColor = new Color3(1, 1, 1);
+          } else {
+            material.diffuseTexture = dynamicTexture;
+            material.diffuseColor = new Color3(1, 1, 1);
+          }
+          console.log(`🌈 Applied gradient to material ${section.originalName}`);
+        }
+
+        // Apply custom texture if available
+        if (section.customTexture) {
+          // Dispose old texture if exists
+          if (material.albedoTexture) { try { material.albedoTexture.dispose(); } catch {}; material.albedoTexture = null; }
+          if (material.diffuseTexture) { try { material.diffuseTexture.dispose(); } catch {}; material.diffuseTexture = null; }
+
+          const texture = new Texture(
+            section.customTexture,
+            scene,
+            false,
+            true,
+            Texture.TRILINEAR_SAMPLINGMODE,
+            () => {
+              console.log(`✅ Custom texture loaded for ${section.name}`);
+            },
+            (message) => {
+              console.error(
+                `❌ Failed to load texture for ${section.name}:`,
+                message,
+              );
+            },
+          );
+
+          texture.hasAlpha = false;
+          if (material.albedoColor !== undefined) {
+            material.albedoTexture = texture;
+            material.albedoColor = new Color3(1, 1, 1);
+          } else {
+            material.diffuseTexture = texture;
+            material.diffuseColor = new Color3(1, 1, 1);
+          }
+          console.log(`🖼️ Applied custom texture to material ${section.originalName}`);
+        }
+
+        // Apply other material properties
+        if (material.albedoColor !== undefined) {
+          // PBR
+          if (section.roughness !== undefined) material.roughness = section.roughness;
+          if (section.metalness !== undefined) material.metallic = section.metalness;
+        } else {
+          // Standard
+          if (section.roughness !== undefined) {
+            material.specularPower = (1 - section.roughness) * 128;
+          }
+          if (section.metalness !== undefined) {
+            material.specularColor = new Color3(
+              section.metalness,
+              section.metalness,
+              section.metalness,
+            );
+          }
+        }
+        if (section.wireframe !== undefined) {
+          material.wireframe = section.wireframe;
+        }
+
+        // Mark material as needing update
+        material.markDirty();
+      });
+
+      console.log(`✅ Material update complete: ${appliedCount} applied, ${notFoundCount} not found`);
+
+      // Force scene to re-render multiple times
+      scene.render();
+      requestAnimationFrame(() => scene.render());
+      setTimeout(() => scene.render(), 10);
+      setTimeout(() => scene.render(), 50);
+    } catch (e) {
+      console.error("❌ Babylon Scene: Material update error:", e);
     }
-    
-    // Force scene to re-render
-    if (sceneRef.current) {
-      sceneRef.current.render();
-    }
-  }, [sections, highlightedSectionId]);
+  }, [sections, highlightedSectionId, selectedSectionId]);
 
   // Load 3D model
   useEffect(() => {
@@ -510,6 +676,24 @@ export function BabylonScene() {
           // Update camera limits based on model size
           cameraRef.current.lowerRadiusLimit = optimalCameraDistance * 0.3;
           cameraRef.current.upperRadiusLimit = optimalCameraDistance * 2.5;
+        }
+
+        // Subtle framing tweak: nudge model slightly to the right of screen center
+        // Uses camera right-vector so it works for any orbit angle
+        if (currentMeshRef.current && cameraRef.current) {
+          try {
+            const cam = cameraRef.current;
+            // Camera local +X is screen-right; get world-space vector
+            const rightVec = cam.getDirection(new Vector3(1, 0, 0));
+            const sizeVec = globalMax.subtract(globalMin);
+            const horizSize = Math.max(Math.abs(sizeVec.x), Math.abs(sizeVec.z));
+            const offsetAmount = 0.10 * horizSize; // ~10% of horizontal size
+            const offset = rightVec.scale(offsetAmount);
+            currentMeshRef.current.position.addInPlace(offset);
+            currentMeshRef.current.computeWorldMatrix(true);
+          } catch (e) {
+            console.warn("Could not apply right-offset framing tweak", e);
+          }
         }
 
         // Extract material sections from the actual model
