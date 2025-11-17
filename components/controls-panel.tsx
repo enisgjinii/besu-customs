@@ -25,6 +25,7 @@ import {
   Video,
   Bot,
   Aperture,
+  Box,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import { UploadPanel } from "./upload-panel";
@@ -42,6 +43,8 @@ export function ControlsPanel() {
   >("camera");
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
+  const showBoundingBox = useConfiguratorStore((state) => state.showBoundingBox);
+  const toggleBoundingBox = useConfiguratorStore((state) => state.toggleBoundingBox);
   const exportPreset = useConfiguratorStore((state) => state.exportPreset);
   const importPreset = useConfiguratorStore((state) => state.importPreset);
   const currentModelUrl = useConfiguratorStore(
@@ -341,6 +344,15 @@ export function ControlsPanel() {
                   >
                     <Grid3x3 className="w-4 h-4 mr-2" />
                     {showGrid ? "Hide Grid" : "Show Grid"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleBoundingBox}
+                    className="w-full justify-start bg-transparent"
+                  >
+                    <Box className="w-4 h-4 mr-2" />
+                    {showBoundingBox ? "Hide Bounding Box" : "Show Bounding Box"}
                   </Button>
                   <Button
                     variant="outline"

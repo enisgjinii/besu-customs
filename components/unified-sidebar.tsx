@@ -29,6 +29,7 @@ import {
   Eye,
   FileJson,
   Settings,
+  Box,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import type { Product } from "@/lib/store";
@@ -79,6 +80,8 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   const recordedChunksRef = useRef<Blob[]>([]);
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
+  const showBoundingBox = useConfiguratorStore((state) => state.showBoundingBox);
+  const toggleBoundingBox = useConfiguratorStore((state) => state.toggleBoundingBox);
   const backgroundColor = useConfiguratorStore(
     (state) => state.backgroundColor,
   );
@@ -940,6 +943,16 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
                     >
                       <Grid3x3 className="w-4 h-4 mr-2" />
                       {showGrid ? "Hide Grid" : "Show Grid"}
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleBoundingBox}
+                      className="w-full justify-start"
+                    >
+                      <Box className="w-4 h-4 mr-2" />
+                      {showBoundingBox ? "Hide Bounding Box" : "Show Bounding Box"}
                     </Button>
 
                     {/* Background Environment Options */}

@@ -17,6 +17,8 @@ import {
   Texture,
   DynamicTexture,
   PointerEventTypes,
+  MeshBuilder,
+  LinesMesh,
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { useConfiguratorStore } from "@/lib/store";
@@ -71,6 +73,7 @@ export function BabylonScene() {
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const backgroundColor = useConfiguratorStore((s) => s.backgroundColor);
   const autoRotate = useConfiguratorStore((s) => s.autoRotate);
+  const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
   const modelLoading = useConfiguratorStore((s) => s.modelLoading);
   const modelError = useConfiguratorStore((s) => s.modelError);
   const setModelLoading = useConfiguratorStore((s) => s.setModelLoading);
@@ -93,6 +96,9 @@ export function BabylonScene() {
 
   // Track applied global texture to dispose when replaced
   const appliedGlobalTextureRef = useRef<Texture | null>(null);
+  
+  // Track bounding box mesh
+  const boundingBoxRef = useRef<Mesh | null>(null);
 
   // Initialize Babylon.js engine and scene
   useEffect(() => {
@@ -210,6 +216,14 @@ export function BabylonScene() {
       cameraRef.current.useAutoRotationBehavior = false;
     }
   }, [autoRotate]);
+
+  // Handle bounding box visibility toggle
+  useEffect(() => {
+    if (boundingBoxRef.current) {
+      boundingBoxRef.current.setEnabled(showBoundingBox);
+      console.log(`📦 Bounding box ${showBoundingBox ? 'shown' : 'hidden'}`);
+    }
+  }, [showBoundingBox]);
 
   // Apply materials when sections or global texture change
   useEffect(() => {
@@ -707,216 +721,692 @@ export function BabylonScene() {
         const rootMesh = meshes[0];
         currentMeshRef.current = rootMesh;
 
-        // Advanced centering and auto-sizing algorithm
-        console.log("📐 Starting advanced model normalization...");
+        // ═══════════════════════════════════════════════════════════════
+        // ADVANCED AUTO-CENTER & AUTO-SIZE ALGORITHM
+        // ═══════════════════════════════════════════════════════════════
+        console.log("🚀 Starting advanced model normalization...");
 
-        // Step 1: Force update all mesh world matrices
-        rootMesh.computeWorldMatrix(true);
-        meshes.forEach((mesh) => {
-          mesh.computeWorldMatrix(true);
-        });
-
-        // Step 2: Calculate accurate bounding box for ALL meshes
-        let globalMin = new Vector3(Infinity, Infinity, Infinity);
-        let globalMax = new Vector3(-Infinity, -Infinity, -Infinity);
-        let validMeshCount = 0;
-
-        meshes.forEach((mesh) => {
-          if (mesh.getBoundingInfo) {
-            try {
-              const boundingInfo = mesh.getBoundingInfo();
-              const meshMin = boundingInfo.boundingBox.minimumWorld;
-              const meshMax = boundingInfo.boundingBox.maximumWorld;
-
-              // Validate bounds (skip invalid meshes)
-              if (isFinite(meshMin.x) && isFinite(meshMax.x)) {
-                globalMin = Vector3.Minimize(globalMin, meshMin);
-                globalMax = Vector3.Maximize(globalMax, meshMax);
-                validMeshCount++;
-              }
-            } catch (e) {
-              console.warn(`Could not get bounds for mesh: ${mesh.name}`);
+        // ───────────────────────────────────────────────────────────────
+        // STEP 1: Precise Bounding Box Calculation (Tight Fit)
+        // ───────────────────────────────────────────────────────────────
+        const calculatePreciseBounds = () => {
+          let min = new Vector3(Infinity, Infinity, Infinity);
+          let max = new Vector3(-Infinity, -Infinity, -Infinity);
+          let validMeshCount = 0;
+          
+          meshes.forEach((mesh) => {
+            // Skip invisible or non-renderable meshes
+            if (!mesh.isVisible || !mesh.isEnabled()) {
+              return;
             }
-          }
-        });
-
-        console.log(
-          `📊 Analyzed ${validMeshCount} valid meshes out of ${meshes.length}`,
-        );
-
-        // Step 3: Calculate original dimensions
-        const originalSize = globalMax.subtract(globalMin);
-        const originalCenter = Vector3.Center(globalMin, globalMax);
-        const maxDimension = Math.max(
-          originalSize.x,
-          originalSize.y,
-          originalSize.z,
-        );
-        const minDimension = Math.min(
-          originalSize.x,
-          originalSize.y,
-          originalSize.z,
-        );
-        const aspectRatio = maxDimension / (minDimension || 1);
-
-        console.log("📐 Original model metrics:", {
-          size: {
-            x: originalSize.x.toFixed(3),
-            y: originalSize.y.toFixed(3),
-            z: originalSize.z.toFixed(3),
-          },
-          center: {
-            x: originalCenter.x.toFixed(3),
-            y: originalCenter.y.toFixed(3),
-            z: originalCenter.z.toFixed(3),
-          },
-          maxDim: maxDimension.toFixed(3),
-          minDim: minDimension.toFixed(3),
-          aspectRatio: aspectRatio.toFixed(2),
-        });
-
-        // Step 4: Intelligent scaling based on model characteristics
-        let targetSize: number;
-
-        if (maxDimension < 0.1) {
-          // Very small model - scale up significantly
-          targetSize = 3.5;
-          console.log("🔍 Detected very small model, using large target size");
-        } else if (maxDimension < 1) {
-          // Small model - scale up moderately
-          targetSize = 3.2;
-          console.log("📏 Detected small model, using moderate target size");
-        } else if (maxDimension > 100) {
-          // Very large model - scale down significantly
-          targetSize = 2.5;
-          console.log("🏔️ Detected very large model, using small target size");
-        } else if (aspectRatio > 5) {
-          // Elongated model - use smaller target to fit better
-          targetSize = 2.8;
-          console.log("📏 Detected elongated model, adjusting target size");
-        } else {
-          // Normal sized model
-          targetSize = 3.0;
-          console.log("✅ Normal model size detected");
-        }
-
-        // Step 5: Apply uniform scaling
-        if (maxDimension > 0) {
-          const scaleFactor = targetSize / maxDimension;
-          rootMesh.scaling = new Vector3(scaleFactor, scaleFactor, scaleFactor);
-
-          console.log("📏 Applied scale factor:", scaleFactor.toFixed(4));
-
-          // Step 6: Recalculate bounds after scaling
-          rootMesh.computeWorldMatrix(true);
-          meshes.forEach((mesh) => {
+            
             mesh.computeWorldMatrix(true);
-          });
-
-          // Recalculate global bounds
-          globalMin = new Vector3(Infinity, Infinity, Infinity);
-          globalMax = new Vector3(-Infinity, -Infinity, -Infinity);
-
-          meshes.forEach((mesh) => {
+            
+            // Use getTotalVertices to check if mesh has geometry
+            if (mesh instanceof Mesh && mesh.getTotalVertices() === 0) {
+              return;
+            }
+            
             if (mesh.getBoundingInfo) {
               try {
                 const boundingInfo = mesh.getBoundingInfo();
                 const meshMin = boundingInfo.boundingBox.minimumWorld;
                 const meshMax = boundingInfo.boundingBox.maximumWorld;
-
-                if (isFinite(meshMin.x) && isFinite(meshMax.x)) {
-                  globalMin = Vector3.Minimize(globalMin, meshMin);
-                  globalMax = Vector3.Maximize(globalMax, meshMax);
+                
+                // Validate bounds are finite and not zero-sized
+                const size = meshMax.subtract(meshMin);
+                if (isFinite(meshMin.x) && isFinite(meshMax.x) &&
+                    isFinite(meshMin.y) && isFinite(meshMax.y) &&
+                    isFinite(meshMin.z) && isFinite(meshMax.z) &&
+                    size.length() > 0.0001) { // Ignore tiny/empty meshes
+                  min = Vector3.Minimize(min, meshMin);
+                  max = Vector3.Maximize(max, meshMax);
+                  validMeshCount++;
                 }
               } catch (e) {
-                // Skip invalid meshes
+                console.warn(`⚠️ Skipping mesh ${mesh.name}:`, e);
               }
             }
           });
+          
+          const size = max.subtract(min);
+          const center = Vector3.Center(min, max);
+          const dimensions = {
+            x: size.x,
+            y: size.y,
+            z: size.z,
+            max: Math.max(size.x, size.y, size.z),
+            min: Math.min(size.x, size.y, size.z),
+            avg: (size.x + size.y + size.z) / 3
+          };
+          
+          return { min, max, size, center, dimensions, validMeshCount };
+        };
 
-          // Step 7: Center the model perfectly at world origin
-          const scaledCenter = Vector3.Center(globalMin, globalMax);
-          rootMesh.position = scaledCenter.negate();
+        // ───────────────────────────────────────────────────────────────
+        // STEP 2: Analyze Original Model Characteristics
+        // ───────────────────────────────────────────────────────────────
+        const original = calculatePreciseBounds();
+        
+        console.log(`📊 Analyzed ${original.validMeshCount}/${meshes.length} meshes`);
+        
+        // Log individual mesh bounds for debugging
+        console.log("🔍 Mesh details:");
+        meshes.forEach((mesh, i) => {
+          if (mesh.getBoundingInfo && mesh.isVisible && mesh.isEnabled()) {
+            const bounds = mesh.getBoundingInfo().boundingBox;
+            const meshSize = bounds.maximumWorld.subtract(bounds.minimumWorld);
+            console.log(`  [${i}] ${mesh.name}: ${meshSize.x.toFixed(3)} × ${meshSize.y.toFixed(3)} × ${meshSize.z.toFixed(3)}`);
+          }
+        });
+        
+        console.log("📐 Original dimensions:", {
+          size: `${original.dimensions.x.toFixed(3)} × ${original.dimensions.y.toFixed(3)} × ${original.dimensions.z.toFixed(3)}`,
+          center: `(${original.center.x.toFixed(3)}, ${original.center.y.toFixed(3)}, ${original.center.z.toFixed(3)})`,
+          maxDim: original.dimensions.max.toFixed(3),
+          aspectRatio: (original.dimensions.max / original.dimensions.min).toFixed(2)
+        });
 
-          console.log("🎯 Centered model at origin with offset:", {
-            x: scaledCenter.x.toFixed(3),
-            y: scaledCenter.y.toFixed(3),
-            z: scaledCenter.z.toFixed(3),
-          });
+        // ───────────────────────────────────────────────────────────────
+        // STEP 3: FULLY AUTOMATIC Advanced Size Calculation Algorithm
+        // ───────────────────────────────────────────────────────────────
+        const aspectRatio = original.dimensions.max / (original.dimensions.min || 1);
+        const volume = original.dimensions.x * original.dimensions.y * original.dimensions.z;
+        const normalizedVolume = volume / Math.pow(original.dimensions.max, 3);
+        
+        // Calculate surface area to volume ratio (indicates complexity)
+        const surfaceArea = 2 * (original.dimensions.x * original.dimensions.y + 
+                                  original.dimensions.y * original.dimensions.z + 
+                                  original.dimensions.z * original.dimensions.x);
+        const saToVolRatio = surfaceArea / (volume || 1);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // ADVANCED AUTOMATIC TARGET SIZE CALCULATION
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Get viewport dimensions for viewport-aware sizing
+        const canvas = canvasRef.current;
+        const viewportWidth = canvas?.clientWidth || 1920;
+        const viewportHeight = canvas?.clientHeight || 1080;
+        const viewportAspect = viewportWidth / viewportHeight;
+        const viewportDiagonal = Math.sqrt(viewportWidth * viewportWidth + viewportHeight * viewportHeight);
+        
+        console.log(`📺 Viewport: ${viewportWidth}×${viewportHeight} (aspect: ${viewportAspect.toFixed(2)})`);
+        
+        // Calculate model's visual footprint (how much screen space it should occupy)
+        const modelAspect = original.dimensions.x / original.dimensions.y;
+        const aspectDifference = Math.abs(modelAspect - viewportAspect);
+        
+        // Base target using advanced logarithmic + exponential hybrid scaling
+        const logSize = Math.log10(original.dimensions.max + 0.001);
+        const expFactor = Math.exp(-logSize * 0.5); // Exponential decay for large models
+        
+        let targetSize: number;
+        
+        // Multi-tier adaptive sizing with smooth transitions
+        if (logSize < -3) {
+          // Ultra-microscopic (< 0.001)
+          targetSize = 4.5 + expFactor * 0.5;
+        } else if (logSize < -2) {
+          // Microscopic (0.001 - 0.01)
+          targetSize = 4.2 + expFactor * 0.4;
+        } else if (logSize < -1) {
+          // Tiny (0.01 - 0.1)
+          targetSize = 4.0 + expFactor * 0.3;
+        } else if (logSize < 0) {
+          // Small (0.1 - 1)
+          targetSize = 3.8 - logSize * 0.4;
+        } else if (logSize < 1) {
+          // Medium (1 - 10)
+          targetSize = 3.5 - logSize * 0.35;
+        } else if (logSize < 2) {
+          // Large (10 - 100)
+          targetSize = 3.2 - logSize * 0.3;
+        } else if (logSize < 3) {
+          // Very large (100 - 1000)
+          targetSize = 2.9 - (logSize - 2) * 0.25;
+        } else {
+          // Massive (> 1000)
+          targetSize = 2.6 - (logSize - 3) * 0.2;
+        }
+        
+        // Viewport-aware adjustment
+        const viewportScale = Math.min(viewportWidth, viewportHeight) / 1000; // Normalize to 1000px
+        targetSize *= (0.8 + viewportScale * 0.4); // Scale based on viewport size
+        
+        // Ensure reasonable range with tighter bounds
+        targetSize = Math.max(2.0, Math.min(targetSize, 5.0));
+        
+        console.log(`📊 Base target: ${targetSize.toFixed(2)} (log: ${logSize.toFixed(2)}, exp: ${expFactor.toFixed(3)})`);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // ADVANCED ASPECT RATIO COMPENSATION WITH VIEWPORT AWARENESS
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Calculate aspect ratio in all three planes
+        const aspectXY = original.dimensions.x / original.dimensions.y;
+        const aspectYZ = original.dimensions.y / original.dimensions.z;
+        const aspectXZ = original.dimensions.x / original.dimensions.z;
+        const avgAspect = (aspectXY + aspectYZ + aspectXZ) / 3;
+        
+        // Use sigmoid function for smooth aspect ratio compensation
+        const aspectSigmoid = (ratio: number) => {
+          const normalized = (ratio - 1) / 10; // Normalize around 1
+          return 1 / (1 + Math.exp(-normalized * 2));
+        };
+        
+        let aspectMultiplier = 1.0;
+        
+        // Extreme elongation (needle-like objects)
+        if (aspectRatio > 50) {
+          aspectMultiplier = 0.55 + aspectSigmoid(aspectRatio) * 0.1;
+        } else if (aspectRatio > 20) {
+          aspectMultiplier = 0.65 + aspectSigmoid(aspectRatio) * 0.05;
+        } else if (aspectRatio > 10) {
+          aspectMultiplier = 0.72 + aspectSigmoid(aspectRatio) * 0.03;
+        } else if (aspectRatio > 5) {
+          aspectMultiplier = 0.82 + aspectSigmoid(aspectRatio) * 0.03;
+        } else if (aspectRatio > 3) {
+          aspectMultiplier = 0.90 + aspectSigmoid(aspectRatio) * 0.02;
+        } else if (aspectRatio > 2) {
+          aspectMultiplier = 0.96 + aspectSigmoid(aspectRatio) * 0.02;
+        } else if (aspectRatio < 1.15) {
+          // Nearly perfect cube/sphere
+          aspectMultiplier = 1.08;
+        } else if (aspectRatio < 1.3) {
+          aspectMultiplier = 1.04;
+        } else if (aspectRatio < 1.5) {
+          aspectMultiplier = 1.02;
+        }
+        
+        // Viewport aspect compensation
+        if (aspectDifference > 1) {
+          aspectMultiplier *= 0.95; // Model aspect very different from viewport
+        }
+        
+        targetSize *= aspectMultiplier;
+        console.log(`📐 Aspect ${aspectRatio.toFixed(2)} (avg: ${avgAspect.toFixed(2)}) → ×${aspectMultiplier.toFixed(3)}`);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // ADVANCED VOLUME DENSITY & SHAPE ANALYSIS
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Calculate shape factor (sphere = 1, other shapes < 1)
+        const sphereVolume = (4/3) * Math.PI * Math.pow(original.dimensions.max / 2, 3);
+        const shapeFactor = volume / sphereVolume;
+        
+        // Calculate compactness (how close to a sphere)
+        const compactness = Math.pow(36 * Math.PI * volume * volume, 1/3) / surfaceArea;
+        
+        let volumeMultiplier = 1.0;
+        
+        // Ultra-thin objects (paper-like)
+        if (normalizedVolume < 0.01) {
+          volumeMultiplier = 1.25;
+        } else if (normalizedVolume < 0.05) {
+          volumeMultiplier = 1.18; // Extremely flat/thin
+        } else if (normalizedVolume < 0.1) {
+          volumeMultiplier = 1.12; // Very flat
+        } else if (normalizedVolume < 0.15) {
+          volumeMultiplier = 1.08; // Flat
+        } else if (normalizedVolume < 0.25) {
+          volumeMultiplier = 1.04; // Somewhat flat
+        } else if (normalizedVolume < 0.35) {
+          volumeMultiplier = 1.02; // Slightly flat
+        } else if (normalizedVolume > 0.8) {
+          volumeMultiplier = 0.96; // Very bulky/solid
+        } else if (normalizedVolume > 0.7) {
+          volumeMultiplier = 0.98; // Bulky
+        }
+        
+        // Shape factor adjustment
+        if (shapeFactor < 0.1) {
+          volumeMultiplier *= 1.08; // Very irregular shape
+        } else if (shapeFactor > 0.8) {
+          volumeMultiplier *= 0.96; // Nearly spherical
+        }
+        
+        // Compactness adjustment
+        if (compactness < 0.3) {
+          volumeMultiplier *= 1.05; // Very spread out
+        }
+        
+        targetSize *= volumeMultiplier;
+        console.log(`📦 Volume: ${normalizedVolume.toFixed(3)}, Shape: ${shapeFactor.toFixed(3)}, Compact: ${compactness.toFixed(3)} → ×${volumeMultiplier.toFixed(3)}`);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // ADVANCED COMPLEXITY & DETAIL ANALYSIS
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Count total vertices for detail level
+        let totalVertices = 0;
+        let totalFaces = 0;
+        meshes.forEach((mesh) => {
+          if (mesh instanceof Mesh) {
+            totalVertices += mesh.getTotalVertices();
+            totalFaces += mesh.getTotalIndices() / 3;
+          }
+        });
+        
+        // Calculate detail density (vertices per unit volume)
+        const detailDensity = totalVertices / (volume || 1);
+        const faceToVertexRatio = totalFaces / (totalVertices || 1);
+        
+        let complexityMultiplier = 1.0;
+        
+        // Surface area to volume ratio (complexity indicator)
+        if (saToVolRatio > 200) {
+          complexityMultiplier = 1.12; // Extremely complex
+        } else if (saToVolRatio > 100) {
+          complexityMultiplier = 1.08; // Very complex
+        } else if (saToVolRatio > 50) {
+          complexityMultiplier = 1.05; // Complex
+        } else if (saToVolRatio > 25) {
+          complexityMultiplier = 1.03; // Moderately complex
+        } else if (saToVolRatio < 5) {
+          complexityMultiplier = 0.97; // Very simple
+        }
+        
+        // Detail density adjustment
+        if (detailDensity > 10000) {
+          complexityMultiplier *= 1.06; // High detail model
+        } else if (detailDensity > 5000) {
+          complexityMultiplier *= 1.03;
+        } else if (detailDensity < 100) {
+          complexityMultiplier *= 0.98; // Low poly model
+        }
+        
+        // Mesh count consideration
+        if (original.validMeshCount > 50) {
+          complexityMultiplier *= 1.04; // Many parts
+        } else if (original.validMeshCount > 20) {
+          complexityMultiplier *= 1.02;
+        }
+        
+        targetSize *= complexityMultiplier;
+        console.log(`🔬 SA/V: ${saToVolRatio.toFixed(1)}, Verts: ${totalVertices}, Faces: ${totalFaces}, Density: ${detailDensity.toFixed(1)} → ×${complexityMultiplier.toFixed(3)}`);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // ADVANCED DIMENSIONAL BALANCE & ORIENTATION ANALYSIS
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Calculate all dimensional ratios
+        const dimRatios = [
+          original.dimensions.x / original.dimensions.y,
+          original.dimensions.y / original.dimensions.z,
+          original.dimensions.z / original.dimensions.x
+        ];
+        const maxDimRatio = Math.max(...dimRatios);
+        const minDimRatio = Math.min(...dimRatios);
+        
+        // Calculate dimensional variance (how unbalanced the dimensions are)
+        const dimArray = [original.dimensions.x, original.dimensions.y, original.dimensions.z];
+        const dimMean = dimArray.reduce((a, b) => a + b) / 3;
+        const dimVariance = dimArray.reduce((sum, dim) => sum + Math.pow(dim - dimMean, 2), 0) / 3;
+        const dimStdDev = Math.sqrt(dimVariance);
+        const coefficientOfVariation = dimStdDev / dimMean;
+        
+        let dimensionalMultiplier = 1.0;
+        
+        // Extreme imbalance (stick-like or blade-like)
+        if (maxDimRatio > 50) {
+          dimensionalMultiplier = 1.10;
+        } else if (maxDimRatio > 20) {
+          dimensionalMultiplier = 1.07;
+        } else if (maxDimRatio > 10) {
+          dimensionalMultiplier = 1.05;
+        } else if (maxDimRatio > 5) {
+          dimensionalMultiplier = 1.03;
+        } else if (maxDimRatio > 3) {
+          dimensionalMultiplier = 1.01;
+        }
+        
+        // Coefficient of variation adjustment
+        if (coefficientOfVariation > 0.8) {
+          dimensionalMultiplier *= 1.04; // Very unbalanced
+        } else if (coefficientOfVariation < 0.2) {
+          dimensionalMultiplier *= 0.98; // Very balanced (cube-like)
+        }
+        
+        targetSize *= dimensionalMultiplier;
+        console.log(`📏 Dim ratios: ${maxDimRatio.toFixed(2)}:1, CoV: ${coefficientOfVariation.toFixed(3)} → ×${dimensionalMultiplier.toFixed(3)}`);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // FINAL TARGET SIZE WITH ADAPTIVE CLAMPING
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Adaptive min/max based on original size
+        let minTarget = 1.8;
+        let maxTarget = 4.5;
+        
+        if (original.dimensions.max < 0.1) {
+          minTarget = 2.5; // Tiny models need minimum size
+          maxTarget = 5.0;
+        } else if (original.dimensions.max > 100) {
+          minTarget = 1.5; // Huge models can be smaller
+          maxTarget = 3.5;
+        }
+        
+        targetSize = Math.max(minTarget, Math.min(targetSize, maxTarget));
+        
+        // Generate automatic category description
+        let sizeCategory = "";
+        if (original.dimensions.max < 0.01) sizeCategory = "Microscopic";
+        else if (original.dimensions.max < 0.1) sizeCategory = "Tiny";
+        else if (original.dimensions.max < 1) sizeCategory = "Small";
+        else if (original.dimensions.max < 10) sizeCategory = "Medium";
+        else if (original.dimensions.max < 100) sizeCategory = "Large";
+        else sizeCategory = "Massive";
+        
+        if (aspectRatio > 5) sizeCategory += " Elongated";
+        else if (aspectRatio < 1.5) sizeCategory += " Compact";
+        
+        if (normalizedVolume < 0.1) sizeCategory += " Flat";
+        else if (normalizedVolume > 0.7) sizeCategory += " Solid";
+        
+        // ═══════════════════════════════════════════════════════════════
+        // FINAL OPTIMIZATION PASS
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Apply viewport-based final adjustment
+        const viewportFactor = Math.min(1.2, Math.max(0.8, viewportDiagonal / 2000));
+        targetSize *= viewportFactor;
+        
+        // Ensure model fits comfortably in viewport
+        const estimatedScreenSize = targetSize * 100; // Rough pixel estimate
+        if (estimatedScreenSize > Math.min(viewportWidth, viewportHeight) * 0.9) {
+          const correction = (Math.min(viewportWidth, viewportHeight) * 0.8) / estimatedScreenSize;
+          targetSize *= correction;
+          console.log(`⚠️ Viewport overflow correction: ×${correction.toFixed(3)}`);
+        }
+        
+        console.log(`🎯 Auto-classified: ${sizeCategory}`);
+        console.log(`✨ FINAL TARGET SIZE: ${targetSize.toFixed(3)} units (viewport factor: ${viewportFactor.toFixed(3)})`);
 
-          // Step 8: Final world matrix update
-          rootMesh.computeWorldMatrix(true);
-          meshes.forEach((mesh) => {
-            mesh.computeWorldMatrix(true);
-          });
+        // ───────────────────────────────────────────────────────────────
+        // STEP 4: Apply Uniform Scaling
+        // ───────────────────────────────────────────────────────────────
+        const scaleFactor = targetSize / original.dimensions.max;
+        rootMesh.scaling = new Vector3(scaleFactor, scaleFactor, scaleFactor);
+        
+        console.log(`🔧 Applied scale factor: ${scaleFactor.toFixed(6)}`);
 
-          // Step 9: Verify final position
-          const finalSize = globalMax.subtract(globalMin);
-          const finalMaxDim = Math.max(finalSize.x, finalSize.y, finalSize.z);
-          console.log("✅ Final model size:", finalMaxDim.toFixed(3));
+        // Force update after scaling
+        rootMesh.computeWorldMatrix(true);
+        meshes.forEach(m => m.computeWorldMatrix(true));
+
+        // ───────────────────────────────────────────────────────────────
+        // STEP 5: Precise Centering at World Origin
+        // ───────────────────────────────────────────────────────────────
+        const scaled = calculatePreciseBounds();
+        
+        console.log("📊 Before centering:", {
+          center: `(${scaled.center.x.toFixed(4)}, ${scaled.center.y.toFixed(4)}, ${scaled.center.z.toFixed(4)})`,
+          size: `${scaled.size.x.toFixed(3)} × ${scaled.size.y.toFixed(3)} × ${scaled.size.z.toFixed(3)}`
+        });
+        
+        // Calculate offset needed to center at (0, 0, 0)
+        const centerOffset = scaled.center.negate();
+        rootMesh.position = centerOffset;
+        
+        console.log("🎯 Centering offset applied:", {
+          x: centerOffset.x.toFixed(4),
+          y: centerOffset.y.toFixed(4),
+          z: centerOffset.z.toFixed(4)
+        });
+
+        // Force final update after positioning
+        rootMesh.computeWorldMatrix(true);
+        meshes.forEach(m => m.computeWorldMatrix(true));
+
+        // ───────────────────────────────────────────────────────────────
+        // STEP 6: Verification & Final Measurements
+        // ───────────────────────────────────────────────────────────────
+        const final = calculatePreciseBounds();
+        
+        console.log("✅ Final model state:", {
+          size: `${final.dimensions.x.toFixed(3)} × ${final.dimensions.y.toFixed(3)} × ${final.dimensions.z.toFixed(3)}`,
+          center: `(${final.center.x.toFixed(4)}, ${final.center.y.toFixed(4)}, ${final.center.z.toFixed(4)})`,
+          maxDim: final.dimensions.max.toFixed(3),
+          centeringError: final.center.length().toFixed(6)
+        });
+
+        // Warn if centering is off
+        if (final.center.length() > 0.01) {
+          console.warn("⚠️ Model not perfectly centered, error:", final.center.length().toFixed(6));
+        } else {
+          console.log("✨ Model perfectly centered!");
         }
 
-        // Step 10: Calculate optimal camera distance with intelligent positioning
-        const finalSize = globalMax.subtract(globalMin);
-        const finalMaxDim = Math.max(finalSize.x, finalSize.y, finalSize.z);
+        // ───────────────────────────────────────────────────────────────
+        // STEP 6.5: Create Visual Bounding Box (Centered at Origin)
+        // ───────────────────────────────────────────────────────────────
+        if (sceneRef.current) {
+          // Remove any existing bounding box
+          if (boundingBoxRef.current) {
+            boundingBoxRef.current.dispose();
+            boundingBoxRef.current = null;
+          }
 
-        // Use field of view and model size to calculate perfect camera distance
-        const fov = Math.PI / 3; // 60 degrees default
-        const optimalDistance = (finalMaxDim / 2 / Math.tan(fov / 2)) * 1.5;
-        const optimalCameraDistance = Math.max(
-          4,
-          Math.min(optimalDistance, 12),
-        );
+          // Create bounding box visualization using final bounds
+          const boxSize = final.size;
 
-        console.log(
-          "📷 Optimal camera distance:",
-          optimalCameraDistance.toFixed(2),
-        );
+          // Create a box mesh for the bounding box
+          const boundingBox = MeshBuilder.CreateBox(
+            "boundingBoxHelper",
+            {
+              width: boxSize.x,
+              height: boxSize.y,
+              depth: boxSize.z,
+            },
+            sceneRef.current
+          );
 
-        // Entrance animation - zoom in with fade
-        const finalScale = rootMesh.scaling.x; // Use the already calculated scale
+          // Position at world origin (0, 0, 0) since model is centered there
+          boundingBox.position = Vector3.Zero();
+
+          // Create wireframe material
+          const boxMaterial = new StandardMaterial("boundingBoxMaterial", sceneRef.current);
+          boxMaterial.wireframe = true;
+          boxMaterial.emissiveColor = new Color3(0, 1, 0.5); // Cyan-green color
+          boxMaterial.alpha = 0.7;
+          boxMaterial.disableLighting = true;
+          
+          boundingBox.material = boxMaterial;
+          boundingBox.isPickable = false; // Don't interfere with model interaction
+          boundingBox.setEnabled(showBoundingBox); // Set initial visibility
+
+          // Store reference
+          boundingBoxRef.current = boundingBox;
+
+          console.log("📦 Bounding box created at origin:", {
+            size: `${boxSize.x.toFixed(3)} × ${boxSize.y.toFixed(3)} × ${boxSize.z.toFixed(3)}`,
+            position: "(0, 0, 0)"
+          });
+        }
+
+        // ───────────────────────────────────────────────────────────────
+        // STEP 7: FULLY AUTOMATIC Camera Distance Calculation
+        // ───────────────────────────────────────────────────────────────
+        const fov = Math.PI / 3; // 60 degrees
+        const fovFactor = 1 / Math.tan(fov / 2);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // AUTOMATIC PADDING CALCULATION
+        // ═══════════════════════════════════════════════════════════════
+        let paddingFactor = 1.5; // Base padding - increased for better fit
+        
+        // Adjust padding based on aspect ratio
+        if (aspectRatio > 10) {
+          paddingFactor = 1.8; // Elongated needs more padding
+        } else if (aspectRatio > 5) {
+          paddingFactor = 1.7;
+        } else if (aspectRatio > 3) {
+          paddingFactor = 1.6;
+        } else if (aspectRatio < 1.3) {
+          paddingFactor = 1.4; // Compact can be tighter
+        }
+        
+        // Adjust padding based on volume density
+        if (normalizedVolume < 0.1) {
+          paddingFactor *= 1.15; // Flat models need more padding to see properly
+        }
+        
+        // Adjust padding based on model size
+        if (final.dimensions.max > 6) {
+          paddingFactor *= 1.05; // Larger models need more space
+        } else if (final.dimensions.max < 3) {
+          paddingFactor *= 1.1; // Small models need more space
+        }
+        
+        console.log(`📐 Auto padding factor: ${paddingFactor.toFixed(2)}`);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // AUTOMATIC DISTANCE CALCULATION
+        // ═══════════════════════════════════════════════════════════════
+        const baseDistance = (final.dimensions.max / 2) * fovFactor * paddingFactor;
+        
+        // Calculate optimal viewing angle adjustment
+        let angleMultiplier = 1.0;
+        
+        // For elongated models, adjust viewing distance
+        if (aspectRatio > 8) {
+          angleMultiplier = 1.25;
+        } else if (aspectRatio > 5) {
+          angleMultiplier = 1.15;
+        } else if (aspectRatio > 3) {
+          angleMultiplier = 1.08;
+        }
+        
+        let cameraDistance = baseDistance * angleMultiplier;
+        
+        // ═══════════════════════════════════════════════════════════════
+        // AUTOMATIC RANGE LIMITS
+        // ═══════════════════════════════════════════════════════════════
+        // Calculate dynamic min/max based on model size
+        const minDistance = Math.max(2, final.dimensions.max * 0.3);
+        const maxDistance = Math.max(30, final.dimensions.max * 5);
+        
+        const optimalCameraDistance = Math.max(minDistance, Math.min(cameraDistance, maxDistance));
+        
+        // ═══════════════════════════════════════════════════════════════
+        // AUTOMATIC ZOOM LIMITS
+        // ═══════════════════════════════════════════════════════════════
+        const zoomInLimit = optimalCameraDistance * 0.15; // Can zoom to 15%
+        const zoomOutLimit = optimalCameraDistance * 5; // Can zoom to 500%
+        
+        console.log("📷 Auto camera config:", {
+          baseDistance: baseDistance.toFixed(2),
+          angleAdjustment: `×${angleMultiplier.toFixed(2)}`,
+          finalDistance: optimalCameraDistance.toFixed(2),
+          zoomRange: `${zoomInLimit.toFixed(2)} - ${zoomOutLimit.toFixed(2)}`
+        });
+
+        // ───────────────────────────────────────────────────────────────
+        // STEP 9: Smooth Entrance Animation
+        // ───────────────────────────────────────────────────────────────
+        const finalScale = rootMesh.scaling.x;
+        const finalPosition = rootMesh.position.clone(); // Preserve centered position
+        
+        // Start invisible and scaled down
         rootMesh.scaling = Vector3.Zero();
         rootMesh.visibility = 0;
 
-        const animationDuration = 60; // frames
+        const animationDuration = 60; // frames (~1 second at 60fps)
         let frame = 0;
 
         const animateEntrance = () => {
           if (!rootMesh || frame >= animationDuration) {
             if (rootMesh) {
+              // Ensure final state is exact
               rootMesh.visibility = 1;
-              rootMesh.scaling = new Vector3(
-                finalScale,
-                finalScale,
-                finalScale,
-              );
+              rootMesh.scaling = new Vector3(finalScale, finalScale, finalScale);
+              rootMesh.position = finalPosition;
+              rootMesh.computeWorldMatrix(true);
             }
+            console.log("🎬 Entrance animation complete");
             return;
           }
 
           frame++;
           const progress = frame / animationDuration;
-          const easeProgress = 1 - Math.pow(1 - progress, 3); // ease out cubic
+          
+          // Ease-out cubic for smooth deceleration
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
 
+          // Animate scale and visibility
           const scale = finalScale * easeProgress;
           rootMesh.scaling = new Vector3(scale, scale, scale);
           rootMesh.visibility = easeProgress;
+          
+          // CRITICAL: Maintain centered position throughout animation
+          rootMesh.position = finalPosition;
 
           requestAnimationFrame(animateEntrance);
         };
 
+        console.log("🎬 Starting entrance animation...");
         animateEntrance();
 
-        // Reset camera to look at center with optimal distance
+        // ───────────────────────────────────────────────────────────────
+        // STEP 8: AUTOMATIC Camera Configuration
+        // ───────────────────────────────────────────────────────────────
         if (cameraRef.current) {
-          cameraRef.current.setTarget(Vector3.Zero());
-          cameraRef.current.alpha = -Math.PI / 2; // Front view
-          cameraRef.current.beta = Math.PI / 2.5; // Eye-level view
-          cameraRef.current.radius = optimalCameraDistance;
-
-          // Update camera limits based on model size
-          cameraRef.current.lowerRadiusLimit = optimalCameraDistance * 0.3;
-          cameraRef.current.upperRadiusLimit = optimalCameraDistance * 2.5;
+          const camera = cameraRef.current;
+          
+          // Target the world origin where model is centered
+          camera.setTarget(Vector3.Zero());
+          
+          // ═══════════════════════════════════════════════════════════════
+          // AUTOMATIC VIEWING ANGLE
+          // ═══════════════════════════════════════════════════════════════
+          camera.alpha = -Math.PI / 2; // Front view (0 degrees)
+          
+          // Adjust beta (vertical angle) based on model shape
+          let betaAngle = Math.PI / 2.5; // Default: ~72 degrees
+          
+          if (aspectRatio > 5) {
+            // Elongated models - view more from side
+            betaAngle = Math.PI / 2.3; // ~78 degrees (more horizontal)
+          } else if (normalizedVolume < 0.1) {
+            // Flat models - view more from above
+            betaAngle = Math.PI / 2.8; // ~64 degrees (more from top)
+          }
+          
+          camera.beta = betaAngle;
+          camera.radius = optimalCameraDistance;
+          
+          // ═══════════════════════════════════════════════════════════════
+          // AUTOMATIC ZOOM LIMITS (from Step 7)
+          // ═══════════════════════════════════════════════════════════════
+          camera.lowerRadiusLimit = zoomInLimit;
+          camera.upperRadiusLimit = zoomOutLimit;
+          
+          // ═══════════════════════════════════════════════════════════════
+          // AUTOMATIC CONTROL SENSITIVITY
+          // ═══════════════════════════════════════════════════════════════
+          // Adjust sensitivity based on model size
+          const wheelSensitivity = Math.max(20, Math.min(100, 50 / (final.dimensions.max / 5)));
+          camera.wheelPrecision = wheelSensitivity;
+          camera.pinchPrecision = wheelSensitivity;
+          
+          // Panning sensitivity based on distance
+          camera.panningSensibility = 1000 / optimalCameraDistance;
+          
+          // ═══════════════════════════════════════════════════════════════
+          // SMOOTH MOVEMENT SETTINGS
+          // ═══════════════════════════════════════════════════════════════
+          camera.inertia = 0.9; // Smooth deceleration
+          camera.angularSensibilityX = 1000;
+          camera.angularSensibilityY = 1000;
+          
+          console.log("📷 Auto camera ready:", {
+            distance: optimalCameraDistance.toFixed(2),
+            angle: `${(betaAngle * 180 / Math.PI).toFixed(1)}°`,
+            target: "(0, 0, 0)",
+            zoomLimits: `${zoomInLimit.toFixed(2)} - ${zoomOutLimit.toFixed(2)}`,
+            sensitivity: wheelSensitivity.toFixed(0)
+          });
         }
 
         // Model is centered at origin - no offset needed

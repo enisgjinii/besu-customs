@@ -163,6 +163,8 @@ export interface ConfiguratorState {
   // Scene controls
   showGrid: boolean;
   toggleGrid: () => void;
+  showBoundingBox: boolean;
+  toggleBoundingBox: () => void;
   backgroundColor: string;
   setBackgroundColor: (color: string) => void;
   backgroundImage: string | null;
@@ -600,6 +602,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   // Scene controls
   showGrid: false,
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+  showBoundingBox: false,
+  toggleBoundingBox: () => set((state) => ({ showBoundingBox: !state.showBoundingBox })),
   backgroundColor: "#f0f0f0",
   setBackgroundColor: (color: string) => set({ backgroundColor: color }),
   backgroundImage: null,
