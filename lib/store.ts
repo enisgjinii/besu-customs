@@ -72,20 +72,10 @@ export interface MaterialSection {
     stops?: number[];
   } | null;
 }
-export interface DecalData {
-  id: string;
-  textureUrl: string;
-  meshUuid?: string;
-  position: { x: number; y: number; z: number };
-  normal: { x: number; y: number; z: number }; // Surface normal from pickInfo.getNormal(true)
-  rotation: { x: number; y: number; z: number };
-  scale: { x: number; y: number; z: number };
-}
-
 export interface TextureLayer {
   id: string;
   name: string;
-  type: "text" | "image" | "decal";
+  type: "text" | "image";
   visible: boolean;
   locked: boolean;
   opacity: number;
@@ -96,9 +86,6 @@ export interface TextureLayer {
   textColor?: string;
   fontSize?: number;
   imageUrl?: string;
-  position?: { x: number; y: number; z: number };
-  rotation?: { x: number; y: number; z: number };
-  scale?: { x: number; y: number; z: number };
 }
 
 export interface CameraState {
@@ -130,22 +117,6 @@ export interface ConfiguratorState {
   addRecentColor: (color: string) => void;
   // Product updates
   updateProduct: (id: string, updates: Partial<Product>) => void;
-
-  // Decal management
-  decals: DecalData[];
-  selectedDecalId: string | null;
-  addDecal: (decal: DecalData) => void;
-  updateDecal: (id: string, updates: Partial<DecalData>) => void;
-  duplicateDecal: (id: string) => void;
-  removeDecal: (id: string) => void;
-  clearDecals: () => void;
-  setSelectedDecal: (id: string | null) => void;
-  lastDecalTexture: string | null;
-  setLastDecalTexture: (url: string | null) => void;
-  decalPlacementAngle: number; // Angle for decal placement (in radians)
-  decalPlacementSize: number; // Size multiplier for decal placement
-  setDecalPlacementAngle: (angle: number) => void;
-  setDecalPlacementSize: (size: number) => void;
 
   // UV map management
   uvMaps: Map<string, string>;
@@ -526,52 +497,6 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         p.id === id ? { ...p, ...updates } : p,
       ),
     })),
-
-  // Decal management
-  decals: [],
-  selectedDecalId: null,
-  decalPlacementAngle: 0, // Default: no rotation
-  decalPlacementSize: 0.5, // Default: medium size
-  addDecal: (decal: DecalData) =>
-    set((state) => ({
-      decals: [...state.decals, decal],
-      selectedDecalId: decal.id,
-    })),
-  updateDecal: (id: string, updates: Partial<DecalData>) =>
-    set((state) => ({
-      decals: state.decals.map((d) =>
-        d.id === id ? { ...d, ...updates } : d,
-      ),
-    })),
-  duplicateDecal: (id: string) =>
-    set((state) => {
-      const original = state.decals.find((d) => d.id === id);
-      if (!original) return state;
-      const newDecal: DecalData = {
-        ...original,
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        position: {
-          x: original.position.x + 0.1,
-          y: original.position.y + 0.1,
-          z: original.position.z,
-        },
-      };
-      return {
-        decals: [...state.decals, newDecal],
-        selectedDecalId: newDecal.id,
-      };
-    }),
-  removeDecal: (id: string) =>
-    set((state) => ({
-      decals: state.decals.filter((d) => d.id !== id),
-      selectedDecalId: state.selectedDecalId === id ? null : state.selectedDecalId,
-    })),
-  clearDecals: () => set({ decals: [], selectedDecalId: null }),
-  setSelectedDecal: (id: string | null) => set({ selectedDecalId: id }),
-  lastDecalTexture: null,
-  setLastDecalTexture: (url: string | null) => set({ lastDecalTexture: url }),
-  setDecalPlacementAngle: (angle: number) => set({ decalPlacementAngle: angle }),
-  setDecalPlacementSize: (size: number) => set({ decalPlacementSize: size }),
 
   // UV map management
   uvMaps: new Map<string, string>(),

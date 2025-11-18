@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
 import { UploadPanel } from "./upload-panel";
-import { DecalEditor } from "./decal-editor";
+import { UVTextureEditor } from "./uv-texture-editor";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { AIImageGenerator } from "./ai-image-generator";
@@ -254,7 +254,11 @@ export function ControlsPanel() {
             <MaterialEditor />
           </div>
         )}
-        {activeTab === "texture" && <DecalEditor />}
+        {activeTab === "texture" && (
+          <div className="p-4">
+            <UVTextureEditor />
+          </div>
+        )}
         {activeTab === "export" && (
           <div className="p-4">
             {/* Nested Tabs for Export Options */}

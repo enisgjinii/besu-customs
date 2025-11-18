@@ -28,8 +28,7 @@ import {
   applyMaterialsToModel,
   extractSectionsFromModel,
 } from "@/lib/babylon-material-utils";
-import { BabylonDecals } from "./babylon-decals";
-import { DecalPreviewIndicator } from "./decal-preview-indicator";
+import { extractCompleteUVMapBabylon } from "@/lib/babylon-uv-utils";
 
 // Helper function to get theme-aware background color
 const getThemeBackgroundColor = (
@@ -597,11 +596,18 @@ export function BabylonScene() {
         true, // generate mipmaps for smoother scaling
         false, // do not invert Y for data URL
         Texture.TRILINEAR_SAMPLINGMODE,
-        () => console.log("✅ Global overlay texture loaded"),
-        (msg) => console.error("❌ Global overlay texture load failed", msg),
+        () => console.log("✅ Global texture loaded"),
+        (msg) => console.error("❌ Global texture load failed", msg),
       );
-      // Keep alpha so transparent areas reveal base garment
-      tex.hasAlpha = true;
+      
+      // High quality texture settings
+      tex.anisotropicFilteringLevel = 16; // Maximum anisotropic filtering
+      tex.level = 1; // Full intensity
+      
+      // Flip texture vertically (Y axis)
+      tex.vScale = -1;
+      tex.vOffset = 1;
+      
       appliedGlobalTextureRef.current = tex;
 
       const meshes = rootMesh.getChildMeshes(false);
@@ -610,15 +616,21 @@ export function BabylonScene() {
       meshes.forEach((m) => {
         const material: any = m.material;
         if (!material) return;
-        // Apply as emissive overlay; preserve base colors & textures
-        material.emissiveTexture = tex;
-        material.emissiveColor = new Color3(1, 1, 1); // ensure overlay visible
-        // For PBR, avoid altering albedoColor; for Standard, leave diffuseColor
+        
+        // Apply texture based on material type
+        if (material.albedoTexture !== undefined) {
+          // PBR Material
+          material.albedoTexture = tex;
+        } else if (material.diffuseTexture !== undefined) {
+          // Standard Material
+          material.diffuseTexture = tex;
+        }
+        
         material.markDirty();
         applied++;
       });
       console.log(
-        `🌍 Global overlay texture applied (emissive) to ${applied} meshes`,
+        `🌍 Global texture applied to ${applied} meshes`,
       );
       scene.render();
       requestAnimationFrame(() => scene.render());
@@ -627,113 +639,7 @@ export function BabylonScene() {
     }
   }, [globalCustomTexture]);
 
-  // Click-to-place decals in Babylon scene when a lastDecalTexture exists
-  const addDecal = useConfiguratorStore((s) => s.addDecal);
-  const lastDecalTexture = useConfiguratorStore((s) => s.lastDecalTexture);
-  const setSelectedDecal = useConfiguratorStore((s) => s.setSelectedDecal);
-  const decalPlacementAngle = useConfiguratorStore((s) => s.decalPlacementAngle);
-  const decalPlacementSize = useConfiguratorStore((s) => s.decalPlacementSize);
-
-  const ensureOutwardNormal = (
-    sourceNormal: Vector3,
-    targetMesh: AbstractMesh | null,
-    surfacePoint: Vector3,
-  ) => {
-    let adjustedNormal = sourceNormal.clone();
-
-    if (targetMesh?.getBoundingInfo()) {
-      const center =
-        targetMesh.getBoundingInfo().boundingSphere.centerWorld ?? null;
-      if (center) {
-        const centerToPoint = surfacePoint.subtract(center);
-        if (centerToPoint.lengthSquared() > 0) {
-          const dot = Vector3.Dot(adjustedNormal, centerToPoint);
-          if (dot < 0) {
-            adjustedNormal = adjustedNormal.negate();
-          }
-        }
-      }
-    }
-
-    return adjustedNormal.normalize();
-  };
-  useEffect(() => {
-    if (!sceneRef.current || !currentMeshRef.current) return;
-    const scene = sceneRef.current;
-    const rootMesh = currentMeshRef.current;
-    
-    // Get valid target meshes (same as preview)
-    const validMeshes = rootMesh.getChildMeshes(false).filter(
-      (m) => m instanceof Mesh && m.getTotalVertices() > 0
-    ) as Mesh[];
-    validMeshes.push(rootMesh as Mesh);
-    
-    const observer = scene.onPointerObservable.add((pi) => {
-      if (pi.type !== PointerEventTypes.POINTERDOWN) return;
-      if (!lastDecalTexture) return;
-      
-      // Pick using same filter as preview
-      const pick = scene.pick(
-        scene.pointerX,
-        scene.pointerY,
-        (mesh) => {
-          return validMeshes.includes(mesh as Mesh) && 
-                 !mesh.name?.startsWith("decal_") && 
-                 mesh.name !== "decalPreview";
-        }
-      );
-      
-      if (!pick?.hit || !pick.pickedPoint || !pick.pickedMesh) return;
-      
-      let normal = pick.getNormal(true);
-      if (!normal) return; // Don't create decal if we can't get normal
-      
-      normal = ensureOutwardNormal(normal, pick.pickedMesh, pick.pickedPoint);
-      
-      // Offset position slightly along the outward normal so decal sits on surface
-      const pos = pick.pickedPoint.add(normal.scale(0.003));
-
-      // Use separate depth value so decal does not project through garment
-      const decalDepth = Math.max(0.01, decalPlacementSize * 0.12);
-      const scale = new Vector3(
-        decalPlacementSize,
-        decalPlacementSize,
-        decalDepth,
-      );
-      
-      console.log('🎯 Creating decal with normal:', normal, 'at position:', pos);
-      
-      addDecal({
-        id: `decal-${Date.now()}`,
-        textureUrl: lastDecalTexture,
-        meshUuid: String((pick.pickedMesh as any).uniqueId ?? ""),
-        position: { x: pos.x, y: pos.y, z: pos.z },
-        normal: { x: normal.x, y: normal.y, z: normal.z },
-        rotation: { x: 0, y: 0, z: decalPlacementAngle },
-        scale: { x: scale.x, y: scale.y, z: scale.z },
-      });
-    });
-    return () => {
-      if (observer) scene.onPointerObservable.remove(observer);
-    };
-  }, [lastDecalTexture, addDecal, decalPlacementAngle, decalPlacementSize]);
-
-  useEffect(() => {
-    if (!sceneRef.current) return;
-    const scene = sceneRef.current;
-    const observer = scene.onPointerObservable.add((pi) => {
-      if (pi.type !== PointerEventTypes.POINTERDOWN) return;
-      if (lastDecalTexture) return;
-      const pick = scene.pick(scene.pointerX, scene.pointerY);
-      if (pick?.hit && pick.pickedMesh?.name?.startsWith("decal_")) {
-        return;
-      }
-      setSelectedDecal(null);
-    });
-    return () => {
-      if (observer) scene.onPointerObservable.remove(observer);
-    };
-  }, [lastDecalTexture, setSelectedDecal]);
+  const setCompleteUVMap = useConfiguratorStore((s) => s.setCompleteUVMap);
 
   // Optional: expose clear function for future UI
   const clearGlobalTexture = () => {
@@ -755,11 +661,14 @@ export function BabylonScene() {
     setModelLoading(true);
     setModelError(null);
 
-    // Remove previous mesh
+    // Remove previous mesh and clear UV map
     if (currentMeshRef.current) {
       currentMeshRef.current.dispose();
       currentMeshRef.current = null;
     }
+    
+    // Clear old UV map to prevent showing stale data
+    setCompleteUVMap(null);
 
     // Load new model
     SceneLoader.ImportMesh(
@@ -779,6 +688,30 @@ export function BabylonScene() {
         // Get root mesh
         const rootMesh = meshes[0];
         currentMeshRef.current = rootMesh;
+
+        // ───────────────────────────────────────────────────────────────
+        // Extract UV map immediately after mesh is loaded and set
+        // ───────────────────────────────────────────────────────────────
+        // Ensure all meshes have computed their world matrices first
+        rootMesh.computeWorldMatrix(true);
+        meshes.forEach(m => {
+          if (m instanceof Mesh) {
+            m.computeWorldMatrix(true);
+          }
+        });
+
+        try {
+          console.log("🗺️ Extracting UV map from loaded model...");
+          const uvMapUrl = extractCompleteUVMapBabylon(rootMesh, 2048, 2048);
+          if (uvMapUrl) {
+            setCompleteUVMap(uvMapUrl);
+            console.log("✅ UV map extracted successfully");
+          } else {
+            console.warn("⚠️ No UV data found in model");
+          }
+        } catch (err) {
+          console.error("❌ Failed to extract UV map:", err);
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // ADVANCED AUTO-CENTER & AUTO-SIZE ALGORITHM
@@ -1565,19 +1498,7 @@ export function BabylonScene() {
         style={{ touchAction: "none" }}
       />
 
-      {/* Render decals */}
-      {sceneRef.current && currentMeshRef.current && (
-        <>
-          <BabylonDecals
-            scene={sceneRef.current}
-            rootMesh={currentMeshRef.current}
-          />
-          <DecalPreviewIndicator
-            scene={sceneRef.current}
-            rootMesh={currentMeshRef.current as Mesh}
-          />
-        </>
-      )}
+
 
       {modelLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm z-10">

@@ -35,9 +35,8 @@ import { MaterialEditor } from "./material-editor";
 import type { Product } from "@/lib/store";
 import { AIImageGenerator } from "./ai-image-generator";
 import { ThemeToggle } from "./theme-toggle";
-import { DecalEditor } from "./decal-editor";
-import { TextureLayers } from "./texture-layers";
-import { DecalsList } from "./decals-list";
+import { UVTextureEditor } from "./uv-texture-editor";
+
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -842,11 +841,8 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
           </div>
         )}
         {activeTab === "texture" && (
-          <div className="space-y-3">
-            <TextureLayers />
-            <div className="px-4 pb-4">
-              <DecalsList />
-            </div>
+          <div className="p-4 space-y-3">
+            <UVTextureEditor />
           </div>
         )}
         {activeTab === "view" && (
