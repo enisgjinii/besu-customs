@@ -207,6 +207,57 @@ export function DecalTransformControls() {
             </div>
           </div>
 
+          {/* Precision Controls */}
+          <div className="mt-3 pt-3 border-t border-border space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium min-w-[60px]">Rotation:</span>
+              <input
+                type="range"
+                min="0"
+                max={Math.PI * 2}
+                step="0.01"
+                value={selectedDecal.rotation?.z || 0}
+                onChange={(e) => {
+                  updateDecal(selectedDecalId, {
+                    rotation: {
+                      ...selectedDecal.rotation,
+                      z: Number(e.target.value),
+                    },
+                  });
+                }}
+                className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+              />
+              <span className="text-xs text-muted-foreground min-w-[40px]">
+                {Math.round(((selectedDecal.rotation?.z || 0) * 180) / Math.PI)}°
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium min-w-[60px]">Size:</span>
+              <input
+                type="range"
+                min="0.1"
+                max="3.0"
+                step="0.05"
+                value={selectedDecal.scale.x}
+                onChange={(e) => {
+                  const newSize = Number(e.target.value);
+                  updateDecal(selectedDecalId, {
+                    scale: {
+                      x: newSize,
+                      y: newSize,
+                      z: selectedDecal.scale.z,
+                    },
+                  });
+                }}
+                className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+              />
+              <span className="text-xs text-muted-foreground min-w-[40px]">
+                {selectedDecal.scale.x.toFixed(2)}x
+              </span>
+            </div>
+          </div>
+
           {/* Info text */}
           <div className="mt-2 pt-2 border-t border-border">
             <p className="text-[10px] text-muted-foreground text-center">

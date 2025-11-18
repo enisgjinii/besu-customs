@@ -9,7 +9,6 @@ import {
   StandardMaterial,
   Texture,
   MeshBuilder,
-  Ray,
   Color3,
   ActionManager,
   ExecuteCodeAction,
@@ -26,13 +25,24 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
   const setSelectedDecal = useConfiguratorStore((s) => s.setSelectedDecal);
 
   useEffect(() => {
-    if (!scene || !rootMesh || decals.length === 0) return;
+    if (!scene || !rootMesh) {
+      return;
+    }
 
-    console.log(`🎯 Applying ${decals.length} decals to model`);
+    console.log(`🎯 Rendering ${decals.length} decals`);
 
-    // Clean up old decals
+    // Clean up old decal meshes
     const oldDecals = scene.meshes.filter((m) => m.name.startsWith("decal_"));
-    oldDecals.forEach((d) => d.dispose());
+    oldDecals.forEach((d) => {
+      if (d.material) d.material.dispose();
+      d.dispose();
+    });
+
+    if (decals.length === 0) return;
+
+    // Get all meshes to apply decals to
+    const meshes = rootMesh.getChildMeshes(false);
+    meshes.push(rootMesh);
 
     // Create new decals
     decals.forEach((decal) => {
@@ -41,20 +51,19 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
         let targetMesh: Mesh | null = null;
 
         if (decal.meshUuid) {
-          // Try to find by UUID
           const found = scene.getMeshByUniqueId(parseInt(decal.meshUuid));
           if (found instanceof Mesh) {
             targetMesh = found;
           }
         }
 
-        // If not found, use root mesh or first child
+        // Fallback to first valid mesh
         if (!targetMesh) {
-          const meshes = rootMesh.getChildMeshes(false);
-          if (meshes.length > 0 && meshes[0] instanceof Mesh) {
-            targetMesh = meshes[0] as Mesh;
-          } else if (rootMesh instanceof Mesh) {
-            targetMesh = rootMesh;
+          const validMeshes = meshes.filter(
+            (m) => m instanceof Mesh && m.getTotalVertices() > 0
+          ) as Mesh[];
+          if (validMeshes.length > 0) {
+            targetMesh = validMeshes[0];
           }
         }
 
@@ -63,59 +72,50 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
           return;
         }
 
-        // Compute a robust hit point and normal using a raycast toward the mesh
-        const meshCenter = targetMesh
-          .getBoundingInfo()
-          .boundingSphere.centerWorld.clone();
-        const guessDir = meshCenter
-          .subtract(
-            new Vector3(decal.position.x, decal.position.y, decal.position.z),
-          )
-          .normalize();
-        const origin = new Vector3(
-          decal.position.x,
-          decal.position.y,
-          decal.position.z,
-        ).add(guessDir.scale(-0.2));
-        const ray = new Ray(origin, guessDir, 1000);
-        const pick = scene.pickWithRay(ray, (m) => m === targetMesh, false);
-
-        let hitPoint = new Vector3(
+        // Use the exact position and normal from pickInfo (stored at click time)
+        const position = new Vector3(
           decal.position.x,
           decal.position.y,
           decal.position.z,
         );
-        let hitNormal = new Vector3(0, 0, 1);
-        if (pick?.hit && pick.pickedPoint) {
-          hitPoint = pick.pickedPoint.clone();
-          const n = pick.getNormal(true);
-          if (n) hitNormal = n.normalize();
-        }
-
-        // Use CreateDecal for proper surface projection
-        const size = new Vector3(
-          Math.max(0.3, decal.scale.x),
-          Math.max(0.3, decal.scale.y),
-          0.3, // Projection depth
+        
+        const normal = new Vector3(
+          decal.normal.x,
+          decal.normal.y,
+          decal.normal.z,
         );
+        
+        console.log('🎨 Rendering decal', decal.id, 'with normal:', normal, 'position:', position);
 
-        const angle = decal.rotation?.z ?? 0;
+        // Create decal size with shallow depth so it stays on garment surface
+        const width = Math.max(0.1, decal.scale.x);
+        const height = Math.max(0.1, decal.scale.y);
+        const depth = Math.max(0.02, decal.scale.z || Math.min(width, height) * 0.2);
+        const decalSize = new Vector3(width, height, depth);
+
+        // Create the decal mesh - exactly like Babylon playground
         const decalMesh = MeshBuilder.CreateDecal(
           `decal_${decal.id}`,
           targetMesh,
           {
-            position: hitPoint,
-            normal: hitNormal,
-            size,
-            angle,
-          },
+            position: position,
+            normal: normal,
+            size: decalSize,
+            angle: decal.rotation?.z || 0,
+          }
         );
 
-        // Decal material with proper visibility
+        if (!decalMesh) {
+          console.error(`Failed to create decal mesh for ${decal.id}`);
+          return;
+        }
+
+        // Create decal material - like Babylon playground
         const decalMaterial = new StandardMaterial(
           `decalMat_${decal.id}`,
           scene,
         );
+
         const texture = new Texture(
           decal.textureUrl,
           scene,
@@ -124,24 +124,17 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
           Texture.TRILINEAR_SAMPLINGMODE,
         );
         texture.hasAlpha = true;
-        texture.wrapU = Texture.CLAMP_ADDRESSMODE;
-        texture.wrapV = Texture.CLAMP_ADDRESSMODE;
 
         decalMaterial.diffuseTexture = texture;
-        decalMaterial.opacityTexture = texture;
-        decalMaterial.specularColor = new Color3(0, 0, 0);
-        decalMaterial.emissiveColor = new Color3(1, 1, 1);
-        decalMaterial.useAlphaFromDiffuseTexture = true;
-        decalMaterial.backFaceCulling = false;
-        decalMaterial.needDepthPrePass = true;
-        // @ts-ignore
-        decalMaterial.zOffset = -5;
-
+        decalMaterial.diffuseTexture.hasAlpha = true;
+        decalMaterial.zOffset = -3; // Push decal forward more
+        decalMaterial.backFaceCulling = true; // Only show front face
+        
         decalMesh.material = decalMaterial;
-        decalMesh.renderingGroupId = 1;
-
         decalMesh.isPickable = true;
         decalMesh.metadata = { decalId: decal.id };
+
+        // Make decal clickable
         decalMesh.actionManager = new ActionManager(scene);
         decalMesh.actionManager.registerAction(
           new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
@@ -149,13 +142,13 @@ export function BabylonDecals({ scene, rootMesh }: BabylonDecalsProps) {
           }),
         );
 
-        console.log(`✅ Decal projected: ${decal.id}`);
+        console.log(`✅ Decal created: ${decal.id} at`, position);
       } catch (error) {
-        console.error(`❌ Failed to apply decal ${decal.id}:`, error);
+        console.error(`❌ Failed to create decal ${decal.id}:`, error);
       }
     });
 
-    // Cleanup function
+    // Cleanup
     return () => {
       const decalsToClean = scene.meshes.filter((m) =>
         m.name.startsWith("decal_"),

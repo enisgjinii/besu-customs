@@ -77,6 +77,7 @@ export interface DecalData {
   textureUrl: string;
   meshUuid?: string;
   position: { x: number; y: number; z: number };
+  normal: { x: number; y: number; z: number }; // Surface normal from pickInfo.getNormal(true)
   rotation: { x: number; y: number; z: number };
   scale: { x: number; y: number; z: number };
 }
@@ -141,6 +142,10 @@ export interface ConfiguratorState {
   setSelectedDecal: (id: string | null) => void;
   lastDecalTexture: string | null;
   setLastDecalTexture: (url: string | null) => void;
+  decalPlacementAngle: number; // Angle for decal placement (in radians)
+  decalPlacementSize: number; // Size multiplier for decal placement
+  setDecalPlacementAngle: (angle: number) => void;
+  setDecalPlacementSize: (size: number) => void;
 
   // UV map management
   uvMaps: Map<string, string>;
@@ -525,6 +530,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   // Decal management
   decals: [],
   selectedDecalId: null,
+  decalPlacementAngle: 0, // Default: no rotation
+  decalPlacementSize: 0.5, // Default: medium size
   addDecal: (decal: DecalData) =>
     set((state) => ({
       decals: [...state.decals, decal],
@@ -563,6 +570,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   setSelectedDecal: (id: string | null) => set({ selectedDecalId: id }),
   lastDecalTexture: null,
   setLastDecalTexture: (url: string | null) => set({ lastDecalTexture: url }),
+  setDecalPlacementAngle: (angle: number) => set({ decalPlacementAngle: angle }),
+  setDecalPlacementSize: (size: number) => set({ decalPlacementSize: size }),
 
   // UV map management
   uvMaps: new Map<string, string>(),

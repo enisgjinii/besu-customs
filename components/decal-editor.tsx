@@ -16,6 +16,10 @@ export function DecalEditor() {
   const setLastDecalTexture = useConfiguratorStore(
     (s) => s.setLastDecalTexture,
   );
+  const decalPlacementAngle = useConfiguratorStore((s) => s.decalPlacementAngle);
+  const decalPlacementSize = useConfiguratorStore((s) => s.decalPlacementSize);
+  const setDecalPlacementAngle = useConfiguratorStore((s) => s.setDecalPlacementAngle);
+  const setDecalPlacementSize = useConfiguratorStore((s) => s.setDecalPlacementSize);
 
   // Generate text as PNG data URL
   const createTextDecal = () => {
@@ -147,6 +151,37 @@ export function DecalEditor() {
         💡 After clicking "Add Text" or "Upload Image", click anywhere on the 3D
         model to place your decal
       </p>
+
+      {/* Decal Placement Settings */}
+      <div className="border-t pt-4 space-y-3">
+        <p className="text-sm font-medium">Placement Settings</p>
+        
+        <div>
+          <Label>Rotation: {Math.round((decalPlacementAngle * 180) / Math.PI)}°</Label>
+          <Input
+            type="range"
+            min="0"
+            max={Math.PI * 2}
+            step="0.1"
+            value={decalPlacementAngle}
+            onChange={(e) => setDecalPlacementAngle(Number(e.target.value))}
+            className="w-full"
+          />
+        </div>
+
+        <div>
+          <Label>Size: {decalPlacementSize.toFixed(2)}x</Label>
+          <Input
+            type="range"
+            min="0.1"
+            max="2.0"
+            step="0.1"
+            value={decalPlacementSize}
+            onChange={(e) => setDecalPlacementSize(Number(e.target.value))}
+            className="w-full"
+          />
+        </div>
+      </div>
     </div>
   );
 }

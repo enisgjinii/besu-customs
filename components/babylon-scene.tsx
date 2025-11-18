@@ -29,6 +29,7 @@ import {
   extractSectionsFromModel,
 } from "@/lib/babylon-material-utils";
 import { BabylonDecals } from "./babylon-decals";
+import { DecalPreviewIndicator } from "./decal-preview-indicator";
 
 // Helper function to get theme-aware background color
 const getThemeBackgroundColor = (
@@ -630,34 +631,92 @@ export function BabylonScene() {
   const addDecal = useConfiguratorStore((s) => s.addDecal);
   const lastDecalTexture = useConfiguratorStore((s) => s.lastDecalTexture);
   const setSelectedDecal = useConfiguratorStore((s) => s.setSelectedDecal);
+  const decalPlacementAngle = useConfiguratorStore((s) => s.decalPlacementAngle);
+  const decalPlacementSize = useConfiguratorStore((s) => s.decalPlacementSize);
+
+  const ensureOutwardNormal = (
+    sourceNormal: Vector3,
+    targetMesh: AbstractMesh | null,
+    surfacePoint: Vector3,
+  ) => {
+    let adjustedNormal = sourceNormal.clone();
+
+    if (targetMesh?.getBoundingInfo()) {
+      const center =
+        targetMesh.getBoundingInfo().boundingSphere.centerWorld ?? null;
+      if (center) {
+        const centerToPoint = surfacePoint.subtract(center);
+        if (centerToPoint.lengthSquared() > 0) {
+          const dot = Vector3.Dot(adjustedNormal, centerToPoint);
+          if (dot < 0) {
+            adjustedNormal = adjustedNormal.negate();
+          }
+        }
+      }
+    }
+
+    return adjustedNormal.normalize();
+  };
   useEffect(() => {
     if (!sceneRef.current || !currentMeshRef.current) return;
     const scene = sceneRef.current;
+    const rootMesh = currentMeshRef.current;
+    
+    // Get valid target meshes (same as preview)
+    const validMeshes = rootMesh.getChildMeshes(false).filter(
+      (m) => m instanceof Mesh && m.getTotalVertices() > 0
+    ) as Mesh[];
+    validMeshes.push(rootMesh as Mesh);
+    
     const observer = scene.onPointerObservable.add((pi) => {
       if (pi.type !== PointerEventTypes.POINTERDOWN) return;
       if (!lastDecalTexture) return;
+      
+      // Pick using same filter as preview
       const pick = scene.pick(
         scene.pointerX,
         scene.pointerY,
-        (m) => m && !m.name?.startsWith("decal_"),
+        (mesh) => {
+          return validMeshes.includes(mesh as Mesh) && 
+                 !mesh.name?.startsWith("decal_") && 
+                 mesh.name !== "decalPreview";
+        }
       );
+      
       if (!pick?.hit || !pick.pickedPoint || !pick.pickedMesh) return;
-      const n = pick.getNormal(true) || new Vector3(0, 0, 1);
-      const pos = pick.pickedPoint;
-      const scale = new Vector3(0.5, 0.5, 0.5);
+      
+      let normal = pick.getNormal(true);
+      if (!normal) return; // Don't create decal if we can't get normal
+      
+      normal = ensureOutwardNormal(normal, pick.pickedMesh, pick.pickedPoint);
+      
+      // Offset position slightly along the outward normal so decal sits on surface
+      const pos = pick.pickedPoint.add(normal.scale(0.003));
+
+      // Use separate depth value so decal does not project through garment
+      const decalDepth = Math.max(0.01, decalPlacementSize * 0.12);
+      const scale = new Vector3(
+        decalPlacementSize,
+        decalPlacementSize,
+        decalDepth,
+      );
+      
+      console.log('🎯 Creating decal with normal:', normal, 'at position:', pos);
+      
       addDecal({
         id: `decal-${Date.now()}`,
         textureUrl: lastDecalTexture,
         meshUuid: String((pick.pickedMesh as any).uniqueId ?? ""),
         position: { x: pos.x, y: pos.y, z: pos.z },
-        rotation: { x: 0, y: 0, z: 0 },
+        normal: { x: normal.x, y: normal.y, z: normal.z },
+        rotation: { x: 0, y: 0, z: decalPlacementAngle },
         scale: { x: scale.x, y: scale.y, z: scale.z },
       });
     });
     return () => {
       if (observer) scene.onPointerObservable.remove(observer);
     };
-  }, [lastDecalTexture, addDecal]);
+  }, [lastDecalTexture, addDecal, decalPlacementAngle, decalPlacementSize]);
 
   useEffect(() => {
     if (!sceneRef.current) return;
@@ -1508,10 +1567,16 @@ export function BabylonScene() {
 
       {/* Render decals */}
       {sceneRef.current && currentMeshRef.current && (
-        <BabylonDecals
-          scene={sceneRef.current}
-          rootMesh={currentMeshRef.current}
-        />
+        <>
+          <BabylonDecals
+            scene={sceneRef.current}
+            rootMesh={currentMeshRef.current}
+          />
+          <DecalPreviewIndicator
+            scene={sceneRef.current}
+            rootMesh={currentMeshRef.current as Mesh}
+          />
+        </>
       )}
 
       {modelLoading && (
