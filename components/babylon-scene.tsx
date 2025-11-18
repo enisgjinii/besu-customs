@@ -604,9 +604,7 @@ export function BabylonScene() {
       tex.anisotropicFilteringLevel = 16; // Maximum anisotropic filtering
       tex.level = 1; // Full intensity
       
-      // Flip texture vertically (Y axis)
-      tex.vScale = -1;
-      tex.vOffset = 1;
+      // No flip needed - texture is pre-flipped in UV editor for correct orientation
       
       appliedGlobalTextureRef.current = tex;
 

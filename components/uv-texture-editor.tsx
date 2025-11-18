@@ -46,17 +46,27 @@ export function UVTextureEditor() {
       canvas.backgroundImage = undefined;
       canvas.renderAll();
       
-      const dataUrl = canvas.toDataURL({
-        format: "png",
-        quality: 1,
-      });
+      // Export canvas and flip both axes for correct 3D texture orientation
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width!;
+      tempCanvas.height = canvas.height!;
+      const tempCtx = tempCanvas.getContext('2d')!;
+      
+      // Flip the canvas both horizontally (X) and vertically (Y)
+      tempCtx.translate(tempCanvas.width, tempCanvas.height);
+      tempCtx.scale(-1, -1);
+      
+      // Draw the Fabric canvas content
+      tempCtx.drawImage(canvas.getElement(), 0, 0);
+      
+      const dataUrl = tempCanvas.toDataURL('image/png', 1);
       
       // Restore UV wireframe background for editing view
       canvas.backgroundImage = originalBg;
       canvas.renderAll();
       
       setGlobalCustomTexture(dataUrl);
-      console.log("🔄 UV texture updated (text & images on white background)");
+      console.log("🔄 UV texture updated and flipped for 3D (text & images on white background)");
     }, 300);
   }, [setGlobalCustomTexture]);
 
@@ -279,10 +289,20 @@ export function UVTextureEditor() {
     canvas.backgroundImage = undefined;
     canvas.renderAll();
     
-    const dataUrl = canvas.toDataURL({
-      format: "png",
-      quality: 1,
-    });
+    // Export flipped version for correct 3D texture orientation
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width!;
+    tempCanvas.height = canvas.height!;
+    const tempCtx = tempCanvas.getContext('2d')!;
+    
+    // Flip the canvas both horizontally (X) and vertically (Y)
+    tempCtx.translate(tempCanvas.width, tempCanvas.height);
+    tempCtx.scale(-1, -1);
+    
+    // Draw the Fabric canvas content
+    tempCtx.drawImage(canvas.getElement(), 0, 0);
+    
+    const dataUrl = tempCanvas.toDataURL('image/png', 1);
     
     // Restore UV wireframe for editing view
     canvas.backgroundImage = originalBg;
