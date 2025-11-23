@@ -22,7 +22,9 @@ import {
   ExternalLink,
   CheckCircle,
   AlertCircle,
+  User,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface ApiKey {
   id: string;
@@ -33,6 +35,7 @@ interface ApiKey {
 }
 
 function SettingsPage() {
+  const { user } = useAuth();
   const [runwareApiKey, setRunwareApiKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -135,6 +138,46 @@ function SettingsPage() {
         </div>
 
         <div className="grid gap-6">
+          {/* Profile Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profile Settings
+              </CardTitle>
+              <CardDescription>
+                Update your personal information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full-name">Full Name</Label>
+                <div className="flex gap-3">
+                  <Input
+                    id="full-name"
+                    placeholder="Enter your full name"
+                    defaultValue={user?.user_metadata?.full_name || ""}
+                  />
+                  <Button onClick={() => toast.success("Profile updated!")}>
+                    Save
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  value={user?.email || ""}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Email cannot be changed
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* API Keys Section */}
           <Card>
             <CardHeader>

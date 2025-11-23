@@ -31,6 +31,7 @@ import {
   Download,
   Check,
 } from "lucide-react";
+import { toast } from "sonner";
 import { aiService, type AIImageProvider } from "@/lib/ai-service";
 
 type AIGenerationParams = {
@@ -77,26 +78,41 @@ export function AIImageGenerator() {
       return;
     }
 
-    if (!apiKey) {
-      alert("Please enter your API key");
-      return;
-    }
+    setIsGenerating(true);
 
     try {
-      setIsGenerating(true);
-      aiService.initialize(apiKey, provider);
+      // Mock generation if no API key
+      if (!apiKey) {
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate delay
+        const mockImage: AIGenerationResult = {
+          id: `mock-${Date.now()}`,
+          url: "https://picsum.photos/1024/1024", // Placeholder image
+          model: "mock-model",
+          provider: "openrouter",
+          metadata: {
+            prompt: generationParams.prompt,
+            negative_prompt: generationParams.negative_prompt,
+          },
+          created_at: new Date().toISOString(),
+        };
+        setGeneratedImages((prev) => [mockImage, ...prev]);
+        setSelectedImage(mockImage.id);
+        toast.success("Mock image generated (No API Key provided)");
+      } else {
+        aiService.initialize(apiKey, provider);
 
-      const result = await aiService.generateImage({
-        ...generationParams,
-      });
+        const result = await aiService.generateImage({
+          ...generationParams,
+        });
 
-      setGeneratedImages((prev) => [result, ...prev]);
-      setSelectedImage(result.id);
+        setGeneratedImages((prev) => [result, ...prev]);
+        setSelectedImage(result.id);
+      }
     } catch (error) {
       console.error("Generation error:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
-      alert(`Failed to generate image: ${errorMessage}`);
+      toast.error(`Failed to generate image: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
     }
@@ -162,7 +178,7 @@ export function AIImageGenerator() {
                   value={provider}
                   onValueChange={(value: AIImageProvider) => setProvider(value)}
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-48">
                     <SelectValue placeholder="Select provider" />
                   </SelectTrigger>
                   <SelectContent>
@@ -359,18 +375,17 @@ export function AIImageGenerator() {
                 {generatedImages.map((img) => (
                   <div
                     key={img.id}
-                    className={`relative group cursor-pointer border-2 rounded-md overflow-hidden transition-all ${
-                      selectedImage === img.id
-                        ? "border-primary ring-2 ring-primary"
-                        : "border-transparent"
-                    }`}
+                    className={`relative group cursor-pointer border-2 rounded-md overflow-hidden transition-all ${selectedImage === img.id
+                      ? "border-primary ring-2 ring-primary"
+                      : "border-transparent"
+                      }`}
                     onClick={() => setSelectedImage(img.id)}
                   >
                     <img
                       src={img.url}
                       alt={String(
                         (img.metadata as Record<string, unknown>).prompt ||
-                          "Generated image",
+                        "Generated image",
                       )}
                       className="w-full h-32 object-cover"
                     />
@@ -486,32 +501,32 @@ export function AIImageGenerator() {
                   (selectedImageData.metadata as Record<string, unknown>)
                     .prompt,
                 ) && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-muted-foreground mb-1">Prompt:</p>
-                    <p className="text-sm bg-muted/20 p-2 rounded">
-                      {String(
-                        (selectedImageData.metadata as Record<string, unknown>)
-                          .prompt,
-                      )}
-                    </p>
-                  </div>
-                )}
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-muted-foreground mb-1">Prompt:</p>
+                      <p className="text-sm bg-muted/20 p-2 rounded">
+                        {String(
+                          (selectedImageData.metadata as Record<string, unknown>)
+                            .prompt,
+                        )}
+                      </p>
+                    </div>
+                  )}
                 {Boolean(
                   (selectedImageData.metadata as Record<string, unknown>)
                     .negative_prompt,
                 ) && (
-                  <div className="mt-2">
-                    <p className="text-muted-foreground text-sm mb-1">
-                      Negative Prompt:
-                    </p>
-                    <p className="text-xs bg-muted/20 p-2 rounded line-clamp-3">
-                      {String(
-                        (selectedImageData.metadata as Record<string, unknown>)
-                          .negative_prompt,
-                      )}
-                    </p>
-                  </div>
-                )}
+                    <div className="mt-2">
+                      <p className="text-muted-foreground text-sm mb-1">
+                        Negative Prompt:
+                      </p>
+                      <p className="text-xs bg-muted/20 p-2 rounded line-clamp-3">
+                        {String(
+                          (selectedImageData.metadata as Record<string, unknown>)
+                            .negative_prompt,
+                        )}
+                      </p>
+                    </div>
+                  )}
               </div>
             ) : (
               <p className="text-center text-muted-foreground text-sm">

@@ -30,11 +30,6 @@ const sidebarItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Analytics",
-    href: "/admin/analytics",
-    icon: BarChart3,
-  },
-  {
     title: "Users",
     href: "/admin/users",
     icon: Users,
@@ -45,19 +40,9 @@ const sidebarItems = [
     icon: Package,
   },
   {
-    title: "Orders",
-    href: "/admin/orders",
-    icon: FileText,
-  },
-  {
     title: "AI Generator",
     href: "/admin/ai-generator",
     icon: ImageIcon,
-  },
-  {
-    title: "Security",
-    href: "/admin/security",
-    icon: Shield,
   },
   {
     title: "Settings",

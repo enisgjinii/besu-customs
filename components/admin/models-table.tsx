@@ -244,7 +244,7 @@ export function ModelsTable({
           />
 
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -258,7 +258,7 @@ export function ModelsTable({
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -276,14 +276,14 @@ export function ModelsTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-12"></TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Featured</TableHead>
                 <TableHead>Size</TableHead>
                 <TableHead>Created</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

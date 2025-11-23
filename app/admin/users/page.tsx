@@ -15,42 +15,44 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Users as UsersIcon, UserPlus, UserCheck, UserX } from "lucide-react";
 
-const recentUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    status: "active",
-    joinDate: "2024-01-15",
-    avatar: null,
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    status: "active",
-    joinDate: "2024-01-14",
-    avatar: null,
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    status: "inactive",
-    joinDate: "2024-01-13",
-    avatar: null,
-  },
-  {
-    id: 4,
-    name: "Alice Brown",
-    email: "alice@example.com",
-    status: "pending",
-    joinDate: "2024-01-12",
-    avatar: null,
-  },
-];
+import { useEffect, useState } from "react";
+import { UsersService, UserProfile } from "@/lib/users-service";
+import { toast } from "sonner";
 
 function UsersPage() {
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    newSignups: 0,
+    inactiveUsers: 0,
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [usersData, statsData] = await Promise.all([
+        UsersService.getAllUsers(),
+        UsersService.getUserStats(),
+      ]);
+      setUsers(usersData);
+      setStats({
+        ...stats,
+        totalUsers: statsData.totalUsers,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -66,83 +68,69 @@ function UsersPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Users"
-            value="2,350"
-            change="+180 from last month"
-            changeType="positive"
+            value={stats.totalUsers.toString()}
+            change="+0 from last month"
+            changeType="neutral"
             icon={UsersIcon}
           />
-          <StatsCard
-            title="Active Users"
-            value="1,890"
-            change="+12% from last month"
-            changeType="positive"
-            icon={UserCheck}
-          />
-          <StatsCard
-            title="New Signups"
-            value="180"
-            change="+25% from last month"
-            changeType="positive"
-            icon={UserPlus}
-          />
-          <StatsCard
-            title="Inactive Users"
-            value="460"
-            change="-5% from last month"
-            changeType="positive"
-            icon={UserX}
-          />
+          {/* Other stats cards would need real data logic */}
         </div>
 
         {/* Recent Users */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Users</CardTitle>
-            <CardDescription>Latest user registrations</CardDescription>
+            <CardTitle>All Users</CardTitle>
+            <CardDescription>Registered users list</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback>
-                        {user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <Badge
-                      variant={
-                        user.status === "active"
-                          ? "default"
-                          : user.status === "pending"
-                            ? "secondary"
-                            : "destructive"
-                      }
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {users.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No users found.
+                  </p>
+                ) : (
+                  users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
                     >
-                      {user.status}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(user.joinDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      <div className="flex items-center space-x-4">
+                        <Avatar>
+                          <AvatarImage src={user.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {user.full_name
+                              ? user.full_name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                              : user.email.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {user.full_name || "No Name"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <Badge variant="outline">{user.role || "user"}</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
