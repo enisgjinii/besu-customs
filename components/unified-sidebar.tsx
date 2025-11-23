@@ -30,8 +30,10 @@ import {
   FileJson,
   Settings,
   Box,
+  LayoutTemplate,
 } from "lucide-react";
 import { MaterialEditor } from "./material-editor";
+import { TemplateSelector } from "./template-selector";
 import type { Product } from "@/lib/store";
 import { AIImageGenerator } from "./ai-image-generator";
 import { ThemeToggle } from "./theme-toggle";
@@ -62,7 +64,7 @@ interface UnifiedSidebarProps {
 }
 
 export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarProps) {
-  const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
+  const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view" | "templates">(
     "materials",
   );
   const [isRecording, setIsRecording] = useState(false);
@@ -709,9 +711,8 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <PanelLeftClose
-                className={`w-4 h-4 transition-transform duration-300 ${
-                  isCollapsed ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""
+                  }`}
               />
             </button>
             {!isCollapsed && <ThemeToggle />}
@@ -788,6 +789,16 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             <Camera className="w-4 h-4 mb-1" />
             <span className="text-xs">Export</span>
           </Button>
+          <Button
+            variant={activeTab === "templates" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("templates")}
+            className="w-full transition-all flex-col h-auto py-2"
+            data-tab="templates"
+          >
+            <LayoutTemplate className="w-4 h-4 mb-1" />
+            <span className="text-xs">Templates</span>
+          </Button>
         </div>}
 
         {/* Collapsed Quick Access Icons */}
@@ -843,6 +854,11 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
         {activeTab === "texture" && (
           <div className="p-4 space-y-3">
             <UVTextureEditor />
+          </div>
+        )}
+        {activeTab === "templates" && (
+          <div className="p-4 space-y-3 h-full">
+            <TemplateSelector />
           </div>
         )}
         {activeTab === "view" && (
@@ -940,7 +956,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
                       <Grid3x3 className="w-4 h-4 mr-2" />
                       {showGrid ? "Hide Grid" : "Show Grid"}
                     </Button>
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -1287,12 +1303,12 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
                           onValueChange={(value) =>
                             setEntranceAnimation(
                               value as
-                                | "fadeIn"
-                                | "scaleUp"
-                                | "rotateIn"
-                                | "zoomRotate"
-                                | "dropIn"
-                                | "bounce"
+                              | "fadeIn"
+                              | "scaleUp"
+                              | "rotateIn"
+                              | "zoomRotate"
+                              | "dropIn"
+                              | "bounce"
                             )
                           }
                         >

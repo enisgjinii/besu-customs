@@ -177,13 +177,16 @@ export interface ConfiguratorState {
     name: string;
     sections: MaterialSection[];
     camera?: CameraState;
+    productId?: string | null;
   }>;
   savePreset: (name: string, camera?: CameraState) => void;
   loadPreset: (preset: {
     name: string;
     sections: MaterialSection[];
     camera?: CameraState;
+    productId?: string | null;
   }) => void;
+  deletePreset: (name: string) => void;
   exportPreset: () => string;
   importPreset: (json: string) => void;
 }
@@ -592,13 +595,25 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   presets: [],
   savePreset: (name: string, camera?: CameraState) =>
     set((state) => ({
-      presets: [...state.presets, { name, sections: state.sections, camera }],
+      presets: [
+        ...state.presets,
+        {
+          name,
+          sections: state.sections,
+          camera,
+          productId: state.selectedProductId,
+        },
+      ],
     })),
   loadPreset: (preset: {
     name: string;
     sections: MaterialSection[];
     camera?: CameraState;
   }) => set({ sections: preset.sections }),
+  deletePreset: (name: string) =>
+    set((state) => ({
+      presets: state.presets.filter((p) => p.name !== name),
+    })),
   exportPreset: () => {
     const state = get();
     return JSON.stringify(
