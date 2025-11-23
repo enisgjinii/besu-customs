@@ -219,13 +219,14 @@ export function AIImageGenerator() {
                 <Label htmlFor="negative-prompt">
                   Negative Prompt (Optional)
                 </Label>
-                <button
-                  type="button"
+                <Button
+                  variant="link"
+                  size="sm"
                   onClick={() => setShowSettings(!showSettings)}
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                  className="text-sm text-muted-foreground hover:text-foreground h-auto p-0"
                 >
                   {showSettings ? "Hide Settings" : "Advanced Settings"}
-                </button>
+                </Button>
               </div>
               <Textarea
                 id="negative-prompt"
