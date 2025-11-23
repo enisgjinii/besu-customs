@@ -12,32 +12,43 @@ export interface UserProfile {
 
 export class UsersService {
     static async getAllUsers(): Promise<UserProfile[]> {
-        // In a real Supabase setup, you might query a 'profiles' table
-        // that is synchronized with auth.users via triggers.
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .order("created_at", { ascending: false });
+        try {
+            const response = await fetch("/api/admin/users");
 
-        if (error) {
-            console.error("Error fetching profiles:", error);
-            // Return empty array to prevent crash, UI will show empty state
+            if (!response.ok) {
+                console.error("Error fetching users:", await response.text());
+                return [];
+            }
+
+            const users = await response.json();
+            return users;
+        } catch (error) {
+            console.error("Error fetching users:", error);
             return [];
         }
-
-        return data || [];
     }
 
     static async getUserStats() {
-        const { count: totalUsers } = await supabase
-            .from("profiles")
-            .select("*", { count: "exact", head: true });
+        try {
+            const users = await this.getAllUsers();
 
-        // This is a simplified stats fetch. Real apps might have more complex queries.
-        return {
-            totalUsers: totalUsers || 0,
-            activeUsers: 0, // Placeholder
-            newSignups: 0, // Placeholder
-        };
+            return {
+                totalUsers: users.length,
+                activeUsers: users.filter(u => u.last_sign_in_at).length,
+                newSignups: users.filter(u => {
+                    const createdAt = new Date(u.created_at);
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    return createdAt > thirtyDaysAgo;
+                }).length,
+            };
+        } catch (error) {
+            console.error("Error fetching user stats:", error);
+            return {
+                totalUsers: 0,
+                activeUsers: 0,
+                newSignups: 0,
+            };
+        }
     }
 }
