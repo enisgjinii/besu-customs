@@ -24,7 +24,7 @@ export function UVTextureEditor() {
   // Text controls
   const [newText, setNewText] = useState("");
   const [textColor, setTextColor] = useState("#000000");
-  const [fontSize, setFontSize] = useState(48);
+  const [fontSize, setFontSize] = useState(120);
   const [hasSelection, setHasSelection] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -213,8 +213,8 @@ export function UVTextureEditor() {
     const canvas = fabricCanvasRef.current;
 
     const text = new IText(newText, {
-      left: 100,
-      top: 100,
+      left: canvas.width! / 2 - 200,
+      top: canvas.height! / 2 - 100,
       fontSize: fontSize,
       fill: textColor,
       fontFamily: "Arial",
@@ -238,11 +238,18 @@ export function UVTextureEditor() {
     const reader = new FileReader();
     reader.onload = (event) => {
       FabricImage.fromURL(event.target?.result as string).then((img) => {
+        // Calculate scale to make image larger but fit within canvas
+        const maxSize = canvas.width! * 0.4; // 40% of canvas width
+        const scale = Math.min(
+          maxSize / img.width!,
+          maxSize / img.height!
+        );
+
         img.set({
-          left: 100,
-          top: 100,
-          scaleX: 0.5,
-          scaleY: 0.5,
+          left: canvas.width! / 2 - (img.width! * scale) / 2,
+          top: canvas.height! / 2 - (img.height! * scale) / 2,
+          scaleX: scale,
+          scaleY: scale,
         });
         canvas.add(img);
         canvas.setActiveObject(img);

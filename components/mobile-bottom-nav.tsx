@@ -15,7 +15,6 @@ import {
   FileImage,
   Film,
   Package2,
-  Map,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -26,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MaterialEditor } from "./material-editor";
+import { UVTextureEditor } from "./uv-texture-editor";
 
-type TabType = "materials" | "uv-map" | "texture" | "export" | null;
+type TabType = "materials" | "texture" | "export" | null;
 
 export function MobileBottomNav() {
   const [activeTab, setActiveTab] = useState<TabType>(null);
@@ -145,17 +145,15 @@ export function MobileBottomNav() {
     >
       {/* Expanded Panel */}
       <div
-        className={`bg-card border-t border-border/50 transition-all duration-300 ease-in-out overflow-hidden ${
-          isExpanded ? "max-h-[70vh]" : "max-h-0"
-        }`}
+        className={`bg-card border-t border-border/50 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? "max-h-[70vh]" : "max-h-0"
+          }`}
       >
         <div className="overflow-y-auto max-h-[70vh] pb-4">
           {/* Header */}
           <div className="sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/50 p-3 flex items-center justify-between">
             <h3 className="font-semibold text-sm">
               {activeTab === "materials" && "Materials"}
-              {activeTab === "texture" && "Texture"}
-              {activeTab === "uv-map" && "UV Map"}
+              {activeTab === "texture" && "Texture & UV Map"}
               {activeTab === "export" && "Export & Controls"}
             </h3>
             <Button
@@ -198,37 +196,7 @@ export function MobileBottomNav() {
 
             {activeTab === "texture" && (
               <div className="space-y-4">
-                <div className="text-center space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-medium">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-                    </span>
-                    BETA - Phase 2
-                  </div>
-                  <h3 className="font-semibold">UV Map Export</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Download the complete UV map of your 3D model
-                  </p>
-                </div>
-
-                <Button
-                  onClick={handleDownloadUVMap}
-                  className="w-full"
-                  size="lg"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download UV Map
-                </Button>
-
-                <div className="border border-border/50 rounded-lg p-3 space-y-2">
-                  <h4 className="font-medium text-sm">Coming in Phase 2:</h4>
-                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Custom texture painting</li>
-                    <li>Logo and text placement</li>
-                    <li>Pattern overlays</li>
-                  </ul>
-                </div>
+                <UVTextureEditor />
               </div>
             )}
 
@@ -304,11 +272,10 @@ export function MobileBottomNav() {
       <div className="bg-card/95 backdrop-blur-sm border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg">
         <button
           onClick={() => handleTabClick("materials")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${
-            activeTab === "materials"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-          }`}
+          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === "materials"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            }`}
         >
           <Palette className="w-5 h-5" />
           <span className="text-[10px] font-medium">Materials</span>
@@ -316,36 +283,21 @@ export function MobileBottomNav() {
 
         <button
           onClick={() => handleTabClick("texture")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${
-            activeTab === "texture"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-          }`}
+          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === "texture"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            }`}
         >
           <Paintbrush className="w-5 h-5" />
           <span className="text-[10px] font-medium">Texture</span>
         </button>
 
         <button
-          onClick={() => handleTabClick("uv-map")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${
-            activeTab === "uv-map"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-          }`}
-          disabled={!completeUVMap}
-        >
-          <Map className="w-5 h-5" />
-          <span className="text-[10px] font-medium">UV Map</span>
-        </button>
-
-        <button
           onClick={() => handleTabClick("export")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${
-            activeTab === "export"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-          }`}
+          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === "export"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            }`}
         >
           <Camera className="w-5 h-5" />
           <span className="text-[10px] font-medium">Export</span>
