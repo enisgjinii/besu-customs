@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { Sidebar } from "./sidebar";
+import { Sidebar, SidebarContent } from "./sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -13,7 +14,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { LogOut, Settings, User, Menu } from "lucide-react";
 import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -24,6 +30,7 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, signOut } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -41,12 +48,28 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="flex items-center justify-between px-6 py-4 bg-background border-b">
+          <header className="flex items-center justify-between px-4 md:px-6 py-4 bg-background border-b">
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+              {/* Mobile Menu Button */}
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-64">
+                  <SidebarContent onNavigate={() => setMobileMenuOpen(false)} />
+                </SheetContent>
+              </Sheet>
+
+              <h1 className="text-lg md:text-xl font-semibold">Admin Dashboard</h1>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               <ThemeToggle />
 
               <DropdownMenu>
@@ -94,7 +117,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
         </div>
       </div>
     </ProtectedRoute>

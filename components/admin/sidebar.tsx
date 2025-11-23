@@ -18,7 +18,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
 } from "lucide-react";
-
+import Image from "next/image";
 interface SidebarProps {
   className?: string;
 }
@@ -51,33 +51,16 @@ const sidebarItems = [
   },
 ];
 
-export function Sidebar({ className }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+interface SidebarContentProps {
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}
+
+export function SidebarContent({ collapsed = false, onNavigate }: SidebarContentProps) {
   const pathname = usePathname();
 
   return (
-    <div
-      className={cn(
-        "relative flex flex-col border-r bg-background",
-        collapsed ? "w-16" : "w-64",
-        "transition-all duration-300 ease-in-out",
-        className,
-      )}
-    >
-      {/* Toggle Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="absolute -right-3 top-6 z-10 h-6 w-6 rounded-full border bg-background p-0 shadow-md"
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        {collapsed ? (
-          <ChevronRight className="h-3 w-3" />
-        ) : (
-          <ChevronLeft className="h-3 w-3" />
-        )}
-      </Button>
-
+    <>
       {/* Logo/Brand */}
       <div className="flex h-16 items-center border-b px-4">
         <div className="flex items-center space-x-2">
@@ -103,7 +86,7 @@ export function Sidebar({ className }: SidebarProps) {
             const isActive = pathname === item.href;
 
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} onClick={onNavigate}>
                 <Button
                   variant={isActive ? "secondary" : "ghost"}
                   className={cn(
@@ -135,6 +118,37 @@ export function Sidebar({ className }: SidebarProps) {
           {!collapsed && <span>v1.0.0</span>}
         </div>
       </div>
+    </>
+  );
+}
+
+export function Sidebar({ className }: SidebarProps) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <div
+      className={cn(
+        "relative hidden md:flex flex-col border-r bg-background",
+        collapsed ? "w-16" : "w-64",
+        "transition-all duration-300 ease-in-out",
+        className,
+      )}
+    >
+      {/* Toggle Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute -right-3 top-6 z-10 h-6 w-6 rounded-full border bg-background p-0 shadow-md"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3 w-3" />
+        ) : (
+          <ChevronLeft className="h-3 w-3" />
+        )}
+      </Button>
+
+      <SidebarContent collapsed={collapsed} />
     </div>
   );
 }
