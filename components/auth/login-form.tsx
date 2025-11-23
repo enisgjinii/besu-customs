@@ -16,12 +16,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 export function LoginForm() {
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const router = useRouter();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +46,7 @@ export function LoginForm() {
       toast.error(error.message);
     } else {
       toast.success("Signed in successfully!");
+      router.push("/admin");
     }
 
     setLoading(false);
@@ -62,6 +76,22 @@ export function LoginForm() {
       setLoading(false);
     }
     // Don't set loading to false here as we're redirecting
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { error } = await resetPassword(resetEmail);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password reset link sent to your email");
+      setIsResetOpen(false);
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -117,9 +147,42 @@ export function LoginForm() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </Label>
+                    <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="link" className="px-0 font-normal text-xs h-auto">
+                          Forgot password?
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reset Password</DialogTitle>
+                          <DialogDescription>
+                            Enter your email address and we'll send you a link to reset your password.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleResetPassword} className="space-y-4 mt-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="reset-email">Email Address</Label>
+                            <Input
+                              id="reset-email"
+                              type="email"
+                              placeholder="name@example.com"
+                              value={resetEmail}
+                              onChange={(e) => setResetEmail(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? "Sending..." : "Send Reset Link"}
+                          </Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
