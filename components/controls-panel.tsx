@@ -208,18 +208,18 @@ export function ControlsPanel() {
             variant={activeTab === "materials" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("materials")}
-            className="w-full transition-all"
+            className="w-full justify-start gap-2 transition-all"
           >
-            <Palette className="w-4 h-4 mr-2" />
+            <Palette className="w-4 h-4" />
             Materials
           </Button>
           <Button
             variant={activeTab === "texture" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("texture")}
-            className="w-full transition-all"
+            className="w-full justify-start gap-2 transition-all"
           >
-            <Paintbrush className="w-4 h-4 mr-2" />
+            <Paintbrush className="w-4 h-4" />
             Texture
           </Button>
           <Button
@@ -235,9 +235,9 @@ export function ControlsPanel() {
             variant={activeTab === "export" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("export")}
-            className="w-full transition-all col-span-2"
+            className="w-full justify-start gap-2 transition-all col-span-2"
           >
-            <Package2 className="w-4 h-4 mr-2" />
+            <Package2 className="w-4 h-4" />
             Export
           </Button>
         </div>
@@ -267,12 +267,12 @@ export function ControlsPanel() {
               onValueChange={(value) =>
                 setExportSubTab(
                   value as
-                    | "camera"
-                    | "scene"
-                    | "ai"
-                    | "images"
-                    | "video"
-                    | "model",
+                  | "camera"
+                  | "scene"
+                  | "ai"
+                  | "images"
+                  | "video"
+                  | "model",
                 )
               }
             >

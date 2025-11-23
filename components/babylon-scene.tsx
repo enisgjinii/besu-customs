@@ -93,10 +93,17 @@ export function BabylonScene() {
   const clearGlobalCustomTexture = useConfiguratorStore(
     (s) => s.setGlobalCustomTexture,
   );
+  const fabricCanvas = useConfiguratorStore((s) => s.fabricCanvas);
+
+  // Interaction state
+  const isDraggingRef = useRef(false);
+  const dragStartUVRef = useRef<{ x: number; y: number } | null>(null);
+  const activeObjectRef = useRef<any>(null);
+  const initialObjectPosRef = useRef<{ left: number; top: number } | null>(null);
 
   // Track applied global texture to dispose when replaced
   const appliedGlobalTextureRef = useRef<Texture | null>(null);
-  
+
   // Track bounding box mesh
   const boundingBoxRef = useRef<Mesh | null>(null);
 
@@ -194,6 +201,182 @@ export function BabylonScene() {
       cameraRef.current = null;
     };
   }, [setCameraControlsRef]);
+
+  // Handle pointer events for 3D interaction with 2D texture
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene || !fabricCanvas) return;
+
+    console.log("🎮 Initializing 3D interaction with Fabric canvas");
+
+    const pointerObserver = scene.onPointerObservable.add((pointerInfo) => {
+      const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+
+      switch (pointerInfo.type) {
+        case PointerEventTypes.POINTERDOWN: {
+          if (pickInfo?.hit && pickInfo.pickedMesh && fabricCanvas) {
+            const uv = pickInfo.getTextureCoordinates();
+
+            if (uv) {
+              // The texture is flipped X and Y in UVTextureEditor before being applied
+              // So we need to invert the mapping here to match
+              const canvasWidth = fabricCanvas.width || 2048;
+              const canvasHeight = fabricCanvas.height || 2048;
+
+              // Convert UV to canvas coordinates
+              // Note: texture is flipped both horizontally (scaleX: -1) and vertically (scaleY: -1)
+              const x = (1 - uv.x) * canvasWidth;
+              const y = (1 - uv.y) * canvasHeight;
+              // Check for objects at this position
+              const objects = fabricCanvas.getObjects().slice().reverse();
+              let target = null;
+
+              for (const obj of objects) {
+                const bounds = obj.getBoundingRect();
+                const hit = x >= bounds.left && x <= bounds.left + bounds.width &&
+                  y >= bounds.top && y <= bounds.top + bounds.height;
+
+                if (hit) {
+                  target = obj;
+                  break;
+                }
+              }
+
+              if (target) {
+                fabricCanvas.setActiveObject(target);
+                fabricCanvas.renderAll();
+
+                isDraggingRef.current = true;
+                dragStartUVRef.current = { x: uv.x, y: uv.y };
+                activeObjectRef.current = target;
+                initialObjectPosRef.current = { left: target.left, top: target.top };
+
+                // Suppress texture updates during 3D drag
+                if (fabricCanvas) {
+                  (fabricCanvas as any)._suppress3DDrag = true;
+                }
+
+                if (cameraRef.current) {
+                  cameraRef.current.detachControl();
+                }
+              } else {
+                fabricCanvas.discardActiveObject();
+                fabricCanvas.renderAll();
+              }
+            }
+          }
+          break;
+        }
+
+        case PointerEventTypes.POINTERMOVE: {
+          // Handle hover cursor feedback
+          if (!isDraggingRef.current && pointerInfo.pickInfo?.hit && pointerInfo.pickInfo.pickedMesh) {
+            const uv = pointerInfo.pickInfo.getTextureCoordinates();
+            if (uv) {
+              const canvasWidth = fabricCanvas.width || 4096;
+              const canvasHeight = fabricCanvas.height || 4096;
+
+              // Flipped coordinates match
+              const x = (1 - uv.x) * canvasWidth;
+              const y = (1 - uv.y) * canvasHeight;
+
+              const objects = fabricCanvas.getObjects();
+
+              let isOverObject = false;
+
+              for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                const bounds = obj.getBoundingRect();
+
+                const hit = obj.containsPoint({ x, y });
+
+                // Also check bounding box
+                const inBounds = x >= bounds.left && x <= bounds.left + bounds.width &&
+                  y >= bounds.top && y <= bounds.top + bounds.height;
+
+                if (hit || inBounds) {
+                  isOverObject = true;
+                  break;
+                }
+              }
+
+              const canvas = scene.getEngine().getRenderingCanvas();
+              if (canvas) {
+                canvas.style.cursor = isOverObject ? "move" : "default";
+              }
+            }
+          }
+
+          if (isDraggingRef.current && activeObjectRef.current && dragStartUVRef.current && initialObjectPosRef.current) {
+            // Do a fresh pick to get current UV coordinates
+            const currentPick = scene.pick(scene.pointerX, scene.pointerY);
+            if (currentPick?.hit && currentPick.pickedMesh) {
+              const uv = currentPick.getTextureCoordinates();
+              if (uv) {
+                const canvasWidth = fabricCanvas.width || 4096;
+                const canvasHeight = fabricCanvas.height || 4096;
+
+                const deltaUvX = uv.x - dragStartUVRef.current.x;
+                const deltaUvY = uv.y - dragStartUVRef.current.y;
+
+                // Calculate new position with flipped coordinates
+                const deltaX = -deltaUvX * canvasWidth;
+                const deltaY = -deltaUvY * canvasHeight;
+
+                const newLeft = initialObjectPosRef.current.left + deltaX;
+                const newTop = initialObjectPosRef.current.top + deltaY;
+
+                activeObjectRef.current.set({
+                  left: newLeft,
+                  top: newTop
+                });
+
+                activeObjectRef.current.setCoords();
+                fabricCanvas.renderAll();
+
+                // Don't fire object:moving during 3D drag to prevent texture updates
+                // fabricCanvas.fire('object:moving', { target: activeObjectRef.current });
+              }
+            }
+          }
+          break;
+        }
+
+        case PointerEventTypes.POINTERUP: {
+          if (isDraggingRef.current) {
+            isDraggingRef.current = false;
+            dragStartUVRef.current = null;
+            const draggedObject = activeObjectRef.current;
+            activeObjectRef.current = null;
+            initialObjectPosRef.current = null;
+
+            // Re-enable texture updates and trigger final update
+            if (fabricCanvas && draggedObject) {
+              (fabricCanvas as any)._suppress3DDrag = false;
+              fabricCanvas.fire('object:modified', { target: draggedObject });
+            }
+
+            if (cameraRef.current && canvasRef.current) {
+              cameraRef.current.attachControl(canvasRef.current, true);
+            }
+
+            // Reset cursor
+            const canvas = scene.getEngine().getRenderingCanvas();
+            if (canvas) {
+              canvas.style.cursor = "default";
+            }
+          }
+          break;
+        }
+      }
+    });
+
+    return () => {
+      if (scene) {
+        scene.onPointerObservable.remove(pointerObserver);
+      }
+    };
+  }, [fabricCanvas]);
 
   // Handle background color changes without recreating the scene
   useEffect(() => {
@@ -295,13 +478,13 @@ export function BabylonScene() {
           if (material.albedoTexture) {
             try {
               material.albedoTexture.dispose();
-            } catch {}
+            } catch { }
             material.albedoTexture = null;
           }
           if (material.diffuseTexture) {
             try {
               material.diffuseTexture.dispose();
-            } catch {}
+            } catch { }
             material.diffuseTexture = null;
           }
           if (material.albedoColor !== undefined) {
@@ -382,13 +565,13 @@ export function BabylonScene() {
           if (material.albedoTexture) {
             try {
               material.albedoTexture.dispose();
-            } catch {}
+            } catch { }
             material.albedoTexture = null;
           }
           if (material.diffuseTexture) {
             try {
               material.diffuseTexture.dispose();
-            } catch {}
+            } catch { }
             material.diffuseTexture = null;
           }
 
@@ -414,13 +597,13 @@ export function BabylonScene() {
           if (material.albedoTexture) {
             try {
               material.albedoTexture.dispose();
-            } catch {}
+            } catch { }
             material.albedoTexture = null;
           }
           if (material.diffuseTexture) {
             try {
               material.diffuseTexture.dispose();
-            } catch {}
+            } catch { }
             material.diffuseTexture = null;
           }
 
@@ -490,13 +673,13 @@ export function BabylonScene() {
           if (material.albedoTexture) {
             try {
               material.albedoTexture.dispose();
-            } catch {}
+            } catch { }
             material.albedoTexture = null;
           }
           if (material.diffuseTexture) {
             try {
               material.diffuseTexture.dispose();
-            } catch {}
+            } catch { }
             material.diffuseTexture = null;
           }
 
@@ -586,7 +769,7 @@ export function BabylonScene() {
       if (appliedGlobalTextureRef.current) {
         try {
           appliedGlobalTextureRef.current.dispose();
-        } catch {}
+        } catch { }
         appliedGlobalTextureRef.current = null;
       }
 
@@ -599,13 +782,13 @@ export function BabylonScene() {
         () => console.log("✅ Global texture loaded"),
         (msg) => console.error("❌ Global texture load failed", msg),
       );
-      
+
       // High quality texture settings
       tex.anisotropicFilteringLevel = 16; // Maximum anisotropic filtering
       tex.level = 1; // Full intensity
-      
+
       // No flip needed - texture is pre-flipped in UV editor for correct orientation
-      
+
       appliedGlobalTextureRef.current = tex;
 
       const meshes = rootMesh.getChildMeshes(false);
@@ -614,7 +797,7 @@ export function BabylonScene() {
       meshes.forEach((m) => {
         const material: any = m.material;
         if (!material) return;
-        
+
         // Apply texture based on material type
         if (material.albedoTexture !== undefined) {
           // PBR Material
@@ -623,7 +806,7 @@ export function BabylonScene() {
           // Standard Material
           material.diffuseTexture = tex;
         }
-        
+
         material.markDirty();
         applied++;
       });
@@ -644,7 +827,7 @@ export function BabylonScene() {
     if (appliedGlobalTextureRef.current) {
       try {
         appliedGlobalTextureRef.current.dispose();
-      } catch {}
+      } catch { }
       appliedGlobalTextureRef.current = null;
     }
     clearGlobalCustomTexture(null);
@@ -664,7 +847,7 @@ export function BabylonScene() {
       currentMeshRef.current.dispose();
       currentMeshRef.current = null;
     }
-    
+
     // Clear old UV map to prevent showing stale data
     setCompleteUVMap(null);
 
@@ -723,32 +906,32 @@ export function BabylonScene() {
           let min = new Vector3(Infinity, Infinity, Infinity);
           let max = new Vector3(-Infinity, -Infinity, -Infinity);
           let validMeshCount = 0;
-          
+
           meshes.forEach((mesh) => {
             // Skip invisible or non-renderable meshes
             if (!mesh.isVisible || !mesh.isEnabled()) {
               return;
             }
-            
+
             mesh.computeWorldMatrix(true);
-            
+
             // Use getTotalVertices to check if mesh has geometry
             if (mesh instanceof Mesh && mesh.getTotalVertices() === 0) {
               return;
             }
-            
+
             if (mesh.getBoundingInfo) {
               try {
                 const boundingInfo = mesh.getBoundingInfo();
                 const meshMin = boundingInfo.boundingBox.minimumWorld;
                 const meshMax = boundingInfo.boundingBox.maximumWorld;
-                
+
                 // Validate bounds are finite and not zero-sized
                 const size = meshMax.subtract(meshMin);
                 if (isFinite(meshMin.x) && isFinite(meshMax.x) &&
-                    isFinite(meshMin.y) && isFinite(meshMax.y) &&
-                    isFinite(meshMin.z) && isFinite(meshMax.z) &&
-                    size.length() > 0.0001) { // Ignore tiny/empty meshes
+                  isFinite(meshMin.y) && isFinite(meshMax.y) &&
+                  isFinite(meshMin.z) && isFinite(meshMax.z) &&
+                  size.length() > 0.0001) { // Ignore tiny/empty meshes
                   min = Vector3.Minimize(min, meshMin);
                   max = Vector3.Maximize(max, meshMax);
                   validMeshCount++;
@@ -758,7 +941,7 @@ export function BabylonScene() {
               }
             }
           });
-          
+
           const size = max.subtract(min);
           const center = Vector3.Center(min, max);
           const dimensions = {
@@ -769,7 +952,7 @@ export function BabylonScene() {
             min: Math.min(size.x, size.y, size.z),
             avg: (size.x + size.y + size.z) / 3
           };
-          
+
           return { min, max, size, center, dimensions, validMeshCount };
         };
 
@@ -777,9 +960,9 @@ export function BabylonScene() {
         // STEP 2: Analyze Original Model Characteristics
         // ───────────────────────────────────────────────────────────────
         const original = calculatePreciseBounds();
-        
+
         console.log(`📊 Analyzed ${original.validMeshCount}/${meshes.length} meshes`);
-        
+
         // Log individual mesh bounds for debugging
         console.log("🔍 Mesh details:");
         meshes.forEach((mesh, i) => {
@@ -789,7 +972,7 @@ export function BabylonScene() {
             console.log(`  [${i}] ${mesh.name}: ${meshSize.x.toFixed(3)} × ${meshSize.y.toFixed(3)} × ${meshSize.z.toFixed(3)}`);
           }
         });
-        
+
         console.log("📐 Original dimensions:", {
           size: `${original.dimensions.x.toFixed(3)} × ${original.dimensions.y.toFixed(3)} × ${original.dimensions.z.toFixed(3)}`,
           center: `(${original.center.x.toFixed(3)}, ${original.center.y.toFixed(3)}, ${original.center.z.toFixed(3)})`,
@@ -803,36 +986,36 @@ export function BabylonScene() {
         const aspectRatio = original.dimensions.max / (original.dimensions.min || 1);
         const volume = original.dimensions.x * original.dimensions.y * original.dimensions.z;
         const normalizedVolume = volume / Math.pow(original.dimensions.max, 3);
-        
+
         // Calculate surface area to volume ratio (indicates complexity)
-        const surfaceArea = 2 * (original.dimensions.x * original.dimensions.y + 
-                                  original.dimensions.y * original.dimensions.z + 
-                                  original.dimensions.z * original.dimensions.x);
+        const surfaceArea = 2 * (original.dimensions.x * original.dimensions.y +
+          original.dimensions.y * original.dimensions.z +
+          original.dimensions.z * original.dimensions.x);
         const saToVolRatio = surfaceArea / (volume || 1);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // ADVANCED AUTOMATIC TARGET SIZE CALCULATION
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Get viewport dimensions for viewport-aware sizing
         const canvas = canvasRef.current;
         const viewportWidth = canvas?.clientWidth || 1920;
         const viewportHeight = canvas?.clientHeight || 1080;
         const viewportAspect = viewportWidth / viewportHeight;
         const viewportDiagonal = Math.sqrt(viewportWidth * viewportWidth + viewportHeight * viewportHeight);
-        
+
         console.log(`📺 Viewport: ${viewportWidth}×${viewportHeight} (aspect: ${viewportAspect.toFixed(2)})`);
-        
+
         // Calculate model's visual footprint (how much screen space it should occupy)
         const modelAspect = original.dimensions.x / original.dimensions.y;
         const aspectDifference = Math.abs(modelAspect - viewportAspect);
-        
+
         // Base target using advanced logarithmic + exponential hybrid scaling
         const logSize = Math.log10(original.dimensions.max + 0.001);
         const expFactor = Math.exp(-logSize * 0.5); // Exponential decay for large models
-        
+
         let targetSize: number;
-        
+
         // Multi-tier adaptive sizing with smooth transitions
         if (logSize < -3) {
           // Ultra-microscopic (< 0.001)
@@ -859,34 +1042,34 @@ export function BabylonScene() {
           // Massive (> 1000)
           targetSize = 2.6 - (logSize - 3) * 0.2;
         }
-        
+
         // Viewport-aware adjustment
         const viewportScale = Math.min(viewportWidth, viewportHeight) / 1000; // Normalize to 1000px
         targetSize *= (0.8 + viewportScale * 0.4); // Scale based on viewport size
-        
+
         // Ensure reasonable range with tighter bounds
         targetSize = Math.max(2.0, Math.min(targetSize, 5.0));
-        
+
         console.log(`📊 Base target: ${targetSize.toFixed(2)} (log: ${logSize.toFixed(2)}, exp: ${expFactor.toFixed(3)})`);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // ADVANCED ASPECT RATIO COMPENSATION WITH VIEWPORT AWARENESS
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Calculate aspect ratio in all three planes
         const aspectXY = original.dimensions.x / original.dimensions.y;
         const aspectYZ = original.dimensions.y / original.dimensions.z;
         const aspectXZ = original.dimensions.x / original.dimensions.z;
         const avgAspect = (aspectXY + aspectYZ + aspectXZ) / 3;
-        
+
         // Use sigmoid function for smooth aspect ratio compensation
         const aspectSigmoid = (ratio: number) => {
           const normalized = (ratio - 1) / 10; // Normalize around 1
           return 1 / (1 + Math.exp(-normalized * 2));
         };
-        
+
         let aspectMultiplier = 1.0;
-        
+
         // Extreme elongation (needle-like objects)
         if (aspectRatio > 50) {
           aspectMultiplier = 0.55 + aspectSigmoid(aspectRatio) * 0.1;
@@ -908,28 +1091,28 @@ export function BabylonScene() {
         } else if (aspectRatio < 1.5) {
           aspectMultiplier = 1.02;
         }
-        
+
         // Viewport aspect compensation
         if (aspectDifference > 1) {
           aspectMultiplier *= 0.95; // Model aspect very different from viewport
         }
-        
+
         targetSize *= aspectMultiplier;
         console.log(`📐 Aspect ${aspectRatio.toFixed(2)} (avg: ${avgAspect.toFixed(2)}) → ×${aspectMultiplier.toFixed(3)}`);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // ADVANCED VOLUME DENSITY & SHAPE ANALYSIS
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Calculate shape factor (sphere = 1, other shapes < 1)
-        const sphereVolume = (4/3) * Math.PI * Math.pow(original.dimensions.max / 2, 3);
+        const sphereVolume = (4 / 3) * Math.PI * Math.pow(original.dimensions.max / 2, 3);
         const shapeFactor = volume / sphereVolume;
-        
+
         // Calculate compactness (how close to a sphere)
-        const compactness = Math.pow(36 * Math.PI * volume * volume, 1/3) / surfaceArea;
-        
+        const compactness = Math.pow(36 * Math.PI * volume * volume, 1 / 3) / surfaceArea;
+
         let volumeMultiplier = 1.0;
-        
+
         // Ultra-thin objects (paper-like)
         if (normalizedVolume < 0.01) {
           volumeMultiplier = 1.25;
@@ -948,26 +1131,26 @@ export function BabylonScene() {
         } else if (normalizedVolume > 0.7) {
           volumeMultiplier = 0.98; // Bulky
         }
-        
+
         // Shape factor adjustment
         if (shapeFactor < 0.1) {
           volumeMultiplier *= 1.08; // Very irregular shape
         } else if (shapeFactor > 0.8) {
           volumeMultiplier *= 0.96; // Nearly spherical
         }
-        
+
         // Compactness adjustment
         if (compactness < 0.3) {
           volumeMultiplier *= 1.05; // Very spread out
         }
-        
+
         targetSize *= volumeMultiplier;
         console.log(`📦 Volume: ${normalizedVolume.toFixed(3)}, Shape: ${shapeFactor.toFixed(3)}, Compact: ${compactness.toFixed(3)} → ×${volumeMultiplier.toFixed(3)}`);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // ADVANCED COMPLEXITY & DETAIL ANALYSIS
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Count total vertices for detail level
         let totalVertices = 0;
         let totalFaces = 0;
@@ -977,13 +1160,13 @@ export function BabylonScene() {
             totalFaces += mesh.getTotalIndices() / 3;
           }
         });
-        
+
         // Calculate detail density (vertices per unit volume)
         const detailDensity = totalVertices / (volume || 1);
         const faceToVertexRatio = totalFaces / (totalVertices || 1);
-        
+
         let complexityMultiplier = 1.0;
-        
+
         // Surface area to volume ratio (complexity indicator)
         if (saToVolRatio > 200) {
           complexityMultiplier = 1.12; // Extremely complex
@@ -996,7 +1179,7 @@ export function BabylonScene() {
         } else if (saToVolRatio < 5) {
           complexityMultiplier = 0.97; // Very simple
         }
-        
+
         // Detail density adjustment
         if (detailDensity > 10000) {
           complexityMultiplier *= 1.06; // High detail model
@@ -1005,21 +1188,21 @@ export function BabylonScene() {
         } else if (detailDensity < 100) {
           complexityMultiplier *= 0.98; // Low poly model
         }
-        
+
         // Mesh count consideration
         if (original.validMeshCount > 50) {
           complexityMultiplier *= 1.04; // Many parts
         } else if (original.validMeshCount > 20) {
           complexityMultiplier *= 1.02;
         }
-        
+
         targetSize *= complexityMultiplier;
         console.log(`🔬 SA/V: ${saToVolRatio.toFixed(1)}, Verts: ${totalVertices}, Faces: ${totalFaces}, Density: ${detailDensity.toFixed(1)} → ×${complexityMultiplier.toFixed(3)}`);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // ADVANCED DIMENSIONAL BALANCE & ORIENTATION ANALYSIS
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Calculate all dimensional ratios
         const dimRatios = [
           original.dimensions.x / original.dimensions.y,
@@ -1028,16 +1211,16 @@ export function BabylonScene() {
         ];
         const maxDimRatio = Math.max(...dimRatios);
         const minDimRatio = Math.min(...dimRatios);
-        
+
         // Calculate dimensional variance (how unbalanced the dimensions are)
         const dimArray = [original.dimensions.x, original.dimensions.y, original.dimensions.z];
         const dimMean = dimArray.reduce((a, b) => a + b) / 3;
         const dimVariance = dimArray.reduce((sum, dim) => sum + Math.pow(dim - dimMean, 2), 0) / 3;
         const dimStdDev = Math.sqrt(dimVariance);
         const coefficientOfVariation = dimStdDev / dimMean;
-        
+
         let dimensionalMultiplier = 1.0;
-        
+
         // Extreme imbalance (stick-like or blade-like)
         if (maxDimRatio > 50) {
           dimensionalMultiplier = 1.10;
@@ -1050,25 +1233,25 @@ export function BabylonScene() {
         } else if (maxDimRatio > 3) {
           dimensionalMultiplier = 1.01;
         }
-        
+
         // Coefficient of variation adjustment
         if (coefficientOfVariation > 0.8) {
           dimensionalMultiplier *= 1.04; // Very unbalanced
         } else if (coefficientOfVariation < 0.2) {
           dimensionalMultiplier *= 0.98; // Very balanced (cube-like)
         }
-        
+
         targetSize *= dimensionalMultiplier;
         console.log(`📏 Dim ratios: ${maxDimRatio.toFixed(2)}:1, CoV: ${coefficientOfVariation.toFixed(3)} → ×${dimensionalMultiplier.toFixed(3)}`);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // FINAL TARGET SIZE WITH ADAPTIVE CLAMPING
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Adaptive min/max based on original size
         let minTarget = 1.8;
         let maxTarget = 4.5;
-        
+
         if (original.dimensions.max < 0.1) {
           minTarget = 2.5; // Tiny models need minimum size
           maxTarget = 5.0;
@@ -1076,9 +1259,9 @@ export function BabylonScene() {
           minTarget = 1.5; // Huge models can be smaller
           maxTarget = 3.5;
         }
-        
+
         targetSize = Math.max(minTarget, Math.min(targetSize, maxTarget));
-        
+
         // Generate automatic category description
         let sizeCategory = "";
         if (original.dimensions.max < 0.01) sizeCategory = "Microscopic";
@@ -1087,21 +1270,21 @@ export function BabylonScene() {
         else if (original.dimensions.max < 10) sizeCategory = "Medium";
         else if (original.dimensions.max < 100) sizeCategory = "Large";
         else sizeCategory = "Massive";
-        
+
         if (aspectRatio > 5) sizeCategory += " Elongated";
         else if (aspectRatio < 1.5) sizeCategory += " Compact";
-        
+
         if (normalizedVolume < 0.1) sizeCategory += " Flat";
         else if (normalizedVolume > 0.7) sizeCategory += " Solid";
-        
+
         // ═══════════════════════════════════════════════════════════════
         // FINAL OPTIMIZATION PASS
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Apply viewport-based final adjustment
         const viewportFactor = Math.min(1.2, Math.max(0.8, viewportDiagonal / 2000));
         targetSize *= viewportFactor;
-        
+
         // Ensure model fits comfortably in viewport
         const estimatedScreenSize = targetSize * 100; // Rough pixel estimate
         if (estimatedScreenSize > Math.min(viewportWidth, viewportHeight) * 0.9) {
@@ -1109,7 +1292,7 @@ export function BabylonScene() {
           targetSize *= correction;
           console.log(`⚠️ Viewport overflow correction: ×${correction.toFixed(3)}`);
         }
-        
+
         console.log(`🎯 Auto-classified: ${sizeCategory}`);
         console.log(`✨ FINAL TARGET SIZE: ${targetSize.toFixed(3)} units (viewport factor: ${viewportFactor.toFixed(3)})`);
 
@@ -1118,7 +1301,7 @@ export function BabylonScene() {
         // ───────────────────────────────────────────────────────────────
         const scaleFactor = targetSize / original.dimensions.max;
         rootMesh.scaling = new Vector3(scaleFactor, scaleFactor, scaleFactor);
-        
+
         console.log(`🔧 Applied scale factor: ${scaleFactor.toFixed(6)}`);
 
         // Force update after scaling
@@ -1129,16 +1312,16 @@ export function BabylonScene() {
         // STEP 5: Precise Centering at World Origin
         // ───────────────────────────────────────────────────────────────
         const scaled = calculatePreciseBounds();
-        
+
         console.log("📊 Before centering:", {
           center: `(${scaled.center.x.toFixed(4)}, ${scaled.center.y.toFixed(4)}, ${scaled.center.z.toFixed(4)})`,
           size: `${scaled.size.x.toFixed(3)} × ${scaled.size.y.toFixed(3)} × ${scaled.size.z.toFixed(3)}`
         });
-        
+
         // Calculate offset needed to center at (0, 0, 0)
         const centerOffset = scaled.center.negate();
         rootMesh.position = centerOffset;
-        
+
         console.log("🎯 Centering offset applied:", {
           x: centerOffset.x.toFixed(4),
           y: centerOffset.y.toFixed(4),
@@ -1153,7 +1336,7 @@ export function BabylonScene() {
         // STEP 6: Verification & Final Measurements
         // ───────────────────────────────────────────────────────────────
         const final = calculatePreciseBounds();
-        
+
         console.log("✅ Final model state:", {
           size: `${final.dimensions.x.toFixed(3)} × ${final.dimensions.y.toFixed(3)} × ${final.dimensions.z.toFixed(3)}`,
           center: `(${final.center.x.toFixed(4)}, ${final.center.y.toFixed(4)}, ${final.center.z.toFixed(4)})`,
@@ -1201,7 +1384,7 @@ export function BabylonScene() {
           boxMaterial.emissiveColor = new Color3(0, 1, 0.5); // Cyan-green color
           boxMaterial.alpha = 0.7;
           boxMaterial.disableLighting = true;
-          
+
           boundingBox.material = boxMaterial;
           boundingBox.isPickable = false; // Don't interfere with model interaction
           boundingBox.setEnabled(showBoundingBox); // Set initial visibility
@@ -1220,12 +1403,12 @@ export function BabylonScene() {
         // ───────────────────────────────────────────────────────────────
         const fov = Math.PI / 3; // 60 degrees
         const fovFactor = 1 / Math.tan(fov / 2);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // AUTOMATIC PADDING CALCULATION
         // ═══════════════════════════════════════════════════════════════
         let paddingFactor = 1.5; // Base padding - increased for better fit
-        
+
         // Adjust padding based on aspect ratio
         if (aspectRatio > 10) {
           paddingFactor = 1.8; // Elongated needs more padding
@@ -1236,29 +1419,29 @@ export function BabylonScene() {
         } else if (aspectRatio < 1.3) {
           paddingFactor = 1.4; // Compact can be tighter
         }
-        
+
         // Adjust padding based on volume density
         if (normalizedVolume < 0.1) {
           paddingFactor *= 1.15; // Flat models need more padding to see properly
         }
-        
+
         // Adjust padding based on model size
         if (final.dimensions.max > 6) {
           paddingFactor *= 1.05; // Larger models need more space
         } else if (final.dimensions.max < 3) {
           paddingFactor *= 1.1; // Small models need more space
         }
-        
+
         console.log(`📐 Auto padding factor: ${paddingFactor.toFixed(2)}`);
-        
+
         // ═══════════════════════════════════════════════════════════════
         // AUTOMATIC DISTANCE CALCULATION
         // ═══════════════════════════════════════════════════════════════
         const baseDistance = (final.dimensions.max / 2) * fovFactor * paddingFactor;
-        
+
         // Calculate optimal viewing angle adjustment
         let angleMultiplier = 1.0;
-        
+
         // For elongated models, adjust viewing distance
         if (aspectRatio > 8) {
           angleMultiplier = 1.25;
@@ -1267,24 +1450,24 @@ export function BabylonScene() {
         } else if (aspectRatio > 3) {
           angleMultiplier = 1.08;
         }
-        
+
         let cameraDistance = baseDistance * angleMultiplier;
-        
+
         // ═══════════════════════════════════════════════════════════════
         // AUTOMATIC RANGE LIMITS
         // ═══════════════════════════════════════════════════════════════
         // Calculate dynamic min/max based on model size
         const minDistance = Math.max(2, final.dimensions.max * 0.3);
         const maxDistance = Math.max(30, final.dimensions.max * 5);
-        
+
         const optimalCameraDistance = Math.max(minDistance, Math.min(cameraDistance, maxDistance));
-        
+
         // ═══════════════════════════════════════════════════════════════
         // AUTOMATIC ZOOM LIMITS
         // ═══════════════════════════════════════════════════════════════
         const zoomInLimit = optimalCameraDistance * 0.15; // Can zoom to 15%
         const zoomOutLimit = optimalCameraDistance * 5; // Can zoom to 500%
-        
+
         console.log("📷 Auto camera config:", {
           baseDistance: baseDistance.toFixed(2),
           angleAdjustment: `×${angleMultiplier.toFixed(2)}`,
@@ -1297,7 +1480,7 @@ export function BabylonScene() {
         // ───────────────────────────────────────────────────────────────
         const finalScale = rootMesh.scaling.x;
         const finalPosition = rootMesh.position.clone(); // Preserve centered position
-        
+
         // Start invisible and scaled down
         rootMesh.scaling = Vector3.Zero();
         rootMesh.visibility = 0;
@@ -1320,7 +1503,7 @@ export function BabylonScene() {
 
           frame++;
           const progress = frame / animationDuration;
-          
+
           // Ease-out cubic for smooth deceleration
           const easeProgress = 1 - Math.pow(1 - progress, 3);
 
@@ -1328,7 +1511,7 @@ export function BabylonScene() {
           const scale = finalScale * easeProgress;
           rootMesh.scaling = new Vector3(scale, scale, scale);
           rootMesh.visibility = easeProgress;
-          
+
           // CRITICAL: Maintain centered position throughout animation
           rootMesh.position = finalPosition;
 
@@ -1343,18 +1526,18 @@ export function BabylonScene() {
         // ───────────────────────────────────────────────────────────────
         if (cameraRef.current) {
           const camera = cameraRef.current;
-          
+
           // Target the world origin where model is centered
           camera.setTarget(Vector3.Zero());
-          
+
           // ═══════════════════════════════════════════════════════════════
           // AUTOMATIC VIEWING ANGLE
           // ═══════════════════════════════════════════════════════════════
           camera.alpha = -Math.PI / 2; // Front view (0 degrees)
-          
+
           // Adjust beta (vertical angle) based on model shape
           let betaAngle = Math.PI / 2.5; // Default: ~72 degrees
-          
+
           if (aspectRatio > 5) {
             // Elongated models - view more from side
             betaAngle = Math.PI / 2.3; // ~78 degrees (more horizontal)
@@ -1362,16 +1545,16 @@ export function BabylonScene() {
             // Flat models - view more from above
             betaAngle = Math.PI / 2.8; // ~64 degrees (more from top)
           }
-          
+
           camera.beta = betaAngle;
           camera.radius = optimalCameraDistance;
-          
+
           // ═══════════════════════════════════════════════════════════════
           // AUTOMATIC ZOOM LIMITS (from Step 7)
           // ═══════════════════════════════════════════════════════════════
           camera.lowerRadiusLimit = zoomInLimit;
           camera.upperRadiusLimit = zoomOutLimit;
-          
+
           // ═══════════════════════════════════════════════════════════════
           // AUTOMATIC CONTROL SENSITIVITY
           // ═══════════════════════════════════════════════════════════════
@@ -1379,17 +1562,17 @@ export function BabylonScene() {
           const wheelSensitivity = Math.max(20, Math.min(100, 50 / (final.dimensions.max / 5)));
           camera.wheelPrecision = wheelSensitivity;
           camera.pinchPrecision = wheelSensitivity;
-          
+
           // Panning sensitivity based on distance
           camera.panningSensibility = 1000 / optimalCameraDistance;
-          
+
           // ═══════════════════════════════════════════════════════════════
           // SMOOTH MOVEMENT SETTINGS
           // ═══════════════════════════════════════════════════════════════
           camera.inertia = 0.9; // Smooth deceleration
           camera.angularSensibilityX = 1000;
           camera.angularSensibilityY = 1000;
-          
+
           console.log("📷 Auto camera ready:", {
             distance: optimalCameraDistance.toFixed(2),
             angle: `${(betaAngle * 180 / Math.PI).toFixed(1)}°`,

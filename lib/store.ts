@@ -42,20 +42,20 @@ export interface MaterialSection {
   originalName: string;
   // Use explicit categories but allow custom category strings
   category:
-    | "Jersey"
-    | "Panels"
-    | "Piping/Trim"
-    | "Other"
-    | "Trim Options DEMO"
-    | "Long Sleeve Shooting Shirt"
-    | "Basketball Shooting Shirt with Hoodie"
-    | "Basketball Shooting Shirt Short Sleeve"
-    | "Duffle Bag"
-    | "Backpack"
-    | "Jersey & Shorts"
-    | "Hoodie & Zipper"
-    | "Half Size Shorts"
-    | string;
+  | "Jersey"
+  | "Panels"
+  | "Piping/Trim"
+  | "Other"
+  | "Trim Options DEMO"
+  | "Long Sleeve Shooting Shirt"
+  | "Basketball Shooting Shirt with Hoodie"
+  | "Basketball Shooting Shirt Short Sleeve"
+  | "Duffle Bag"
+  | "Backpack"
+  | "Jersey & Shorts"
+  | "Hoodie & Zipper"
+  | "Half Size Shorts"
+  | string;
   color: string;
   roughness: number;
   metalness: number;
@@ -155,6 +155,10 @@ export interface ConfiguratorState {
   setAutoRotate: (enabled: boolean) => void;
   glRef: unknown | null;
   setGlRef: (ref: unknown | null) => void;
+
+  // Fabric.js integration for 3D interaction
+  fabricCanvas: any | null;
+  setFabricCanvas: (canvas: any | null) => void;
 
   // Model loading
   modelLoading: boolean;
@@ -452,11 +456,11 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       withTextures: sections.filter((s) => s.customTexture).length,
       sampleSection: sections[0]
         ? {
-            id: sections[0].id,
-            name: sections[0].name,
-            hasTexture: !!sections[0].customTexture,
-            textureLength: sections[0].customTexture?.length || 0,
-          }
+          id: sections[0].id,
+          name: sections[0].name,
+          hasTexture: !!sections[0].customTexture,
+          textureLength: sections[0].customTexture?.length || 0,
+        }
         : null,
     });
     return set({ sections });
@@ -553,6 +557,10 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
   glRef: null,
   setGlRef: (ref: unknown | null) => set({ glRef: ref }),
+
+  // Fabric.js integration
+  fabricCanvas: null,
+  setFabricCanvas: (canvas: any | null) => set({ fabricCanvas: canvas }),
 
   // Model loading
   modelLoading: false,

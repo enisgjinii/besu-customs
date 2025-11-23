@@ -14,12 +14,13 @@ export function UVTextureEditor() {
   const setGlobalCustomTexture = useConfiguratorStore(
     (s) => s.setGlobalCustomTexture,
   );
+  const setFabricCanvas = useConfiguratorStore((s) => s.setFabricCanvas);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const fabricCanvasRef = useRef<any>(null);
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializingRef = useRef(false);
-  
+
   // Text controls
   const [newText, setNewText] = useState("");
   const [textColor, setTextColor] = useState("#000000");
@@ -29,42 +30,49 @@ export function UVTextureEditor() {
 
   // Real-time update to 3D model
   const updateTexture = useCallback(() => {
-    if (!fabricCanvasRef.current) return;
-    
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    // Skip updates during 3D drag to prevent flickering
+    if ((canvas as any)._suppress3DDrag) {
+      return;
+    }
+
     // Clear previous timer
     if (updateTimerRef.current) {
       clearTimeout(updateTimerRef.current);
     }
-    
+
     // Debounce updates for performance
     updateTimerRef.current = setTimeout(() => {
-      const canvas = fabricCanvasRef.current;
-      
-      // Temporarily remove UV wireframe background but keep white background
-      const originalBg = canvas.backgroundImage;
-      
-      canvas.backgroundImage = undefined;
-      canvas.renderAll();
-      
-      // Export canvas and flip both axes for correct 3D texture orientation
+      // Create a temporary canvas for the flipped export
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width!;
-      tempCanvas.height = canvas.height!;
-      const tempCtx = tempCanvas.getContext('2d')!;
-      
-      // Flip the canvas both horizontally (X) and vertically (Y)
+      tempCanvas.width = canvas.width || 4096;
+      tempCanvas.height = canvas.height || 4096;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) return;
+
+      // Save current background
+      const originalBg = canvas.backgroundImage;
+
+      // Temporarily replace UV wireframe with white background for clean export
+      canvas.backgroundImage = null;
+      canvas.backgroundColor = 'white';
+      canvas.renderAll();
+
+      // Flip both X and Y axes before export
       tempCtx.translate(tempCanvas.width, tempCanvas.height);
       tempCtx.scale(-1, -1);
-      
+
       // Draw the Fabric canvas content
       tempCtx.drawImage(canvas.getElement(), 0, 0);
-      
+
       const dataUrl = tempCanvas.toDataURL('image/png', 1);
-      
+
       // Restore UV wireframe background for editing view
       canvas.backgroundImage = originalBg;
       canvas.renderAll();
-      
+
       setGlobalCustomTexture(dataUrl);
       console.log("🔄 UV texture updated and flipped for 3D (text & images on white background)");
     }, 300);
@@ -73,7 +81,7 @@ export function UVTextureEditor() {
   // Initialize Fabric.js canvas
   useEffect(() => {
     if (!canvasContainerRef.current || !completeUVMap) return;
-    
+
     // Prevent double initialization (React Strict Mode issue)
     if (isInitializingRef.current || fabricCanvasRef.current) {
       console.log("⚠️ Skipping duplicate initialization");
@@ -94,10 +102,10 @@ export function UVTextureEditor() {
     const loadFabric = async () => {
       if (!mounted || fabricCanvasRef.current) return;
       console.log("🎨 Initializing Fabric.js canvas with UV map:", completeUVMap);
-      
+
       // Dynamic import to avoid SSR issues
       const { Canvas, FabricImage } = await import("fabric");
-      
+
       // Calculate container width to fit canvas proportionally
       const containerWidth = canvasContainerRef.current!.clientWidth - 32; // Account for padding
       const displaySize = Math.min(containerWidth, 800); // Max 800px display
@@ -113,7 +121,7 @@ export function UVTextureEditor() {
         height: 4096,
         backgroundColor: "#ffffff",
       });
-      
+
       // Set CSS dimensions for display (keeps 2048x2048 render resolution)
       canvas.setDimensions({
         width: displaySize,
@@ -123,25 +131,26 @@ export function UVTextureEditor() {
       });
 
       fabricCanvasRef.current = canvas;
+      setFabricCanvas(canvas);
       console.log("✅ Fabric canvas initialized at 4096x4096, displayed at", displaySize, "px");
 
       // Load UV map as background
       try {
         const img = await FabricImage.fromURL(completeUVMap);
         console.log("✅ UV map image loaded:", img.width, "x", img.height);
-        
+
         const scale = Math.min(
           canvas.width! / img.width!,
           canvas.height! / img.height!
         );
-        
+
         img.set({
           scaleX: scale,
           scaleY: scale,
           selectable: false,
           evented: false,
         });
-        
+
         canvas.backgroundImage = img;
         canvas.renderAll();
         setIsLoaded(true);
@@ -178,6 +187,7 @@ export function UVTextureEditor() {
           console.log("Canvas already disposed");
         }
         fabricCanvasRef.current = null;
+        setFabricCanvas(null);
       }
       if (updateTimerRef.current) {
         clearTimeout(updateTimerRef.current);
@@ -250,7 +260,7 @@ export function UVTextureEditor() {
     if (!fabricCanvasRef.current) return;
     const canvas = fabricCanvasRef.current;
     const activeObjects = canvas.getActiveObjects();
-    
+
     if (activeObjects.length > 0) {
       activeObjects.forEach((obj: any) => canvas.remove(obj));
       canvas.discardActiveObject();
@@ -263,7 +273,7 @@ export function UVTextureEditor() {
     if (!fabricCanvasRef.current) return;
     const canvas = fabricCanvasRef.current;
     const activeObject = canvas.getActiveObject();
-    
+
     if (activeObject) {
       activeObject.clone((cloned: any) => {
         cloned.set({
@@ -280,34 +290,34 @@ export function UVTextureEditor() {
 
   const handleDownload = useCallback(() => {
     if (!fabricCanvasRef.current) return;
-    
+
     const canvas = fabricCanvasRef.current;
-    
+
     // Temporarily remove UV wireframe but keep white background
     const originalBg = canvas.backgroundImage;
-    
+
     canvas.backgroundImage = undefined;
     canvas.renderAll();
-    
+
     // Export flipped version for correct 3D texture orientation
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = canvas.width!;
     tempCanvas.height = canvas.height!;
     const tempCtx = tempCanvas.getContext('2d')!;
-    
+
     // Flip the canvas both horizontally (X) and vertically (Y)
     tempCtx.translate(tempCanvas.width, tempCanvas.height);
     tempCtx.scale(-1, -1);
-    
+
     // Draw the Fabric canvas content
     tempCtx.drawImage(canvas.getElement(), 0, 0);
-    
+
     const dataUrl = tempCanvas.toDataURL('image/png', 1);
-    
+
     // Restore UV wireframe for editing view
     canvas.backgroundImage = originalBg;
     canvas.renderAll();
-    
+
     const link = document.createElement("a");
     link.href = dataUrl;
     link.download = "uv-texture.png";
@@ -319,7 +329,7 @@ export function UVTextureEditor() {
   const handleClear = useCallback(() => {
     if (!fabricCanvasRef.current) return;
     const canvas = fabricCanvasRef.current;
-    
+
     // Remove all objects except background
     canvas.getObjects().forEach((obj: any) => {
       canvas.remove(obj);
@@ -437,7 +447,7 @@ export function UVTextureEditor() {
 
       {/* Fabric.js Canvas */}
       <Card className="p-4">
-        <div 
+        <div
           ref={canvasContainerRef}
           className="relative border rounded-md bg-gray-50 w-full flex items-center justify-center overflow-hidden"
           style={{ minHeight: "400px" }}
