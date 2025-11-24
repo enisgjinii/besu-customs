@@ -15,6 +15,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteLogo } from "@/components/ui/site-logo";
+import { GoogleLogo } from "@/components/ui/google-logo";
 
 import { useRouter } from "next/navigation";
 import {
@@ -26,7 +29,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export function LoginForm() {
+interface LoginFormProps {
+  defaultView?: "signin" | "signup";
+}
+
+export function LoginForm({ defaultView = "signin" }: LoginFormProps) {
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -95,51 +102,52 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
-      <Card className="w-full max-w-md shadow-lg border border-gray-200">
-        <CardHeader className="space-y-3 pb-6">
-          <div className="flex items-center justify-center">
-            <div className="h-12 w-12 bg-black rounded-full flex items-center justify-center">
-              <Lock className="h-6 w-6 text-white" />
-            </div>
+    <div className="flex items-center justify-center min-h-[100svh] bg-background px-4 py-8">
+      <Card className="w-full max-w-md shadow-sm border">
+        <CardHeader className="space-y-4 pb-4">
+          <div className="flex items-center justify-between">
+            <SiteLogo size={56} withBackground rounded="md" />
+            <ThemeToggle />
           </div>
-          <CardTitle className="text-center text-2xl font-semibold text-gray-900">
-            Admin Access
-          </CardTitle>
-          <CardDescription className="text-center text-gray-600">
-            Sign in to access the admin dashboard
-          </CardDescription>
+          <div className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-semibold tracking-tight">
+              {defaultView === "signin" ? "Sign In" : "Create Account"}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              {defaultView === "signin" ? "Access your admin dashboard" : "Set up your admin access"}
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-12 bg-gray-100 p-1">
+          <Tabs defaultValue={defaultView} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 h-11 bg-muted p-1 rounded-md">
               <TabsTrigger
                 value="signin"
-                className="text-sm font-medium text-gray-700 hover:text-gray-900 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm"
+                className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 Sign In
               </TabsTrigger>
               <TabsTrigger
                 value="signup"
-                className="text-sm font-medium text-gray-700 hover:text-gray-900 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm"
+                className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 Sign Up
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-6">
+            <TabsContent value="signin" className="mt-6">
+              <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
                     Email Address
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground/60" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="Enter your email address"
-                      className="pl-10 h-12"
+                      className="pl-10 h-11"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -153,7 +161,7 @@ export function LoginForm() {
                     </Label>
                     <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
                       <DialogTrigger asChild>
-                        <Button variant="link" className="px-0 font-normal text-xs h-auto">
+                        <Button variant="link" className="px-0 font-normal text-xs h-auto text-muted-foreground">
                           Forgot password?
                         </Button>
                       </DialogTrigger>
@@ -164,7 +172,7 @@ export function LoginForm() {
                             Enter your email address and we'll send you a link to reset your password.
                           </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleResetPassword} className="space-y-4 mt-4">
+                        <form onSubmit={handleResetPassword} className="space-y-4 mt-2">
                           <div className="space-y-2">
                             <Label htmlFor="reset-email">Email Address</Label>
                             <Input
@@ -184,19 +192,19 @@ export function LoginForm() {
                     </Dialog>
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground/60" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      className="pl-10 pr-10 h-12"
+                      className="pl-10 pr-10 h-11"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-3 text-muted-foreground/60 hover:text-foreground"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -209,7 +217,7 @@ export function LoginForm() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12"
+                  className="w-full h-11"
                   disabled={loading}
                 >
                   <LogIn className="mr-2 h-5 w-5" />
@@ -218,19 +226,19 @@ export function LoginForm() {
               </form>
             </TabsContent>
 
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-6">
+            <TabsContent value="signup" className="mt-6">
+              <form onSubmit={handleSignUp} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email" className="text-sm font-medium">
                     Email Address
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground/60" />
                     <Input
                       id="signup-email"
                       type="email"
                       placeholder="Enter your email address"
-                      className="pl-10 h-12"
+                      className="pl-10 h-11"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -245,19 +253,19 @@ export function LoginForm() {
                     Password
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground/60" />
                     <Input
                       id="signup-password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Create a strong password"
-                      className="pl-10 pr-10 h-12"
+                      className="pl-10 pr-10 h-11"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-3 text-muted-foreground/60 hover:text-foreground"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -267,7 +275,7 @@ export function LoginForm() {
                       )}
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500 space-y-1">
+                  <div className="text-xs text-muted-foreground space-y-1">
                     <p>Password must contain:</p>
                     <ul className="list-disc list-inside space-y-0.5 ml-2">
                       <li>At least 8 characters</li>
@@ -279,7 +287,7 @@ export function LoginForm() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12"
+                  className="w-full h-11"
                   disabled={loading}
                 >
                   <UserPlus className="mr-2 h-5 w-5" />
@@ -292,23 +300,21 @@ export function LoginForm() {
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
+                <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-gray-50 px-3 text-gray-500 font-medium">
+                <span className="bg-background px-3 text-muted-foreground font-medium">
                   Or continue with
                 </span>
               </div>
             </div>
             <Button
               variant="outline"
-              className="w-full mt-6 h-12 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+              className="w-full mt-6 h-11 gap-2 font-medium"
               onClick={handleGoogleSignIn}
               disabled={loading}
             >
-              <span className="mr-3 h-5 w-5 flex items-center justify-center bg-[#4285F4] text-white font-bold rounded text-sm">
-                G
-              </span>
+              <GoogleLogo size={18} variant="monogram" className="shrink-0" />
               {loading ? "Redirecting..." : "Continue with Google"}
             </Button>
           </div>
