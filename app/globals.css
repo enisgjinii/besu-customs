@@ -122,3 +122,142 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===== MOBILE PERFORMANCE OPTIMIZATIONS ===== */
+
+/* Prevent overscroll/bounce on iOS */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Optimize touch interactions */
+@media (max-width: 768px) {
+  /* Hardware acceleration for common animated elements */
+  .mobile-accelerated,
+  [data-tour],
+  .fixed,
+  .sticky {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Reduce motion for performance */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Optimize scrolling containers */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto; /* Disable smooth scroll on mobile */
+  }
+
+  /* Prevent text selection during touch */
+  canvas {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Optimize buttons for touch */
+  button,
+  [role="button"],
+  .cursor-pointer {
+    touch-action: manipulation;
+  }
+
+  /* Reduce shadow complexity on mobile */
+  .shadow-lg {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .shadow-xl {
+    box-shadow: 0 8px 10px -3px rgb(0 0 0 / 0.1);
+  }
+
+  /* Optimize backdrop blur on mobile - use simpler effect */
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .backdrop-blur {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Reduce animation complexity */
+  .animate-bounce {
+    animation-duration: 0.5s;
+  }
+
+  .animate-spin {
+    animation-duration: 0.8s;
+  }
+
+  .animate-pulse {
+    animation-duration: 1.5s;
+  }
+
+  /* Optimize transitions */
+  .transition-all {
+    transition-property: transform, opacity;
+    transition-duration: 150ms;
+  }
+
+  /* GPU compositing for fixed elements */
+  .fixed {
+    will-change: transform;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .backdrop-blur-sm {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+}
+
+/* 3D canvas optimization */
+canvas {
+  image-rendering: optimizeSpeed;
+}
+
+@media (max-width: 768px) {
+  canvas {
+    image-rendering: auto;
+  }
+}
+
+/* Prevent layout thrashing on resize */
+.h-screen {
+  height: 100dvh; /* Dynamic viewport height for mobile browsers */
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .fixed.bottom-0 {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

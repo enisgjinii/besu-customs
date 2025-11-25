@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import {
   Palette,
@@ -24,8 +24,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MaterialEditor } from "./material-editor";
-import { UVTextureEditor } from "./uv-texture-editor";
+import dynamic from "next/dynamic";
+
+// Lazy load heavy components to improve initial render
+const MaterialEditor = dynamic(
+  () => import("./material-editor").then((mod) => ({ default: mod.MaterialEditor })),
+  { 
+    ssr: false,
+    loading: () => <div className="animate-pulse h-32 bg-muted rounded" />
+  }
+);
+
+const UVTextureEditor = dynamic(
+  () => import("./uv-texture-editor").then((mod) => ({ default: mod.UVTextureEditor })),
+  { 
+    ssr: false,
+    loading: () => <div className="animate-pulse h-32 bg-muted rounded" />
+  }
+);
 
 type TabType = "materials" | "texture" | "export" | null;
 
@@ -34,6 +50,7 @@ export function MobileBottomNav() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
+  // Memoized store selectors to prevent unnecessary re-renders
   const products = useConfiguratorStore((state) => state.products);
   const selectedProductId = useConfiguratorStore(
     (state) => state.selectedProductId,
@@ -57,23 +74,32 @@ export function MobileBottomNav() {
     (state) => state.selectedSectionId,
   );
   const sections = useConfiguratorStore((state) => state.sections);
-  const selectedSection = sections.find((s) => s.id === selectedSectionId);
+  
+  // Memoize derived state
+  const selectedSection = useMemo(
+    () => sections.find((s) => s.id === selectedSectionId),
+    [sections, selectedSectionId]
+  );
 
-  const handleTabClick = (tab: TabType) => {
-    if (activeTab === tab) {
-      setIsExpanded(!isExpanded);
-    } else {
-      setActiveTab(tab);
-      setIsExpanded(true);
-    }
-  };
+  // Memoized callbacks to prevent child re-renders
+  const handleTabClick = useCallback((tab: TabType) => {
+    setActiveTab((currentTab) => {
+      if (currentTab === tab) {
+        setIsExpanded((expanded) => !expanded);
+        return currentTab;
+      } else {
+        setIsExpanded(true);
+        return tab;
+      }
+    });
+  }, []);
 
-  const closePanel = () => {
+  const closePanel = useCallback(() => {
     setIsExpanded(false);
     setTimeout(() => setActiveTab(null), 300);
-  };
+  }, []);
 
-  const handleScreenshot = () => {
+  const handleScreenshot = useCallback(() => {
     const renderer = glRef as {
       domElement: HTMLCanvasElement;
       render: () => void;
@@ -104,18 +130,18 @@ export function MobileBottomNav() {
       console.error("Screenshot failed:", error);
       alert("Failed to capture screenshot");
     }
-  };
+  }, [glRef]);
 
-  const handleResetCamera = () => {
+  const handleResetCamera = useCallback(() => {
     const controls = cameraControlsRef as {
       reset: (enableTransition: boolean) => void;
     } | null;
     if (controls) {
       controls.reset(true);
     }
-  };
+  }, [cameraControlsRef]);
 
-  const handleDownloadUVMap = () => {
+  const handleDownloadUVMap = useCallback(() => {
     if (!completeUVMap) {
       alert("UV Map not available yet");
       return;
@@ -127,28 +153,36 @@ export function MobileBottomNav() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [completeUVMap]);
 
-  const handleStartRecording = () => {
+  const handleStartRecording = useCallback(() => {
     // TODO: Implement screen recording
     setIsRecording(true);
     setTimeout(() => {
       setIsRecording(false);
       alert("Screen recording would start here. This is a placeholder.");
     }, 1000);
-  };
+  }, []);
+
+  // Memoize toggle handlers
+  const handleToggleAutoRotate = useCallback(() => {
+    setAutoRotate(!autoRotate);
+  }, [autoRotate, setAutoRotate]);
 
   return (
     <div
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe"
       data-tour="mobile-nav"
+      style={{ transform: 'translateZ(0)' }} /* Hardware acceleration */
     >
-      {/* Expanded Panel */}
+      {/* Expanded Panel - Only render content when expanded for performance */}
       <div
-        className={`bg-card border-t border-border/50 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? "max-h-[70vh]" : "max-h-0"
-          }`}
+        className={`bg-card border-t border-border/50 transition-transform duration-200 ease-out overflow-hidden will-change-transform ${
+          isExpanded ? "max-h-[70vh]" : "max-h-0"
+        }`}
+        style={{ transform: 'translateZ(0)' }}
       >
-        <div className="overflow-y-auto max-h-[70vh] pb-4">
+        <div className="overflow-y-auto max-h-[70vh] pb-4 overscroll-contain">
           {/* Header */}
           <div className="sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/50 p-3 flex items-center justify-between">
             <h3 className="font-semibold text-sm">
@@ -268,13 +302,16 @@ export function MobileBottomNav() {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar */}
-      <div className="bg-card/95 backdrop-blur-sm border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg">
+      {/* Bottom Navigation Bar - Hardware accelerated */}
+      <div 
+        className="bg-card/95 backdrop-blur-sm border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg"
+        style={{ transform: 'translateZ(0)' }}
+      >
         <button
           onClick={() => handleTabClick("materials")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === "materials"
+          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors duration-150 touch-manipulation ${activeTab === "materials"
             ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            : "text-muted-foreground active:text-foreground active:bg-secondary/50"
             }`}
         >
           <Palette className="w-5 h-5" />
@@ -283,9 +320,9 @@ export function MobileBottomNav() {
 
         <button
           onClick={() => handleTabClick("texture")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === "texture"
+          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors duration-150 touch-manipulation ${activeTab === "texture"
             ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            : "text-muted-foreground active:text-foreground active:bg-secondary/50"
             }`}
         >
           <Paintbrush className="w-5 h-5" />
@@ -294,9 +331,9 @@ export function MobileBottomNav() {
 
         <button
           onClick={() => handleTabClick("export")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === "export"
+          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors duration-150 touch-manipulation ${activeTab === "export"
             ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            : "text-muted-foreground active:text-foreground active:bg-secondary/50"
             }`}
         >
           <Camera className="w-5 h-5" />
@@ -306,7 +343,7 @@ export function MobileBottomNav() {
         {isExpanded && (
           <button
             onClick={closePanel}
-            className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+            className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-muted-foreground active:text-foreground active:bg-secondary/50 transition-colors duration-150 touch-manipulation"
           >
             <ChevronUp className="w-5 h-5" />
             <span className="text-[10px] font-medium">Close</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Engine,
   Scene,
@@ -29,6 +29,7 @@ import {
   extractSectionsFromModel,
 } from "@/lib/babylon-material-utils";
 import { extractCompleteUVMapBabylon } from "@/lib/babylon-uv-utils";
+import { useMobilePerformance, getEngineOptions } from "@/hooks/use-mobile-performance";
 
 // Helper function to get theme-aware background color
 const getThemeBackgroundColor = (
@@ -107,20 +108,28 @@ export function BabylonScene() {
   // Track bounding box mesh
   const boundingBoxRef = useRef<Mesh | null>(null);
 
+  // Mobile performance config
+  const perfConfig = useMobilePerformance();
+  const perfConfigRef = useRef(perfConfig);
+  perfConfigRef.current = perfConfig;
+
   // Initialize Babylon.js engine and scene
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    console.log("🎮 Initializing Babylon.js engine...");
-
-    // Create engine with optimized settings
-    const engine = new Engine(canvasRef.current, true, {
-      preserveDrawingBuffer: false,
-      stencil: false,
-      antialias: false, // Disabled for performance
-      powerPreference: "high-performance",
-      doNotHandleContextLost: false,
+    const config = perfConfigRef.current;
+    console.log("🎮 Initializing Babylon.js engine...", {
+      isMobile: config.isMobile,
+      isLowEndDevice: config.isLowEndDevice,
+      pixelRatio: config.pixelRatio,
     });
+
+    // Create engine with mobile-optimized settings
+    const engineOptions = getEngineOptions(config);
+    const engine = new Engine(canvasRef.current, config.antialias, engineOptions);
+
+    // Set hardware scaling level for mobile
+    engine.setHardwareScalingLevel(config.hardwareScaling);
 
     engineRef.current = engine;
 
@@ -133,7 +142,7 @@ export function BabylonScene() {
     scene.clearColor = hexToColor4(bgColor);
     scene.ambientColor = new Color3(0.25, 0.25, 0.25); // Balanced ambient lighting
 
-    // Create camera
+    // Create camera with mobile-optimized controls
     const camera = new ArcRotateCamera(
       "camera",
       -Math.PI / 2, // Alpha: rotated to show front of model
@@ -145,55 +154,93 @@ export function BabylonScene() {
     camera.attachControl(canvasRef.current, true);
     camera.lowerRadiusLimit = 0.5;
     camera.upperRadiusLimit = 8;
-    camera.wheelPrecision = 50;
-    camera.pinchPrecision = 50;
+    
+    // Mobile-friendly touch controls
+    if (config.isMobile) {
+      camera.wheelPrecision = 30; // More responsive wheel/pinch
+      camera.pinchPrecision = 20; // More responsive pinch zoom
+      camera.panningSensibility = 500; // More responsive panning
+      camera.angularSensibilityX = 500; // Faster rotation
+      camera.angularSensibilityY = 500;
+      camera.inertia = 0.8; // Less inertia for snappier feel
+      // Enable multi-touch gestures
+      camera.pinchDeltaPercentage = 0.01;
+      camera.useNaturalPinchZoom = true;
+    } else {
+      camera.wheelPrecision = 50;
+      camera.pinchPrecision = 50;
+    }
     cameraRef.current = camera;
 
     // Store camera ref for external control
     setCameraControlsRef(camera);
 
-    // Create lights - balanced for realistic and visible colors
+    // Create lights - optimized for mobile
     const hemisphericLight = new HemisphericLight(
       "hemisphericLight",
       new Vector3(0, 1, 0),
       scene,
     );
-    hemisphericLight.intensity = 0.9; // Balanced
+    hemisphericLight.intensity = config.isMobile ? 1.0 : 0.9; // Slightly higher on mobile to compensate for fewer lights
     hemisphericLight.diffuse = new Color3(1, 1, 1);
-    hemisphericLight.specular = new Color3(0.3, 0.3, 0.3);
+    hemisphericLight.specular = config.isMobile ? new Color3(0.1, 0.1, 0.1) : new Color3(0.3, 0.3, 0.3);
 
     const directionalLight = new DirectionalLight(
       "directionalLight",
       new Vector3(-1, -2, -1),
       scene,
     );
-    directionalLight.intensity = 1.0; // Balanced
+    directionalLight.intensity = config.isMobile ? 0.8 : 1.0;
     directionalLight.diffuse = new Color3(1, 1, 1);
 
-    const directionalLight2 = new DirectionalLight(
-      "directionalLight2",
-      new Vector3(1, 1, 1),
-      scene,
-    );
-    directionalLight2.intensity = 0.5; // Balanced
-    directionalLight2.diffuse = new Color3(1, 1, 1);
+    // Only add second directional light on non-mobile or high-end devices
+    if (!config.isMobile || !config.isLowEndDevice) {
+      const directionalLight2 = new DirectionalLight(
+        "directionalLight2",
+        new Vector3(1, 1, 1),
+        scene,
+      );
+      directionalLight2.intensity = 0.5;
+      directionalLight2.diffuse = new Color3(1, 1, 1);
+    }
 
-    // Start render loop
+    // Start render loop with mobile optimization
+    let lastFrameTime = 0;
+    const targetFrameTime = 1000 / config.targetFPS; // Limit FPS on mobile
+    
     engine.runRenderLoop(() => {
+      if (config.isMobile) {
+        const now = performance.now();
+        if (now - lastFrameTime < targetFrameTime) {
+          return; // Skip frame to maintain target FPS
+        }
+        lastFrameTime = now;
+      }
       scene.render();
     });
 
-    // Handle resize
+    // Handle resize with debouncing for mobile
+    let resizeTimeout: NodeJS.Timeout;
     const handleResize = () => {
-      engine.resize();
+      if (config.isMobile) {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          engine.resize();
+        }, 150); // Debounce resize on mobile
+      } else {
+        engine.resize();
+      }
     };
     window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
 
     console.log("✅ Babylon.js engine initialized");
 
     // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      clearTimeout(resizeTimeout);
       scene.dispose();
       engine.dispose();
       engineRef.current = null;
@@ -462,16 +509,29 @@ export function BabylonScene() {
 
       // Apply global texture first if present
       const globalTexture = globalCustomTexture;
+      const config = perfConfigRef.current;
+      
       if (globalTexture) {
         console.log("🌍 Applying GLOBAL texture to all materials");
+        
+        // Use appropriate sampling mode based on device
+        const samplingMode = config.isMobile 
+          ? Texture.BILINEAR_SAMPLINGMODE 
+          : Texture.TRILINEAR_SAMPLINGMODE;
+        
         const tex = new Texture(
           globalTexture,
           scene,
           false,
           true,
-          Texture.TRILINEAR_SAMPLINGMODE,
+          samplingMode,
         );
         tex.hasAlpha = true;
+        
+        // Reduce anisotropic filtering on mobile
+        if (config.isMobile) {
+          tex.anisotropicFilteringLevel = 2;
+        }
 
         materialsByOriginalName.forEach((material) => {
           // Dispose previous base textures if any
@@ -500,11 +560,13 @@ export function BabylonScene() {
           material.markDirty();
         });
 
-        // Force renders and early return to avoid per-section overrides
+        // Force renders - fewer on mobile for performance
         scene.render();
-        requestAnimationFrame(() => scene.render());
-        setTimeout(() => scene.render(), 10);
-        setTimeout(() => scene.render(), 50);
+        if (!config.isMobile) {
+          requestAnimationFrame(() => scene.render());
+          setTimeout(() => scene.render(), 10);
+          setTimeout(() => scene.render(), 50);
+        }
         return;
       }
 

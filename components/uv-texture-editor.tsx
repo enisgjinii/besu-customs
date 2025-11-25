@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Type, Image as ImageIcon, Trash2, Download, Map, Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 
 export function UVTextureEditor() {
   const completeUVMap = useConfiguratorStore((s) => s.completeUVMap);
@@ -15,6 +16,10 @@ export function UVTextureEditor() {
     (s) => s.setGlobalCustomTexture,
   );
   const setFabricCanvas = useConfiguratorStore((s) => s.setFabricCanvas);
+  
+  // Mobile performance configuration
+  const perfConfig = useMobilePerformance();
+  const canvasSize = perfConfig.uvCanvasSize;
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const fabricCanvasRef = useRef<any>(null);
@@ -24,11 +29,11 @@ export function UVTextureEditor() {
   // Text controls
   const [newText, setNewText] = useState("");
   const [textColor, setTextColor] = useState("#000000");
-  const [fontSize, setFontSize] = useState(120);
+  const [fontSize, setFontSize] = useState(perfConfig.isMobile ? 80 : 120);
   const [hasSelection, setHasSelection] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Real-time update to 3D model
+  // Real-time update to 3D model with mobile-optimized debouncing
   const updateTexture = useCallback(() => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
@@ -43,12 +48,15 @@ export function UVTextureEditor() {
       clearTimeout(updateTimerRef.current);
     }
 
-    // Debounce updates for performance
+    // Use longer debounce on mobile for better performance
+    const debounceTime = perfConfig.debounceMs;
+
     updateTimerRef.current = setTimeout(() => {
       // Create a temporary canvas for the flipped export
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width || 4096;
-      tempCanvas.height = canvas.height || 4096;
+      const exportSize = perfConfig.isMobile ? Math.min(canvasSize, 2048) : canvasSize;
+      tempCanvas.width = exportSize;
+      tempCanvas.height = exportSize;
       const tempCtx = tempCanvas.getContext('2d');
       if (!tempCtx) return;
 
@@ -64,10 +72,16 @@ export function UVTextureEditor() {
       tempCtx.translate(tempCanvas.width, tempCanvas.height);
       tempCtx.scale(-1, -1);
 
-      // Draw the Fabric canvas content
-      tempCtx.drawImage(canvas.getElement(), 0, 0);
+      // Draw the Fabric canvas content (scaled if necessary)
+      if (canvas.width !== exportSize) {
+        tempCtx.drawImage(canvas.getElement(), 0, 0, exportSize, exportSize);
+      } else {
+        tempCtx.drawImage(canvas.getElement(), 0, 0);
+      }
 
-      const dataUrl = tempCanvas.toDataURL('image/png', 1);
+      // Use lower quality on mobile
+      const quality = perfConfig.isMobile ? 0.8 : 1;
+      const dataUrl = tempCanvas.toDataURL('image/png', quality);
 
       // Restore UV wireframe background for editing view
       canvas.backgroundImage = originalBg;
@@ -75,8 +89,8 @@ export function UVTextureEditor() {
 
       setGlobalCustomTexture(dataUrl);
       console.log("🔄 UV texture updated and flipped for 3D (text & images on white background)");
-    }, 300);
-  }, [setGlobalCustomTexture]);
+    }, debounceTime);
+  }, [setGlobalCustomTexture, perfConfig.debounceMs, perfConfig.isMobile, canvasSize]);
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -108,21 +122,27 @@ export function UVTextureEditor() {
 
       // Calculate container width to fit canvas proportionally
       const containerWidth = canvasContainerRef.current!.clientWidth - 32; // Account for padding
-      const displaySize = Math.min(containerWidth, 800); // Max 800px display
+      // Use smaller display size on mobile for better performance
+      const maxDisplaySize = perfConfig.isMobile ? 400 : 800;
+      const displaySize = Math.min(containerWidth, maxDisplaySize);
 
       // Create canvas element
       const canvasEl = document.createElement("canvas");
       canvasEl.id = "fabric-canvas";
       canvasContainerRef.current!.appendChild(canvasEl);
 
-      // Initialize Fabric canvas at high resolution (matches UV map)
+      // Initialize Fabric canvas at resolution based on device capability
       const canvas = new Canvas(canvasEl, {
-        width: 4096,
-        height: 4096,
+        width: canvasSize,
+        height: canvasSize,
         backgroundColor: "#ffffff",
+        // Mobile optimizations
+        enableRetinaScaling: !perfConfig.isMobile,
+        renderOnAddRemove: !perfConfig.isMobile, // Batch render on mobile
+        skipOffscreen: true, // Don't render objects outside viewport
       });
 
-      // Set CSS dimensions for display (keeps 2048x2048 render resolution)
+      // Set CSS dimensions for display
       canvas.setDimensions({
         width: displaySize,
         height: displaySize
@@ -132,7 +152,7 @@ export function UVTextureEditor() {
 
       fabricCanvasRef.current = canvas;
       setFabricCanvas(canvas);
-      console.log("✅ Fabric canvas initialized at 4096x4096, displayed at", displaySize, "px");
+      console.log(`✅ Fabric canvas initialized at ${canvasSize}x${canvasSize}, displayed at`, displaySize, "px");
 
       // Load UV map as background
       try {

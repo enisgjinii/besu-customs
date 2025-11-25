@@ -18,6 +18,21 @@ export const metadata: Metadata = {
   title: "Besu Customs",
   description: "3D Product Configurator",
   generator: "Enis Gjini",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false, // Prevent zooming which can cause performance issues with WebGL
+    viewportFit: "cover", // For notched devices
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Besu Customs",
+  },
+  formatDetection: {
+    telephone: false, // Prevent auto-linking phone numbers
+  },
 };
 
 export default function RootLayout({

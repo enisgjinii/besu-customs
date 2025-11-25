@@ -218,7 +218,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden">
+    <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden overscroll-none">
       {/* Desktop: Unified Left Sidebar */}
       <div
         className={`hidden md:block fixed top-4 left-4 z-40 transition-all duration-300 ${
@@ -236,6 +236,7 @@ export default function Home() {
         className={`flex-1 relative min-w-0 pb-20 md:pb-0 transition-all duration-300 ${
           sidebarCollapsed ? "md:pl-[80px]" : "md:pl-[440px]"
         }`}
+        style={{ touchAction: 'none' }} /* Prevent default touch actions on 3D canvas area */
       >
         <Scene />
       </main>
