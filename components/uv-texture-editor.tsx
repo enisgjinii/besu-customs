@@ -6,11 +6,62 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Type, Image as ImageIcon, Trash2, Download, Map, Copy, Palette } from "lucide-react";
+import { 
+  Type, 
+  Image as ImageIcon, 
+  Trash2, 
+  Download, 
+  Map, 
+  Copy, 
+  Palette,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  RotateCcw,
+  Strikethrough,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import { PatternSelector } from "@/components/pattern-selector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Toggle } from "@/components/ui/toggle";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Font options
+const FONT_FAMILIES = [
+  { value: "Arial", label: "Arial" },
+  { value: "Helvetica", label: "Helvetica" },
+  { value: "Times New Roman", label: "Times New Roman" },
+  { value: "Georgia", label: "Georgia" },
+  { value: "Verdana", label: "Verdana" },
+  { value: "Courier New", label: "Courier New" },
+  { value: "Impact", label: "Impact" },
+  { value: "Comic Sans MS", label: "Comic Sans" },
+  { value: "Trebuchet MS", label: "Trebuchet" },
+  { value: "Arial Black", label: "Arial Black" },
+  { value: "Palatino Linotype", label: "Palatino" },
+  { value: "Lucida Console", label: "Lucida Console" },
+  { value: "Tahoma", label: "Tahoma" },
+  { value: "Century Gothic", label: "Century Gothic" },
+  { value: "Copperplate", label: "Copperplate" },
+  { value: "Brush Script MT", label: "Brush Script" },
+];
+
+const FONT_WEIGHTS = [
+  { value: "normal", label: "Normal" },
+  { value: "bold", label: "Bold" },
+  { value: "100", label: "Thin" },
+  { value: "300", label: "Light" },
+  { value: "500", label: "Medium" },
+  { value: "600", label: "Semi Bold" },
+  { value: "700", label: "Bold" },
+  { value: "800", label: "Extra Bold" },
+  { value: "900", label: "Black" },
+];
 
 export function UVTextureEditor() {
   const completeUVMap = useConfiguratorStore((s) => s.completeUVMap);
@@ -28,12 +79,27 @@ export function UVTextureEditor() {
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializingRef = useRef(false);
 
-  // Text controls
+  // Text controls - basic
   const [newText, setNewText] = useState("");
   const [textColor, setTextColor] = useState("#000000");
   const [fontSize, setFontSize] = useState(perfConfig.isMobile ? 80 : 120);
   const [hasSelection, setHasSelection] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Text controls - advanced
+  const [fontFamily, setFontFamily] = useState("Arial");
+  const [fontWeight, setFontWeight] = useState("normal");
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
+  const [strokeColor, setStrokeColor] = useState("#ffffff");
+  const [strokeWidth, setStrokeWidth] = useState(0);
+  const [letterSpacing, setLetterSpacing] = useState(0);
+  const [lineHeight, setLineHeight] = useState(1.2);
+  const [textShadow, setTextShadow] = useState(false);
+  const [backgroundColor, setBackgroundColor] = useState("");
+  const [textRotation, setTextRotation] = useState(0);
 
   // Real-time update to 3D model with mobile-optimized debouncing
   const updateTexture = useCallback(() => {
@@ -234,21 +300,82 @@ export function UVTextureEditor() {
     const { IText } = await import("fabric");
     const canvas = fabricCanvasRef.current;
 
-    const text = new IText(newText, {
+    const textOptions: any = {
       left: canvas.width! / 2 - 200,
       top: canvas.height! / 2 - 100,
       fontSize: fontSize,
       fill: textColor,
-      fontFamily: "Arial",
+      fontFamily: fontFamily,
+      fontWeight: fontWeight,
+      fontStyle: isItalic ? "italic" : "normal",
+      underline: isUnderline,
+      linethrough: isStrikethrough,
+      textAlign: textAlign,
       editable: true,
-    });
+      charSpacing: letterSpacing * 10, // Fabric uses different scale
+      lineHeight: lineHeight,
+      angle: textRotation,
+    };
+
+    // Add stroke if width > 0
+    if (strokeWidth > 0) {
+      textOptions.stroke = strokeColor;
+      textOptions.strokeWidth = strokeWidth;
+    }
+
+    // Add background color if set
+    if (backgroundColor) {
+      textOptions.backgroundColor = backgroundColor;
+    }
+
+    // Add shadow if enabled
+    if (textShadow) {
+      textOptions.shadow = {
+        color: 'rgba(0,0,0,0.5)',
+        blur: 5,
+        offsetX: 3,
+        offsetY: 3,
+      };
+    }
+
+    const text = new IText(newText, textOptions);
 
     canvas.add(text);
     canvas.setActiveObject(text);
     canvas.renderAll();
     setNewText("");
     updateTexture();
-  }, [newText, fontSize, textColor, updateTexture]);
+  }, [newText, fontSize, textColor, fontFamily, fontWeight, isItalic, isUnderline, isStrikethrough, textAlign, strokeColor, strokeWidth, letterSpacing, lineHeight, textShadow, backgroundColor, textRotation, updateTexture]);
+
+  // Function to update selected text properties
+  const updateSelectedText = useCallback((property: string, value: any) => {
+    if (!fabricCanvasRef.current) return;
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+    
+    if (activeObject && activeObject.type === 'i-text') {
+      activeObject.set(property, value);
+      canvas.renderAll();
+      updateTexture();
+    }
+  }, [updateTexture]);
+
+  // Reset text styling to defaults
+  const resetTextStyling = useCallback(() => {
+    setFontFamily("Arial");
+    setFontWeight("normal");
+    setIsItalic(false);
+    setIsUnderline(false);
+    setIsStrikethrough(false);
+    setTextAlign("center");
+    setStrokeColor("#ffffff");
+    setStrokeWidth(0);
+    setLetterSpacing(0);
+    setLineHeight(1.2);
+    setTextShadow(false);
+    setBackgroundColor("");
+    setTextRotation(0);
+  }, []);
 
   const handleAddImage = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -407,43 +534,294 @@ export function UVTextureEditor() {
 
         {/* Text Tab */}
         <TabsContent value="text" className="mt-4">
-          <Card className="p-4 space-y-4">
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Type className="w-4 h-4" />
-                Add Text
-              </h3>
-              <div className="space-y-3">
-                <Input
-                  placeholder="Enter text"
-                  value={newText}
-                  onChange={(e) => setNewText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddText()}
-                />
-                <div className="space-y-2">
-                  <Label>Font Size: {fontSize}px</Label>
-                  <Slider
-                    value={[fontSize]}
-                    onValueChange={(v) => setFontSize(v[0])}
-                    min={12}
-                    max={200}
-                    step={1}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Color</Label>
+          <Card className="p-4">
+            <ScrollArea className="h-[400px] pr-3">
+              <div className="space-y-4">
+                {/* Text Input */}
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Type className="w-4 h-4" />
+                    Add Text
+                  </h3>
                   <Input
-                    type="color"
-                    value={textColor}
-                    onChange={(e) => setTextColor(e.target.value)}
+                    placeholder="Enter your text..."
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddText()}
+                    className="mb-3"
                   />
                 </div>
-                <Button onClick={handleAddText} className="w-full" size="sm" disabled={!isLoaded}>
-                  <Type className="h-4 w-4 mr-2" />
-                  Add Text
-                </Button>
+
+                {/* Font Family */}
+                <div className="space-y-2">
+                  <Label>Font Family</Label>
+                  <Select value={fontFamily} onValueChange={setFontFamily}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select font" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FONT_FAMILIES.map((font) => (
+                        <SelectItem 
+                          key={font.value} 
+                          value={font.value}
+                          style={{ fontFamily: font.value }}
+                        >
+                          {font.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Font Size & Weight */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Size: {fontSize}px</Label>
+                    <Slider
+                      value={[fontSize]}
+                      onValueChange={(v) => setFontSize(v[0])}
+                      min={12}
+                      max={300}
+                      step={1}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Weight</Label>
+                    <Select value={fontWeight} onValueChange={setFontWeight}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FONT_WEIGHTS.map((weight) => (
+                          <SelectItem key={weight.value} value={weight.value}>
+                            {weight.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Text Style Toggles */}
+                <div className="space-y-2">
+                  <Label>Style</Label>
+                  <div className="flex gap-1 flex-wrap">
+                    <Toggle
+                      size="sm"
+                      pressed={isItalic}
+                      onPressedChange={setIsItalic}
+                      aria-label="Italic"
+                    >
+                      <Italic className="h-4 w-4" />
+                    </Toggle>
+                    <Toggle
+                      size="sm"
+                      pressed={isUnderline}
+                      onPressedChange={setIsUnderline}
+                      aria-label="Underline"
+                    >
+                      <Underline className="h-4 w-4" />
+                    </Toggle>
+                    <Toggle
+                      size="sm"
+                      pressed={isStrikethrough}
+                      onPressedChange={setIsStrikethrough}
+                      aria-label="Strikethrough"
+                    >
+                      <Strikethrough className="h-4 w-4" />
+                    </Toggle>
+                    <Toggle
+                      size="sm"
+                      pressed={textShadow}
+                      onPressedChange={setTextShadow}
+                      aria-label="Shadow"
+                      className="px-2"
+                    >
+                      Shadow
+                    </Toggle>
+                  </div>
+                </div>
+
+                {/* Text Alignment */}
+                <div className="space-y-2">
+                  <Label>Alignment</Label>
+                  <div className="flex gap-1">
+                    <Toggle
+                      size="sm"
+                      pressed={textAlign === "left"}
+                      onPressedChange={() => setTextAlign("left")}
+                      aria-label="Align left"
+                    >
+                      <AlignLeft className="h-4 w-4" />
+                    </Toggle>
+                    <Toggle
+                      size="sm"
+                      pressed={textAlign === "center"}
+                      onPressedChange={() => setTextAlign("center")}
+                      aria-label="Align center"
+                    >
+                      <AlignCenter className="h-4 w-4" />
+                    </Toggle>
+                    <Toggle
+                      size="sm"
+                      pressed={textAlign === "right"}
+                      onPressedChange={() => setTextAlign("right")}
+                      aria-label="Align right"
+                    >
+                      <AlignRight className="h-4 w-4" />
+                    </Toggle>
+                  </div>
+                </div>
+
+                {/* Colors */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Text Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="w-12 h-9 p-1 cursor-pointer"
+                      />
+                      <Input
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="flex-1 font-mono text-xs"
+                        placeholder="#000000"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Background</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={backgroundColor || "#ffffff"}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-12 h-9 p-1 cursor-pointer"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setBackgroundColor("")}
+                        className="text-xs"
+                      >
+                        None
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stroke */}
+                <div className="space-y-2">
+                  <Label>Stroke / Outline</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="color"
+                      value={strokeColor}
+                      onChange={(e) => setStrokeColor(e.target.value)}
+                      className="w-12 h-9 p-1 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <Slider
+                        value={[strokeWidth]}
+                        onValueChange={(v) => setStrokeWidth(v[0])}
+                        min={0}
+                        max={20}
+                        step={1}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-8">{strokeWidth}px</span>
+                  </div>
+                </div>
+
+                {/* Letter Spacing & Line Height */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Letter Spacing: {letterSpacing}</Label>
+                    <Slider
+                      value={[letterSpacing]}
+                      onValueChange={(v) => setLetterSpacing(v[0])}
+                      min={-50}
+                      max={200}
+                      step={1}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Line Height: {lineHeight.toFixed(1)}</Label>
+                    <Slider
+                      value={[lineHeight * 10]}
+                      onValueChange={(v) => setLineHeight(v[0] / 10)}
+                      min={5}
+                      max={30}
+                      step={1}
+                    />
+                  </div>
+                </div>
+
+                {/* Rotation */}
+                <div className="space-y-2">
+                  <Label>Rotation: {textRotation}°</Label>
+                  <div className="flex gap-2 items-center">
+                    <Slider
+                      value={[textRotation]}
+                      onValueChange={(v) => setTextRotation(v[0])}
+                      min={-180}
+                      max={180}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setTextRotation(0)}
+                      className="h-8 w-8"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={handleAddText} className="flex-1" disabled={!isLoaded || !newText.trim()}>
+                    <Type className="h-4 w-4 mr-2" />
+                    Add Text
+                  </Button>
+                  <Button variant="outline" onClick={resetTextStyling} size="icon">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Preview */}
+                {newText && (
+                  <div className="mt-3 p-3 border rounded-lg bg-muted/50">
+                    <Label className="text-xs text-muted-foreground mb-2 block">Preview</Label>
+                    <div 
+                      className="text-center p-2 rounded overflow-hidden"
+                      style={{
+                        fontFamily: fontFamily,
+                        fontSize: Math.min(fontSize, 48),
+                        fontWeight: fontWeight as any,
+                        fontStyle: isItalic ? "italic" : "normal",
+                        textDecoration: `${isUnderline ? "underline" : ""} ${isStrikethrough ? "line-through" : ""}`.trim() || "none",
+                        color: textColor,
+                        backgroundColor: backgroundColor || "transparent",
+                        textAlign: textAlign,
+                        letterSpacing: `${letterSpacing}px`,
+                        lineHeight: lineHeight,
+                        textShadow: textShadow ? "2px 2px 4px rgba(0,0,0,0.5)" : "none",
+                        WebkitTextStroke: strokeWidth > 0 ? `${strokeWidth}px ${strokeColor}` : undefined,
+                        transform: `rotate(${textRotation}deg)`,
+                      }}
+                    >
+                      {newText}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </ScrollArea>
           </Card>
         </TabsContent>
 
