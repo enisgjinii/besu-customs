@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Type, Image as ImageIcon, Trash2, Download, Map, Copy } from "lucide-react";
+import { Type, Image as ImageIcon, Trash2, Download, Map, Copy, Palette } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
+import { PatternSelector } from "@/components/pattern-selector";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function UVTextureEditor() {
   const completeUVMap = useConfiguratorStore((s) => s.completeUVMap);
@@ -381,94 +383,129 @@ export function UVTextureEditor() {
 
   return (
     <div className="space-y-4">
-      {/* Controls */}
-      <Card className="p-4 space-y-4">
-        <div>
-          <h3 className="font-semibold mb-3 flex items-center gap-2">
+      {/* Tabs for different tools */}
+      <Tabs defaultValue="patterns" className="w-full">
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="patterns" className="flex items-center gap-1">
+            <Palette className="w-4 h-4" />
+            <span className="hidden sm:inline">Patterns</span>
+          </TabsTrigger>
+          <TabsTrigger value="text" className="flex items-center gap-1">
             <Type className="w-4 h-4" />
-            Add Text
-          </h3>
-          <div className="space-y-3">
-            <Input
-              placeholder="Enter text"
-              value={newText}
-              onChange={(e) => setNewText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddText()}
-            />
-            <div className="space-y-2">
-              <Label>Font Size: {fontSize}px</Label>
-              <Slider
-                value={[fontSize]}
-                onValueChange={(v) => setFontSize(v[0])}
-                min={12}
-                max={200}
-                step={1}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Color</Label>
-              <Input
-                type="color"
-                value={textColor}
-                onChange={(e) => setTextColor(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleAddText} className="w-full" size="sm" disabled={!isLoaded}>
-              <Type className="h-4 w-4 mr-2" />
-              Add Text
-            </Button>
-          </div>
-        </div>
-
-        <div className="border-t pt-4">
-          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <span className="hidden sm:inline">Text</span>
+          </TabsTrigger>
+          <TabsTrigger value="image" className="flex items-center gap-1">
             <ImageIcon className="w-4 h-4" />
-            Add Image
-          </h3>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={handleAddImage}
-            className="cursor-pointer"
-            disabled={!isLoaded}
-          />
-        </div>
+            <span className="hidden sm:inline">Image</span>
+          </TabsTrigger>
+        </TabsList>
 
-        {hasSelection && (
-          <div className="border-t pt-4 space-y-2">
-            <h3 className="font-semibold mb-3">Selected Object</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={handleDuplicate}
-                variant="outline"
-                size="sm"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Duplicate
-              </Button>
-              <Button
-                onClick={handleDelete}
-                variant="destructive"
-                size="sm"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
+        {/* Pattern Library Tab */}
+        <TabsContent value="patterns" className="mt-4">
+          <PatternSelector />
+        </TabsContent>
+
+        {/* Text Tab */}
+        <TabsContent value="text" className="mt-4">
+          <Card className="p-4 space-y-4">
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Type className="w-4 h-4" />
+                Add Text
+              </h3>
+              <div className="space-y-3">
+                <Input
+                  placeholder="Enter text"
+                  value={newText}
+                  onChange={(e) => setNewText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddText()}
+                />
+                <div className="space-y-2">
+                  <Label>Font Size: {fontSize}px</Label>
+                  <Slider
+                    value={[fontSize]}
+                    onValueChange={(v) => setFontSize(v[0])}
+                    min={12}
+                    max={200}
+                    step={1}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Color</Label>
+                  <Input
+                    type="color"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleAddText} className="w-full" size="sm" disabled={!isLoaded}>
+                  <Type className="h-4 w-4 mr-2" />
+                  Add Text
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          </Card>
+        </TabsContent>
 
-        <div className="border-t pt-4 space-y-2">
-          <div className="flex gap-2">
-            <Button onClick={handleDownload} variant="outline" className="flex-1" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Download
+        {/* Image Tab */}
+        <TabsContent value="image" className="mt-4">
+          <Card className="p-4 space-y-4">
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" />
+                Add Image
+              </h3>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleAddImage}
+                className="cursor-pointer"
+                disabled={!isLoaded}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Upload logos, graphics, or photos to add to your design
+              </p>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Selection Tools - shown when object is selected */}
+      {hasSelection && (
+        <Card className="p-4 space-y-2">
+          <h3 className="font-semibold mb-3">Selected Object</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={handleDuplicate}
+              variant="outline"
+              size="sm"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Duplicate
             </Button>
-            <Button onClick={handleClear} variant="outline" className="flex-1" size="sm">
+            <Button
+              onClick={handleDelete}
+              variant="destructive"
+              size="sm"
+            >
               <Trash2 className="h-4 w-4 mr-2" />
-              Clear All
+              Delete
             </Button>
           </div>
+        </Card>
+      )}
+
+      {/* Action Buttons */}
+      <Card className="p-4">
+        <div className="flex gap-2">
+          <Button onClick={handleDownload} variant="outline" className="flex-1" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Download
+          </Button>
+          <Button onClick={handleClear} variant="outline" className="flex-1" size="sm">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clear All
+          </Button>
         </div>
       </Card>
 
