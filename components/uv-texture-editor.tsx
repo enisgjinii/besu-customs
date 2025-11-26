@@ -22,7 +22,9 @@ import {
   AlignRight,
   RotateCcw,
   Strikethrough,
+  MousePointer2,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import { PatternSelector } from "@/components/pattern-selector";
@@ -69,6 +71,8 @@ export function UVTextureEditor() {
     (s) => s.setGlobalCustomTexture,
   );
   const setFabricCanvas = useConfiguratorStore((s) => s.setFabricCanvas);
+  const enable3DTextureInteraction = useConfiguratorStore((s) => s.enable3DTextureInteraction);
+  const setEnable3DTextureInteraction = useConfiguratorStore((s) => s.setEnable3DTextureInteraction);
   
   // Mobile performance configuration
   const perfConfig = useMobilePerformance();
@@ -129,8 +133,13 @@ export function UVTextureEditor() {
       const tempCtx = tempCanvas.getContext('2d');
       if (!tempCtx) return;
 
-      // Save current background
+      // Save current background and active selection
       const originalBg = canvas.backgroundImage;
+      const activeObject = canvas.getActiveObject();
+      const activeObjects = canvas.getActiveObjects();
+
+      // Deselect all objects to hide controls before export
+      canvas.discardActiveObject();
 
       // Temporarily replace UV wireframe with white background for clean export
       canvas.backgroundImage = null;
@@ -154,10 +163,19 @@ export function UVTextureEditor() {
 
       // Restore UV wireframe background for editing view
       canvas.backgroundImage = originalBg;
+      
+      // Restore selection state in 2D editor
+      if (activeObject && activeObjects.length <= 1) {
+        canvas.setActiveObject(activeObject);
+      } else if (activeObjects.length > 1) {
+        const sel = new (canvas.constructor as any).ActiveSelection(activeObjects, { canvas });
+        canvas.setActiveObject(sel);
+      }
+      
       canvas.renderAll();
 
       setGlobalCustomTexture(dataUrl);
-      console.log("🔄 UV texture updated and flipped for 3D (text & images on white background)");
+      console.log("🔄 UV texture updated and flipped for 3D (controls hidden, text & images on white background)");
     }, debounceTime);
   }, [setGlobalCustomTexture, perfConfig.debounceMs, perfConfig.isMobile, canvasSize]);
 
@@ -1075,7 +1093,7 @@ export function UVTextureEditor() {
       )}
 
       {/* Action Buttons */}
-      <Card className="p-4">
+      <Card className="p-4 space-y-3">
         <div className="flex gap-2">
           <Button onClick={handleDownload} variant="outline" className="flex-1" size="sm">
             <Download className="h-4 w-4 mr-2" />
@@ -1085,6 +1103,21 @@ export function UVTextureEditor() {
             <Trash2 className="h-4 w-4 mr-2" />
             Clear All
           </Button>
+        </div>
+        
+        {/* 3D Interaction Toggle */}
+        <div className="flex items-center justify-between pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <MousePointer2 className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="3d-interaction" className="text-sm cursor-pointer">
+              Click on 3D to select
+            </Label>
+          </div>
+          <Switch
+            id="3d-interaction"
+            checked={enable3DTextureInteraction}
+            onCheckedChange={setEnable3DTextureInteraction}
+          />
         </div>
       </Card>
 

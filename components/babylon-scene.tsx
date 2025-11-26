@@ -95,6 +95,7 @@ export function BabylonScene() {
     (s) => s.setGlobalCustomTexture,
   );
   const fabricCanvas = useConfiguratorStore((s) => s.fabricCanvas);
+  const enable3DTextureInteraction = useConfiguratorStore((s) => s.enable3DTextureInteraction);
 
   // Interaction state
   const isDraggingRef = useRef(false);
@@ -271,6 +272,12 @@ export function BabylonScene() {
     const scene = sceneRef.current;
     if (!scene || !fabricCanvas) return;
 
+    // Skip if 3D texture interaction is disabled
+    if (!enable3DTextureInteraction) {
+      console.log("🎮 3D texture interaction disabled");
+      return;
+    }
+
     console.log("🎮 Initializing 3D interaction with Fabric canvas");
 
     const pointerObserver = scene.onPointerObservable.add((pointerInfo) => {
@@ -440,7 +447,7 @@ export function BabylonScene() {
         scene.onPointerObservable.remove(pointerObserver);
       }
     };
-  }, [fabricCanvas]);
+  }, [fabricCanvas, enable3DTextureInteraction]);
 
   // Handle background color changes without recreating the scene
   useEffect(() => {

@@ -159,6 +159,8 @@ export interface ConfiguratorState {
   // Fabric.js integration for 3D interaction
   fabricCanvas: any | null;
   setFabricCanvas: (canvas: any | null) => void;
+  enable3DTextureInteraction: boolean;
+  setEnable3DTextureInteraction: (enabled: boolean) => void;
 
   // Model loading
   modelLoading: boolean;
@@ -564,6 +566,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   // Fabric.js integration
   fabricCanvas: null,
   setFabricCanvas: (canvas: any | null) => set({ fabricCanvas: canvas }),
+  enable3DTextureInteraction: true,
+  setEnable3DTextureInteraction: (enabled: boolean) => set({ enable3DTextureInteraction: enabled }),
 
   // Model loading
   modelLoading: false,
