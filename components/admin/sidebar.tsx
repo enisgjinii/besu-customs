@@ -19,7 +19,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { CommitInfo } from "@/components/ui/commit-info";
+
 interface SidebarProps {
   className?: string;
 }
@@ -112,12 +112,10 @@ export function SidebarContent({ collapsed = false, onNavigate }: SidebarContent
       <div className="border-t p-4">
         <div
           className={cn(
-            "flex items-center justify-between text-xs text-muted-foreground",
-            collapsed && "justify-center",
+            "flex items-center justify-center text-xs text-muted-foreground",
           )}
         >
           {!collapsed && <span>v1.0.0</span>}
-          <CommitInfo variant={collapsed ? "icon" : "badge"} />
         </div>
       </div>
     </>

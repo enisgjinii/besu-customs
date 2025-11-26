@@ -33,7 +33,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CommitInfo } from "@/components/ui/commit-info";
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
@@ -243,11 +242,6 @@ export default function Home() {
 
       {/* Mobile: Bottom Navigation */}
       <MobileBottomNav />
-
-      {/* Commit Info - Bottom Right Corner */}
-      <div className="fixed bottom-4 right-4 z-30">
-        <CommitInfo variant="badge" />
-      </div>
 
       {/* Mobile Navigation Tour Target */}
     </div>
