@@ -56,6 +56,12 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
         top: 0,
         selectable: true,
         evented: true,
+        borderColor: '#3b82f6',
+        borderDashArray: [8, 6],
+        borderScaleFactor: 2.5,
+        padding: 16,
+        transparentCorners: false,
+        cornerSize: 44,
       });
 
       // Add to canvas

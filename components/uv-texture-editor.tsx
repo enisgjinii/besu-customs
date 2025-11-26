@@ -78,6 +78,7 @@ export function UVTextureEditor() {
   const fabricCanvasRef = useRef<any>(null);
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializingRef = useRef(false);
+  const customControlsRef = useRef<any>(null);
 
   // Text controls - basic
   const [newText, setNewText] = useState("");
@@ -222,6 +223,277 @@ export function UVTextureEditor() {
       setFabricCanvas(canvas);
       console.log(`✅ Fabric canvas initialized at ${canvasSize}x${canvasSize}, displayed at`, displaySize, "px");
 
+      // Configure custom controls like the reference image
+      const fabric = await import("fabric");
+      const { Control, controlsUtils } = fabric;
+      const controlSize = 44; // Large control size
+      
+      // Rotate icon (top-left) - circular arrow
+      const renderRotateIcon = (
+        ctx: CanvasRenderingContext2D,
+        left: number,
+        top: number,
+        styleOverride: any,
+        fabricObject: any
+      ) => {
+        ctx.save();
+        ctx.translate(left, top);
+        
+        // White circle background
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Rotation arrow icon
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, controlSize / 4, -Math.PI * 0.8, Math.PI * 0.6);
+        ctx.stroke();
+        
+        // Arrow head
+        ctx.fillStyle = '#3b82f6';
+        ctx.beginPath();
+        ctx.moveTo(controlSize / 5, controlSize / 6);
+        ctx.lineTo(controlSize / 3, controlSize / 8);
+        ctx.lineTo(controlSize / 5, -controlSize / 12);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+      };
+
+      // Pin/Lock icon (top-right)
+      const renderPinIcon = (
+        ctx: CanvasRenderingContext2D,
+        left: number,
+        top: number,
+        styleOverride: any,
+        fabricObject: any
+      ) => {
+        ctx.save();
+        ctx.translate(left, top);
+        
+        // White circle background
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#6b7280';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Pin icon
+        ctx.strokeStyle = '#6b7280';
+        ctx.fillStyle = '#6b7280';
+        ctx.lineWidth = 2;
+        
+        // Pin head (circle)
+        ctx.beginPath();
+        ctx.arc(0, -controlSize / 8, controlSize / 8, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Pin body
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, controlSize / 4);
+        ctx.stroke();
+        
+        // Pin point
+        ctx.beginPath();
+        ctx.moveTo(-controlSize / 10, controlSize / 6);
+        ctx.lineTo(controlSize / 10, controlSize / 6);
+        ctx.stroke();
+        
+        ctx.restore();
+      };
+
+      // Delete/Trash icon (bottom-left)
+      const renderDeleteIcon = (
+        ctx: CanvasRenderingContext2D,
+        left: number,
+        top: number,
+        styleOverride: any,
+        fabricObject: any
+      ) => {
+        ctx.save();
+        ctx.translate(left, top);
+        
+        // White circle background
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Trash can icon
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        
+        // Trash body
+        ctx.beginPath();
+        ctx.moveTo(-controlSize / 5, -controlSize / 8);
+        ctx.lineTo(-controlSize / 6, controlSize / 4);
+        ctx.lineTo(controlSize / 6, controlSize / 4);
+        ctx.lineTo(controlSize / 5, -controlSize / 8);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Trash lid
+        ctx.beginPath();
+        ctx.moveTo(-controlSize / 4, -controlSize / 8);
+        ctx.lineTo(controlSize / 4, -controlSize / 8);
+        ctx.stroke();
+        
+        // Trash handle
+        ctx.beginPath();
+        ctx.moveTo(-controlSize / 10, -controlSize / 8);
+        ctx.lineTo(-controlSize / 10, -controlSize / 5);
+        ctx.lineTo(controlSize / 10, -controlSize / 5);
+        ctx.lineTo(controlSize / 10, -controlSize / 8);
+        ctx.stroke();
+        
+        ctx.restore();
+      };
+
+      // Resize icon (bottom-right) - diagonal arrows
+      const renderResizeIcon = (
+        ctx: CanvasRenderingContext2D,
+        left: number,
+        top: number,
+        styleOverride: any,
+        fabricObject: any
+      ) => {
+        ctx.save();
+        ctx.translate(left, top);
+        
+        // White circle background
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Diagonal resize arrows
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2.5;
+        
+        // Arrow line
+        ctx.beginPath();
+        ctx.moveTo(-controlSize / 4, -controlSize / 4);
+        ctx.lineTo(controlSize / 4, controlSize / 4);
+        ctx.stroke();
+        
+        // Top-left arrow head
+        ctx.beginPath();
+        ctx.moveTo(-controlSize / 4, -controlSize / 4);
+        ctx.lineTo(-controlSize / 8, -controlSize / 4);
+        ctx.moveTo(-controlSize / 4, -controlSize / 4);
+        ctx.lineTo(-controlSize / 4, -controlSize / 8);
+        ctx.stroke();
+        
+        // Bottom-right arrow head
+        ctx.beginPath();
+        ctx.moveTo(controlSize / 4, controlSize / 4);
+        ctx.lineTo(controlSize / 8, controlSize / 4);
+        ctx.moveTo(controlSize / 4, controlSize / 4);
+        ctx.lineTo(controlSize / 4, controlSize / 8);
+        ctx.stroke();
+        
+        ctx.restore();
+      };
+
+      // Delete action handler
+      const deleteObject = (eventData: any, transform: any) => {
+        const target = transform.target;
+        const canvas = target.canvas;
+        canvas.remove(target);
+        canvas.requestRenderAll();
+        return true;
+      };
+
+      // Define custom controls - 4 corners only like the reference
+      const customControls = {
+        // Top-left: Rotate
+        tl: new Control({
+          x: -0.5,
+          y: -0.5,
+          offsetX: -16,
+          offsetY: -16,
+          cursorStyle: 'grab',
+          actionHandler: controlsUtils.rotationWithSnapping,
+          actionName: 'rotate',
+          render: renderRotateIcon,
+          sizeX: controlSize,
+          sizeY: controlSize,
+        }),
+        // Top-right: Pin/Lock (scale)
+        tr: new Control({
+          x: 0.5,
+          y: -0.5,
+          offsetX: 16,
+          offsetY: -16,
+          cursorStyle: 'pointer',
+          actionHandler: controlsUtils.scalingEqually,
+          actionName: 'scale',
+          render: renderPinIcon,
+          sizeX: controlSize,
+          sizeY: controlSize,
+        }),
+        // Bottom-left: Delete
+        bl: new Control({
+          x: -0.5,
+          y: 0.5,
+          offsetX: -16,
+          offsetY: 16,
+          cursorStyle: 'pointer',
+          actionHandler: deleteObject,
+          actionName: 'delete',
+          render: renderDeleteIcon,
+          sizeX: controlSize,
+          sizeY: controlSize,
+        }),
+        // Bottom-right: Resize
+        br: new Control({
+          x: 0.5,
+          y: 0.5,
+          offsetX: 16,
+          offsetY: 16,
+          cursorStyle: 'nwse-resize',
+          actionHandler: controlsUtils.scalingEqually,
+          actionName: 'scale',
+          render: renderResizeIcon,
+          sizeX: controlSize,
+          sizeY: controlSize,
+        }),
+      };
+
+      // Store custom controls for later use
+      customControlsRef.current = customControls;
+      
+      // Apply custom controls to all object prototypes
+      const { FabricObject, IText: ITextClass, FabricImage: FabricImageClass } = fabric;
+      
+      FabricObject.prototype.controls = customControls;
+      FabricObject.prototype.borderColor = '#3b82f6';
+      FabricObject.prototype.borderDashArray = [8, 6];
+      FabricObject.prototype.borderScaleFactor = 2.5;
+      FabricObject.prototype.padding = 16;
+      FabricObject.prototype.transparentCorners = false;
+      FabricObject.prototype.cornerSize = 44;
+      
+      // Also apply to specific object types
+      if (ITextClass) ITextClass.prototype.controls = customControls;
+      if (FabricImageClass) FabricImageClass.prototype.controls = customControls;
+
       // Load UV map as background
       try {
         const img = await FabricImage.fromURL(completeUVMap);
@@ -253,12 +525,27 @@ export function UVTextureEditor() {
       canvas.on("selection:updated", () => setHasSelection(true));
       canvas.on("selection:cleared", () => setHasSelection(false));
 
+      // Apply custom controls to any newly added object
+      canvas.on("object:added", (e: any) => {
+        if (e.target && customControlsRef.current && e.target.selectable !== false) {
+          e.target.controls = customControlsRef.current;
+          e.target.set({
+            borderColor: '#3b82f6',
+            borderDashArray: [8, 6],
+            borderScaleFactor: 2.5,
+            padding: 16,
+            transparentCorners: false,
+            cornerSize: 44,
+          });
+        }
+        updateTexture();
+      });
+
       // Real-time updates on any change
       canvas.on("object:modified", updateTexture);
       canvas.on("object:moving", updateTexture);
       canvas.on("object:scaling", updateTexture);
       canvas.on("object:rotating", updateTexture);
-      canvas.on("object:added", updateTexture);
       canvas.on("object:removed", updateTexture);
     };
 
@@ -339,6 +626,19 @@ export function UVTextureEditor() {
     }
 
     const text = new IText(newText, textOptions);
+    
+    // Apply custom controls to the new text object
+    if (customControlsRef.current) {
+      text.controls = customControlsRef.current;
+      text.set({
+        borderColor: '#3b82f6',
+        borderDashArray: [8, 6],
+        borderScaleFactor: 2.5,
+        padding: 16,
+        transparentCorners: false,
+        cornerSize: 44,
+      });
+    }
 
     canvas.add(text);
     canvas.setActiveObject(text);
@@ -400,6 +700,20 @@ export function UVTextureEditor() {
           scaleX: scale,
           scaleY: scale,
         });
+        
+        // Apply custom controls to the new image object
+        if (customControlsRef.current) {
+          img.controls = customControlsRef.current;
+          img.set({
+            borderColor: '#3b82f6',
+            borderDashArray: [8, 6],
+            borderScaleFactor: 2.5,
+            padding: 16,
+            transparentCorners: false,
+            cornerSize: 44,
+          });
+        }
+        
         canvas.add(img);
         canvas.setActiveObject(img);
         canvas.renderAll();
