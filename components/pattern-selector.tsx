@@ -56,17 +56,17 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
         top: 0,
         selectable: true,
         evented: true,
-        borderColor: '#3b82f6',
-        borderDashArray: [8, 6],
-        borderScaleFactor: 2.5,
-        padding: 16,
-        transparentCorners: false,
-        cornerSize: 44,
+        // Controls will be applied by canvas object:added event
       });
 
-      // Add to canvas
+      // Add to canvas and send to back
       canvas.add(img);
-      canvas.sendToBack(img);
+      // Fabric.js v6: use sendObjectToBack instead of sendToBack
+      if (typeof canvas.sendObjectToBack === 'function') {
+        canvas.sendObjectToBack(img);
+      } else if (typeof canvas.sendToBack === 'function') {
+        canvas.sendToBack(img);
+      }
       canvas.renderAll();
       
       // Fire modified event to trigger texture update

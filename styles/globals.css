@@ -123,3 +123,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Control handle styles for PlacementGuide */
+.control-handle {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.control-handle:active {
+  transform: translateZ(0) scale(1.1);
+}

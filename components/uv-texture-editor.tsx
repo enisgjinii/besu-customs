@@ -223,276 +223,162 @@ export function UVTextureEditor() {
       setFabricCanvas(canvas);
       console.log(`✅ Fabric canvas initialized at ${canvasSize}x${canvasSize}, displayed at`, displaySize, "px");
 
-      // Configure custom controls like the reference image
+      // Configure custom 4-corner controls with Lucide React icons
       const fabric = await import("fabric");
       const { Control, controlsUtils } = fabric;
-      const controlSize = 44; // Large control size
       
-      // Rotate icon (top-left) - circular arrow
-      const renderRotateIcon = (
-        ctx: CanvasRenderingContext2D,
-        left: number,
-        top: number,
-        styleOverride: any,
-        fabricObject: any
-      ) => {
-        ctx.save();
-        ctx.translate(left, top);
-        
-        // White circle background
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-        
-        // Rotation arrow icon
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(0, 0, controlSize / 4, -Math.PI * 0.8, Math.PI * 0.6);
-        ctx.stroke();
-        
-        // Arrow head
-        ctx.fillStyle = '#3b82f6';
-        ctx.beginPath();
-        ctx.moveTo(controlSize / 5, controlSize / 6);
-        ctx.lineTo(controlSize / 3, controlSize / 8);
-        ctx.lineTo(controlSize / 5, -controlSize / 12);
-        ctx.closePath();
-        ctx.fill();
-        
-        ctx.restore();
+      // Calculate scale factor for controls - smaller size
+      const scaleFactor = canvasSize / displaySize;
+      const baseCornerSize = 26; // Slightly smaller
+      const scaledCornerSize = Math.round(baseCornerSize * scaleFactor);
+      const iconLineWidth = Math.max(2, Math.round(2 * scaleFactor));
+      
+      console.log(`📐 Control scale factor: ${scaleFactor.toFixed(2)}, corner size: ${scaledCornerSize}px`);
+      
+      // Create SVG strings for Lucide icons (using actual Lucide SVG markup)
+      const createLucideSvg = (pathD: string, color: string) => {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pathD}</svg>`;
       };
-
-      // Pin/Lock icon (top-right)
-      const renderPinIcon = (
-        ctx: CanvasRenderingContext2D,
-        left: number,
-        top: number,
-        styleOverride: any,
-        fabricObject: any
-      ) => {
-        ctx.save();
-        ctx.translate(left, top);
-        
-        // White circle background
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#6b7280';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-        
-        // Pin icon
-        ctx.strokeStyle = '#6b7280';
-        ctx.fillStyle = '#6b7280';
-        ctx.lineWidth = 2;
-        
-        // Pin head (circle)
-        ctx.beginPath();
-        ctx.arc(0, -controlSize / 8, controlSize / 8, 0, 2 * Math.PI);
-        ctx.stroke();
-        
-        // Pin body
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, controlSize / 4);
-        ctx.stroke();
-        
-        // Pin point
-        ctx.beginPath();
-        ctx.moveTo(-controlSize / 10, controlSize / 6);
-        ctx.lineTo(controlSize / 10, controlSize / 6);
-        ctx.stroke();
-        
-        ctx.restore();
+      
+      // Lucide icon paths (exact paths from lucide-react)
+      const lucideIconPaths = {
+        rotate: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+        pin: '<line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76c0 .73-.4 1.4-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>',
+        trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+        resize: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>',
       };
-
-      // Delete/Trash icon (bottom-left)
-      const renderDeleteIcon = (
-        ctx: CanvasRenderingContext2D,
-        left: number,
-        top: number,
-        styleOverride: any,
-        fabricObject: any
-      ) => {
-        ctx.save();
-        ctx.translate(left, top);
-        
-        // White circle background
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-        
-        // Trash can icon
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
-        
-        // Trash body
-        ctx.beginPath();
-        ctx.moveTo(-controlSize / 5, -controlSize / 8);
-        ctx.lineTo(-controlSize / 6, controlSize / 4);
-        ctx.lineTo(controlSize / 6, controlSize / 4);
-        ctx.lineTo(controlSize / 5, -controlSize / 8);
-        ctx.closePath();
-        ctx.stroke();
-        
-        // Trash lid
-        ctx.beginPath();
-        ctx.moveTo(-controlSize / 4, -controlSize / 8);
-        ctx.lineTo(controlSize / 4, -controlSize / 8);
-        ctx.stroke();
-        
-        // Trash handle
-        ctx.beginPath();
-        ctx.moveTo(-controlSize / 10, -controlSize / 8);
-        ctx.lineTo(-controlSize / 10, -controlSize / 5);
-        ctx.lineTo(controlSize / 10, -controlSize / 5);
-        ctx.lineTo(controlSize / 10, -controlSize / 8);
-        ctx.stroke();
-        
-        ctx.restore();
+      
+      const iconColors = {
+        rotate: '#3b82f6',
+        pin: '#6b7280',
+        trash: '#ef4444',
+        resize: '#3b82f6',
       };
-
-      // Resize icon (bottom-right) - diagonal arrows
-      const renderResizeIcon = (
-        ctx: CanvasRenderingContext2D,
-        left: number,
-        top: number,
-        styleOverride: any,
-        fabricObject: any
-      ) => {
-        ctx.save();
-        ctx.translate(left, top);
-        
-        // White circle background
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, controlSize / 2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-        
-        // Diagonal resize arrows
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 2.5;
-        
-        // Arrow line
-        ctx.beginPath();
-        ctx.moveTo(-controlSize / 4, -controlSize / 4);
-        ctx.lineTo(controlSize / 4, controlSize / 4);
-        ctx.stroke();
-        
-        // Top-left arrow head
-        ctx.beginPath();
-        ctx.moveTo(-controlSize / 4, -controlSize / 4);
-        ctx.lineTo(-controlSize / 8, -controlSize / 4);
-        ctx.moveTo(-controlSize / 4, -controlSize / 4);
-        ctx.lineTo(-controlSize / 4, -controlSize / 8);
-        ctx.stroke();
-        
-        // Bottom-right arrow head
-        ctx.beginPath();
-        ctx.moveTo(controlSize / 4, controlSize / 4);
-        ctx.lineTo(controlSize / 8, controlSize / 4);
-        ctx.moveTo(controlSize / 4, controlSize / 4);
-        ctx.lineTo(controlSize / 4, controlSize / 8);
-        ctx.stroke();
-        
-        ctx.restore();
+      
+      // Create Image objects for each icon
+      const iconImages: Record<string, HTMLImageElement> = {};
+      Object.entries(lucideIconPaths).forEach(([key, pathD]) => {
+        const color = iconColors[key as keyof typeof iconColors];
+        const svgString = createLucideSvg(pathD, color);
+        const img = new Image();
+        img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
+        iconImages[key] = img;
+      });
+      
+      // Render function using pre-rendered Lucide icon images
+      const renderIconControl = (iconKey: 'rotate' | 'pin' | 'trash' | 'resize', borderColor: string) => {
+        return (ctx: CanvasRenderingContext2D, left: number, top: number, styleOverride: any, fabricObject: any) => {
+          const size = scaledCornerSize;
+          ctx.save();
+          ctx.translate(left, top);
+          
+          // White circle background with subtle shadow
+          ctx.shadowColor = 'rgba(0,0,0,0.2)';
+          ctx.shadowBlur = size * 0.15;
+          ctx.shadowOffsetY = size * 0.05;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          // Border
+          ctx.shadowColor = 'transparent';
+          ctx.strokeStyle = borderColor;
+          ctx.lineWidth = iconLineWidth;
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2, 0, 2 * Math.PI);
+          ctx.stroke();
+          
+          // Draw the Lucide icon image centered
+          const img = iconImages[iconKey];
+          if (img && img.complete) {
+            const iconSize = size * 0.55;
+            ctx.drawImage(img, -iconSize / 2, -iconSize / 2, iconSize, iconSize);
+          }
+          
+          ctx.restore();
+        };
       };
-
-      // Delete action handler
-      const deleteObject = (eventData: any, transform: any) => {
+      
+      // Delete handler
+      const deleteHandler = (eventData: any, transform: any) => {
         const target = transform.target;
-        const canvas = target.canvas;
-        canvas.remove(target);
-        canvas.requestRenderAll();
+        const canvasObj = target.canvas;
+        canvasObj.remove(target);
+        canvasObj.requestRenderAll();
         return true;
       };
-
-      // Define custom controls - 4 corners only like the reference
+      
+      // Create custom controls - only 4 corners with Lucide icons
       const customControls = {
-        // Top-left: Rotate
         tl: new Control({
           x: -0.5,
           y: -0.5,
-          offsetX: -16,
-          offsetY: -16,
           cursorStyle: 'grab',
           actionHandler: controlsUtils.rotationWithSnapping,
           actionName: 'rotate',
-          render: renderRotateIcon,
-          sizeX: controlSize,
-          sizeY: controlSize,
+          render: renderIconControl('rotate', '#3b82f6'),
+          sizeX: scaledCornerSize,
+          sizeY: scaledCornerSize,
         }),
-        // Top-right: Pin/Lock (scale)
         tr: new Control({
           x: 0.5,
           y: -0.5,
-          offsetX: 16,
-          offsetY: -16,
           cursorStyle: 'pointer',
           actionHandler: controlsUtils.scalingEqually,
           actionName: 'scale',
-          render: renderPinIcon,
-          sizeX: controlSize,
-          sizeY: controlSize,
+          render: renderIconControl('pin', '#6b7280'),
+          sizeX: scaledCornerSize,
+          sizeY: scaledCornerSize,
         }),
-        // Bottom-left: Delete
         bl: new Control({
           x: -0.5,
           y: 0.5,
-          offsetX: -16,
-          offsetY: 16,
           cursorStyle: 'pointer',
-          actionHandler: deleteObject,
-          actionName: 'delete',
-          render: renderDeleteIcon,
-          sizeX: controlSize,
-          sizeY: controlSize,
+          mouseUpHandler: deleteHandler,
+          render: renderIconControl('trash', '#ef4444'),
+          sizeX: scaledCornerSize,
+          sizeY: scaledCornerSize,
         }),
-        // Bottom-right: Resize
         br: new Control({
           x: 0.5,
           y: 0.5,
-          offsetX: 16,
-          offsetY: 16,
           cursorStyle: 'nwse-resize',
           actionHandler: controlsUtils.scalingEqually,
           actionName: 'scale',
-          render: renderResizeIcon,
-          sizeX: controlSize,
-          sizeY: controlSize,
+          render: renderIconControl('resize', '#3b82f6'),
+          sizeX: scaledCornerSize,
+          sizeY: scaledCornerSize,
         }),
       };
-
-      // Store custom controls for later use
-      customControlsRef.current = customControls;
       
-      // Apply custom controls to all object prototypes
-      const { FabricObject, IText: ITextClass, FabricImage: FabricImageClass } = fabric;
+      // Control settings
+      const controlSettings = {
+        controls: customControls,
+        cornerSize: scaledCornerSize,
+        cornerColor: '#3b82f6',
+        cornerStrokeColor: '#ffffff',
+        transparentCorners: false,
+        borderColor: '#3b82f6',
+        borderDashArray: [Math.round(8 * scaleFactor), Math.round(6 * scaleFactor)],
+        borderScaleFactor: Math.max(2, scaleFactor),
+        padding: Math.round(15 * scaleFactor),
+      };
       
-      FabricObject.prototype.controls = customControls;
-      FabricObject.prototype.borderColor = '#3b82f6';
-      FabricObject.prototype.borderDashArray = [8, 6];
-      FabricObject.prototype.borderScaleFactor = 2.5;
-      FabricObject.prototype.padding = 16;
-      FabricObject.prototype.transparentCorners = false;
-      FabricObject.prototype.cornerSize = 44;
+      // Store for later use
+      customControlsRef.current = controlSettings;
       
-      // Also apply to specific object types
-      if (ITextClass) ITextClass.prototype.controls = customControls;
-      if (FabricImageClass) FabricImageClass.prototype.controls = customControls;
+      // Apply to prototypes
+      try {
+        if (fabric.FabricObject && fabric.FabricObject.prototype) {
+          fabric.FabricObject.prototype.controls = customControls;
+        }
+        if (fabric.InteractiveFabricObject && fabric.InteractiveFabricObject.prototype) {
+          fabric.InteractiveFabricObject.prototype.controls = customControls;
+        }
+      } catch (e) {
+        console.log("Could not set fabric defaults, will apply per-object");
+      }
 
       // Load UV map as background
       try {
@@ -525,18 +411,21 @@ export function UVTextureEditor() {
       canvas.on("selection:updated", () => setHasSelection(true));
       canvas.on("selection:cleared", () => setHasSelection(false));
 
-      // Apply custom controls to any newly added object
+      // Apply custom 4-corner controls to any newly added object
       canvas.on("object:added", (e: any) => {
-        if (e.target && customControlsRef.current && e.target.selectable !== false) {
-          e.target.controls = customControlsRef.current;
+        if (e.target && e.target.selectable !== false && customControlsRef.current) {
+          e.target.controls = customControlsRef.current.controls;
           e.target.set({
-            borderColor: '#3b82f6',
-            borderDashArray: [8, 6],
-            borderScaleFactor: 2.5,
-            padding: 16,
-            transparentCorners: false,
-            cornerSize: 44,
+            cornerSize: customControlsRef.current.cornerSize,
+            cornerColor: customControlsRef.current.cornerColor,
+            cornerStrokeColor: customControlsRef.current.cornerStrokeColor,
+            transparentCorners: customControlsRef.current.transparentCorners,
+            borderColor: customControlsRef.current.borderColor,
+            borderDashArray: customControlsRef.current.borderDashArray,
+            borderScaleFactor: customControlsRef.current.borderScaleFactor,
+            padding: customControlsRef.current.padding,
           });
+          canvas.requestRenderAll();
         }
         updateTexture();
       });
@@ -627,16 +516,15 @@ export function UVTextureEditor() {
 
     const text = new IText(newText, textOptions);
     
-    // Apply custom controls to the new text object
+    // Apply custom 4-corner controls to the new text object
     if (customControlsRef.current) {
-      text.controls = customControlsRef.current;
+      text.controls = customControlsRef.current.controls;
       text.set({
-        borderColor: '#3b82f6',
-        borderDashArray: [8, 6],
-        borderScaleFactor: 2.5,
-        padding: 16,
-        transparentCorners: false,
-        cornerSize: 44,
+        cornerSize: customControlsRef.current.cornerSize,
+        borderColor: customControlsRef.current.borderColor,
+        borderDashArray: customControlsRef.current.borderDashArray,
+        borderScaleFactor: customControlsRef.current.borderScaleFactor,
+        padding: customControlsRef.current.padding,
       });
     }
 
@@ -701,16 +589,15 @@ export function UVTextureEditor() {
           scaleY: scale,
         });
         
-        // Apply custom controls to the new image object
+        // Apply custom 4-corner controls to the new image object
         if (customControlsRef.current) {
-          img.controls = customControlsRef.current;
+          img.controls = customControlsRef.current.controls;
           img.set({
-            borderColor: '#3b82f6',
-            borderDashArray: [8, 6],
-            borderScaleFactor: 2.5,
-            padding: 16,
-            transparentCorners: false,
-            cornerSize: 44,
+            cornerSize: customControlsRef.current.cornerSize,
+            borderColor: customControlsRef.current.borderColor,
+            borderDashArray: customControlsRef.current.borderDashArray,
+            borderScaleFactor: customControlsRef.current.borderScaleFactor,
+            padding: customControlsRef.current.padding,
           });
         }
         
