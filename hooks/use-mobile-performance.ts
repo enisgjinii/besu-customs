@@ -82,14 +82,16 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
     hardwareConcurrency <= 4 || 
     gpuTier === "medium";
 
-  // Calculate optimal pixel ratio
-  const basePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  // Calculate optimal pixel ratio - allow higher ratios for better quality on capable devices
+  const basePixelRatio = Math.min(window.devicePixelRatio || 1, 3); // Allow up to 3x for retina displays
   let pixelRatio = basePixelRatio;
   
   if (isLowEndDevice) {
-    pixelRatio = Math.min(basePixelRatio, 1);
-  } else if (isMobile) {
-    pixelRatio = Math.min(basePixelRatio, 1.5);
+    pixelRatio = Math.min(basePixelRatio, 1.5); // Increased from 1 for better quality
+  } else if (isMobile && !isTablet) {
+    pixelRatio = Math.min(basePixelRatio, 2); // Allow full 2x for standard mobile
+  } else if (isTablet) {
+    pixelRatio = Math.min(basePixelRatio, 2.5); // Higher for tablets
   }
 
   // Configure based on device type
@@ -98,7 +100,7 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
       isMobile: true,
       isLowEndDevice: true,
       pixelRatio,
-      maxTextureSize: 512,
+      maxTextureSize: 1024,
       uvCanvasSize: 1024,
       antialias: false,
       shadowsEnabled: false,
@@ -106,7 +108,7 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
       targetFPS: 30,
       debounceMs: 500,
       enablePostProcessing: false,
-      hardwareScaling: 2,
+      hardwareScaling: 1.5, // Reduced from 2 for sharper rendering
     };
   }
 
@@ -115,15 +117,15 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
       isMobile: true,
       isLowEndDevice: false,
       pixelRatio,
-      maxTextureSize: 1024,
+      maxTextureSize: 2048,
       uvCanvasSize: 2048,
-      antialias: false,
+      antialias: true, // Enable for better edge quality
       shadowsEnabled: false,
-      maxLights: 2,
+      maxLights: 3, // Allow more lights for better lighting
       targetFPS: 60,
-      debounceMs: 300,
+      debounceMs: 200,
       enablePostProcessing: false,
-      hardwareScaling: 1.5,
+      hardwareScaling: 1.0, // Full resolution for sharp rendering
     };
   }
 
@@ -132,15 +134,15 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
       isMobile: true,
       isLowEndDevice: false,
       pixelRatio,
-      maxTextureSize: 2048,
-      uvCanvasSize: 2048,
-      antialias: false,
+      maxTextureSize: 4096,
+      uvCanvasSize: 4096,
+      antialias: true, // Enable for smooth edges
       shadowsEnabled: true,
-      maxLights: 3,
+      maxLights: 4,
       targetFPS: 60,
-      debounceMs: 200,
-      enablePostProcessing: false,
-      hardwareScaling: 1.25,
+      debounceMs: 150,
+      enablePostProcessing: true,
+      hardwareScaling: 1.0, // Full resolution
     };
   }
 
@@ -241,14 +243,23 @@ export function checkWebGL2Support(): boolean {
 
 // Get recommended engine options based on device
 export function getEngineOptions(config: MobilePerformanceConfig) {
+  // Use high-performance mode for non-low-end mobile devices for better quality
+  const powerPref = config.isLowEndDevice 
+    ? "low-power" 
+    : config.isMobile && !config.antialias 
+      ? "default" 
+      : "high-performance";
+
   return {
     preserveDrawingBuffer: false,
-    stencil: false,
+    stencil: config.antialias, // Enable stencil when antialiasing is on for better edge quality
     antialias: config.antialias,
-    powerPreference: config.isMobile ? "low-power" : "high-performance",
+    powerPreference: powerPref,
     doNotHandleContextLost: false,
     failIfMajorPerformanceCaveat: false,
-    desynchronized: true, // Better performance on mobile
+    desynchronized: config.isLowEndDevice, // Only use desync on low-end for performance
     adaptToDeviceRatio: false, // We handle this manually
+    premultipliedAlpha: true, // Better alpha blending
+    alpha: true, // Enable transparency
   } as const;
 }

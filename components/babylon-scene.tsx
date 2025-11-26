@@ -140,7 +140,7 @@ export function BabylonScene() {
     // Set background color
     const bgColor = getThemeBackgroundColor(theme, backgroundColor);
     scene.clearColor = hexToColor4(bgColor);
-    scene.ambientColor = new Color3(0.25, 0.25, 0.25); // Balanced ambient lighting
+    scene.ambientColor = new Color3(0.3, 0.3, 0.3); // Slightly brighter ambient for better visibility
 
     // Create camera with mobile-optimized controls
     const camera = new ArcRotateCamera(
@@ -155,17 +155,20 @@ export function BabylonScene() {
     camera.lowerRadiusLimit = 0.5;
     camera.upperRadiusLimit = 8;
     
-    // Mobile-friendly touch controls
+    // Mobile-friendly touch controls with improved responsiveness
     if (config.isMobile) {
-      camera.wheelPrecision = 30; // More responsive wheel/pinch
-      camera.pinchPrecision = 20; // More responsive pinch zoom
-      camera.panningSensibility = 500; // More responsive panning
-      camera.angularSensibilityX = 500; // Faster rotation
-      camera.angularSensibilityY = 500;
-      camera.inertia = 0.8; // Less inertia for snappier feel
+      camera.wheelPrecision = 25; // More responsive wheel/pinch
+      camera.pinchPrecision = 15; // More responsive pinch zoom
+      camera.panningSensibility = 400; // More responsive panning
+      camera.angularSensibilityX = 400; // Faster rotation
+      camera.angularSensibilityY = 400;
+      camera.inertia = 0.85; // Smooth but responsive
       // Enable multi-touch gestures
-      camera.pinchDeltaPercentage = 0.01;
+      camera.pinchDeltaPercentage = 0.008;
       camera.useNaturalPinchZoom = true;
+      // Better zoom limits for mobile
+      camera.lowerRadiusLimit = 1.0;
+      camera.upperRadiusLimit = 10;
     } else {
       camera.wheelPrecision = 50;
       camera.pinchPrecision = 50;
@@ -175,44 +178,58 @@ export function BabylonScene() {
     // Store camera ref for external control
     setCameraControlsRef(camera);
 
-    // Create lights - optimized for mobile
+    // Create lights - optimized for mobile but with improved quality
     const hemisphericLight = new HemisphericLight(
       "hemisphericLight",
       new Vector3(0, 1, 0),
       scene,
     );
-    hemisphericLight.intensity = config.isMobile ? 1.0 : 0.9; // Slightly higher on mobile to compensate for fewer lights
+    hemisphericLight.intensity = config.isMobile ? 1.1 : 0.9; // Better ambient lighting on mobile
     hemisphericLight.diffuse = new Color3(1, 1, 1);
-    hemisphericLight.specular = config.isMobile ? new Color3(0.1, 0.1, 0.1) : new Color3(0.3, 0.3, 0.3);
+    hemisphericLight.groundColor = new Color3(0.3, 0.3, 0.35); // Add ground color for better ambient occlusion effect
+    hemisphericLight.specular = config.isLowEndDevice ? new Color3(0.1, 0.1, 0.1) : new Color3(0.4, 0.4, 0.4);
 
     const directionalLight = new DirectionalLight(
       "directionalLight",
       new Vector3(-1, -2, -1),
       scene,
     );
-    directionalLight.intensity = config.isMobile ? 0.8 : 1.0;
+    directionalLight.intensity = config.isMobile ? 0.9 : 1.0;
     directionalLight.diffuse = new Color3(1, 1, 1);
+    directionalLight.specular = new Color3(0.5, 0.5, 0.5); // Add specular for highlights
 
-    // Only add second directional light on non-mobile or high-end devices
-    if (!config.isMobile || !config.isLowEndDevice) {
+    // Add second directional light for better lighting on all devices (except very low-end)
+    if (!config.isLowEndDevice) {
       const directionalLight2 = new DirectionalLight(
         "directionalLight2",
         new Vector3(1, 1, 1),
         scene,
       );
-      directionalLight2.intensity = 0.5;
-      directionalLight2.diffuse = new Color3(1, 1, 1);
+      directionalLight2.intensity = 0.6;
+      directionalLight2.diffuse = new Color3(0.98, 0.98, 1.0); // Slightly cool fill light
+    }
+    
+    // Add rim light for mobile devices to make models pop
+    if (config.isMobile && !config.isLowEndDevice) {
+      const rimLight = new DirectionalLight(
+        "rimLight",
+        new Vector3(0, 0, -1),
+        scene,
+      );
+      rimLight.intensity = 0.3;
+      rimLight.diffuse = new Color3(1, 1, 1);
     }
 
-    // Start render loop with mobile optimization
+    // Start render loop - optimized for device capabilities
     let lastFrameTime = 0;
-    const targetFrameTime = 1000 / config.targetFPS; // Limit FPS on mobile
+    const targetFrameTime = 1000 / config.targetFPS;
     
     engine.runRenderLoop(() => {
-      if (config.isMobile) {
+      // Only throttle on low-end devices
+      if (config.isLowEndDevice) {
         const now = performance.now();
         if (now - lastFrameTime < targetFrameTime) {
-          return; // Skip frame to maintain target FPS
+          return; // Skip frame to maintain target FPS on low-end devices
         }
         lastFrameTime = now;
       }
@@ -514,24 +531,20 @@ export function BabylonScene() {
       if (globalTexture) {
         console.log("🌍 Applying GLOBAL texture to all materials");
         
-        // Use appropriate sampling mode based on device
-        const samplingMode = config.isMobile 
-          ? Texture.BILINEAR_SAMPLINGMODE 
-          : Texture.TRILINEAR_SAMPLINGMODE;
+        // Use trilinear sampling for better quality on all devices
+        const samplingMode = Texture.TRILINEAR_SAMPLINGMODE;
         
         const tex = new Texture(
           globalTexture,
           scene,
-          false,
+          true, // Generate mipmaps for better quality at different distances
           true,
           samplingMode,
         );
         tex.hasAlpha = true;
         
-        // Reduce anisotropic filtering on mobile
-        if (config.isMobile) {
-          tex.anisotropicFilteringLevel = 2;
-        }
+        // Use higher anisotropic filtering on mobile for sharper textures at angles
+        tex.anisotropicFilteringLevel = config.isLowEndDevice ? 4 : 8;
 
         materialsByOriginalName.forEach((material) => {
           // Dispose previous base textures if any
