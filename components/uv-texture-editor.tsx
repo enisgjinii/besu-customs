@@ -23,6 +23,7 @@ import {
   RotateCcw,
   Strikethrough,
   MousePointer2,
+  Bot,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
@@ -33,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Toggle } from "@/components/ui/toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { AIImageGenerator } from "./ai-image-generator";
 
 // Font options
 const FONT_FAMILIES = [
@@ -108,6 +110,7 @@ export function UVTextureEditor() {
   const [textRotation, setTextRotation] = useState(0);
 
   const isInternalUpdateRef = useRef(false);
+  const [pendingAIImage, setPendingAIImage] = useState<{ url: string; timestamp: number } | null>(null);
 
   // Real-time update to 3D model with mobile-optimized debouncing
   const updateTexture = useCallback(() => {
@@ -531,20 +534,33 @@ export function UVTextureEditor() {
   // Listen for AI generated images
   useEffect(() => {
     const handleGeneratedImage = async (data: { url: string; timestamp: number }) => {
-      if (!fabricCanvasRef.current) return;
-
+      console.log("🎨 UV Editor: Received generated-image-available event", data);
+      
       // Check if image is fresh (within last 30 mins)
       const THIRTY_MINS = 30 * 60 * 1000;
       if (Date.now() - data.timestamp > THIRTY_MINS) {
+        console.log("⚠️ UV Editor: Image too old, skipping");
         return;
       }
 
-      console.log("🤖 Auto-applying AI generated image:", data.url);
+      if (!fabricCanvasRef.current) {
+        console.log("⚠️ UV Editor: Canvas not ready, storing for later", data);
+        setPendingAIImage(data);
+        return;
+      }
+
+      await applyAIImageToCanvas(data);
+    };
+
+    const applyAIImageToCanvas = async (data: { url: string; timestamp: number }) => {
+      console.log("🤖 Applying AI generated image to canvas:", data.url);
 
       const { FabricImage } = await import("fabric");
       const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
 
       FabricImage.fromURL(data.url).then((img) => {
+        console.log("✅ AI Image loaded, adding to canvas");
         // Calculate scale to make image larger but fit within canvas
         const maxSize = canvas.width! * 0.5; // 50% of canvas width
         const scale = Math.min(
@@ -576,9 +592,10 @@ export function UVTextureEditor() {
         canvas.renderAll();
         updateTexture();
 
-        toast.success("AI Image added to canvas");
+        toast.success("AI Image added to UV canvas!");
       }).catch(err => {
-        console.error("Failed to load AI image:", err);
+        console.error("❌ Failed to load AI image:", err);
+        toast.error("Failed to add AI image to canvas");
       });
     };
 
@@ -607,6 +624,54 @@ export function UVTextureEditor() {
       window.removeEventListener('generated-image-available', eventHandler);
     };
   }, [updateTexture]);
+
+  // Apply pending AI images when canvas becomes ready
+  useEffect(() => {
+    if (fabricCanvasRef.current && pendingAIImage) {
+      console.log("🎨 Canvas ready, applying pending AI image");
+      const applyPendingImage = async () => {
+        const { FabricImage } = await import("fabric");
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const data = pendingAIImage;
+        FabricImage.fromURL(data.url).then((img) => {
+          const maxSize = canvas.width! * 0.5;
+          const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+
+          img.set({
+            left: canvas.width! / 2 - (img.width! * scale) / 2,
+            top: canvas.height! / 2 - (img.height! * scale) / 2,
+            scaleX: scale,
+            scaleY: scale,
+          });
+
+          if (customControlsRef.current) {
+            img.controls = customControlsRef.current.controls;
+            img.set({
+              cornerSize: customControlsRef.current.cornerSize,
+              borderColor: customControlsRef.current.borderColor,
+              borderDashArray: customControlsRef.current.borderDashArray,
+              borderScaleFactor: customControlsRef.current.borderScaleFactor,
+              padding: customControlsRef.current.padding,
+            });
+          }
+
+          canvas.add(img);
+          canvas.setActiveObject(img);
+          canvas.renderAll();
+          updateTexture();
+
+          toast.success("AI Image added to UV canvas!");
+          setPendingAIImage(null);
+        }).catch(err => {
+          console.error("Failed to load pending AI image:", err);
+          setPendingAIImage(null);
+        });
+      };
+      applyPendingImage();
+    }
+  }, [fabricCanvasRef.current, pendingAIImage, updateTexture]);
 
   const handleAddText = useCallback(async () => {
     if (!newText.trim() || !fabricCanvasRef.current) return;
@@ -851,7 +916,7 @@ export function UVTextureEditor() {
     <div className="space-y-4">
       {/* Tabs for different tools */}
       <Tabs defaultValue="patterns" className="w-full">
-        <TabsList className="w-full grid grid-cols-3">
+        <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="patterns" className="flex items-center gap-1">
             <Palette className="w-4 h-4" />
             <span className="hidden sm:inline">Patterns</span>
@@ -863,6 +928,10 @@ export function UVTextureEditor() {
           <TabsTrigger value="image" className="flex items-center gap-1">
             <ImageIcon className="w-4 h-4" />
             <span className="hidden sm:inline">Image</span>
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="flex items-center gap-1">
+            <Bot className="w-4 h-4" />
+            <span className="hidden sm:inline">AI Gen</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1183,6 +1252,17 @@ export function UVTextureEditor() {
                 Upload logos, graphics, or photos to add to your design
               </p>
             </div>
+          </Card>
+        </TabsContent>
+
+        {/* AI Gen Tab */}
+        <TabsContent value="ai" className="mt-4">
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Bot className="w-4 h-4" />
+              AI Texture Generator
+            </h3>
+            <AIImageGenerator />
           </Card>
         </TabsContent>
       </Tabs>

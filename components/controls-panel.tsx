@@ -41,6 +41,7 @@ export function ControlsPanel() {
   const [exportSubTab, setExportSubTab] = useState<
     "camera" | "scene" | "ai" | "images" | "video" | "model"
   >("camera");
+  const [textureSubTab, setTextureSubTab] = useState<"uv" | "ai">("uv");
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
   const showBoundingBox = useConfiguratorStore((state) => state.showBoundingBox);
@@ -256,7 +257,27 @@ export function ControlsPanel() {
         )}
         {activeTab === "texture" && (
           <div className="p-4">
-            <UVTextureEditor />
+            <Tabs value={textureSubTab} onValueChange={(v) => setTextureSubTab(v as "uv" | "ai") }>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="uv" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Image className="w-4 h-4" />
+                  <span>UV</span>
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="flex flex-col items-center gap-1 text-xs py-3">
+                  <Bot className="w-4 h-4" />
+                  <span>AI Gen</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="uv" className="mt-4">
+                <UVTextureEditor />
+              </TabsContent>
+
+              <TabsContent value="ai" className="mt-4">
+                <h3 className="font-semibold mb-3">AI Texture Generator</h3>
+                <AIImageGenerator />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
         {activeTab === "export" && (

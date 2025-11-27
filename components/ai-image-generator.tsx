@@ -99,11 +99,20 @@ export function AIImageGenerator() {
         localStorage.setItem('latest_generated_ai_image', JSON.stringify(storageData));
 
         // Dispatch event for other components to pick up
+        console.log("🎨 AI Image Generator: Dispatching generated-image-available event", storageData);
         window.dispatchEvent(new CustomEvent('generated-image-available', {
           detail: storageData
         }));
 
-        toast.success("Image generated and ready for placement!");
+        // Also directly apply to UV map if we're in the UV editor context
+        // This ensures the image appears immediately in the UV canvas
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('generated-image-available', {
+            detail: storageData
+          }));
+        }, 100);
+
+        toast.success("Image generated and added to UV map!");
       } else {
         toast.success("Image generated successfully!");
       }
