@@ -73,6 +73,8 @@ export function UVTextureEditor() {
   const setGlobalCustomTexture = useConfiguratorStore(
     (s) => s.setGlobalCustomTexture,
   );
+  const selectedSectionId = useConfiguratorStore((s) => s.selectedSectionId);
+  const updateSection = useConfiguratorStore((s) => s.updateSection);
   const setFabricCanvas = useConfiguratorStore((s) => s.setFabricCanvas);
   const enable3DTextureInteraction = useConfiguratorStore((s) => s.enable3DTextureInteraction);
   const setEnable3DTextureInteraction = useConfiguratorStore((s) => s.setEnable3DTextureInteraction);
@@ -83,6 +85,7 @@ export function UVTextureEditor() {
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const fabricCanvasRef = useRef<any>(null);
+  const originalBgRef = useRef<any>(null);
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializingRef = useRef(false);
   const customControlsRef = useRef<any>(null);
@@ -159,11 +162,7 @@ export function UVTextureEditor() {
       // Force a render to make sure the canvas state is ready for export (without controls)
       canvas.renderAll();
 
-      // Flip both X and Y axes before export
-      tempCtx.translate(tempCanvas.width, tempCanvas.height);
-      tempCtx.scale(-1, -1);
-
-      // Draw the Fabric canvas content (scaled if necessary)
+      // Draw the Fabric canvas content (no flip here — flip is handled in the 3D renderer)
       if (canvas.width !== exportSize) {
         tempCtx.drawImage(canvas.getElement(), 0, 0, exportSize, exportSize);
       } else {
@@ -559,8 +558,26 @@ export function UVTextureEditor() {
       const canvas = fabricCanvasRef.current;
       if (!canvas) return;
 
-      FabricImage.fromURL(data.url).then((img) => {
+      // Try to fetch the image as a blob and use a blob URL to avoid CORS tainting.
+      let blobUrl: string | null = null;
+      try {
+        const resp = await fetch(data.url);
+        const blob = await resp.blob();
+        blobUrl = URL.createObjectURL(blob);
+      } catch (fetchErr) {
+        console.warn("Could not fetch AI image as blob, will try original URL:", fetchErr);
+      }
+
+      FabricImage.fromURL(blobUrl || data.url).then((img) => {
         console.log("✅ AI Image loaded, adding to canvas");
+        // Hide UV wireframe temporarily so the generated image is clearly visible
+        try {
+          originalBgRef.current = canvas.backgroundImage;
+          canvas.backgroundImage = null;
+          canvas.backgroundColor = '#ffffff';
+        } catch (e) {
+          console.warn('Could not hide UV background', e);
+        }
         // Calculate scale to make image larger but fit within canvas
         const maxSize = canvas.width! * 0.5; // 50% of canvas width
         const scale = Math.min(
@@ -590,12 +607,55 @@ export function UVTextureEditor() {
         canvas.add(img);
         canvas.setActiveObject(img);
         canvas.renderAll();
-        updateTexture();
 
-        toast.success("AI Image added to UV canvas!");
+        // If a material section is selected, export the canvas (flipped)
+        // and apply directly to that section instead of setting a global texture.
+        if (selectedSectionId) {
+          try {
+            const tempCanvas = document.createElement('canvas');
+            const exportSize = Math.min(canvas.width!, 2048);
+            tempCanvas.width = exportSize;
+            tempCanvas.height = exportSize;
+            const tempCtx = tempCanvas.getContext('2d');
+            if (tempCtx) {
+              // Draw the Fabric canvas element into the temp canvas (no flip here)
+              tempCtx.drawImage(canvas.getElement(), 0, 0, tempCanvas.width, tempCanvas.height);
+              const dataUrl = tempCanvas.toDataURL('image/png', 1);
+              // Apply directly to selected material section
+              updateSection(selectedSectionId, { customTexture: dataUrl });
+              toast.success('AI image applied to selected section');
+            }
+          } catch (e) {
+            console.error('Failed to export/apply AI image to section', e);
+            toast.error('Failed to apply AI image to section');
+          }
+        } else {
+          // No section selected: keep image on UV canvas for manual placement
+          updateTexture();
+          toast.success("AI Image added to UV canvas!");
+        }
+
+        // Restore UV background if we hid it earlier
+        try {
+          if (originalBgRef.current && canvas) {
+            canvas.backgroundImage = originalBgRef.current;
+            canvas.renderAll();
+            originalBgRef.current = null;
+          }
+        } catch (e) {
+          console.warn('Could not restore UV background after AI apply', e);
+        }
+
+        // Clean up blob URL
+        try {
+          if (blobUrl) URL.revokeObjectURL(blobUrl);
+        } catch (e) {
+          /* ignore */
+        }
       }).catch(err => {
         console.error("❌ Failed to load AI image:", err);
         toast.error("Failed to add AI image to canvas");
+        try { if (blobUrl) URL.revokeObjectURL(blobUrl); } catch (e) {}
       });
     };
 
@@ -635,7 +695,17 @@ export function UVTextureEditor() {
         if (!canvas) return;
 
         const data = pendingAIImage;
-        FabricImage.fromURL(data.url).then((img) => {
+        // Try to fetch the pending image as a blob to avoid CORS tainting
+        let pendingBlobUrl: string | null = null;
+        try {
+          const resp = await fetch(data.url);
+          const blob = await resp.blob();
+          pendingBlobUrl = URL.createObjectURL(blob);
+        } catch (err) {
+          console.warn('Could not fetch pending AI image as blob', err);
+        }
+
+        FabricImage.fromURL(pendingBlobUrl || data.url).then((img) => {
           const maxSize = canvas.width! * 0.5;
           const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
 
@@ -664,9 +734,11 @@ export function UVTextureEditor() {
 
           toast.success("AI Image added to UV canvas!");
           setPendingAIImage(null);
+          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) {}
         }).catch(err => {
           console.error("Failed to load pending AI image:", err);
           setPendingAIImage(null);
+          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) {}
         });
       };
       applyPendingImage();
@@ -865,11 +937,7 @@ export function UVTextureEditor() {
     tempCanvas.height = canvas.height!;
     const tempCtx = tempCanvas.getContext('2d')!;
 
-    // Flip the canvas both horizontally (X) and vertically (Y)
-    tempCtx.translate(tempCanvas.width, tempCanvas.height);
-    tempCtx.scale(-1, -1);
-
-    // Draw the Fabric canvas content
+    // Draw the Fabric canvas content (no flip here — 3D renderer handles UV flips)
     tempCtx.drawImage(canvas.getElement(), 0, 0);
 
     const dataUrl = tempCanvas.toDataURL('image/png', 1);
@@ -896,6 +964,16 @@ export function UVTextureEditor() {
     });
     canvas.renderAll();
     updateTexture();
+    // Restore UV background if we hid it when applying AI images
+    try {
+      if (canvas && originalBgRef.current) {
+        canvas.backgroundImage = originalBgRef.current;
+        canvas.renderAll();
+        originalBgRef.current = null;
+      }
+    } catch (e) {
+      console.warn('Could not restore UV background on clear', e);
+    }
   }, [updateTexture]);
 
   if (!completeUVMap) {

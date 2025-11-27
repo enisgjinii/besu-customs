@@ -850,6 +850,21 @@ export function BabylonScene() {
           );
 
           texture.hasAlpha = true;
+          // If the texture was produced by the UV editor (data URL),
+          // flip it in the 3D renderer so the UV map orientation matches.
+          try {
+            if (typeof section.customTexture === 'string' && section.customTexture.startsWith('data:')) {
+              // Flip horizontally and vertically on the UVs by using negative scale
+              texture.uScale = -1;
+              texture.vScale = -1;
+              // Offsets to keep UVs in 0..1 after flip
+              texture.uOffset = 1;
+              texture.vOffset = 1;
+              console.log(`🔁 Flipped UV-based texture for section ${section.name}`);
+            }
+          } catch (e) {
+            console.warn('Could not apply UV flip to texture', e);
+          }
           if (material.albedoColor !== undefined) {
             material.albedoTexture = texture;
             material.albedoColor = new Color3(1, 1, 1);
