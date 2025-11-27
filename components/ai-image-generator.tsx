@@ -88,7 +88,25 @@ export function AIImageGenerator() {
       } else {
         setUsage(null);
       }
-      toast.success("Image generated successfully!");
+
+      // Auto-save to localStorage and notify listeners
+      if (data.images && data.images.length > 0) {
+        const latestImage = data.images[0].imageURL;
+        const storageData = {
+          url: latestImage,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('latest_generated_ai_image', JSON.stringify(storageData));
+
+        // Dispatch event for other components to pick up
+        window.dispatchEvent(new CustomEvent('generated-image-available', {
+          detail: storageData
+        }));
+
+        toast.success("Image generated and ready for placement!");
+      } else {
+        toast.success("Image generated successfully!");
+      }
     } catch (error) {
       console.error("Error:", error);
       toast.error(
@@ -210,11 +228,10 @@ export function AIImageGenerator() {
       {/* Usage Information */}
       {usage && (
         <div
-          className={`text-[10px] p-2 rounded-md ${
-            usage.remaining === 0
+          className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
               ? "text-destructive bg-destructive/10 border border-destructive/20"
               : "text-muted-foreground bg-secondary/20"
-          }`}
+            }`}
         >
           <div className="flex items-center gap-1 mb-1">
             {usage.remaining === 0 ? (

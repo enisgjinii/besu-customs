@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 // Font options
 const FONT_FAMILIES = [
@@ -526,6 +527,86 @@ export function UVTextureEditor() {
       }, 100);
     };
   }, [completeUVMap, updateTexture]);
+
+  // Listen for AI generated images
+  useEffect(() => {
+    const handleGeneratedImage = async (data: { url: string; timestamp: number }) => {
+      if (!fabricCanvasRef.current) return;
+
+      // Check if image is fresh (within last 30 mins)
+      const THIRTY_MINS = 30 * 60 * 1000;
+      if (Date.now() - data.timestamp > THIRTY_MINS) {
+        return;
+      }
+
+      console.log("🤖 Auto-applying AI generated image:", data.url);
+
+      const { FabricImage } = await import("fabric");
+      const canvas = fabricCanvasRef.current;
+
+      FabricImage.fromURL(data.url).then((img) => {
+        // Calculate scale to make image larger but fit within canvas
+        const maxSize = canvas.width! * 0.5; // 50% of canvas width
+        const scale = Math.min(
+          maxSize / img.width!,
+          maxSize / img.height!
+        );
+
+        img.set({
+          left: canvas.width! / 2 - (img.width! * scale) / 2,
+          top: canvas.height! / 2 - (img.height! * scale) / 2,
+          scaleX: scale,
+          scaleY: scale,
+        });
+
+        // Apply custom 4-corner controls to the new image object
+        if (customControlsRef.current) {
+          img.controls = customControlsRef.current.controls;
+          img.set({
+            cornerSize: customControlsRef.current.cornerSize,
+            borderColor: customControlsRef.current.borderColor,
+            borderDashArray: customControlsRef.current.borderDashArray,
+            borderScaleFactor: customControlsRef.current.borderScaleFactor,
+            padding: customControlsRef.current.padding,
+          });
+        }
+
+        canvas.add(img);
+        canvas.setActiveObject(img);
+        canvas.renderAll();
+        updateTexture();
+
+        toast.success("AI Image added to canvas");
+      }).catch(err => {
+        console.error("Failed to load AI image:", err);
+      });
+    };
+
+    // Check localStorage on mount
+    try {
+      const stored = localStorage.getItem('latest_generated_ai_image');
+      if (stored) {
+        const data = JSON.parse(stored);
+        handleGeneratedImage(data);
+      }
+    } catch (e) {
+      console.error("Error reading from localStorage", e);
+    }
+
+    // Listen for new events
+    const eventHandler = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        handleGeneratedImage(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('generated-image-available', eventHandler);
+
+    return () => {
+      window.removeEventListener('generated-image-available', eventHandler);
+    };
+  }, [updateTexture]);
 
   const handleAddText = useCallback(async () => {
     if (!newText.trim() || !fabricCanvasRef.current) return;
