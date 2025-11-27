@@ -280,11 +280,12 @@ export function applyMaterialsToModel(
       console.log(
         `[BabylonMaterial] Applying customTexture to ${section.name}`,
       );
+      // Do NOT invert Y here — textures coming from the UV editor are pre-flipped.
       const tex = new Texture(
         section.customTexture,
         scene,
         false,
-        true,
+        false,
         Texture.TRILINEAR_SAMPLINGMODE,
       );
       tex.hasAlpha = true;

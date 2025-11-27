@@ -612,7 +612,7 @@ export function BabylonScene() {
           globalTexture,
           scene,
           true, // Generate mipmaps for better quality at different distances
-          true,
+          false, // data URLs from the UV editor are pre-flipped; do not invert on upload
           samplingMode,
         );
         tex.hasAlpha = true;
@@ -836,7 +836,7 @@ export function BabylonScene() {
             section.customTexture,
             scene,
             false,
-            true,
+            false, // do not invert Y for data URLs (already flipped on export)
             Texture.TRILINEAR_SAMPLINGMODE,
             () => {
               console.log(`✅ Custom texture loaded for ${section.name}`);
@@ -854,16 +854,16 @@ export function BabylonScene() {
           // flip it in the 3D renderer so the UV map orientation matches.
           try {
             if (typeof section.customTexture === 'string' && section.customTexture.startsWith('data:')) {
-              // Flip horizontally and vertically on the UVs by using negative scale
-              texture.uScale = -1;
-              texture.vScale = -1;
-              // Offsets to keep UVs in 0..1 after flip
-              texture.uOffset = 1;
-              texture.vOffset = 1;
-              console.log(`🔁 Flipped UV-based texture for section ${section.name}`);
+              // Texture data already flipped during export in the UV editor.
+              // Ensure no additional UV flipping is applied in the renderer.
+              texture.uScale = 1;
+              texture.vScale = 1;
+              texture.uOffset = 0;
+              texture.vOffset = 0;
+              console.log(`✅ Using pre-flipped UV-based texture for section ${section.name}`);
             }
           } catch (e) {
-            console.warn('Could not apply UV flip to texture', e);
+            console.warn('Could not apply UV adjustments to texture', e);
           }
           if (material.albedoColor !== undefined) {
             material.albedoTexture = texture;

@@ -205,10 +205,21 @@ export function UVMapViewer({
 
   const handleApplyTexture = () => {
     if (!canvasRef.current) return;
-    
-    const dataUrl = canvasRef.current.toDataURL("image/png");
-    onApply?.(dataUrl);
-    onClose();
+    // Export flipped horizontally and vertically for Babylon
+    const canvas = canvasRef.current;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (tempCtx) {
+      tempCtx.save();
+      tempCtx.scale(-1, -1);
+      tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
+      tempCtx.restore();
+      const dataUrl = tempCanvas.toDataURL('image/png');
+      onApply?.(dataUrl);
+      onClose();
+    }
   };
 
   const handleDownload = () => {
@@ -219,11 +230,23 @@ export function UVMapViewer({
       ? `uv-map-${sectionName.toLowerCase().replace(/\s+/g, "-")}.png`
       : "uv-map.png";
 
-    link.href = canvasRef.current.toDataURL("image/png");
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Export flipped horizontally and vertically for Babylon
+    const canvas = canvasRef.current;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (tempCtx) {
+      tempCtx.save();
+      tempCtx.scale(-1, -1);
+      tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
+      tempCtx.restore();
+      link.href = tempCanvas.toDataURL('image/png');
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (!uvMapUrl) return null;

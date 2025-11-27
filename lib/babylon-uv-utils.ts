@@ -133,5 +133,19 @@ export function extractCompleteUVMapBabylon(
   }
 
   if (!hasUVs) return null;
+
+  // Flip horizontally and vertically for Babylon consumers (match app mapping)
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  const tempCtx = tempCanvas.getContext('2d');
+  if (tempCtx) {
+    tempCtx.save();
+    tempCtx.scale(-1, -1);
+    tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
+    tempCtx.restore();
+    return tempCanvas.toDataURL("image/png");
+  }
+
   return canvas.toDataURL("image/png");
 }

@@ -143,9 +143,19 @@ export function DesignTextureCompositor({
       ctx.restore();
     });
     
-    // Export as data URL and update 3D model
-    const dataUrl = canvas.toDataURL('image/png', 1.0);
-    setGlobalCustomTexture(dataUrl);
+    // Export as data URL and update 3D model (flip Y for Babylon)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (tempCtx) {
+      tempCtx.save();
+      tempCtx.scale(-1, -1);
+      tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
+      tempCtx.restore();
+      const dataUrl = tempCanvas.toDataURL('image/png', 1.0);
+      setGlobalCustomTexture(dataUrl);
+    }
   }, [designs, textureWidth, textureHeight, setGlobalCustomTexture]);
 
   // Re-render when designs change
@@ -233,12 +243,23 @@ export function DesignTextureCompositor({
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const link = document.createElement('a');
-    link.download = 'uv-texture.png';
-    link.href = canvas.toDataURL('image/png', 1.0);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (tempCtx) {
+      tempCtx.save();
+      tempCtx.scale(-1, -1);
+      tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
+      tempCtx.restore();
+
+      const link = document.createElement('a');
+      link.download = 'uv-texture.png';
+      link.href = tempCanvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }, []);
 
   // Clear all designs

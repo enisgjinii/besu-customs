@@ -162,12 +162,16 @@ export function UVTextureEditor() {
       // Force a render to make sure the canvas state is ready for export (without controls)
       canvas.renderAll();
 
-      // Draw the Fabric canvas content (no flip here — flip is handled in the 3D renderer)
+      // Draw the Fabric canvas content flipped horizontally and vertically for Babylon
+      // The 3D side expects the UV texture with both axes inverted, so flip X and Y here.
+      tempCtx.save();
+      tempCtx.scale(-1, -1);
       if (canvas.width !== exportSize) {
-        tempCtx.drawImage(canvas.getElement(), 0, 0, exportSize, exportSize);
+        tempCtx.drawImage(canvas.getElement(), -exportSize, -exportSize, exportSize, exportSize);
       } else {
-        tempCtx.drawImage(canvas.getElement(), 0, 0);
+        tempCtx.drawImage(canvas.getElement(), -canvas.width!, -canvas.height!, canvas.width!, canvas.height!);
       }
+      tempCtx.restore();
 
       // Use lower quality on mobile
       const quality = perfConfig.isMobile ? 0.8 : 1;
@@ -618,8 +622,11 @@ export function UVTextureEditor() {
             tempCanvas.height = exportSize;
             const tempCtx = tempCanvas.getContext('2d');
             if (tempCtx) {
-              // Draw the Fabric canvas element into the temp canvas (no flip here)
-              tempCtx.drawImage(canvas.getElement(), 0, 0, tempCanvas.width, tempCanvas.height);
+              // Draw the Fabric canvas element flipped horizontally and vertically for Babylon
+              tempCtx.save();
+              tempCtx.scale(-1, -1);
+              tempCtx.drawImage(canvas.getElement(), -tempCanvas.width, -tempCanvas.height, tempCanvas.width, tempCanvas.height);
+              tempCtx.restore();
               const dataUrl = tempCanvas.toDataURL('image/png', 1);
               // Apply directly to selected material section
               updateSection(selectedSectionId, { customTexture: dataUrl });
@@ -937,8 +944,11 @@ export function UVTextureEditor() {
     tempCanvas.height = canvas.height!;
     const tempCtx = tempCanvas.getContext('2d')!;
 
-    // Draw the Fabric canvas content (no flip here — 3D renderer handles UV flips)
-    tempCtx.drawImage(canvas.getElement(), 0, 0);
+    // Draw the Fabric canvas content flipped horizontally and vertically for Babylon
+    tempCtx.save();
+    tempCtx.scale(-1, -1);
+    tempCtx.drawImage(canvas.getElement(), -canvas.width!, -canvas.height!, canvas.width!, canvas.height!);
+    tempCtx.restore();
 
     const dataUrl = tempCanvas.toDataURL('image/png', 1);
 
