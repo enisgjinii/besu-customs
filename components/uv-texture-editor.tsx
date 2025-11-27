@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { 
-  Type, 
-  Image as ImageIcon, 
-  Trash2, 
-  Download, 
-  Map, 
-  Copy, 
+import {
+  Type,
+  Image as ImageIcon,
+  Trash2,
+  Download,
+  Map,
+  Copy,
   Palette,
   Bold,
   Italic,
@@ -73,7 +73,7 @@ export function UVTextureEditor() {
   const setFabricCanvas = useConfiguratorStore((s) => s.setFabricCanvas);
   const enable3DTextureInteraction = useConfiguratorStore((s) => s.enable3DTextureInteraction);
   const setEnable3DTextureInteraction = useConfiguratorStore((s) => s.setEnable3DTextureInteraction);
-  
+
   // Mobile performance configuration
   const perfConfig = useMobilePerformance();
   const canvasSize = perfConfig.uvCanvasSize;
@@ -106,8 +106,13 @@ export function UVTextureEditor() {
   const [backgroundColor, setBackgroundColor] = useState("");
   const [textRotation, setTextRotation] = useState(0);
 
+  const isInternalUpdateRef = useRef(false);
+
   // Real-time update to 3D model with mobile-optimized debouncing
   const updateTexture = useCallback(() => {
+    // Prevent infinite loops from internal selection changes
+    if (isInternalUpdateRef.current) return;
+
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
 
@@ -133,19 +138,21 @@ export function UVTextureEditor() {
       const tempCtx = tempCanvas.getContext('2d');
       if (!tempCtx) return;
 
+      // Set flag to prevent update loops when we modify selection
+      isInternalUpdateRef.current = true;
+
       // Save current background and active selection
       const originalBg = canvas.backgroundImage;
       const activeObject = canvas.getActiveObject();
-      
-      // We DON'T deselect objects anymore because we want to render the controls!
-      // canvas.discardActiveObject();
+
+      // Deselect objects so controls are NOT rendered on the texture
+      canvas.discardActiveObject();
 
       // Temporarily replace UV wireframe with white background for clean export
       canvas.backgroundImage = null;
       canvas.backgroundColor = 'white';
-      
-      // Force a render to make sure the canvas state is ready for export
-      // We need to make sure controls are drawn if an object is selected
+
+      // Force a render to make sure the canvas state is ready for export (without controls)
       canvas.renderAll();
 
       // Flip both X and Y axes before export
@@ -165,19 +172,19 @@ export function UVTextureEditor() {
 
       // Restore UV wireframe background for editing view
       canvas.backgroundImage = originalBg;
-      
-      // Restore selection state in 2D editor (though we didn't clear it, just to be safe)
-      // if (activeObject && activeObjects.length <= 1) {
-      //   canvas.setActiveObject(activeObject);
-      // } else if (activeObjects.length > 1) {
-      //   const sel = new (canvas.constructor as any).ActiveSelection(activeObjects, { canvas });
-      //   canvas.setActiveObject(sel);
-      // }
-      
+
+      // Restore selection state in 2D editor
+      if (activeObject) {
+        canvas.setActiveObject(activeObject);
+      }
+
       canvas.renderAll();
 
+      // Reset flag
+      isInternalUpdateRef.current = false;
+
       setGlobalCustomTexture(dataUrl);
-      console.log("🔄 UV texture updated and flipped for 3D (controls INCLUDED)");
+      console.log("🔄 UV texture updated and flipped for 3D (controls HIDDEN)");
     }, debounceTime);
   }, [setGlobalCustomTexture, perfConfig.debounceMs, perfConfig.isMobile, canvasSize]);
 
@@ -246,20 +253,20 @@ export function UVTextureEditor() {
       // Configure custom 4-corner controls with Lucide React icons
       const fabric = await import("fabric");
       const { Control, controlsUtils } = fabric;
-      
+
       // Calculate scale factor for controls - smaller size
       const scaleFactor = canvasSize / displaySize;
       const baseCornerSize = 26; // Slightly smaller
       const scaledCornerSize = Math.round(baseCornerSize * scaleFactor);
       const iconLineWidth = Math.max(2, Math.round(2 * scaleFactor));
-      
+
       console.log(`📐 Control scale factor: ${scaleFactor.toFixed(2)}, corner size: ${scaledCornerSize}px`);
-      
+
       // Create SVG strings for Lucide icons (using actual Lucide SVG markup)
       const createLucideSvg = (pathD: string, color: string) => {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pathD}</svg>`;
       };
-      
+
       // Lucide icon paths (exact paths from lucide-react)
       const lucideIconPaths = {
         rotate: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
@@ -267,14 +274,14 @@ export function UVTextureEditor() {
         trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
         resize: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>',
       };
-      
+
       const iconColors = {
         rotate: '#3b82f6',
         pin: '#6b7280',
         trash: '#ef4444',
         resize: '#3b82f6',
       };
-      
+
       // Create Image objects for each icon
       const iconImages: Record<string, HTMLImageElement> = {};
       Object.entries(lucideIconPaths).forEach(([key, pathD]) => {
@@ -284,14 +291,14 @@ export function UVTextureEditor() {
         img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
         iconImages[key] = img;
       });
-      
+
       // Render function using pre-rendered Lucide icon images
       const renderIconControl = (iconKey: 'rotate' | 'pin' | 'trash' | 'resize', borderColor: string) => {
         return (ctx: CanvasRenderingContext2D, left: number, top: number, styleOverride: any, fabricObject: any) => {
           const size = scaledCornerSize;
           ctx.save();
           ctx.translate(left, top);
-          
+
           // White circle background with subtle shadow
           ctx.shadowColor = 'rgba(0,0,0,0.2)';
           ctx.shadowBlur = size * 0.15;
@@ -300,7 +307,7 @@ export function UVTextureEditor() {
           ctx.beginPath();
           ctx.arc(0, 0, size / 2, 0, 2 * Math.PI);
           ctx.fill();
-          
+
           // Border
           ctx.shadowColor = 'transparent';
           ctx.strokeStyle = borderColor;
@@ -308,18 +315,18 @@ export function UVTextureEditor() {
           ctx.beginPath();
           ctx.arc(0, 0, size / 2, 0, 2 * Math.PI);
           ctx.stroke();
-          
+
           // Draw the Lucide icon image centered
           const img = iconImages[iconKey];
           if (img && img.complete) {
             const iconSize = size * 0.55;
             ctx.drawImage(img, -iconSize / 2, -iconSize / 2, iconSize, iconSize);
           }
-          
+
           ctx.restore();
         };
       };
-      
+
       // Delete handler
       const deleteHandler = (eventData: any, transform: any) => {
         const target = transform.target;
@@ -333,7 +340,7 @@ export function UVTextureEditor() {
       const pinHandler = (eventData: any, transform: any) => {
         const target = transform.target;
         const isLocked = target.lockMovementX; // Check one property to determine state
-        
+
         // Toggle all lock properties
         const newState = !isLocked;
         target.set({
@@ -346,11 +353,11 @@ export function UVTextureEditor() {
           borderColor: newState ? '#ef4444' : '#3b82f6',
           cornerColor: newState ? '#ef4444' : '#3b82f6',
         });
-        
+
         target.canvas.requestRenderAll();
         return true;
       };
-      
+
       // Create custom controls - only 4 corners with Lucide icons
       const customControls = {
         tl: new Control({
@@ -392,7 +399,7 @@ export function UVTextureEditor() {
           sizeY: scaledCornerSize,
         }),
       };
-      
+
       // Control settings
       const controlSettings = {
         controls: customControls,
@@ -405,10 +412,10 @@ export function UVTextureEditor() {
         borderScaleFactor: Math.max(2, scaleFactor),
         padding: Math.round(15 * scaleFactor),
       };
-      
+
       // Store for later use
       customControlsRef.current = controlSettings;
-      
+
       // Apply to prototypes
       try {
         if (fabric.FabricObject && fabric.FabricObject.prototype) {
@@ -565,7 +572,7 @@ export function UVTextureEditor() {
     }
 
     const text = new IText(newText, textOptions);
-    
+
     // Apply custom 4-corner controls to the new text object
     if (customControlsRef.current) {
       text.controls = customControlsRef.current.controls;
@@ -590,7 +597,7 @@ export function UVTextureEditor() {
     if (!fabricCanvasRef.current) return;
     const canvas = fabricCanvasRef.current;
     const activeObject = canvas.getActiveObject();
-    
+
     if (activeObject && activeObject.type === 'i-text') {
       activeObject.set(property, value);
       canvas.renderAll();
@@ -638,7 +645,7 @@ export function UVTextureEditor() {
           scaleX: scale,
           scaleY: scale,
         });
-        
+
         // Apply custom 4-corner controls to the new image object
         if (customControlsRef.current) {
           img.controls = customControlsRef.current.controls;
@@ -650,7 +657,7 @@ export function UVTextureEditor() {
             padding: customControlsRef.current.padding,
           });
         }
-        
+
         canvas.add(img);
         canvas.setActiveObject(img);
         canvas.renderAll();
@@ -812,8 +819,8 @@ export function UVTextureEditor() {
                     </SelectTrigger>
                     <SelectContent>
                       {FONT_FAMILIES.map((font) => (
-                        <SelectItem 
-                          key={font.value} 
+                        <SelectItem
+                          key={font.value}
                           value={font.value}
                           style={{ fontFamily: font.value }}
                         >
@@ -952,8 +959,8 @@ export function UVTextureEditor() {
                         onChange={(e) => setBackgroundColor(e.target.value)}
                         className="w-12 h-9 p-1 cursor-pointer"
                       />
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => setBackgroundColor("")}
                         className="text-xs"
@@ -1023,8 +1030,8 @@ export function UVTextureEditor() {
                       step={1}
                       className="flex-1"
                     />
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
                       onClick={() => setTextRotation(0)}
                       className="h-8 w-8"
@@ -1049,7 +1056,7 @@ export function UVTextureEditor() {
                 {newText && (
                   <div className="mt-3 p-3 border rounded-lg bg-muted/50">
                     <Label className="text-xs text-muted-foreground mb-2 block">Preview</Label>
-                    <div 
+                    <div
                       className="text-center p-2 rounded overflow-hidden"
                       style={{
                         fontFamily: fontFamily,
@@ -1136,7 +1143,7 @@ export function UVTextureEditor() {
             Clear All
           </Button>
         </div>
-        
+
         {/* 3D Interaction Toggle */}
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center gap-2">

@@ -306,83 +306,12 @@ export function BabylonScene() {
               const activeObject = fabricCanvas.getActiveObject();
               let controlHit = null;
 
+              // 3D Control interaction disabled as per requirement
+              /* 
               if (activeObject) {
-                const cornerSize = activeObject.cornerSize || 24;
-                const touchPadding = 20; // Extra padding for easier touch
-                const hitRadius = (cornerSize / 2) + touchPadding;
-
-                // Get control coordinates
-                const coords = activeObject.oCoords;
-                if (coords) {
-                  // Check each control
-                  // TL: Rotate
-                  if (Math.abs(x - coords.tl.x) < hitRadius && Math.abs(y - coords.tl.y) < hitRadius) {
-                    controlHit = 'tl';
-                  }
-                  // TR: Pin
-                  else if (Math.abs(x - coords.tr.x) < hitRadius && Math.abs(y - coords.tr.y) < hitRadius) {
-                    controlHit = 'tr';
-                  }
-                  // BL: Delete
-                  else if (Math.abs(x - coords.bl.x) < hitRadius && Math.abs(y - coords.bl.y) < hitRadius) {
-                    controlHit = 'bl';
-                  }
-                  // BR: Resize
-                  else if (Math.abs(x - coords.br.x) < hitRadius && Math.abs(y - coords.br.y) < hitRadius) {
-                    controlHit = 'br';
-                  }
-                }
+                 ... control detection logic removed ...
               }
-
-              if (controlHit) {
-                console.log(`🎮 Control hit: ${controlHit}`);
-
-                // Handle click-only actions immediately
-                if (controlHit === 'bl') {
-                  // Delete
-                  fabricCanvas.remove(activeObject);
-                  fabricCanvas.discardActiveObject();
-                  fabricCanvas.renderAll();
-                  return; // Stop processing
-                }
-
-                if (controlHit === 'tr') {
-                  // Pin
-                  const isLocked = activeObject.lockMovementX;
-                  const newState = !isLocked;
-                  activeObject.set({
-                    lockMovementX: newState,
-                    lockMovementY: newState,
-                    lockScalingX: newState,
-                    lockScalingY: newState,
-                    lockRotation: newState,
-                    borderColor: newState ? '#ef4444' : '#3b82f6',
-                    cornerColor: newState ? '#ef4444' : '#3b82f6',
-                  });
-                  fabricCanvas.renderAll();
-                  return; // Stop processing
-                }
-
-                // Start drag for Rotate/Resize
-                isDraggingRef.current = true;
-                activeControlRef.current = controlHit;
-                dragStartUVRef.current = { x: uv.x, y: uv.y };
-                activeObjectRef.current = activeObject;
-                initialObjectPosRef.current = { left: activeObject.left, top: activeObject.top };
-                initialScaleRef.current = { x: activeObject.scaleX, y: activeObject.scaleY };
-                initialRotationRef.current = activeObject.angle;
-
-                if (cameraRef.current) {
-                  cameraRef.current.detachControl();
-                }
-
-                // Suppress texture updates during drag
-                if (fabricCanvas) {
-                  (fabricCanvas as any)._suppress3DDrag = true;
-                }
-
-                return;
-              }
+              */
 
               // Normal object selection logic
               const objects = fabricCanvas.getObjects().slice().reverse();
@@ -443,17 +372,7 @@ export function BabylonScene() {
 
               // Check controls first
               if (activeObject) {
-                const cornerSize = activeObject.cornerSize || 24;
-                const touchPadding = 20;
-                const hitRadius = (cornerSize / 2) + touchPadding;
-                const coords = activeObject.oCoords;
-
-                if (coords) {
-                  if (Math.abs(x - coords.tl.x) < hitRadius && Math.abs(y - coords.tl.y) < hitRadius) cursor = "grab"; // Rotate
-                  else if (Math.abs(x - coords.tr.x) < hitRadius && Math.abs(y - coords.tr.y) < hitRadius) cursor = "pointer"; // Pin
-                  else if (Math.abs(x - coords.bl.x) < hitRadius && Math.abs(y - coords.bl.y) < hitRadius) cursor = "pointer"; // Delete
-                  else if (Math.abs(x - coords.br.x) < hitRadius && Math.abs(y - coords.br.y) < hitRadius) cursor = "nwse-resize"; // Resize
-                }
+                // Controls cursor logic disabled
               }
 
               if (cursor === "default") {
