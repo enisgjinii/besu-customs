@@ -102,6 +102,9 @@ export function BabylonScene() {
   const dragStartUVRef = useRef<{ x: number; y: number } | null>(null);
   const activeObjectRef = useRef<any>(null);
   const initialObjectPosRef = useRef<{ left: number; top: number } | null>(null);
+  const activeControlRef = useRef<string | null>(null);
+  const initialScaleRef = useRef<{ x: number; y: number } | null>(null);
+  const initialRotationRef = useRef<number>(0);
 
   // Track applied global texture to dispose when replaced
   const appliedGlobalTextureRef = useRef<Texture | null>(null);
@@ -155,7 +158,7 @@ export function BabylonScene() {
     camera.attachControl(canvasRef.current, true);
     camera.lowerRadiusLimit = 0.5;
     camera.upperRadiusLimit = 8;
-    
+
     // Mobile-friendly touch controls with improved responsiveness
     if (config.isMobile) {
       camera.wheelPrecision = 25; // More responsive wheel/pinch
@@ -209,7 +212,7 @@ export function BabylonScene() {
       directionalLight2.intensity = 0.6;
       directionalLight2.diffuse = new Color3(0.98, 0.98, 1.0); // Slightly cool fill light
     }
-    
+
     // Add rim light for mobile devices to make models pop
     if (config.isMobile && !config.isLowEndDevice) {
       const rimLight = new DirectionalLight(
@@ -224,7 +227,7 @@ export function BabylonScene() {
     // Start render loop - optimized for device capabilities
     let lastFrameTime = 0;
     const targetFrameTime = 1000 / config.targetFPS;
-    
+
     engine.runRenderLoop(() => {
       // Only throttle on low-end devices
       if (config.isLowEndDevice) {
@@ -298,7 +301,90 @@ export function BabylonScene() {
               // Note: texture is flipped both horizontally (scaleX: -1) and vertically (scaleY: -1)
               const x = (1 - uv.x) * canvasWidth;
               const y = (1 - uv.y) * canvasHeight;
-              // Check for objects at this position
+
+              // Check if we hit a control of the active object
+              const activeObject = fabricCanvas.getActiveObject();
+              let controlHit = null;
+
+              if (activeObject) {
+                const cornerSize = activeObject.cornerSize || 24;
+                const touchPadding = 20; // Extra padding for easier touch
+                const hitRadius = (cornerSize / 2) + touchPadding;
+
+                // Get control coordinates
+                const coords = activeObject.oCoords;
+                if (coords) {
+                  // Check each control
+                  // TL: Rotate
+                  if (Math.abs(x - coords.tl.x) < hitRadius && Math.abs(y - coords.tl.y) < hitRadius) {
+                    controlHit = 'tl';
+                  }
+                  // TR: Pin
+                  else if (Math.abs(x - coords.tr.x) < hitRadius && Math.abs(y - coords.tr.y) < hitRadius) {
+                    controlHit = 'tr';
+                  }
+                  // BL: Delete
+                  else if (Math.abs(x - coords.bl.x) < hitRadius && Math.abs(y - coords.bl.y) < hitRadius) {
+                    controlHit = 'bl';
+                  }
+                  // BR: Resize
+                  else if (Math.abs(x - coords.br.x) < hitRadius && Math.abs(y - coords.br.y) < hitRadius) {
+                    controlHit = 'br';
+                  }
+                }
+              }
+
+              if (controlHit) {
+                console.log(`🎮 Control hit: ${controlHit}`);
+
+                // Handle click-only actions immediately
+                if (controlHit === 'bl') {
+                  // Delete
+                  fabricCanvas.remove(activeObject);
+                  fabricCanvas.discardActiveObject();
+                  fabricCanvas.renderAll();
+                  return; // Stop processing
+                }
+
+                if (controlHit === 'tr') {
+                  // Pin
+                  const isLocked = activeObject.lockMovementX;
+                  const newState = !isLocked;
+                  activeObject.set({
+                    lockMovementX: newState,
+                    lockMovementY: newState,
+                    lockScalingX: newState,
+                    lockScalingY: newState,
+                    lockRotation: newState,
+                    borderColor: newState ? '#ef4444' : '#3b82f6',
+                    cornerColor: newState ? '#ef4444' : '#3b82f6',
+                  });
+                  fabricCanvas.renderAll();
+                  return; // Stop processing
+                }
+
+                // Start drag for Rotate/Resize
+                isDraggingRef.current = true;
+                activeControlRef.current = controlHit;
+                dragStartUVRef.current = { x: uv.x, y: uv.y };
+                activeObjectRef.current = activeObject;
+                initialObjectPosRef.current = { left: activeObject.left, top: activeObject.top };
+                initialScaleRef.current = { x: activeObject.scaleX, y: activeObject.scaleY };
+                initialRotationRef.current = activeObject.angle;
+
+                if (cameraRef.current) {
+                  cameraRef.current.detachControl();
+                }
+
+                // Suppress texture updates during drag
+                if (fabricCanvas) {
+                  (fabricCanvas as any)._suppress3DDrag = true;
+                }
+
+                return;
+              }
+
+              // Normal object selection logic
               const objects = fabricCanvas.getObjects().slice().reverse();
               let target = null;
 
@@ -318,6 +404,7 @@ export function BabylonScene() {
                 fabricCanvas.renderAll();
 
                 isDraggingRef.current = true;
+                activeControlRef.current = null; // Moving body
                 dragStartUVRef.current = { x: uv.x, y: uv.y };
                 activeObjectRef.current = target;
                 initialObjectPosRef.current = { left: target.left, top: target.top };
@@ -351,34 +438,48 @@ export function BabylonScene() {
               const x = (1 - uv.x) * canvasWidth;
               const y = (1 - uv.y) * canvasHeight;
 
-              const objects = fabricCanvas.getObjects();
+              const activeObject = fabricCanvas.getActiveObject();
+              let cursor = "default";
 
-              let isOverObject = false;
+              // Check controls first
+              if (activeObject) {
+                const cornerSize = activeObject.cornerSize || 24;
+                const touchPadding = 20;
+                const hitRadius = (cornerSize / 2) + touchPadding;
+                const coords = activeObject.oCoords;
 
-              for (let i = 0; i < objects.length; i++) {
-                const obj = objects[i];
-                const bounds = obj.getBoundingRect();
+                if (coords) {
+                  if (Math.abs(x - coords.tl.x) < hitRadius && Math.abs(y - coords.tl.y) < hitRadius) cursor = "grab"; // Rotate
+                  else if (Math.abs(x - coords.tr.x) < hitRadius && Math.abs(y - coords.tr.y) < hitRadius) cursor = "pointer"; // Pin
+                  else if (Math.abs(x - coords.bl.x) < hitRadius && Math.abs(y - coords.bl.y) < hitRadius) cursor = "pointer"; // Delete
+                  else if (Math.abs(x - coords.br.x) < hitRadius && Math.abs(y - coords.br.y) < hitRadius) cursor = "nwse-resize"; // Resize
+                }
+              }
 
-                const hit = obj.containsPoint({ x, y });
+              if (cursor === "default") {
+                const objects = fabricCanvas.getObjects();
+                for (let i = 0; i < objects.length; i++) {
+                  const obj = objects[i];
+                  const bounds = obj.getBoundingRect();
+                  const hit = obj.containsPoint({ x, y });
+                  const inBounds = x >= bounds.left && x <= bounds.left + bounds.width &&
+                    y >= bounds.top && y <= bounds.top + bounds.height;
 
-                // Also check bounding box
-                const inBounds = x >= bounds.left && x <= bounds.left + bounds.width &&
-                  y >= bounds.top && y <= bounds.top + bounds.height;
-
-                if (hit || inBounds) {
-                  isOverObject = true;
-                  break;
+                  if (hit || inBounds) {
+                    cursor = "move";
+                    break;
+                  }
                 }
               }
 
               const canvas = scene.getEngine().getRenderingCanvas();
               if (canvas) {
-                canvas.style.cursor = isOverObject ? "move" : "default";
+                canvas.style.cursor = cursor;
               }
             }
           }
 
-          if (isDraggingRef.current && activeObjectRef.current && dragStartUVRef.current && initialObjectPosRef.current) {
+          if (isDraggingRef.current && activeObjectRef.current && dragStartUVRef.current) {
             // Do a fresh pick to get current UV coordinates
             const currentPick = scene.pick(scene.pointerX, scene.pointerY);
             if (currentPick?.hit && currentPick.pickedMesh) {
@@ -387,26 +488,71 @@ export function BabylonScene() {
                 const canvasWidth = fabricCanvas.width || 4096;
                 const canvasHeight = fabricCanvas.height || 4096;
 
-                const deltaUvX = uv.x - dragStartUVRef.current.x;
-                const deltaUvY = uv.y - dragStartUVRef.current.y;
+                const x = (1 - uv.x) * canvasWidth;
+                const y = (1 - uv.y) * canvasHeight;
 
-                // Calculate new position with flipped coordinates
-                const deltaX = -deltaUvX * canvasWidth;
-                const deltaY = -deltaUvY * canvasHeight;
+                const obj = activeObjectRef.current;
 
-                const newLeft = initialObjectPosRef.current.left + deltaX;
-                const newTop = initialObjectPosRef.current.top + deltaY;
+                if (activeControlRef.current === 'br' && initialScaleRef.current) {
+                  // Resize
+                  // Calculate distance from center to current point
+                  const centerX = obj.left + (obj.width * obj.scaleX) / 2;
+                  const centerY = obj.top + (obj.height * obj.scaleY) / 2;
 
-                activeObjectRef.current.set({
-                  left: newLeft,
-                  top: newTop
-                });
+                  // Simple distance-based scaling
+                  // Compare current distance to center vs initial distance
+                  // This is a simplified approach
+                  const initialX = (1 - dragStartUVRef.current.x) * canvasWidth;
+                  const initialY = (1 - dragStartUVRef.current.y) * canvasHeight;
 
-                activeObjectRef.current.setCoords();
+                  const initialDist = Math.sqrt(Math.pow(initialX - obj.left, 2) + Math.pow(initialY - obj.top, 2));
+                  const currentDist = Math.sqrt(Math.pow(x - obj.left, 2) + Math.pow(y - obj.top, 2));
+
+                  const scaleFactor = currentDist / initialDist;
+
+                  obj.set({
+                    scaleX: initialScaleRef.current.x * scaleFactor,
+                    scaleY: initialScaleRef.current.y * scaleFactor
+                  });
+                }
+                else if (activeControlRef.current === 'tl') {
+                  // Rotate
+                  // Calculate angle relative to center
+                  const centerX = obj.left; // Origin is usually top-left or center depending on originX/Y
+                  const centerY = obj.top;
+
+                  // We need the center of the object
+                  const centerPoint = obj.getCenterPoint();
+
+                  const dx = x - centerPoint.x;
+                  const dy = y - centerPoint.y;
+
+                  let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                  // Adjust angle based on initial offset if needed, but absolute angle works well for rotation
+                  // Let's add 90 degrees because 0 is usually 3 o'clock
+                  angle += 90;
+
+                  obj.set({ angle });
+                }
+                else if (!activeControlRef.current && initialObjectPosRef.current) {
+                  // Move body
+                  const deltaUvX = uv.x - dragStartUVRef.current.x;
+                  const deltaUvY = uv.y - dragStartUVRef.current.y;
+
+                  const deltaX = -deltaUvX * canvasWidth;
+                  const deltaY = -deltaUvY * canvasHeight;
+
+                  const newLeft = initialObjectPosRef.current.left + deltaX;
+                  const newTop = initialObjectPosRef.current.top + deltaY;
+
+                  obj.set({
+                    left: newLeft,
+                    top: newTop
+                  });
+                }
+
+                obj.setCoords();
                 fabricCanvas.renderAll();
-
-                // Don't fire object:moving during 3D drag to prevent texture updates
-                // fabricCanvas.fire('object:moving', { target: activeObjectRef.current });
               }
             }
           }
@@ -420,6 +566,8 @@ export function BabylonScene() {
             const draggedObject = activeObjectRef.current;
             activeObjectRef.current = null;
             initialObjectPosRef.current = null;
+            activeControlRef.current = null;
+            initialScaleRef.current = null;
 
             // Re-enable texture updates and trigger final update
             if (fabricCanvas && draggedObject) {
@@ -534,13 +682,13 @@ export function BabylonScene() {
       // Apply global texture first if present
       const globalTexture = globalCustomTexture;
       const config = perfConfigRef.current;
-      
+
       if (globalTexture) {
         console.log("🌍 Applying GLOBAL texture to all materials");
-        
+
         // Use trilinear sampling for better quality on all devices
         const samplingMode = Texture.TRILINEAR_SAMPLINGMODE;
-        
+
         const tex = new Texture(
           globalTexture,
           scene,
@@ -549,7 +697,7 @@ export function BabylonScene() {
           samplingMode,
         );
         tex.hasAlpha = true;
-        
+
         // Use higher anisotropic filtering on mobile for sharper textures at angles
         tex.anisotropicFilteringLevel = config.isLowEndDevice ? 4 : 8;
 

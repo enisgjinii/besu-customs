@@ -136,14 +136,16 @@ export function UVTextureEditor() {
       // Save current background and active selection
       const originalBg = canvas.backgroundImage;
       const activeObject = canvas.getActiveObject();
-      const activeObjects = canvas.getActiveObjects();
-
-      // Deselect all objects to hide controls before export
-      canvas.discardActiveObject();
+      
+      // We DON'T deselect objects anymore because we want to render the controls!
+      // canvas.discardActiveObject();
 
       // Temporarily replace UV wireframe with white background for clean export
       canvas.backgroundImage = null;
       canvas.backgroundColor = 'white';
+      
+      // Force a render to make sure the canvas state is ready for export
+      // We need to make sure controls are drawn if an object is selected
       canvas.renderAll();
 
       // Flip both X and Y axes before export
@@ -164,18 +166,18 @@ export function UVTextureEditor() {
       // Restore UV wireframe background for editing view
       canvas.backgroundImage = originalBg;
       
-      // Restore selection state in 2D editor
-      if (activeObject && activeObjects.length <= 1) {
-        canvas.setActiveObject(activeObject);
-      } else if (activeObjects.length > 1) {
-        const sel = new (canvas.constructor as any).ActiveSelection(activeObjects, { canvas });
-        canvas.setActiveObject(sel);
-      }
+      // Restore selection state in 2D editor (though we didn't clear it, just to be safe)
+      // if (activeObject && activeObjects.length <= 1) {
+      //   canvas.setActiveObject(activeObject);
+      // } else if (activeObjects.length > 1) {
+      //   const sel = new (canvas.constructor as any).ActiveSelection(activeObjects, { canvas });
+      //   canvas.setActiveObject(sel);
+      // }
       
       canvas.renderAll();
 
       setGlobalCustomTexture(dataUrl);
-      console.log("🔄 UV texture updated and flipped for 3D (controls hidden, text & images on white background)");
+      console.log("🔄 UV texture updated and flipped for 3D (controls INCLUDED)");
     }, debounceTime);
   }, [setGlobalCustomTexture, perfConfig.debounceMs, perfConfig.isMobile, canvasSize]);
 
@@ -326,6 +328,28 @@ export function UVTextureEditor() {
         canvasObj.requestRenderAll();
         return true;
       };
+
+      // Pin handler
+      const pinHandler = (eventData: any, transform: any) => {
+        const target = transform.target;
+        const isLocked = target.lockMovementX; // Check one property to determine state
+        
+        // Toggle all lock properties
+        const newState = !isLocked;
+        target.set({
+          lockMovementX: newState,
+          lockMovementY: newState,
+          lockScalingX: newState,
+          lockScalingY: newState,
+          lockRotation: newState,
+          // Visual feedback
+          borderColor: newState ? '#ef4444' : '#3b82f6',
+          cornerColor: newState ? '#ef4444' : '#3b82f6',
+        });
+        
+        target.canvas.requestRenderAll();
+        return true;
+      };
       
       // Create custom controls - only 4 corners with Lucide icons
       const customControls = {
@@ -343,8 +367,7 @@ export function UVTextureEditor() {
           x: 0.5,
           y: -0.5,
           cursorStyle: 'pointer',
-          actionHandler: controlsUtils.scalingEqually,
-          actionName: 'scale',
+          mouseUpHandler: pinHandler, // Use pin handler
           render: renderIconControl('pin', '#6b7280'),
           sizeX: scaledCornerSize,
           sizeY: scaledCornerSize,
@@ -425,9 +448,18 @@ export function UVTextureEditor() {
       }
 
       // Handle selection changes
-      canvas.on("selection:created", () => setHasSelection(true));
-      canvas.on("selection:updated", () => setHasSelection(true));
-      canvas.on("selection:cleared", () => setHasSelection(false));
+      canvas.on("selection:created", () => {
+        setHasSelection(true);
+        updateTexture(); // Update texture to show controls
+      });
+      canvas.on("selection:updated", () => {
+        setHasSelection(true);
+        updateTexture(); // Update texture to show controls
+      });
+      canvas.on("selection:cleared", () => {
+        setHasSelection(false);
+        updateTexture(); // Update texture to hide controls
+      });
 
       // Apply custom 4-corner controls to any newly added object
       canvas.on("object:added", (e: any) => {
