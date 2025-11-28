@@ -9,7 +9,7 @@
 
 ### State Management (Zustand)
 - **Single source**: `lib/store.ts` (~637 lines) - All app state lives here
-- **Key stores**: 
+- **Key stores**:
   - `useConfiguratorStore`: 3D model state, sections, materials, camera
   - `lib/onboarding-store.ts`: User onboarding flows (~834 lines)
 - **Pattern**: Direct store access, no prop drilling. Always import from `@/lib/store`
@@ -26,6 +26,7 @@
 - **Parser**: `lib/material-name-parser.ts` - Extracts meaning from material names (e.g., "Body_F_301116" → "Body Front")
 - **Auto-categorization**: Body parts → Blue, Panels → Orange, Trim → Gray (priority 10-100)
 - **Section extraction**: `extractSectionsFromModel()` in `babylon-material-utils.ts` - Automatically categorizes meshes on load
+- **API precomputation**: Fetches precomputed sections from `/api/materials?model=...` for faster loading
 
 ### Data Layer
 - **Supabase**: Auth + models storage (`lib/supabase.ts`)
@@ -151,9 +152,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_anon_key>
 3. Check `babylon-material-utils.ts` for application logic
 
 ### UV Editor
-1. Canvas size must match texture resolution (4096x4096)
-2. Always flip Y-axis when exporting to Babylon
-3. Dispose previous textures to prevent memory leaks
+1. Canvas size: 4096x4096 (desktop), 2048x2048 (tablet), 1024x1024 (mobile low-end)
+2. UV map extraction: 2048x2048 for performance
+3. Always flip Y-axis when exporting to Babylon
+4. Dispose previous textures to prevent memory leaks
 
 ## Quick Reference
 
