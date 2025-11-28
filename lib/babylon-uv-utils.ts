@@ -18,8 +18,8 @@ export function extractCompleteUVMapBabylon(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d", { 
-    alpha: true, 
+  const ctx = canvas.getContext("2d", {
+    alpha: true,
     willReadFrequently: false,
     desynchronized: true // Faster rendering
   });
@@ -44,7 +44,7 @@ export function extractCompleteUVMapBabylon(
 
   for (const m of meshes) {
     if (!(m instanceof Mesh)) continue;
-    
+
     // Skip disposed or invalid meshes
     if (m.isDisposed() || !m.isEnabled()) continue;
 
@@ -56,7 +56,7 @@ export function extractCompleteUVMapBabylon(
 
     // Use colorful fills with subtle borders
     const meshHue = (meshes.indexOf(m) * 137.5) % 360; // Golden angle for color distribution
-    
+
     if (indices && indices.length > 0) {
       for (let i = 0; i < indices.length; i += 3) {
         const i1 = indices[i] * 2;
@@ -68,16 +68,16 @@ export function extractCompleteUVMapBabylon(
           continue;
         }
 
-        const u1 = (1 - uvs[i1]) * width;
-        const v1 = (1 - uvs[i1 + 1]) * height;
-        const u2 = (1 - uvs[i2]) * width;
-        const v2 = (1 - uvs[i2 + 1]) * height;
-        const u3 = (1 - uvs[i3]) * width;
-        const v3 = (1 - uvs[i3 + 1]) * height;
+        const u1 = uvs[i1] * width;
+        const v1 = uvs[i1 + 1] * height;
+        const u2 = uvs[i2] * width;
+        const v2 = uvs[i2 + 1] * height;
+        const u3 = uvs[i3] * width;
+        const v3 = uvs[i3 + 1] * height;
 
         // Validate UV coordinates are finite numbers
-        if (!isFinite(u1) || !isFinite(v1) || !isFinite(u2) || 
-            !isFinite(v2) || !isFinite(u3) || !isFinite(v3)) {
+        if (!isFinite(u1) || !isFinite(v1) || !isFinite(u2) ||
+          !isFinite(v2) || !isFinite(u3) || !isFinite(v3)) {
           continue;
         }
 
@@ -102,16 +102,16 @@ export function extractCompleteUVMapBabylon(
           continue;
         }
 
-        const u1 = (1 - uvs[i]) * width;
-        const v1 = (1 - uvs[i + 1]) * height;
-        const u2 = (1 - uvs[i + 2]) * width;
-        const v2 = (1 - uvs[i + 3]) * height;
-        const u3 = (1 - uvs[i + 4]) * width;
-        const v3 = (1 - uvs[i + 5]) * height;
+        const u1 = uvs[i] * width;
+        const v1 = uvs[i + 1] * height;
+        const u2 = uvs[i + 2] * width;
+        const v2 = uvs[i + 3] * height;
+        const u3 = uvs[i + 4] * width;
+        const v3 = uvs[i + 5] * height;
 
         // Validate UV coordinates are finite numbers
-        if (!isFinite(u1) || !isFinite(v1) || !isFinite(u2) || 
-            !isFinite(v2) || !isFinite(u3) || !isFinite(v3)) {
+        if (!isFinite(u1) || !isFinite(v1) || !isFinite(u2) ||
+          !isFinite(v2) || !isFinite(u3) || !isFinite(v3)) {
           continue;
         }
 
@@ -133,19 +133,6 @@ export function extractCompleteUVMapBabylon(
   }
 
   if (!hasUVs) return null;
-
-  // Flip horizontally and vertically for Babylon consumers (match app mapping)
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-  const tempCtx = tempCanvas.getContext('2d');
-  if (tempCtx) {
-    tempCtx.save();
-    tempCtx.scale(-1, -1);
-    tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
-    tempCtx.restore();
-    return tempCanvas.toDataURL("image/png");
-  }
 
   return canvas.toDataURL("image/png");
 }

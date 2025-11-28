@@ -162,16 +162,12 @@ export function UVTextureEditor() {
       // Force a render to make sure the canvas state is ready for export (without controls)
       canvas.renderAll();
 
-      // Draw the Fabric canvas content flipped horizontally and vertically for Babylon
-      // The 3D side expects the UV texture with both axes inverted, so flip X and Y here.
-      tempCtx.save();
-      tempCtx.scale(-1, -1);
+      // Draw the Fabric canvas content directly without transformation
       if (canvas.width !== exportSize) {
-        tempCtx.drawImage(canvas.getElement(), -exportSize, -exportSize, exportSize, exportSize);
+        tempCtx.drawImage(canvas.getElement(), 0, 0, exportSize, exportSize);
       } else {
-        tempCtx.drawImage(canvas.getElement(), -canvas.width!, -canvas.height!, canvas.width!, canvas.height!);
+        tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width!, canvas.height!);
       }
-      tempCtx.restore();
 
       // Use lower quality on mobile
       const quality = perfConfig.isMobile ? 0.8 : 1;
@@ -538,7 +534,7 @@ export function UVTextureEditor() {
   useEffect(() => {
     const handleGeneratedImage = async (data: { url: string; timestamp: number }) => {
       console.log("🎨 UV Editor: Received generated-image-available event", data);
-      
+
       // Check if image is fresh (within last 30 mins)
       const THIRTY_MINS = 30 * 60 * 1000;
       if (Date.now() - data.timestamp > THIRTY_MINS) {
@@ -622,11 +618,8 @@ export function UVTextureEditor() {
             tempCanvas.height = exportSize;
             const tempCtx = tempCanvas.getContext('2d');
             if (tempCtx) {
-              // Draw the Fabric canvas element flipped horizontally and vertically for Babylon
-              tempCtx.save();
-              tempCtx.scale(-1, -1);
-              tempCtx.drawImage(canvas.getElement(), -tempCanvas.width, -tempCanvas.height, tempCanvas.width, tempCanvas.height);
-              tempCtx.restore();
+              // Draw the Fabric canvas element directly without transformation
+              tempCtx.drawImage(canvas.getElement(), 0, 0, tempCanvas.width, tempCanvas.height);
               const dataUrl = tempCanvas.toDataURL('image/png', 1);
               // Apply directly to selected material section
               updateSection(selectedSectionId, { customTexture: dataUrl });
@@ -662,7 +655,7 @@ export function UVTextureEditor() {
       }).catch(err => {
         console.error("❌ Failed to load AI image:", err);
         toast.error("Failed to add AI image to canvas");
-        try { if (blobUrl) URL.revokeObjectURL(blobUrl); } catch (e) {}
+        try { if (blobUrl) URL.revokeObjectURL(blobUrl); } catch (e) { }
       });
     };
 
@@ -741,11 +734,11 @@ export function UVTextureEditor() {
 
           toast.success("AI Image added to UV canvas!");
           setPendingAIImage(null);
-          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) {}
+          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) { }
         }).catch(err => {
           console.error("Failed to load pending AI image:", err);
           setPendingAIImage(null);
-          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) {}
+          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) { }
         });
       };
       applyPendingImage();
@@ -944,11 +937,8 @@ export function UVTextureEditor() {
     tempCanvas.height = canvas.height!;
     const tempCtx = tempCanvas.getContext('2d')!;
 
-    // Draw the Fabric canvas content flipped horizontally and vertically for Babylon
-    tempCtx.save();
-    tempCtx.scale(-1, -1);
-    tempCtx.drawImage(canvas.getElement(), -canvas.width!, -canvas.height!, canvas.width!, canvas.height!);
-    tempCtx.restore();
+    // Draw the Fabric canvas content directly without transformation
+    tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width!, canvas.height!);
 
     const dataUrl = tempCanvas.toDataURL('image/png', 1);
 
