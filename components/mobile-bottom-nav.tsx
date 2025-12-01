@@ -65,7 +65,6 @@ export function MobileBottomNav() {
   const cameraControlsRef = useConfiguratorStore(
     (state) => state.cameraControlsRef,
   );
-  const glRef = useConfiguratorStore((state) => state.glRef);
   const completeUVMap = useConfiguratorStore(
     (state) =>
       (state as unknown as { completeUVMap: string | null }).completeUVMap,
@@ -100,37 +99,26 @@ export function MobileBottomNav() {
   }, []);
 
   const handleScreenshot = useCallback(() => {
-    const renderer = glRef as {
-      domElement: HTMLCanvasElement;
-      render: () => void;
-    } | null;
-    if (!renderer) {
-      alert("WebGL renderer not available");
+    // Use the canvas element directly for Babylon.js
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    if (!canvas) {
+      alert("Canvas not found");
       return;
     }
 
     try {
-      requestAnimationFrame(() => {
-        const canvas = renderer.domElement;
-        if (!canvas) {
-          alert("Canvas not found");
-          return;
-        }
-
-        renderer.render();
-        const dataURL = canvas.toDataURL("image/png", 1.0);
-        const link = document.createElement("a");
-        link.download = `model-screenshot-${Date.now()}.png`;
-        link.href = dataURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
+      const dataURL = canvas.toDataURL("image/png", 1.0);
+      const link = document.createElement("a");
+      link.download = `model-screenshot-${Date.now()}.png`;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error("Screenshot failed:", error);
-      alert("Failed to capture screenshot");
+      alert("Failed to capture screenshot. Please try again.");
     }
-  }, [glRef]);
+  }, []);
 
   const handleResetCamera = useCallback(() => {
     const controls = cameraControlsRef as {

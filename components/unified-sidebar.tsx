@@ -277,43 +277,39 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   };
 
   const handleScreenshot = () => {
-    const renderer = glRef as {
-      domElement: HTMLCanvasElement;
-      render: () => void;
-    } | null;
-    if (!renderer) {
-      toast.error("Renderer not available", {
-        description: "WebGL renderer is not ready",
+    // Use the canvas element directly for Babylon.js
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    if (!canvas) {
+      toast.error("Canvas not found", {
+        description: "3D scene is not ready yet",
       });
       return;
     }
 
     try {
       const toastId = toast.loading("Capturing screenshot...");
-      // Force a render and then capture
+      
       requestAnimationFrame(() => {
-        const canvas = renderer.domElement;
-        if (!canvas) {
+        try {
+          const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
+          const dataURL = canvas.toDataURL("image/png", quality);
+          const link = document.createElement("a");
+          link.download = `${exportFileName || "screenshot"}.png`;
+          link.href = dataURL;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
           toast.dismiss(toastId);
-          toast.error("Canvas not found");
-          return;
+          toast.success("Screenshot captured", {
+            description: `Saved as ${exportFileName}.png (${imageQuality} quality)`,
+          });
+        } catch (error) {
+          toast.dismiss(toastId);
+          console.error("Screenshot capture failed:", error);
+          toast.error("Screenshot failed", {
+            description: "Could not capture the canvas",
+          });
         }
-
-        // Ensure the canvas is up to date
-        renderer.render();
-
-        const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
-        const dataURL = canvas.toDataURL("image/png", quality);
-        const link = document.createElement("a");
-        link.download = `${exportFileName || "screenshot"}.png`;
-        link.href = dataURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.dismiss(toastId);
-        toast.success("Screenshot captured", {
-          description: `Saved as ${exportFileName}.png (${imageQuality} quality)`,
-        });
       });
     } catch (error) {
       console.error("Screenshot failed:", error);
@@ -324,13 +320,11 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   };
 
   const handleExportHighRes = () => {
-    const renderer = glRef as {
-      domElement: HTMLCanvasElement;
-      render: () => void;
-    } | null;
-    if (!renderer) {
-      toast.error("Renderer not available", {
-        description: "WebGL renderer is not ready",
+    // Use the canvas element directly for Babylon.js
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    if (!canvas) {
+      toast.error("Canvas not found", {
+        description: "3D scene is not ready yet",
       });
       return;
     }
@@ -338,49 +332,47 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
     try {
       const toastId = toast.loading("Exporting high-resolution image...");
       requestAnimationFrame(() => {
-        const canvas = renderer.domElement;
-        if (!canvas) {
+        try {
+          // Create a temporary high-res canvas
+          const tempCanvas = document.createElement("canvas");
+          const scale = 2; // 2x resolution
+          const originalWidth = canvas.width;
+          const originalHeight = canvas.height;
+
+          tempCanvas.width = originalWidth * scale;
+          tempCanvas.height = originalHeight * scale;
+
+          const ctx = tempCanvas.getContext("2d");
+          if (!ctx) {
+            toast.dismiss(toastId);
+            toast.error("Failed to create canvas context");
+            return;
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.scale(scale, scale);
+          ctx.drawImage(canvas, 0, 0);
+
+          const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
+          const dataURL = tempCanvas.toDataURL("image/png", quality);
+          const link = document.createElement("a");
+          link.download = `${exportFileName || "model"}-2x.png`;
+          link.href = dataURL;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
           toast.dismiss(toastId);
-          toast.error("Canvas not found");
-          return;
-        }
-
-        // Force render
-        renderer.render();
-
-        // Create a temporary high-res canvas
-        const tempCanvas = document.createElement("canvas");
-        const scale = 2; // 2x resolution
-        const originalWidth = canvas.width;
-        const originalHeight = canvas.height;
-
-        tempCanvas.width = originalWidth * scale;
-        tempCanvas.height = originalHeight * scale;
-
-        const ctx = tempCanvas.getContext("2d");
-        if (!ctx) {
+          toast.success("High-res image exported", {
+            description: `Saved as ${exportFileName}-2x.png (${tempCanvas.width}x${tempCanvas.height})`,
+          });
+        } catch (error) {
           toast.dismiss(toastId);
-          toast.error("Failed to create canvas context");
-          return;
+          console.error("High-res capture failed:", error);
+          toast.error("High-res export failed", {
+            description: "Could not process the image",
+          });
         }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.scale(scale, scale);
-        ctx.drawImage(canvas, 0, 0);
-
-        const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
-        const dataURL = tempCanvas.toDataURL("image/png", quality);
-        const link = document.createElement("a");
-        link.download = `${exportFileName || "model"}-2x.png`;
-        link.href = dataURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.dismiss(toastId);
-        toast.success("High-res image exported", {
-          description: `Saved as ${exportFileName}-2x.png (${tempCanvas.width}x${tempCanvas.height})`,
-        });
       });
     } catch (error) {
       console.error("High-res export failed:", error);
@@ -391,13 +383,11 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   };
 
   const handleExport4K = () => {
-    const renderer = glRef as {
-      domElement: HTMLCanvasElement;
-      render: () => void;
-    } | null;
-    if (!renderer) {
-      toast.error("Renderer not available", {
-        description: "WebGL renderer is not ready",
+    // Use the canvas element directly for Babylon.js
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    if (!canvas) {
+      toast.error("Canvas not found", {
+        description: "3D scene is not ready yet",
       });
       return;
     }
@@ -405,49 +395,47 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
     try {
       const toastId = toast.loading("Exporting 4K image (this may take a moment)...");
       requestAnimationFrame(() => {
-        const canvas = renderer.domElement;
-        if (!canvas) {
+        try {
+          // Create a 4K resolution canvas
+          const tempCanvas = document.createElement("canvas");
+          const scale = 4; // 4x resolution
+          const originalWidth = canvas.width;
+          const originalHeight = canvas.height;
+
+          tempCanvas.width = originalWidth * scale;
+          tempCanvas.height = originalHeight * scale;
+
+          const ctx = tempCanvas.getContext("2d");
+          if (!ctx) {
+            toast.dismiss(toastId);
+            toast.error("Failed to create canvas context");
+            return;
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.scale(scale, scale);
+          ctx.drawImage(canvas, 0, 0);
+
+          const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
+          const dataURL = tempCanvas.toDataURL("image/png", quality);
+          const link = document.createElement("a");
+          link.download = `${exportFileName || "model"}-4x.png`;
+          link.href = dataURL;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
           toast.dismiss(toastId);
-          toast.error("Canvas not found");
-          return;
-        }
-
-        // Force render
-        renderer.render();
-
-        // Create a 4K resolution canvas
-        const tempCanvas = document.createElement("canvas");
-        const scale = 4; // 4x resolution
-        const originalWidth = canvas.width;
-        const originalHeight = canvas.height;
-
-        tempCanvas.width = originalWidth * scale;
-        tempCanvas.height = originalHeight * scale;
-
-        const ctx = tempCanvas.getContext("2d");
-        if (!ctx) {
+          toast.success("4K image exported", {
+            description: `Saved as ${exportFileName}-4x.png (${tempCanvas.width}x${tempCanvas.height})`,
+          });
+        } catch (error) {
           toast.dismiss(toastId);
-          toast.error("Failed to create canvas context");
-          return;
+          console.error("4K capture failed:", error);
+          toast.error("4K export failed", {
+            description: "Could not process the image",
+          });
         }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.scale(scale, scale);
-        ctx.drawImage(canvas, 0, 0);
-
-        const quality = imageQuality === "standard" ? 0.8 : imageQuality === "high" ? 0.95 : 1.0;
-        const dataURL = tempCanvas.toDataURL("image/png", quality);
-        const link = document.createElement("a");
-        link.download = `${exportFileName || "model"}-4x.png`;
-        link.href = dataURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.dismiss(toastId);
-        toast.success("4K image exported", {
-          description: `Saved as ${exportFileName}-4x.png (${tempCanvas.width}x${tempCanvas.height})`,
-        });
       });
     } catch (error) {
       console.error("4K export failed:", error);

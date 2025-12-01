@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import {
   Engine,
   Scene,
@@ -70,6 +70,11 @@ export function BabylonScene() {
   const sceneRef = useRef<Scene | null>(null);
   const cameraRef = useRef<ArcRotateCamera | null>(null);
   const currentMeshRef = useRef<AbstractMesh | null>(null);
+  
+  // Error and context loss state
+  const [webglContextLost, setWebglContextLost] = React.useState(false);
+  const [initError, setInitError] = React.useState<string | null>(null);
+  const contextLostTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { theme } = useTheme();
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
@@ -150,9 +155,25 @@ export function BabylonScene() {
       pixelRatio: config.pixelRatio,
     });
 
+    // Check WebGL support first
+    try {
+      const testCanvas = document.createElement("canvas");
+      const gl = testCanvas.getContext("webgl2") || testCanvas.getContext("webgl");
+      testCanvas.remove();
+      if (!gl) {
+        setInitError("WebGL is not supported on this device. Please try a different browser or device.");
+        return;
+      }
+    } catch (e) {
+      setInitError("Failed to initialize 3D graphics. Please try a different browser.");
+      return;
+    }
+
+    let engine: Engine;
+    try {
     // Create engine with mobile-optimized settings
     const engineOptions = getEngineOptions(config);
-    const engine = new Engine(canvasRef.current, config.antialias, engineOptions);
+    engine = new Engine(canvasRef.current, config.antialias, engineOptions);
 
     // Set hardware scaling level for mobile
     engine.setHardwareScalingLevel(config.hardwareScaling);
@@ -262,34 +283,105 @@ export function BabylonScene() {
       scene.render();
     });
 
+    // Handle WebGL context loss
+    const handleContextLost = () => {
+      console.warn("⚠️ WebGL context lost");
+      setWebglContextLost(true);
+      
+      // Clear any pending timeout
+      if (contextLostTimeoutRef.current) {
+        clearTimeout(contextLostTimeoutRef.current);
+      }
+      
+      // Try to recover after a delay
+      contextLostTimeoutRef.current = setTimeout(() => {
+        console.log("🔄 Attempting to restore WebGL context...");
+        try {
+          engine.resize();
+          setWebglContextLost(false);
+          console.log("✅ WebGL context restored");
+        } catch (e) {
+          console.error("❌ Failed to restore WebGL context:", e);
+        }
+      }, 2000);
+    };
+
+    const handleContextRestored = () => {
+      console.log("✅ WebGL context restored by browser");
+      setWebglContextLost(false);
+      if (contextLostTimeoutRef.current) {
+        clearTimeout(contextLostTimeoutRef.current);
+      }
+    };
+
+    canvasRef.current.addEventListener("webglcontextlost", handleContextLost);
+    canvasRef.current.addEventListener("webglcontextrestored", handleContextRestored);
+
     // Handle resize with debouncing for mobile
     let resizeTimeout: NodeJS.Timeout;
     const handleResize = () => {
       if (config.isMobile) {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-          engine.resize();
+          try {
+            engine.resize();
+          } catch (e) {
+            console.warn("Resize failed:", e);
+          }
         }, 150); // Debounce resize on mobile
       } else {
-        engine.resize();
+        try {
+          engine.resize();
+        } catch (e) {
+          console.warn("Resize failed:", e);
+        }
       }
     };
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleResize);
 
     console.log("✅ Babylon.js engine initialized");
+    setInitError(null);
+
+    // Store references for cleanup
+    const currentCanvas = canvasRef.current;
 
     // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
+      if (currentCanvas) {
+        currentCanvas.removeEventListener("webglcontextlost", handleContextLost);
+        currentCanvas.removeEventListener("webglcontextrestored", handleContextRestored);
+      }
       clearTimeout(resizeTimeout);
-      scene.dispose();
-      engine.dispose();
+      if (contextLostTimeoutRef.current) {
+        clearTimeout(contextLostTimeoutRef.current);
+      }
+      if (sceneRef.current) {
+        try {
+          sceneRef.current.dispose();
+        } catch (e) {
+          console.warn("Scene disposal error:", e);
+        }
+      }
+      if (engineRef.current) {
+        try {
+          engineRef.current.dispose();
+        } catch (e) {
+          console.warn("Engine disposal error:", e);
+        }
+      }
       engineRef.current = null;
       sceneRef.current = null;
       cameraRef.current = null;
     };
+
+    } catch (e) {
+      console.error("❌ Failed to initialize Babylon.js engine:", e);
+      setInitError(e instanceof Error ? e.message : "Failed to initialize 3D graphics engine");
+      return;
+    }
   }, [setCameraControlsRef]);
 
   // Handle pointer events for 3D interaction with 2D texture
@@ -1891,6 +1983,47 @@ export function BabylonScene() {
 
   return (
     <div className="w-full h-full relative">
+      {/* Initialization error overlay */}
+      {initError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-20">
+          <div className="max-w-md p-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-destructive/10 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold mb-2">3D Graphics Error</h2>
+            <p className="text-muted-foreground mb-4">{initError}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* WebGL context loss overlay */}
+      {webglContextLost && !initError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/95 backdrop-blur-sm z-20">
+          <div className="max-w-md p-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-500/10 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-yellow-500 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold mb-2">Restoring Graphics...</h2>
+            <p className="text-muted-foreground mb-4">
+              The 3D graphics context was temporarily lost. Attempting to recover...
+            </p>
+            <p className="text-xs text-muted-foreground">
+              If this persists, try closing other browser tabs or apps.
+            </p>
+          </div>
+        </div>
+      )}
+
       <canvas
         ref={canvasRef}
         className="w-full h-full outline-none"

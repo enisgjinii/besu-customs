@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
@@ -7,6 +7,7 @@ import { OnboardingKeyboardHandler } from "@/components/onboarding-keyboard-hand
 import { AuthProvider } from "@/lib/auth-context";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,13 +19,6 @@ export const metadata: Metadata = {
   title: "Besu Customs",
   description: "3D Product Configurator",
   generator: "Enis Gjini",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false, // Prevent zooming which can cause performance issues with WebGL
-    viewportFit: "cover", // For notched devices
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -33,6 +27,14 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false, // Prevent auto-linking phone numbers
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Prevent zooming which can cause performance issues with WebGL
+  viewportFit: "cover", // For notched devices
 };
 
 export default function RootLayout({
@@ -49,12 +51,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <QueryProvider>{children}</QueryProvider>
-            <Toaster />
-            <OnboardingTour />
-            <OnboardingKeyboardHandler />
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <QueryProvider>{children}</QueryProvider>
+              <Toaster />
+              <OnboardingTour />
+              <OnboardingKeyboardHandler />
+            </AuthProvider>
+          </ErrorBoundary>
         </ThemeProvider>
         <Analytics />
       </body>
