@@ -145,21 +145,22 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
         const response = await fetch("/api/models?active=true");
         if (response.ok) {
           const { models } = await response.json();
-          const activeProducts = models.map((model: Model) => ({
-            id: model.id,
-            title: model.name,
-            modelUrl: model.file_path,
-            category: model.category || undefined,
-          }));
-          setProducts(activeProducts);
+          if (models && models.length > 0) {
+            const activeProducts = models.map((model: Model) => ({
+              id: model.id,
+              title: model.name,
+              modelUrl: model.file_path,
+              category: model.category || undefined,
+            }));
+            setProducts(activeProducts);
 
-          // Auto-select the first product if none is selected
-          if (activeProducts.length > 0 && !selectedProductId) {
-            setSelectedProduct(activeProducts[0].id);
+            // Auto-select the first product if none is selected
+            if (!selectedProductId) {
+              setSelectedProduct(activeProducts[0].id);
+            }
           }
-
-          setProductsLoaded(true);
         }
+        setProductsLoaded(true);
       } catch (error) {
         console.error("Failed to load active products:", error);
         // Fallback to all products if API fails - for now, just set loaded to true
@@ -170,7 +171,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
     if (!productsLoaded && products.length === 0) {
       loadActiveProducts();
     }
-  }, [productsLoaded, products.length, setProducts]);
+  }, [productsLoaded, products.length, setProducts, selectedProductId, setSelectedProduct]);
 
   // When switching to the Texture tab, default to the COMPLETE UV MAP
   // by clearing any selected section. This shows the full UV but does NOT
