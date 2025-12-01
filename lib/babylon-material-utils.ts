@@ -30,10 +30,11 @@ export function hexToColor3(hex: string): Color3 {
 function createGradientTexture(
   scene: Scene,
   gradient: NonNullable<MaterialSection["gradient"]>,
+  size = 512,
 ): Texture | null {
   if (!gradient.enabled || gradient.colors.length < 2) return null;
 
-  const size = 512;
+  // size parameter passed in for device-based scaling
   const dynamicTexture = new DynamicTexture(
     "gradientTexture",
     { width: size, height: size },
@@ -87,8 +88,9 @@ function createTrimDesignTexture(
   trimDesign: string,
   baseColor: string,
   trimColor: string,
+  size = 512,
 ): Texture | null {
-  const size = 512;
+  // size parameter passed in for device-based scaling
   const dynamicTexture = new DynamicTexture(
     "trimTexture",
     { width: size, height: size },
@@ -212,20 +214,63 @@ function findMatchingSection(
 }
 
 // Apply materials to model based on sections
+export async function createScaledTextureFromUrl(
+  scene: Scene,
+  url: string,
+  maxSize: number,
+): Promise<Texture> {
+  return new Promise((resolve, reject) => {
+    // If already a data URL (base64), use it directly but enforce scaling
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      let { width, height } = img;
+      const maxDim = Math.max(width, height);
+      if (maxSize && maxDim > maxSize) {
+        const scale = maxSize / maxDim;
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/png", 0.9);
+        const tex = new Texture(
+          dataUrl,
+          scene,
+          false,
+          false,
+          Texture.TRILINEAR_SAMPLINGMODE,
+        );
+        tex.hasAlpha = true;
+        resolve(tex);
+      } else {
+        const tex = new Texture(url, scene, false, false, Texture.TRILINEAR_SAMPLINGMODE);
+        tex.hasAlpha = true;
+        resolve(tex);
+      }
+    };
+    img.onerror = (e) => reject(e);
+    img.src = url;
+  });
+}
+
 export function applyMaterialsToModel(
   rootMesh: AbstractMesh,
   sections: MaterialSection[],
   scene: Scene,
+  maxTextureSize = 4096,
 ): void {
   console.log("🎨 Applying materials to model, sections:", sections.length);
 
   // Create a map of sections by material name and ID
   const sectionMap = new Map<string, MaterialSection>();
-  sections.forEach((section) => {
+  for (const section of sections) {
     sectionMap.set(section.originalName, section);
     sectionMap.set(section.id, section);
     sectionMap.set(section.name, section);
-  });
+  }
 
   // Traverse all meshes
   const meshes = rootMesh.getChildMeshes(false);
@@ -281,13 +326,7 @@ export function applyMaterialsToModel(
         `[BabylonMaterial] Applying customTexture to ${section.name}`,
       );
       // Do NOT invert Y here — textures coming from the UV editor are pre-flipped.
-      const tex = new Texture(
-        section.customTexture,
-        scene,
-        false,
-        false,
-        Texture.TRILINEAR_SAMPLINGMODE,
-      );
+      const tex = new Texture(section.customTexture, scene, false, false, Texture.TRILINEAR_SAMPLINGMODE);
       tex.hasAlpha = true;
       if (isPBR) {
         const pbr = material as PBRMaterial;
@@ -305,6 +344,7 @@ export function applyMaterialsToModel(
         section.trimDesign,
         section.color,
         "#ffffff",
+        Math.min(512, maxTextureSize),
       );
       if (tex) {
         if (isPBR) {
@@ -318,7 +358,7 @@ export function applyMaterialsToModel(
         }
       }
     } else if (section.gradient?.enabled) {
-      const tex = createGradientTexture(scene, section.gradient);
+      const tex = createGradientTexture(scene, section.gradient, Math.min(512, maxTextureSize));
       if (tex) {
         if (isPBR) {
           const pbr = material as PBRMaterial;

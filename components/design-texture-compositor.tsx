@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,9 @@ export function DesignTextureCompositor({
   textureWidth = 2048,
   textureHeight = 2048,
 }: DesignTextureCompositorProps) {
+  const perfConfig = useMobilePerformance();
+  textureWidth = textureWidth ?? perfConfig.uvCanvasSize;
+  textureHeight = textureHeight ?? perfConfig.uvCanvasSize;
   const completeUVMap = useConfiguratorStore((s) => s.completeUVMap);
   const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
   

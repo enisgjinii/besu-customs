@@ -20,6 +20,7 @@ import {
   MeshBuilder,
   LinesMesh,
 } from "@babylonjs/core";
+import { createScaledTextureFromUrl } from "@/lib/babylon-material-utils";
 import "@babylonjs/loaders/glTF";
 import { useConfiguratorStore } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
@@ -116,12 +117,33 @@ export function BabylonScene() {
   const perfConfig = useMobilePerformance();
   const perfConfigRef = useRef(perfConfig);
   perfConfigRef.current = perfConfig;
+  const forceLowPerformance = useConfiguratorStore((s) => s.forceLowPerformance);
+
+  // If user forces low performance, override the detected config
+  const effectivePerfConfig = useMemo(() => {
+    if (forceLowPerformance) {
+      return {
+        ...perfConfig,
+        isLowEndDevice: true,
+        maxTextureSize: 1024,
+        uvCanvasSize: 1024,
+        antialias: false,
+        shadowsEnabled: false,
+        hardwareScaling: 1.5,
+        targetFPS: 30,
+        enablePostProcessing: false,
+      } as const;
+    }
+    return perfConfig;
+  }, [perfConfig, forceLowPerformance]);
+  const effectivePerfRef = useRef(effectivePerfConfig);
+  effectivePerfRef.current = effectivePerfConfig;
 
   // Initialize Babylon.js engine and scene
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const config = perfConfigRef.current;
+    const config = effectivePerfRef.current;
     console.log("🎮 Initializing Babylon.js engine...", {
       isMobile: config.isMobile,
       isLowEndDevice: config.isLowEndDevice,
@@ -567,7 +589,8 @@ export function BabylonScene() {
     const scene = sceneRef.current;
     const rootMesh = currentMeshRef.current;
 
-    try {
+    (async () => {
+      try {
       // Get all meshes
       const meshes = rootMesh.getChildMeshes(false);
       meshes.push(rootMesh);
@@ -661,7 +684,7 @@ export function BabylonScene() {
       let appliedCount = 0;
       let notFoundCount = 0;
 
-      sections.forEach((section) => {
+      for (const section of sections) {
         // Try to find material by originalName
         let material = materialsByOriginalName.get(section.originalName);
 
@@ -832,22 +855,23 @@ export function BabylonScene() {
             material.diffuseTexture = null;
           }
 
-          const texture = new Texture(
-            section.customTexture,
-            scene,
-            false,
-            false, // do not invert Y for data URLs (already flipped on export)
-            Texture.TRILINEAR_SAMPLINGMODE,
-            () => {
-              console.log(`✅ Custom texture loaded for ${section.name}`);
-            },
-            (message) => {
-              console.error(
-                `❌ Failed to load texture for ${section.name}:`,
-                message,
-              );
-            },
-          );
+          let texture;
+          try {
+            texture = await createScaledTextureFromUrl(
+              scene,
+              section.customTexture as string,
+              Math.max(512, Math.min(effectivePerfRef.current.maxTextureSize, 4096)),
+            );
+          } catch (err) {
+            console.warn("Falling back to direct texture load for", section.name, err);
+            texture = new Texture(
+              section.customTexture as string,
+              scene,
+              false,
+              false,
+              Texture.TRILINEAR_SAMPLINGMODE,
+            );
+          }
 
           texture.hasAlpha = true;
           // If the texture was produced by the UV editor (data URL),
@@ -904,7 +928,7 @@ export function BabylonScene() {
 
         // Mark material as needing update
         material.markDirty();
-      });
+      }
 
       console.log(
         `✅ Material update complete: ${appliedCount} applied, ${notFoundCount} not found`,
@@ -915,9 +939,10 @@ export function BabylonScene() {
       requestAnimationFrame(() => scene.render());
       setTimeout(() => scene.render(), 10);
       setTimeout(() => scene.render(), 50);
-    } catch (e) {
+      } catch (e) {
       console.error("❌ Babylon Scene: Material update error:", e);
-    }
+      }
+    })();
   }, [sections, highlightedSectionId, selectedSectionId, globalCustomTexture]);
 
   // Dedicated effect to apply ONLY the global texture (simpler trigger path)
@@ -928,7 +953,8 @@ export function BabylonScene() {
     const rootMesh = currentMeshRef.current;
     console.log("🌍 Global texture effect triggered");
 
-    try {
+    (async () => {
+      try {
       // Dispose previous global texture
       if (appliedGlobalTextureRef.current) {
         try {
@@ -937,15 +963,23 @@ export function BabylonScene() {
         appliedGlobalTextureRef.current = null;
       }
 
-      const tex = new Texture(
-        globalCustomTexture,
-        scene,
-        true, // generate mipmaps for smoother scaling
-        false, // do not invert Y for data URL
-        Texture.TRILINEAR_SAMPLINGMODE,
-        () => console.log("✅ Global texture loaded"),
-        (msg) => console.error("❌ Global texture load failed", msg),
-      );
+      let tex;
+      try {
+        tex = await createScaledTextureFromUrl(
+          scene,
+          globalCustomTexture,
+          Math.max(512, Math.min(effectivePerfRef.current.maxTextureSize, 4096)),
+        );
+      } catch (err) {
+        console.warn("Global texture scaling failed, falling back", err);
+        tex = new Texture(
+          globalCustomTexture,
+          scene,
+          true,
+          false,
+          Texture.TRILINEAR_SAMPLINGMODE,
+        );
+      }
 
       // High quality texture settings
       tex.anisotropicFilteringLevel = 16; // Maximum anisotropic filtering
@@ -979,9 +1013,10 @@ export function BabylonScene() {
       );
       scene.render();
       requestAnimationFrame(() => scene.render());
-    } catch (e) {
+      } catch (e) {
       console.error("❌ Error applying global texture", e);
-    }
+      }
+    })();
   }, [globalCustomTexture]);
 
   const setCompleteUVMap = useConfiguratorStore((s) => s.setCompleteUVMap);
@@ -1015,12 +1050,30 @@ export function BabylonScene() {
     // Clear old UV map to prevent showing stale data
     setCompleteUVMap(null);
 
-    // Load new model
-    SceneLoader.ImportMesh(
-      "",
-      "",
-      currentModelUrl,
-      sceneRef.current,
+    // Load new model (may use a lower-res model for low-end devices / slow networks)
+    (async () => {
+      const config = effectivePerfRef.current;
+      let modelToLoad = currentModelUrl;
+      // Heuristic: try to load a <name>-low.glb if available for low devices
+      const maybeLow = (url: string) => url.replace(/(\.glb)$/i, "-low$1");
+      if (config.isLowEndDevice || forceLowPerformance) {
+        const alt = maybeLow(currentModelUrl);
+        try {
+          const resp = await fetch(alt, { method: "HEAD" });
+          if (resp.ok) {
+            modelToLoad = alt;
+            console.log("📉 Loading smaller LOD model for performance:", alt);
+          }
+        } catch (e) {
+          // ignore, fallback to original
+        }
+      }
+
+      SceneLoader.ImportMesh(
+        "",
+        "",
+        modelToLoad,
+        sceneRef.current,
       (meshes) => {
         console.log("✅ Model loaded, meshes:", meshes.length);
 
@@ -1833,6 +1886,7 @@ export function BabylonScene() {
         setModelLoading(false);
       },
     );
+    })();
   }, [currentModelUrl, setModelLoading, setModelError]);
 
   return (
@@ -1879,6 +1933,16 @@ export function BabylonScene() {
             <span className="font-medium">Model Loading Error</span>
           </div>
           <p className="mt-1 text-red-100">{modelError}</p>
+        </div>
+      )}
+
+      {/* Reduced performance indicator */}
+      {(effectivePerfRef.current.isLowEndDevice || forceLowPerformance) && (
+        <div className="absolute top-4 left-4 bg-yellow-500/90 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs shadow-md border border-yellow-400/20">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Reduced performance mode</span>
+            <span className="text-2xs opacity-90">(low device or forced)</span>
+          </div>
         </div>
       )}
     </div>

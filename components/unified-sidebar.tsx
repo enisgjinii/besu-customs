@@ -683,6 +683,8 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   };
 
   const isCollapsed = sidebarOpen === false;
+  const forceLowPerformance = useConfiguratorStore((state) => state.forceLowPerformance);
+  const setForceLowPerformance = useConfiguratorStore((state) => state.setForceLowPerformance);
 
   return (
     <div className="flex flex-col bg-card w-full rounded-2xl border border-border/20 backdrop-blur-sm max-h-[calc(100vh-2rem)] overflow-hidden">
@@ -716,6 +718,17 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             {!isCollapsed && <ThemeToggle />}
           </div>
         </div>
+        {/* Force low-performance toggle */}
+        {!isCollapsed && (
+          <div className="flex items-center gap-2 mt-2">
+            <Switch
+              checked={forceLowPerformance}
+              onCheckedChange={(checked) => setForceLowPerformance(!!checked)}
+              aria-label="Force reduced performance mode"
+            />
+            <div className="text-xs text-muted-foreground">Reduced performance mode</div>
+          </div>
+        )}
 
         {/* Model Dropdown */}
         {!isCollapsed && (
