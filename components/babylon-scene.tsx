@@ -346,6 +346,40 @@ export function BabylonScene() {
     // Store references for cleanup
     const currentCanvas = canvasRef.current;
 
+    // Allow vertical page scrolling when inside iframes (e.g. Shopify) or when the
+    // document can scroll. We capture the wheel event and stop propagation so
+    // Babylon's internal wheel handler doesn't consume the event and move the
+    // 3D camera while the page should scroll. Do NOT call preventDefault so
+    // the browser still performs the default scrolling behavior.
+    const wheelCaptureHandler = (e: WheelEvent) => {
+      try {
+        const deltaY = e.deltaY;
+        const doc = (document.scrollingElement as Element) || document.documentElement;
+        const scrollTop = (doc as any).scrollTop || 0;
+        const scrollHeight = (doc as any).scrollHeight || 0;
+        const clientHeight = (doc as any).clientHeight || window.innerHeight;
+
+        const canScrollDown = deltaY > 0 && scrollTop + clientHeight < scrollHeight;
+        const canScrollUp = deltaY < 0 && scrollTop > 0;
+
+        // If the page can scroll in the wheel direction, prevent other listeners
+        // (including Babylon) from handling it so the page scrolls instead.
+        if (canScrollDown || canScrollUp) {
+          e.stopImmediatePropagation();
+        }
+      } catch (err) {
+        // Defensive: if anything goes wrong, don't block the event.
+      }
+    };
+
+    // Prefer allowing native vertical touch scrolling
+    if (currentCanvas) {
+      currentCanvas.style.touchAction = currentCanvas.style.touchAction || "pan-y";
+      currentCanvas.addEventListener("wheel", wheelCaptureHandler as EventListener, {
+        capture: true,
+        passive: true,
+      });
+    }
     // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -353,6 +387,20 @@ export function BabylonScene() {
       if (currentCanvas) {
         currentCanvas.removeEventListener("webglcontextlost", handleContextLost);
         currentCanvas.removeEventListener("webglcontextrestored", handleContextRestored);
+        try {
+          currentCanvas.removeEventListener("wheel", wheelCaptureHandler as EventListener, { capture: true } as any);
+        } catch (err) {
+          // ignore: defensive cleanup if listener removal options differ
+          try {
+            currentCanvas.removeEventListener("wheel", wheelCaptureHandler as EventListener);
+          } catch (e) {}
+        }
+        // Reset any touch-action we set (respect existing value if it was set before)
+        try {
+          if (currentCanvas.style && currentCanvas.style.touchAction === "pan-y") {
+            currentCanvas.style.touchAction = "";
+          }
+        } catch (e) {}
       }
       clearTimeout(resizeTimeout);
       if (contextLostTimeoutRef.current) {
