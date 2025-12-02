@@ -1,0 +1,159 @@
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: calc({{ section.settings.padding_top }}px * 0.75);
+    padding-bottom: calc({{ section.settings.padding_bottom }}px * 0.75);
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+
+  .iframe-wrapper {
+    width: 85%; /* 85% width on mobile */
+    max-width: 1400px; /* Maximum width on large screens */
+    height: 100vh;
+    margin: 0 auto; /* Center horizontally */
+    overflow: auto;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  .iframe-wrapper iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    border: none;
+    display: block;
+    pointer-events: auto;
+    border-radius: 8px; /* Subtle rounded corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  }
+
+  /* Mobile responsive adjustments */
+  @media screen and (max-width: 749px) {
+    .iframe-wrapper {
+      width: 85%; /* 85% width on mobile */
+      height: 90vh; /* Slightly shorter on mobile for better UX */
+    }
+    
+    .iframe-wrapper iframe {
+      border-radius: 4px; /* Smaller radius on mobile */
+    }
+  }
+
+  /* Tablet and up */
+  @media screen and (min-width: 750px) {
+    .iframe-wrapper {
+      width: 90%; /* 90% width on tablets */
+    }
+  }
+
+  /* Desktop */
+  @media screen and (min-width: 990px) {
+    .iframe-wrapper {
+      width: 90%; /* 90% width on desktop */
+    }
+  }
+
+  /* Large desktop */
+  @media screen and (min-width: 1400px) {
+    .iframe-wrapper {
+      width: 90%; /* 90% width on very large screens */
+    }
+  }
+{%- endstyle -%}
+
+<div class="color-{{ section.settings.color_scheme }} gradient">
+  <div class="section-{{ section.id }}-padding">
+    <div class="iframe-wrapper" id="iframe-wrapper-{{ section.id }}">
+      <iframe
+        id="besu-iframe-{{ section.id }}"
+        src="https://besu-customs.vercel.app/"
+        title="Besu Customs"
+        frameborder="0"
+        scrolling="yes"
+        allow="fullscreen; accelerometer; camera; microphone; geolocation; payment"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+      ></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // Ensure wheel events on iframe propagate to parent for scrolling
+    const wrapper = document.getElementById('iframe-wrapper-{{ section.id }}');
+    const iframe = document.getElementById('besu-iframe-{{ section.id }}');
+    
+    if (wrapper && iframe) {
+      // Allow natural scrolling behavior
+      wrapper.style.overflowY = 'auto';
+      
+      // Prevent iframe from capturing all scroll events when parent can scroll
+      wrapper.addEventListener('wheel', function(e) {
+        const deltaY = e.deltaY;
+        const scrollTop = wrapper.scrollTop;
+        const scrollHeight = wrapper.scrollHeight;
+        const clientHeight = wrapper.clientHeight;
+        
+        const atTop = scrollTop === 0;
+        const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+        
+        // Allow scroll to bubble up to parent page when at boundaries
+        if ((atTop && deltaY < 0) || (atBottom && deltaY > 0)) {
+          // Let it propagate naturally
+          return;
+        }
+      }, { passive: true });
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "t:sections.custom-liquid.name",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 52
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.custom-liquid.presets.name"
+    }
+  ]
+}
+{% endschema %}

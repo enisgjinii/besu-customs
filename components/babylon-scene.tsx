@@ -59,9 +59,13 @@ function hexToColor3(hex: string): Color3 {
 }
 
 // Convert hex color to Babylon Color4
-function hexToColor4(hex: string): Color4 {
+// Convert hex color to Babylon Color4, with optional alpha
+function hexToColor4(hex: string, alpha: number = 1): Color4 {
+  if (hex === "transparent") {
+    return new Color4(0, 0, 0, 0);
+  }
   const color3 = hexToColor3(hex);
-  return new Color4(color3.r, color3.g, color3.b, 1);
+  return new Color4(color3.r, color3.g, color3.b, alpha);
 }
 
 export function BabylonScene() {
@@ -184,10 +188,10 @@ export function BabylonScene() {
     const scene = new Scene(engine);
     sceneRef.current = scene;
 
-    // Set background color
-    const bgColor = getThemeBackgroundColor(theme, backgroundColor);
-    scene.clearColor = hexToColor4(bgColor);
-    scene.ambientColor = new Color3(0.3, 0.3, 0.3); // Slightly brighter ambient for better visibility
+    // Set background color (white or transparent)
+    // Force background to pure white
+    scene.clearColor = new Color4(1, 1, 1, 1);
+    scene.ambientColor = new Color3(1, 1, 1); // Pure white ambient for maximum brightness
 
     // Create camera with mobile-optimized controls
     const camera = new ArcRotateCamera(
@@ -681,9 +685,8 @@ export function BabylonScene() {
   // Handle background color changes without recreating the scene
   useEffect(() => {
     if (!sceneRef.current) return;
-
-    const bgColor = getThemeBackgroundColor(theme, backgroundColor);
-    sceneRef.current.clearColor = hexToColor4(bgColor);
+    // Force background to pure white
+    sceneRef.current.clearColor = new Color4(1, 1, 1, 1);
   }, [theme, backgroundColor]);
 
   // Handle auto-rotation
