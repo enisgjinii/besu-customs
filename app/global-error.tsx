@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { errorLogger } from '@/lib/error-logger';
 
 export default function GlobalError({
   error,
@@ -11,7 +12,20 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Global error:', error);
+    // Log critical error with full context to Vercel
+    errorLogger.log('Critical global error caught', {
+      level: 'critical',
+      category: 'system',
+      error,
+      additionalData: {
+        digest: error.digest,
+        errorName: error.name,
+        errorMessage: error.message,
+        isFatal: true,
+      },
+      isClientVisible: true,
+      clientMessage: 'A critical error occurred. Please refresh the page.',
+    });
   }, [error]);
 
   return (

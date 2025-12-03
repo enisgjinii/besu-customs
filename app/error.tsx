@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
+import { errorLogger } from '@/lib/error-logger';
 
 export default function Error({
   error,
@@ -11,7 +12,19 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Application error:', error);
+    // Log error with full context to Vercel
+    errorLogger.log('Application error caught by error boundary', {
+      level: 'error',
+      category: 'ui',
+      error,
+      additionalData: {
+        digest: error.digest,
+        errorName: error.name,
+        errorMessage: error.message,
+      },
+      isClientVisible: true,
+      clientMessage: 'An error occurred. Our team has been notified.',
+    });
   }, [error]);
 
   return (
