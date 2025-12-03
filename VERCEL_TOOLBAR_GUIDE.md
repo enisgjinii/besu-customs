@@ -53,15 +53,16 @@ Example: `https://yourapp.vercel.app?vercelToolbar=1`
 
 ## Configuration
 
-The toolbar is configured in `vercel-toolbar.config.ts`:
+The toolbar is automatically configured in your `app/layout.tsx`:
 
 ```typescript
-export default defineConfig({
-  production: { enabled: true },
-  preview: { enabled: true },
-  development: { enabled: true },
-});
+import { VercelToolbar } from "@vercel/toolbar/next";
+
+// Toolbar is injected in development mode
+{shouldInjectToolbar && <VercelToolbar />}
 ```
+
+No additional configuration needed!
 
 ## Security
 
