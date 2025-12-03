@@ -99,6 +99,7 @@ await logger.trackPerformance('page_load', 1234);
 
 ## 📊 View Logs in Vercel
 
+### Option 1: Vercel Dashboard
 1. Go to **Vercel Dashboard**
 2. Select your **project**
 3. Click **"Logs"** tab
@@ -111,6 +112,23 @@ level:"error"
 userId:"user_123"
 category:"api"
 ```
+
+### Option 2: Vercel Toolbar (NEW! 🎉)
+1. Visit your production site
+2. Add `?vercelToolbar=1` to the URL
+3. Click the "Logs" tab in the toolbar
+4. See logs directly on your site!
+
+Example: `https://yourapp.vercel.app?vercelToolbar=1`
+
+**Benefits:**
+- ✅ View logs without leaving your site
+- ✅ Debug issues in real-time
+- ✅ See console output in production
+- ✅ Monitor network requests
+- ✅ Track performance metrics
+
+See `VERCEL_TOOLBAR_GUIDE.md` for more details.
 
 ## 📁 Files Overview
 
