@@ -187,28 +187,43 @@ export function BabylonScene() {
       }
     };
 
+    // Check if we're in an iframe (Shopify, etc.)
+    const isInIframe = window.self !== window.top;
+    
     const webglCheck = checkWebGLSupport();
     if (!webglCheck.supported) {
-      // Don't immediately give up - wait a bit and retry (for iframe loading scenarios)
+      // In iframes, be much more patient with retries
+      const maxRetriesForContext = isInIframe ? 10 : maxRetries;
+      const retryDelay = isInIframe ? 500 : 1000;
+      
       initializationAttemptRef.current++;
-      if (initializationAttemptRef.current < maxRetries) {
-        console.log(`⏳ WebGL not available yet, retrying... (attempt ${initializationAttemptRef.current}/${maxRetries})`);
+      if (initializationAttemptRef.current < maxRetriesForContext) {
+        console.log(`⏳ WebGL not available yet (iframe: ${isInIframe}), retrying... (attempt ${initializationAttemptRef.current}/${maxRetriesForContext})`);
         setTimeout(() => {
-          setRetryCount(r => r + 1); // Trigger re-render to retry initialization
-        }, 1000);
+          setRetryCount(r => r + 1);
+        }, retryDelay);
         return;
       }
+      
+      // Only show error after many retries
+      console.error("❌ WebGL not supported after multiple retries");
       setInitError("WebGL is not supported on this device. Please try a different browser or device.");
       return;
     }
     
-    console.log(`✅ WebGL supported: ${webglCheck.version}`);
+    console.log(`✅ WebGL supported: ${webglCheck.version}`, {
+      isInIframe,
+      userAgent: navigator.userAgent.substring(0, 50),
+      canvas: !!canvasRef.current
+    });
 
     let engine: Engine;
     try {
     // Create engine with mobile-optimized settings
     const engineOptions = getEngineOptions(config);
+    console.log("🎮 Creating Babylon engine with options:", engineOptions);
     engine = new Engine(canvasRef.current, config.antialias, engineOptions);
+    console.log("✅ Engine created successfully");
     
     // CRITICAL: Limit texture memory to prevent context loss
     engine.setSize(engine.getRenderWidth(), engine.getRenderHeight(), false); // Don't force aspect ratio
@@ -513,16 +528,24 @@ export function BabylonScene() {
 
     } catch (e) {
       console.error("❌ Failed to initialize Babylon.js engine:", e);
+      
+      // Check if we're in an iframe - be more patient
+      const isInIframe = window.self !== window.top;
+      const maxRetriesForContext = isInIframe ? 10 : maxRetries;
+      
       // If this is an initialization attempt that failed, try again
       initializationAttemptRef.current++;
-      if (initializationAttemptRef.current < maxRetries) {
-        console.log(`⏳ Engine init failed, retrying... (attempt ${initializationAttemptRef.current}/${maxRetries})`);
+      if (initializationAttemptRef.current < maxRetriesForContext) {
+        console.log(`⏳ Engine init failed (iframe: ${isInIframe}), retrying... (attempt ${initializationAttemptRef.current}/${maxRetriesForContext})`);
         setTimeout(() => {
           setRetryCount(r => r + 1);
-        }, 1000);
+        }, isInIframe ? 500 : 1000);
         return;
       }
-      setInitError(e instanceof Error ? e.message : "Failed to initialize 3D graphics engine");
+      
+      // Last resort: show a helpful error message
+      const errorMsg = e instanceof Error ? e.message : "Failed to initialize 3D graphics engine";
+      setInitError(`${errorMsg}${isInIframe ? " (Note: Running in iframe may have restrictions)" : ""}`);
       return;
     }
   }, [setCameraControlsRef, retryCount]); // Add retryCount to trigger reinitialize
@@ -2149,14 +2172,20 @@ export function BabylonScene() {
             </div>
             <h2 className="text-xl font-bold mb-2">3D Graphics Error</h2>
             <p className="text-muted-foreground mb-4">{initError}</p>
+            {initError.includes("WebGL") && (
+              <p className="text-xs text-muted-foreground mb-4">
+                💡 Tip: This might be a temporary issue. Try tapping "Try Again" below.
+              </p>
+            )}
             <div className="flex flex-col gap-2">
               <button 
                 onClick={() => {
+                  console.log("🔄 User requested retry");
                   setInitError(null);
                   initializationAttemptRef.current = 0;
                   setRetryCount(r => r + 1);
                 }}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
               >
                 Try Again
               </button>
