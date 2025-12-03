@@ -44,10 +44,6 @@ const nextConfig = {
             value: "public, max-age=31536000, immutable",
           },
           {
-            key: "Content-Encoding",
-            value: "gzip",
-          },
-          {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },

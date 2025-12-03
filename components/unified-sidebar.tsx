@@ -62,6 +62,7 @@ interface UnifiedSidebarProps {
 }
 
 export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarProps) {
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
     "materials",
   );
@@ -74,6 +75,11 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   const [imageQuality, setImageQuality] = useState<"standard" | "high" | "ultra">("high");
   const [videoFormat, setVideoFormat] = useState<"webm" | "mp4">("webm");
   const [includeMetadata, setIncludeMetadata] = useState(true);
+  
+  // Prevent hydration mismatch with Radix UI
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -717,7 +723,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
         )}
 
         {/* Model Dropdown */}
-        {!isCollapsed && (
+        {!isCollapsed && mounted && (
           <div data-tour="model-loader">
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
               <div className="flex items-baseline justify-between">

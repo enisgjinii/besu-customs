@@ -12,22 +12,33 @@ import { detectConnectionSpeed, getBestModelUrl, type LoadingProgress } from "@/
 import { extractSectionsFromThreeModel, applyMaterialsToThreeModel, extractUVMapFromThreeModel } from "@/lib/three-material-utils";
 import * as THREE from "three";
 
-// Loading progress component
+// Loading progress component - uses ref to avoid setState during render
 function LoadingProgress({ onProgress }: { onProgress: (progress: LoadingProgress) => void }) {
   const { progress, active } = useProgress();
   const speed = detectConnectionSpeed();
+  const onProgressRef = useRef(onProgress);
+  
+  // Keep ref updated
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
   
   useEffect(() => {
     if (active) {
-      onProgress({
-        stage: progress < 50 ? 'loading-low' : 'loading-high',
-        percent: progress,
-        bytesLoaded: 0,
-        bytesTotal: 0,
-        connectionSpeed: speed,
-      });
+      // Use setTimeout to defer state update to next tick
+      const timeoutId = setTimeout(() => {
+        onProgressRef.current({
+          stage: progress < 50 ? 'loading-low' : 'loading-high',
+          percent: progress,
+          bytesLoaded: 0,
+          bytesTotal: 0,
+          connectionSpeed: speed,
+        });
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [progress, active, onProgress, speed]);
+  }, [progress, active, speed]);
   
   return null;
 }
@@ -75,9 +86,14 @@ function Model({
     console.log("✅ Model cloned and sections extracted");
   }, [scene, url, onSectionsExtracted, onUVMapExtracted]);
   
-  // Auto-center and scale model
+  // Auto-center and scale model using bounding box - position at (0,0,0)
   useEffect(() => {
     if (!modelRef.current || !clonedScene.current) return;
+    
+    // Reset model group to origin first
+    modelRef.current.position.set(0, 0, 0);
+    modelRef.current.scale.set(1, 1, 1);
+    modelRef.current.rotation.set(0, 0, 0);
     
     // Clear previous children
     while (modelRef.current.children.length > 0) {
@@ -87,25 +103,40 @@ function Model({
     // Add cloned scene
     modelRef.current.add(clonedScene.current);
     
-    const box = new THREE.Box3().setFromObject(modelRef.current);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
+    // Force update matrices for accurate bounding box
+    modelRef.current.updateMatrixWorld(true);
     
-    // Center the model
-    modelRef.current.position.sub(center);
+    // Calculate bounding box
+    const boundingBox = new THREE.Box3().setFromObject(modelRef.current);
     
-    // Scale to fit - adaptive based on model size
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const targetSize = 3.5;
-    const scale = targetSize / maxDim;
-    modelRef.current.scale.setScalar(scale);
-    
-    // Position camera
-    const distance = targetSize * 2;
-    camera.position.set(distance, distance * 0.5, distance);
-    camera.lookAt(0, 0, 0);
-    
-    console.log(`📐 Model scaled: ${scale.toFixed(3)}, size: ${maxDim.toFixed(2)}`);
+    if (!boundingBox.isEmpty()) {
+      // Get bounding box center and size
+      const boxCenter = new THREE.Vector3();
+      const boxSize = new THREE.Vector3();
+      boundingBox.getCenter(boxCenter);
+      boundingBox.getSize(boxSize);
+      
+      // Move model so its center is at origin (0, 0, 0)
+      clonedScene.current.position.sub(boxCenter);
+      
+      // Scale model to fit - use max dimension for uniform scaling
+      const maxDim = Math.max(boxSize.x, boxSize.y, boxSize.z);
+      const targetSize = 4; // Target size in world units
+      const scale = maxDim > 0 ? targetSize / maxDim : 1;
+      modelRef.current.scale.setScalar(scale);
+      
+      // Position camera to view the model at origin
+      const cameraDistance = targetSize * 2;
+      camera.position.set(cameraDistance, cameraDistance * 0.5, cameraDistance);
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+      
+      console.log(`📐 Model centered at (0,0,0):`);
+      console.log(`   • Box size: ${boxSize.x.toFixed(2)} × ${boxSize.y.toFixed(2)} × ${boxSize.z.toFixed(2)}`);
+      console.log(`   • Scale: ${scale.toFixed(3)}`);
+    } else {
+      console.warn('⚠️ Model bounding box is empty');
+    }
     
     onLoad?.();
   }, [scene, camera, onLoad]);
@@ -209,15 +240,35 @@ function SceneSetup() {
   return null;
 }
 
-// Camera controls ref handler
+// Camera controls ref handler with auto-reset on model change
 function CameraControlsHandler() {
-  const { camera } = useThree();
+  const { camera, controls } = useThree();
   const setCameraControlsRef = useConfiguratorStore((s) => s.setCameraControlsRef);
+  const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   
   useEffect(() => {
     // Store camera reference for external control
     setCameraControlsRef(camera as any);
   }, [camera, setCameraControlsRef]);
+  
+  // Reset camera when model changes
+  useEffect(() => {
+    if (currentModelUrl && controls) {
+      // Reset camera to default position
+      const distance = 7;
+      camera.position.set(distance, distance * 0.6, distance);
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+      
+      // Reset orbit controls target
+      if ('target' in controls) {
+        (controls as any).target.set(0, 0, 0);
+        (controls as any).update();
+      }
+      
+      console.log('📷 Camera reset for new model');
+    }
+  }, [currentModelUrl, camera, controls]);
   
   return null;
 }
@@ -400,17 +451,19 @@ export function ThreeScene() {
         {/* Camera */}
         <PerspectiveCamera makeDefault position={[5, 3, 5]} fov={45} near={0.1} far={1000} />
         
-        {/* Controls */}
+        {/* Controls - optimized for auto-framing */}
         <OrbitControls
+          makeDefault
           enableDamping
           dampingFactor={0.05}
-          minDistance={0.5}
+          minDistance={1}
           maxDistance={50}
+          maxPolarAngle={Math.PI * 0.95}
+          minPolarAngle={0}
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          minPolarAngle={0}
-          maxPolarAngle={Math.PI}
+          target={[0, 0, 0]}
           touches={{
             ONE: THREE.TOUCH.ROTATE,
             TWO: THREE.TOUCH.DOLLY_PAN,
