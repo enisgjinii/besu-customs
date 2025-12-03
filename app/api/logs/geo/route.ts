@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
     // Get IP from Vercel headers (most reliable on Vercel)
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
                request.headers.get('x-real-ip') || 
-               request.ip ||
                'unknown';
 
     // Use Vercel's geolocation (available on Pro/Enterprise)
@@ -20,7 +19,6 @@ export async function GET(request: NextRequest) {
           country: geo.country,
           region: geo.region,
           city: geo.city,
-          timezone: geo.timezone,
           latitude: geo.latitude,
           longitude: geo.longitude,
         };

@@ -174,3 +174,25 @@ Check these files for help:
 **Everything is now logged to Vercel! 🎉**
 
 Deploy your app and check the Vercel dashboard to see all logs with IP, location, browser info, and full error details.
+
+
+## 🎯 Admin Dashboard
+
+Access the logs admin page at `/admin/logs` to:
+- View recent logs
+- Filter by level (error, warn, info, etc.)
+- Search by IP, user ID, or message
+- See location and browser info
+
+## 🔧 Vercel Toolbar Access
+
+Add `?vercelToolbar=1` to any URL to access:
+- Real-time logs directly on your site
+- Console output in production
+- Network request monitoring
+- Performance metrics
+- Environment information
+
+Example: `https://yourapp.vercel.app?vercelToolbar=1`
+
+See `VERCEL_TOOLBAR_GUIDE.md` for complete toolbar documentation.

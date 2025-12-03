@@ -17,7 +17,14 @@ export function useErrorHandler() {
       error,
       hasError: true,
     });
-    errorLogger.log(error, componentStack);
+    errorLogger.log('Error handled by useErrorHandler', {
+      level: 'error',
+      category: 'ui',
+      error,
+      componentStack,
+      isClientVisible: true,
+      clientMessage: 'An error occurred. Please try again.',
+    });
   }, []);
 
   const clearError = useCallback(() => {
@@ -51,7 +58,11 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<any>>(
       return await fn(...args);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      errorLogger.log(err);
+      errorLogger.log('Error in withErrorHandler', {
+        level: 'error',
+        category: 'system',
+        error: err,
+      });
       if (onError) {
         onError(err);
       }

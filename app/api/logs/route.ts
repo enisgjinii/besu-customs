@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       // Vercel metadata
       vercel: true,
       environment: process.env.VERCEL_ENV,
-      region: process.env.VERCEL_REGION,
+      vercelRegion: process.env.VERCEL_REGION,
       deployment: process.env.VERCEL_URL,
       
       // Log data
