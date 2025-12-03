@@ -100,15 +100,15 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
       isMobile: true,
       isLowEndDevice: true,
       pixelRatio,
-      maxTextureSize: 1024,
-      uvCanvasSize: 1024,
+      maxTextureSize: 512, // Reduced from 1024 to prevent context loss
+      uvCanvasSize: 512,
       antialias: false,
       shadowsEnabled: false,
       maxLights: 2,
       targetFPS: 30,
       debounceMs: 500,
       enablePostProcessing: false,
-      hardwareScaling: 1.5, // Reduced from 2 for sharper rendering
+      hardwareScaling: 2.0, // Increased to reduce GPU load
     };
   }
 
@@ -117,15 +117,15 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
       isMobile: true,
       isLowEndDevice: false,
       pixelRatio,
-      maxTextureSize: 2048,
-      uvCanvasSize: 2048,
-      antialias: true, // Enable for better edge quality
+      maxTextureSize: 1024, // Reduced from 2048 to prevent context loss
+      uvCanvasSize: 1024,
+      antialias: false, // Disabled to reduce GPU load
       shadowsEnabled: false,
-      maxLights: 3, // Allow more lights for better lighting
+      maxLights: 2, // Reduced from 3 to save memory
       targetFPS: 60,
       debounceMs: 200,
       enablePostProcessing: false,
-      hardwareScaling: 1.0, // Full resolution for sharp rendering
+      hardwareScaling: 1.25, // Slight upscaling to reduce GPU load
     };
   }
 
@@ -134,14 +134,14 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
       isMobile: true,
       isLowEndDevice: false,
       pixelRatio,
-      maxTextureSize: 4096,
-      uvCanvasSize: 4096,
-      antialias: true, // Enable for smooth edges
-      shadowsEnabled: true,
-      maxLights: 4,
+      maxTextureSize: 2048, // Reduced from 4096 to prevent context loss
+      uvCanvasSize: 2048,
+      antialias: false, // Disabled to reduce GPU load
+      shadowsEnabled: false, // Disabled to prevent context loss
+      maxLights: 3,
       targetFPS: 60,
       debounceMs: 150,
-      enablePostProcessing: true,
+      enablePostProcessing: false, // Disabled to save memory
       hardwareScaling: 1.0, // Full resolution
     };
   }
@@ -151,14 +151,14 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
     isMobile: false,
     isLowEndDevice: false,
     pixelRatio: Math.min(basePixelRatio, 2),
-    maxTextureSize: 4096,
-    uvCanvasSize: 4096,
+    maxTextureSize: 2048, // Reduced from 4096 to be safer
+    uvCanvasSize: 2048,
     antialias: true,
-    shadowsEnabled: true,
+    shadowsEnabled: false, // Disabled to prevent context loss
     maxLights: 4,
     targetFPS: 60,
     debounceMs: 100,
-    enablePostProcessing: true,
+    enablePostProcessing: false, // Disabled to save memory
     hardwareScaling: 1,
   };
 }

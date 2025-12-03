@@ -209,6 +209,9 @@ export function BabylonScene() {
     // Create engine with mobile-optimized settings
     const engineOptions = getEngineOptions(config);
     engine = new Engine(canvasRef.current, config.antialias, engineOptions);
+    
+    // CRITICAL: Limit texture memory to prevent context loss
+    engine.setSize(engine.getRenderWidth(), engine.getRenderHeight(), false); // Don't force aspect ratio
 
     // Set hardware scaling level for mobile
     engine.setHardwareScalingLevel(config.hardwareScaling);
@@ -398,6 +401,27 @@ export function BabylonScene() {
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleResize);
 
+    // CRITICAL: Pause rendering when page is hidden to save GPU memory
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log("⏸️ Page hidden, pausing render loop");
+        engine.stopRenderLoop();
+      } else {
+        console.log("▶️ Page visible, resuming render loop");
+        engine.runRenderLoop(() => {
+          if (config.isLowEndDevice) {
+            const now = performance.now();
+            if (now - lastFrameTime < targetFrameTime) {
+              return;
+            }
+            lastFrameTime = now;
+          }
+          scene.render();
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     console.log("✅ Babylon.js engine initialized");
     setInitError(null);
     setEngineReady(true);
@@ -444,6 +468,7 @@ export function BabylonScene() {
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (currentCanvas) {
         currentCanvas.removeEventListener("webglcontextlost", handleContextLost);
         currentCanvas.removeEventListener("webglcontextrestored", handleContextRestored);
@@ -1254,6 +1279,19 @@ export function BabylonScene() {
     if (currentMeshRef.current) {
       currentMeshRef.current.dispose();
       currentMeshRef.current = null;
+    }
+
+    // CRITICAL: Dispose all textures to free GPU memory
+    if (sceneRef.current) {
+      sceneRef.current.textures.forEach((texture) => {
+        try {
+          if (texture && !texture.name.includes("babylon_font")) { // Keep system textures
+            texture.dispose();
+          }
+        } catch (e) {
+          console.warn("Texture disposal warning:", e);
+        }
+      });
     }
 
     // Clear old UV map to prevent showing stale data
