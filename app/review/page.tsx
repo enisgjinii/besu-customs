@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// Dynamic import for BabylonScene component to prevent static generation issues
+// Dynamic import for Three.js Scene component
 const Scene = dynamic(
   () =>
-    import("@/components/babylon-scene").then((mod) => ({
-      default: mod.BabylonScene,
+    import("@/components/three-scene").then((mod) => ({
+      default: mod.ThreeScene,
     })),
   {
     ssr: false,

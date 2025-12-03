@@ -8,9 +8,6 @@ const nextConfig = {
   turbopack: {},
   outputFileTracingExcludes: {
     '*': [
-      'node_modules/@babylonjs/core/**/*.d.ts',
-      'node_modules/@babylonjs/loaders/**/*.d.ts',
-      'node_modules/@babylonjs/materials/**/*.d.ts',
       'node_modules/@swc/core-linux-x64-gnu',
       'node_modules/@swc/core-linux-x64-musl',
       'node_modules/@esbuild/linux-x64',
@@ -26,9 +23,9 @@ const nextConfig = {
       },
     });
     
-    // Exclude large dependencies from server bundle
+    // Exclude Three.js from server bundle (client-only)
     if (isServer) {
-      config.externals = [...(config.externals || []), '@babylonjs/core', '@babylonjs/loaders'];
+      config.externals = [...(config.externals || []), 'three'];
     }
     
     return config;

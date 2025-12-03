@@ -4,11 +4,11 @@ import dynamic from "next/dynamic";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
-// Dynamic import for BabylonScene component to prevent static generation issues
+// Dynamic import for Three.js Scene component (migrated from Babylon.js)
 const Scene = dynamic(
   () =>
-    import("@/components/babylon-scene").then((mod) => ({
-      default: mod.BabylonScene,
+    import("@/components/three-scene").then((mod) => ({
+      default: mod.ThreeScene,
     })),
   {
     ssr: false,

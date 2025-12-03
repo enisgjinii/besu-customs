@@ -1,9 +1,9 @@
 # besu-customs AI Coding Guidelines
 
 ## Project Overview
-3D model configurator for customizing sports apparel (jerseys, bags, etc.) with real-time material editing. Built with Next.js 16, Babylon.js for 3D rendering, and Supabase for data/auth.
+3D model configurator for customizing sports apparel (jerseys, bags, etc.) with real-time material editing. Built with Next.js 16, Three.js (React Three Fiber) for 3D rendering, and Supabase for data/auth.
 
-**Critical Context**: Migrated from Three.js to Babylon.js (Phase 1 complete). See `BABYLON_MIGRATION.md` for differences.
+**Critical Context**: Migrated from Babylon.js to Three.js for better performance and smaller bundle size. See `THREEJS_MIGRATION_GUIDE.md` for details.
 
 ## Architecture
 
@@ -14,18 +14,17 @@
   - `lib/onboarding-store.ts`: User onboarding flows (~834 lines)
 - **Pattern**: Direct store access, no prop drilling. Always import from `@/lib/store`
 
-### 3D Rendering (Babylon.js)
-- **Main component**: `components/babylon-scene.tsx` (~1723 lines)
-- **Engine config**: `preserveDrawingBuffer: false`, `antialias: false` (performance optimized)
-- **Critical setting**: `reactStrictMode: false` in `next.config.mjs` - required for Babylon.js
-- **WebGL context loss**: Fixed via texture size limits (max 2048x2048), proper disposal. See `WEBGL_CONTEXT_FIX.md`
-- **Material system**: `lib/babylon-material-utils.ts` handles color/texture/gradient application
-- **UV editing**: `components/uv-texture-editor.tsx` + `lib/babylon-uv-utils.ts` - 2D canvas-based texture editing
+### 3D Rendering (Three.js + React Three Fiber)
+- **Main component**: `components/three-scene.tsx` - Declarative 3D scene
+- **Libraries**: `three`, `@react-three/fiber`, `@react-three/drei`
+- **Critical setting**: `reactStrictMode: false` in `next.config.mjs` - prevents double renders
+- **Material system**: `lib/three-material-utils.ts` handles color/texture/gradient application
+- **UV editing**: `components/uv-texture-editor.tsx` - 2D canvas-based texture editing
 
 ### Material Detection & Parsing
 - **Parser**: `lib/material-name-parser.ts` - Extracts meaning from material names (e.g., "Body_F_301116" → "Body Front")
 - **Auto-categorization**: Body parts → Blue, Panels → Orange, Trim → Gray (priority 10-100)
-- **Section extraction**: `extractSectionsFromModel()` in `babylon-material-utils.ts` - Automatically categorizes meshes on load
+- **Section extraction**: `extractSectionsFromThreeModel()` in `three-material-utils.ts` - Automatically categorizes meshes on load
 - **API precomputation**: Fetches precomputed sections from `/api/materials?model=...` for faster loading
 
 ### Data Layer
@@ -45,12 +44,12 @@
 ### 3D Model Loading
 ```tsx
 // ALWAYS dynamic import to prevent SSR issues
-const Scene = dynamic(() => import("@/components/babylon-scene"), { ssr: false });
+const Scene = dynamic(() => import("@/components/three-scene"), { ssr: false });
 ```
 
 ### Material Updates
 ```typescript
-// Update via store, Babylon scene reacts automatically
+// Update via store, Three.js scene reacts automatically
 updateSection(sectionId, { color: "#ff0000" });
 // Scene watches sections array and applies changes in useEffect
 ```
@@ -58,7 +57,7 @@ updateSection(sectionId, { color: "#ff0000" });
 ### Texture Application
 - **Global textures**: Use `setGlobalCustomTexture(dataUrl)` - applies to all materials
 - **Fabric.js integration**: UV editor uses Fabric.js canvas, exports as PNG dataUrl
-- **Flip handling**: `flipY: false` when creating Babylon textures from canvas (see `TEXTURE_FIX_SUMMARY.md`)
+- **Flip handling**: `flipY: false` when creating Three.js textures from canvas
 
 ### Path Aliases
 Use `@/*` for all imports (maps to project root via `tsconfig.json`)
@@ -69,8 +68,10 @@ Use `@/*` for all imports (maps to project root via `tsconfig.json`)
 ```bash
 npm run dev                    # Start dev server (localhost:3000)
 npm run build                  # Production build
-npm run extract-materials      # Extract material names from GLB/GLTF files → materials-output/
-npm run optimize-backpack      # Model optimization script
+npm run clear-cache            # Clear all caches (Next.js, browser)
+npm run generate-models-json   # Regenerate models.json from files
+npm run generate-lod           # Generate LOD models for mobile
+npm run extract-materials      # Extract material names from GLB/GLTF files
 ```
 
 ### Material Extraction
@@ -91,14 +92,14 @@ store.updateSection(sectionId, { color: "#ff0000" });
 
 ### WebGL Context Loss
 - **Cause**: Multiple GPU-intensive components, large textures
-- **Prevention**: Max 2048x2048 textures, dispose old textures, antialias: false
-- **Recovery**: `doNotHandleContextLost: false` in engine config (see `CONTEXT_LOSS_ROOT_CAUSE.md`)
+- **Prevention**: Max 2048x2048 textures, dispose old textures
+- **Recovery**: Automatic via Three.js context restoration
 
-### Babylon.js vs Three.js
-- **Camera**: `ArcRotateCamera` not `PerspectiveCamera`
-- **Vectors**: Use `Vector3` constructor, not Euler for rotations
-- **Materials**: `StandardMaterial` not `MeshStandardMaterial`
-- **Render loop**: `engine.runRenderLoop()` not `useFrame` hook
+### Three.js Patterns
+- **Camera**: `PerspectiveCamera` with `OrbitControls`
+- **Materials**: `MeshStandardMaterial` for PBR
+- **Render loop**: `useFrame` hook from R3F
+- **Loading**: `useGLTF` hook from drei
 
 ### Deployment (Vercel)
 - **Config**: `vercel.json` excludes `public/models/**` from functions
@@ -113,12 +114,12 @@ store.updateSection(sectionId, { color: "#ff0000" });
 ## File Organization Patterns
 
 ### Components
-- `babylon-*` prefix: Babylon.js-specific components
+- `three-*` prefix: Three.js-specific components
 - `uv-*` prefix: UV map/texture editing
 - `ui/*`: Shadcn/ui components (Radix primitives + Tailwind)
 
 ### Documentation
-- `*_MIGRATION.md`: Migration guides (Three.js → Babylon.js)
+- `*_MIGRATION.md`: Migration guides
 - `*_FIX.md`: Bug fix documentation with root cause analysis
 - `*_GUIDE.md`: User/developer guides
 - Keep docs updated when changing related systems
@@ -149,12 +150,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_anon_key>
 ### Materials System
 1. Update parser in `material-name-parser.ts` if adding new patterns
 2. Test with `npm run extract-materials` on actual models
-3. Check `babylon-material-utils.ts` for application logic
+3. Check `three-material-utils.ts` for application logic
 
 ### UV Editor
 1. Canvas size: 4096x4096 (desktop), 2048x2048 (tablet), 1024x1024 (mobile low-end)
 2. UV map extraction: 2048x2048 for performance
-3. Always flip Y-axis when exporting to Babylon
+3. Always flip Y-axis when exporting to Three.js
 4. Dispose previous textures to prevent memory leaks
 
 ## Quick Reference
@@ -163,3 +164,21 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_anon_key>
 **Reset scene**: Delete `currentModelUrl` from localStorage  
 **Debug sections**: Console → `useConfiguratorStore.getState().sections`  
 **Check UV map**: Console → `useConfiguratorStore.getState().completeUVMap`
+**Clear cache**: `npm run clear-cache` or visit `/clear-cache.html`
+
+## Mobile Optimization
+
+### Progressive Loading
+- Detects connection speed (2G/3G/4G/WiFi)
+- Loads appropriate quality model
+- LOD system: `-low.glb`, `-medium.glb`, original
+
+### Performance Modes
+- Auto-detects low-end devices
+- Reduces texture sizes, disables shadows
+- Throttles frame rate on slow devices
+
+### Service Worker
+- Caches models after first load
+- Instant repeat loads
+- Works offline after first visit

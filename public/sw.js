@@ -89,6 +89,11 @@ self.addEventListener('fetch', (event) => {
 // Cache-first strategy (best for static assets like models)
 async function cacheFirstWithNetworkFallback(request, cacheName) {
   try {
+    // Only cache GET requests
+    if (request.method !== 'GET') {
+      return fetch(request);
+    }
+    
     // Try cache first
     const cache = await caches.open(cacheName);
     const cachedResponse = await cache.match(request);
@@ -98,8 +103,10 @@ async function cacheFirstWithNetworkFallback(request, cacheName) {
       
       // Update cache in background (stale-while-revalidate)
       fetch(request).then((response) => {
-        if (response && response.status === 200) {
-          cache.put(request, response.clone());
+        if (response && response.status === 200 && response.type !== 'opaque') {
+          cache.put(request, response.clone()).catch(() => {
+            // Ignore cache errors
+          });
         }
       }).catch(() => {
         // Ignore network errors during background update
@@ -112,9 +119,11 @@ async function cacheFirstWithNetworkFallback(request, cacheName) {
     console.log('[SW] Cache miss, fetching:', request.url);
     const response = await fetch(request);
     
-    // Cache successful responses
-    if (response && response.status === 200) {
-      cache.put(request, response.clone());
+    // Cache successful GET responses (not opaque responses)
+    if (response && response.status === 200 && response.type !== 'opaque') {
+      cache.put(request, response.clone()).catch((error) => {
+        console.warn('[SW] Failed to cache:', request.url, error.message);
+      });
     }
     
     return response;
@@ -139,13 +148,20 @@ async function cacheFirstWithNetworkFallback(request, cacheName) {
 
 // Network-first strategy (best for dynamic content)
 async function networkFirstWithCacheFallback(request, cacheName) {
+  // Only cache GET requests
+  if (request.method !== 'GET') {
+    return fetch(request);
+  }
+  
   try {
     const response = await fetch(request);
     
-    // Cache successful responses
-    if (response && response.status === 200) {
+    // Cache successful GET responses
+    if (response && response.status === 200 && response.type !== 'opaque') {
       const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
+      cache.put(request, response.clone()).catch(() => {
+        // Ignore cache errors
+      });
     }
     
     return response;
