@@ -154,10 +154,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             }));
             setProducts(activeProducts);
 
-            // Auto-select the first product if none is selected
-            if (!selectedProductId) {
-              setSelectedProduct(activeProducts[0].id);
-            }
+            // Don't auto-select any product - let user choose from dropdown
           }
         }
         setProductsLoaded(true);
@@ -735,7 +732,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               onValueChange={setSelectedProduct}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choose a model..." />
+                <SelectValue placeholder="Select a 3D model to begin..." />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(groupedProducts).map(([category, items]) => (

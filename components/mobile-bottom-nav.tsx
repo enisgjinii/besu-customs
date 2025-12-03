@@ -201,7 +201,7 @@ export function MobileBottomNav() {
                     onValueChange={setSelectedProduct}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose a model..." />
+                      <SelectValue placeholder="Select a 3D model to begin..." />
                     </SelectTrigger>
                     <SelectContent>
                       {products.map((product) => (

@@ -2081,7 +2081,22 @@ export function BabylonScene() {
         style={{ touchAction: "none" }}
       />
 
-
+      {/* Empty state when no model is selected */}
+      {!currentModelUrl && !modelLoading && !initError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 pointer-events-none">
+          <div className="text-center max-w-md px-6">
+            <div className="w-20 h-20 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold mb-3 text-foreground">Select a Model</h2>
+            <p className="text-muted-foreground text-sm">
+              Choose a 3D model from the dropdown menu to get started with customization
+            </p>
+          </div>
+        </div>
+      )}
 
       {modelLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm z-10">

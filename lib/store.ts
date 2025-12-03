@@ -409,15 +409,16 @@ const loadActiveProducts = async (): Promise<Product[]> => {
 
 export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   products: initialProducts,
-  selectedProductId: initialProducts[0]?.id ?? null,
+  selectedProductId: null, // Start with no model selected
   setProducts: (products: Product[]) => set({ products }),
   refreshProducts: async () => {
     try {
       const activeProducts = await loadActiveProducts();
       set({
         products: activeProducts,
-        selectedProductId: activeProducts[0]?.id ?? null,
-        currentModelUrl: activeProducts[0]?.modelUrl ?? null,
+        // Don't auto-select any model on refresh
+        selectedProductId: null,
+        currentModelUrl: null,
       });
     } catch (error) {
       console.error("Failed to refresh products:", error);
