@@ -9,7 +9,9 @@
     "lint": "next lint",
     "start": "next start",
     "extract-materials": "node scripts/extract-materials.js",
-    "optimize-backpack": "node scripts/optimize-backpack.js"
+    "optimize-backpack": "node scripts/optimize-backpack.js",
+    "compress-models": "node scripts/compress-models.js",
+    "replace-with-compressed": "node scripts/replace-with-compressed.js"
   },
   "dependencies": {
     "@babylonjs/core": "^8.37.0",
@@ -72,6 +74,7 @@
     "@types/three": "^0.181.0",
     "eslint": "^9.37.0",
     "eslint-config-next": "15.5.4",
+    "gltf-pipeline": "^4.3.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "typescript": "^5"
