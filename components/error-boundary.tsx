@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from "react";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
-import { Button } from "./ui/button";
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { errorLogger } from '@/lib/error-logger';
 
 interface Props {
   children: ReactNode;
@@ -18,49 +18,36 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, errorInfo: null };
+    return {
+      hasError: true,
+      error,
+      errorInfo: null,
+    };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
-    this.setState({ error, errorInfo });
-    
-    // Log to analytics/error tracking service if available
-    if (typeof window !== "undefined") {
-      // Could send to error tracking service here
-      console.error("Component Stack:", errorInfo.componentStack);
-    }
+    console.error('Error caught by boundary:', error, errorInfo);
+    errorLogger.log(error, errorInfo.componentStack);
+    this.setState({
+      error,
+      errorInfo,
+    });
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
-    
-    // Clear any cached state that might be causing issues
-    if (typeof window !== "undefined") {
-      try {
-        // Clear localStorage items that might be corrupted
-        const keysToPreserve = ["theme"];
-        const allKeys = Object.keys(localStorage);
-        allKeys.forEach((key) => {
-          if (!keysToPreserve.includes(key) && key.includes("configurator")) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (e) {
-        console.error("Failed to clear localStorage:", e);
-      }
-    }
-    
-    // Force reload the page
-    window.location.reload();
-  };
-
-  handleGoHome = () => {
-    window.location.href = "/";
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
   };
 
   render() {
@@ -69,60 +56,57 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      const isWebGLError = this.state.error?.message?.toLowerCase().includes("webgl") ||
-        this.state.error?.message?.toLowerCase().includes("context") ||
-        this.state.error?.message?.toLowerCase().includes("gpu");
-
       return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <div className="max-w-md w-full bg-card border border-border rounded-lg shadow-lg p-6 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-destructive" />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+          <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
+                <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Something went wrong
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  We encountered an unexpected error
+                </p>
               </div>
             </div>
-            
-            <h1 className="text-xl font-bold text-foreground mb-2">
-              {isWebGLError ? "3D Rendering Error" : "Something went wrong"}
-            </h1>
-            
-            <p className="text-muted-foreground mb-4">
-              {isWebGLError 
-                ? "Your device had trouble rendering the 3D model. This can happen on devices with limited graphics capabilities."
-                : "The application encountered an unexpected error. Please try refreshing the page."}
-            </p>
 
-            {/* Show error details in development */}
-            {process.env.NODE_ENV === "development" && this.state.error && (
-              <div className="mb-4 p-3 bg-muted rounded text-left text-xs overflow-auto max-h-32">
-                <p className="font-mono text-destructive">{this.state.error.message}</p>
+            {this.state.error && (
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-sm font-mono text-red-600 dark:text-red-400 mb-2">
+                  {this.state.error.toString()}
+                </p>
+                {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+                  <details className="mt-4">
+                    <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+                      Stack trace
+                    </summary>
+                    <pre className="mt-2 text-xs overflow-auto max-h-64 text-gray-700 dark:text-gray-300">
+                      {this.state.errorInfo.componentStack}
+                    </pre>
+                  </details>
+                )}
               </div>
             )}
-            
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
+
+            <div className="flex gap-3">
+              <button
                 onClick={this.handleReset}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 Try Again
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={this.handleGoHome}
-                className="flex items-center gap-2"
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors"
               >
                 <Home className="w-4 h-4" />
                 Go Home
-              </Button>
+              </button>
             </div>
-
-            {isWebGLError && (
-              <p className="mt-4 text-xs text-muted-foreground">
-                Tip: Try closing other apps or browser tabs to free up memory.
-              </p>
-            )}
           </div>
         </div>
       );
@@ -130,18 +114,4 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
-}
-
-// Functional wrapper for easier use with hooks
-export function withErrorBoundary<P extends object>(
-  Component: React.ComponentType<P>,
-  fallback?: ReactNode
-) {
-  return function WrappedComponent(props: P) {
-    return (
-      <ErrorBoundary fallback={fallback}>
-        <Component {...props} />
-      </ErrorBoundary>
-    );
-  };
 }
