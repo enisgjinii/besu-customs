@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorLoggerInit } from "@/app/error-logger-init";
 import "./globals.css";
 
 const inter = Inter({
@@ -65,6 +66,7 @@ export default function RootLayout({
         </ThemeProvider>
         <Analytics />
         {shouldInjectToolbar && <VercelToolbar />}
+        <ErrorLoggerInit />
       </body>
     </html>
   );

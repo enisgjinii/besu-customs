@@ -31,6 +31,7 @@ import {
 } from "@/lib/babylon-material-utils";
 import { extractCompleteUVMapBabylon } from "@/lib/babylon-uv-utils";
 import { useMobilePerformance, getEngineOptions } from "@/hooks/use-mobile-performance";
+import { ClearCacheButton } from "@/components/clear-cache-button";
 
 // Helper function to get theme-aware background color
 const getThemeBackgroundColor = (
@@ -2125,8 +2126,58 @@ export function BabylonScene() {
         </div>
       )}
 
+      {/* WebGL Context Lost Error */}
+      {webglContextLost && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/95 backdrop-blur-sm z-50">
+          <div className="max-w-md mx-4 bg-yellow-500/90 backdrop-blur-sm text-white px-6 py-4 rounded-lg shadow-xl border border-yellow-400/20">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-3 h-3 bg-yellow-300 rounded-full animate-pulse"></div>
+              <span className="font-bold text-lg">3D Graphics Paused</span>
+            </div>
+            <p className="text-yellow-100 mb-3">
+              The 3D graphics context was lost. Attempting to restore...
+            </p>
+            <div className="flex items-center gap-2">
+              <Spinner className="size-4" />
+              <span className="text-sm">Reconnecting...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Initialization Error */}
+      {initError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/95 backdrop-blur-sm z-50 p-4">
+          <div className="max-w-md w-full bg-red-500/90 backdrop-blur-sm text-white px-6 py-5 rounded-lg shadow-xl border border-red-400/20">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-3 h-3 bg-red-300 rounded-full"></div>
+              <span className="font-bold text-lg">3D Graphics Error</span>
+            </div>
+            <p className="text-red-100 mb-4">{initError}</p>
+            <div className="text-sm text-red-200 space-y-1 mb-4">
+              <p>• Try clearing cache and refreshing</p>
+              <p>• Use a different browser (Chrome or Safari)</p>
+              <p>• Check if your device supports WebGL</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <ClearCacheButton 
+                variant="default"
+                className="w-full bg-white text-red-600 hover:bg-red-50"
+                showIcon={true}
+              />
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-red-600 text-white px-4 py-2 rounded font-medium hover:bg-red-700 transition-colors border border-red-400"
+              >
+                Refresh Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modelError && (
-        <div className="absolute top-4 right-4 bg-red-500/90 backdrop-blur-sm text-white px-4 py-3 rounded-lg text-sm shadow-lg border border-red-400/20">
+        <div className="absolute top-4 right-4 bg-red-500/90 backdrop-blur-sm text-white px-4 py-3 rounded-lg text-sm shadow-lg border border-red-400/20 max-w-sm">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-red-300 rounded-full animate-pulse"></div>
             <span className="font-medium">Model Loading Error</span>
