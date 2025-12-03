@@ -106,9 +106,9 @@ export async function GET(request: Request) {
 
   // For volleyball models, we want individual nodes for coloring
   let lines: string[];
-  if (modelParam.includes("Volleyball short sleeve tops.glb")) {
+  if (modelParam.includes("volleyball-short-sleeve-tops.glb")) {
     lines = normalizedMeshes; // Use meshes for short sleeve
-  } else if (modelParam.includes("Volleyball long sleeve tops.glb")) {
+  } else if (modelParam.includes("volleyball-long-sleeve-tops.glb")) {
     lines = [...normalizedMaterials, ...normalizedMeshes]; // Use both materials and meshes for long sleeve
   } else {
     lines = normalizedMaterials; // For other models, just use materials
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
   // Function to rename sections for specific models
   const renameSectionForModel = (originalName: string): string | null => {
     // Baseball Cap renaming
-    if (modelParam.includes("Baseball caps.glb")) {
+    if (modelParam.includes("baseball-caps.glb")) {
       if (originalName === "Default Topstitch_2473") return "Stitching Color";
       if (originalName === "Strap_2456") return "Strap Color";
       if (originalName === "Brim_2452") return "Brim Color";
@@ -138,7 +138,7 @@ export async function GET(request: Request) {
     }
 
     // Basketball Jersey Top And Long Shorts renaming
-    if (modelParam.includes("Basketball Jersey Top And Long Shorts.glb")) {
+    if (modelParam.includes("basketball-jersey-top-and-long-shorts.glb")) {
       // FABRIC materials are actually the jersey parts
       if (originalName === "FABRIC_1_2842") return "Shorts Waist Trim Color";
       if (originalName === "FABRIC_1_2845") return "Back of Shorts Color";
@@ -157,7 +157,7 @@ export async function GET(request: Request) {
     }
 
     // Basketball Jersey and Shorts renaming
-    if (modelParam.includes("Basketball Jersey and Shorts.glb")) {
+    if (modelParam.includes("basketball-jersey-and-shorts.glb")) {
       if (originalName === "Ble_4559165") return "Sleeve and Collar Trim Color";
       if (originalName === "Body_B_181847") return "Back of Jersey Color";
       if (originalName === "Body_F_144430") return "Front of Jersey Color";
@@ -172,7 +172,7 @@ export async function GET(request: Request) {
     // Basketball shooting shirt long sleeve renaming
     if (
       modelParam.includes(
-        "basketball shooting shirt long sleeve without hoodie.glb",
+        "basketball-shooting-shirt-long-sleeve-without-hoodie.glb",
       )
     ) {
       if (originalName === "FABRIC 1_85769026") return "Base Color";
@@ -181,7 +181,7 @@ export async function GET(request: Request) {
     // Basketball shooting shirt with hoodie renaming
     if (
       modelParam.includes(
-        "basketball shooting shirt short sleeve with hoodie.glb",
+        "basketball-shooting-shirt-short-sleeve-with-hoodie.glb",
       )
     ) {
       if (originalName === "FABRIC 1_10070542") return "Base Color";
@@ -215,7 +215,7 @@ export async function GET(request: Request) {
     // Basketball shooting shirt short sleeve renaming
     if (
       modelParam.includes(
-        "basketball shooting shirt, short sleeve without a hoodie.glb",
+        "basketball-shooting-shirt-short-sleeve-without-a-hoodie.glb",
       )
     ) {
       if (originalName === "Body_F_83787749") return "Front of Shirt Color";
@@ -240,14 +240,14 @@ export async function GET(request: Request) {
     }
 
     // Long Pants (Long Shorts) renaming
-    if (modelParam.includes("long pants.glb")) {
+    if (modelParam.includes("long-pants.glb")) {
       if (originalName === "Material.001") return "Back of Shorts Color";
       if (originalName === "FABRIC_1_11352026") return "Front of Shorts Color";
       if (originalName === "FABRIC_1_1271") return "Waist Color";
     }
 
     // Polo Long Sleeve renaming
-    if (modelParam.includes("Polo shirts long sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-long-sleeve.glb")) {
       if (originalName === "Body_B_18747644")
         return "Back of Polo Long Sleeve Shirt Color";
       if (originalName === "Body_F_18571006")
@@ -260,7 +260,7 @@ export async function GET(request: Request) {
     }
 
     // Polo Short Sleeve renaming
-    if (modelParam.includes("Polo shirts short sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-short-sleeve.glb")) {
       if (originalName === "Body_B_17912114") return "Back of Polo Shirt";
       if (originalName === "Body_F_17850235") return "Front of Polo Shirt";
       if (originalName === "Bodyr_F_Placket_17850241")
@@ -271,7 +271,7 @@ export async function GET(request: Request) {
     }
 
     // Soccer Jersey Crew Neck renaming
-    if (modelParam.includes("Soccer jersey crew neck.glb")) {
+    if (modelParam.includes("soccer-jersey-crew-neck.glb")) {
       if (originalName === "Body_B_301116") return "Jersey Back Color";
       if (originalName === "Body_F_279881") return "Jersey Front Color";
       if (originalName === "Collar_Stand_441436") return "Jersey Collar Color";
@@ -279,7 +279,7 @@ export async function GET(request: Request) {
     }
 
     // Soccer Jersey V Neck renaming
-    if (modelParam.includes("Soccer jersey v-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-v-neck.glb")) {
       if (originalName === "Body_14111705") return "Jersey Front Color";
       if (originalName === "Body_14135701") return "Jersey Back Color";
       if (originalName === "Body_14258581") return "Jersey V-Neck Color";
@@ -290,7 +290,7 @@ export async function GET(request: Request) {
     }
 
     // Standard Bottom Cut Cuffed (Baseball Pants) renaming
-    if (modelParam.includes("Standard bottom cut, cuffed.glb")) {
+    if (modelParam.includes("standard-bottom-cut-cuffed.glb")) {
       if (originalName === "Material.001") return "Button Color";
       if (originalName === "Default_Button_46243")
         return "Button Stitching Color";
@@ -303,34 +303,34 @@ export async function GET(request: Request) {
     }
 
     // Track and Field Compression Shorts renaming
-    if (modelParam.includes("Track and field compression shorts.glb")) {
+    if (modelParam.includes("track-and-field-compression-shorts.glb")) {
       if (originalName === "FABRIC 1_2587") return "Front of Shorts Color";
       if (originalName === "FABRIC 1_2590") return "Waist of Shorts Color";
       if (originalName === "FABRIC 1_2593") return "Back of Shorts Color";
     }
 
     // Track and Field Mid-Length Shorts renaming
-    if (modelParam.includes("Track and field mid-len gth shorts.glb")) {
+    if (modelParam.includes("track-and-field-mid-len-gth-shorts.glb")) {
       if (originalName === "FABRIC 1_85695338") return "Waist of Shorts Color";
       if (originalName === "FABRIC 1_85695335") return "Front of Shorts Color";
       if (originalName === "FABRIC 1_85695341") return "Back of Shorts Color";
     }
 
     // Track and Field Split Shorts renaming
-    if (modelParam.includes("Track and field split shorts.glb")) {
+    if (modelParam.includes("track-and-field-split-shorts.glb")) {
       if (originalName === "FABRIC 1_2587") return "Front of Shorts Color";
       if (originalName === "FABRIC 1_2590") return "Waist of Shorts Color";
       if (originalName === "FABRIC 1_2593") return "Back of Shorts Color";
     }
 
     // Track and Field Crop Top renaming
-    if (modelParam.includes("Track and field top crop top.glb")) {
+    if (modelParam.includes("track-and-field-top-crop-top.glb")) {
       if (originalName === "Body_10697153") return "Front of Crop Top Color";
       if (originalName === "Body_10792617") return "Back of Crop Top Color";
     }
 
     // Track and Field Short Sleeve renaming
-    if (modelParam.includes("Track and field top short sleeve.glb")) {
+    if (modelParam.includes("track-and-field-top-short-sleeve.glb")) {
       if (originalName === "Body_F_465647") return "Front of Shirt Color";
       if (originalName === "Body_F_465656") return "Neck Collar of Shirt Color";
       if (originalName === "Body_B_465650") return "Back of Shirt Color";
@@ -338,19 +338,19 @@ export async function GET(request: Request) {
     }
 
     // Track and Field Tank Top renaming
-    if (modelParam.includes("Track and field top tank top.glb")) {
+    if (modelParam.includes("track-and-field-top-tank-top.glb")) {
       if (originalName === "Body_4659223") return "Front of Tank Top Color";
       if (originalName === "Body_4717163") return "Back of Tank Top Color";
     }
 
     // Volleyball Long Sleeve Tops renaming
-    if (modelParam.includes("Volleyball long sleeve tops.glb")) {
+    if (modelParam.includes("volleyball-long-sleeve-tops.glb")) {
       if (originalName === "Sleeves_FRONT_4165") return "Front of Shirt Color";
       if (originalName === "Body_FRONT_4160") return "Back of Shirt Color";
     }
 
     // Volleyball Short Sleeve Tops mesh renaming
-    if (modelParam.includes("Volleyball short sleeve tops.glb")) {
+    if (modelParam.includes("volleyball-short-sleeve-tops.glb")) {
       if (originalName === "Ribbing") return "Neck Collar";
       // Combine all sleeve options into single "Arm Sleeves"
       if (
@@ -368,14 +368,14 @@ export async function GET(request: Request) {
     }
 
     // Volleyball Long Sleeve Tops renaming (materials and meshes)
-    if (modelParam.includes("Volleyball long sleeve tops.glb")) {
+    if (modelParam.includes("volleyball-long-sleeve-tops.glb")) {
       if (originalName === "Sleeves") return "Sleeves";
       if (originalName === "Sleeves_FRONT_4165") return "Front of Shirt Color";
       if (originalName === "Body_FRONT_4160") return "Back of Shirt Color";
     }
 
     // Volleyball Shorts Spandex 4 (Long Length) renaming
-    if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex-4.glb")) {
       if (originalName === "Default_Topstitch_1426721")
         return "Inseam of Shorts Stitching Color 1";
       if (originalName === "Default_Topstitch_1426725")
@@ -388,28 +388,28 @@ export async function GET(request: Request) {
     }
 
     // Volleyball Shorts Spandex (Small Length) renaming
-    if (modelParam.includes("Volleyball shorts spandex.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex.glb")) {
       if (originalName === "FABRIC 1_2587") return "Front of Shorts Color";
       if (originalName === "FABRIC 1_2590") return "Waist of Shorts Color";
       if (originalName === "FABRIC 1_2593") return "Back of Shorts Color";
     }
 
     // Volleyball Spandex (Medium Length) renaming
-    if (modelParam.includes("Volleyball spandex.glb")) {
+    if (modelParam.includes("volleyball-spandex.glb")) {
       if (originalName === "Material.001") return "Front of Shorts Color";
       if (originalName === "FABRIC_1_2835") return "Waist of Shorts Color";
       if (originalName === "FABRIC_1_2838") return "Back of Shorts Color";
     }
 
     // Half Short renaming
-    if (modelParam.includes("Half short.glb")) {
+    if (modelParam.includes("half-short.glb")) {
       if (originalName === "Material.001") return "Shorts Front Color"; // Material.001 is Front
       if (originalName === "FABRIC_1_2590") return "Shorts Back Color"; // FABRIC_1_2590 is Back
       if (originalName === "FABRIC_1_2587") return "Shorts Waist Color"; // FABRIC_1_2587 is Waist
     }
 
     // Flag Football Top with Hoodie renaming
-    if (modelParam.includes("Flag football top with hoodie.glb")) {
+    if (modelParam.includes("flag-football-top-with-hoodie.glb")) {
       if (originalName === "FABRIC_1_10070542") return "Jersey Main Color";
       if (originalName === "Zipper_4_TapeFabric_10234985")
         return "Zipper Tape Color";
@@ -466,7 +466,7 @@ export async function GET(request: Request) {
   // Function to assign categories for specific models
   const getCategoryForSection = (originalName: string): string => {
     // Basketball Jersey Top And Long Shorts categories (corrected mapping)
-    if (modelParam.includes("Basketball Jersey Top And Long Shorts.glb")) {
+    if (modelParam.includes("basketball-jersey-top-and-long-shorts.glb")) {
       // FABRIC_1_ materials are actually the jersey parts
       if (originalName.includes("FABRIC_1_")) return "Basketball Jersey Colors";
       // Body_ and Ble_ materials are actually the shorts parts
@@ -479,7 +479,7 @@ export async function GET(request: Request) {
     }
 
     // Basketball Jersey and Shorts categories
-    if (modelParam.includes("Basketball Jersey and Shorts.glb")) {
+    if (modelParam.includes("basketball-jersey-and-shorts.glb")) {
       // Body_ and Ble_ materials are the jersey parts
       if (originalName.includes("Body_") || originalName === "Ble_4559165")
         return "Basketball Jersey Colors";
@@ -491,7 +491,7 @@ export async function GET(request: Request) {
     // Basketball shooting shirt long sleeve categories
     if (
       modelParam.includes(
-        "basketball shooting shirt long sleeve without hoodie.glb",
+        "basketball-shooting-shirt-long-sleeve-without-hoodie.glb",
       )
     ) {
       return "Long Sleeve Shooting Shirt Colors";
@@ -500,7 +500,7 @@ export async function GET(request: Request) {
     // Basketball shooting shirt with hoodie categories
     if (
       modelParam.includes(
-        "basketball shooting shirt short sleeve with hoodie.glb",
+        "basketball-shooting-shirt-short-sleeve-with-hoodie.glb",
       )
     ) {
       return "Basketball Shooting Shirt with Hoodie Colors";
@@ -509,7 +509,7 @@ export async function GET(request: Request) {
     // Basketball shooting shirt short sleeve categories
     if (
       modelParam.includes(
-        "basketball shooting shirt, short sleeve without a hoodie.glb",
+        "basketball-shooting-shirt-short-sleeve-without-a-hoodie.glb",
       )
     ) {
       return "Basketball Shooting Shirt Short Sleeve Colors";
@@ -526,12 +526,12 @@ export async function GET(request: Request) {
     }
 
     // Long Pants (Long Shorts) categories
-    if (modelParam.includes("long pants.glb")) {
+    if (modelParam.includes("long-pants.glb")) {
       return "Long Shorts Colors";
     }
 
     // Polo Long Sleeve categories
-    if (modelParam.includes("Polo shirts long sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-long-sleeve.glb")) {
       if (
         originalName === "Button_1_18571034" ||
         originalName === "FABRIC_1_18569862"
@@ -542,7 +542,7 @@ export async function GET(request: Request) {
     }
 
     // Polo Short Sleeve categories
-    if (modelParam.includes("Polo shirts short sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-short-sleeve.glb")) {
       if (originalName === "Button_1_17850263") {
         return "Button Colors";
       }
@@ -555,12 +555,12 @@ export async function GET(request: Request) {
     }
 
     // Soccer Jersey Crew Neck categories
-    if (modelParam.includes("Soccer jersey crew neck.glb")) {
+    if (modelParam.includes("soccer-jersey-crew-neck.glb")) {
       return "Soccer Jersey Crew Neck Colors";
     }
 
     // Soccer Jersey V Neck categories
-    if (modelParam.includes("Soccer jersey v-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-v-neck.glb")) {
       if (originalName.includes("FABRIC_1_")) {
         return "Soccer Shorts Colors";
       }
@@ -568,67 +568,67 @@ export async function GET(request: Request) {
     }
 
     // Standard Bottom Cut Cuffed (Baseball Pants) categories
-    if (modelParam.includes("Standard bottom cut, cuffed.glb")) {
+    if (modelParam.includes("standard-bottom-cut-cuffed.glb")) {
       return "Baseball Pants Colors";
     }
 
     // Track and Field Compression Shorts categories
-    if (modelParam.includes("Track and field compression shorts.glb")) {
+    if (modelParam.includes("track-and-field-compression-shorts.glb")) {
       return "Track and Field Compression Shorts Colors";
     }
 
     // Track and Field Mid-Length Shorts categories
-    if (modelParam.includes("Track and field mid-len gth shorts.glb")) {
+    if (modelParam.includes("track-and-field-mid-len-gth-shorts.glb")) {
       return "Track and Field Mid-Length Shorts Colors";
     }
 
     // Track and Field Split Shorts categories
-    if (modelParam.includes("Track and field split shorts.glb")) {
+    if (modelParam.includes("track-and-field-split-shorts.glb")) {
       return "Track and Field Split Shorts Colors";
     }
 
     // Track and Field Crop Top categories
-    if (modelParam.includes("Track and field top crop top.glb")) {
+    if (modelParam.includes("track-and-field-top-crop-top.glb")) {
       return "Track and Field Crop Top Colors";
     }
 
     // Track and Field Short Sleeve categories
-    if (modelParam.includes("Track and field top short sleeve.glb")) {
+    if (modelParam.includes("track-and-field-top-short-sleeve.glb")) {
       return "Track And Field Short Sleeve Color";
     }
 
     // Track and Field Tank Top categories
-    if (modelParam.includes("Track and field top tank top.glb")) {
+    if (modelParam.includes("track-and-field-top-tank-top.glb")) {
       return "Track and Field Tank Top Colors";
     }
 
     // Volleyball Long Sleeve Tops categories
-    if (modelParam.includes("Volleyball long sleeve tops.glb")) {
+    if (modelParam.includes("volleyball-long-sleeve-tops.glb")) {
       return "Volleyball Long Sleeve Tops Colors";
     }
 
     // Volleyball Shorts Spandex 4 (Long Length) categories
-    if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex-4.glb")) {
       return "Volleyball Shorts Spandex 4 Colors";
     }
 
     // Volleyball Shorts Spandex (Small Length) categories
-    if (modelParam.includes("Volleyball shorts spandex.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex.glb")) {
       return "Volleyball Shorts Spandex Colors";
     }
 
     // Volleyball Spandex (Medium Length) categories
-    if (modelParam.includes("Volleyball spandex.glb")) {
+    if (modelParam.includes("volleyball-spandex.glb")) {
       return "Volleyball Spandex Colors";
     }
 
     // Half Short categories
-    if (modelParam.includes("Half short.glb")) {
+    if (modelParam.includes("half-short.glb")) {
       return "Half Size Shorts Colors";
     }
 
     // Flag Football Top with Hoodie categories
-    if (modelParam.includes("Flag football top with hoodie.glb")) {
+    if (modelParam.includes("flag-football-top-with-hoodie.glb")) {
       if (originalName.includes("FABRIC") && !originalName.includes("Zipper"))
         return "Jersey & Shorts Colors";
       if (originalName === "Material_001") return "Jersey & Shorts Colors";
@@ -643,7 +643,7 @@ export async function GET(request: Request) {
     }
 
     // Baseball Caps categories
-    if (modelParam.includes("Baseball caps.glb")) {
+    if (modelParam.includes("baseball-caps.glb")) {
       return "Baseball Cap Colors";
     }
 
@@ -683,7 +683,7 @@ export async function GET(request: Request) {
       return reordered;
     }
 
-    if (modelParam.includes("Basketball Jersey Top And Long Shorts.glb")) {
+    if (modelParam.includes("basketball-jersey-top-and-long-shorts.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Jersey sections first (Front, Back, Trim, Side Panels, Buttons), then Shorts sections (Front, Back, Waist)
@@ -721,7 +721,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Flag football top with hoodie.glb")) {
+    if (modelParam.includes("flag-football-top-with-hoodie.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Jersey Main, Shorts Front, Shorts Back, Shorts Waist, then others
@@ -754,7 +754,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("long pants.glb")) {
+    if (modelParam.includes("long-pants.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist
@@ -786,7 +786,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Half short.glb")) {
+    if (modelParam.includes("half-short.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist
@@ -818,7 +818,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Polo shirts long sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-long-sleeve.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Sleeves, Collar, Placket, Button, Cuff
@@ -854,7 +854,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Polo shirts short sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-short-sleeve.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Sleeves, Collar, Placket, Button
@@ -889,7 +889,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Soccer jersey crew neck.glb")) {
+    if (modelParam.includes("soccer-jersey-crew-neck.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Sleeves, Collar
@@ -922,7 +922,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Soccer jersey v-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-v-neck.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Jersey sections first (Front, Back, Sleeves, V-Neck), then Shorts sections (Front, Back, Waist)
@@ -958,7 +958,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Standard bottom cut, cuffed.glb")) {
+    if (modelParam.includes("standard-bottom-cut-cuffed.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist, Bottom Cuff, Button, Button Stitching, Buttonhole
@@ -994,7 +994,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Track and field compression shorts.glb")) {
+    if (modelParam.includes("track-and-field-compression-shorts.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist
@@ -1024,7 +1024,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Track and field mid-len gth shorts.glb")) {
+    if (modelParam.includes("track-and-field-mid-len-gth-shorts.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist
@@ -1054,7 +1054,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Track and field split shorts.glb")) {
+    if (modelParam.includes("track-and-field-split-shorts.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist
@@ -1084,7 +1084,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Track and field top short sleeve.glb")) {
+    if (modelParam.includes("track-and-field-top-short-sleeve.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Sleeves, Collar
@@ -1115,7 +1115,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Volleyball shorts spandex 4.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex-4.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Primary colors first (Front, Back, Waist), then Inseam stitching
@@ -1148,7 +1148,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Volleyball shorts spandex.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist
@@ -1178,7 +1178,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Volleyball spandex.glb")) {
+    if (modelParam.includes("volleyball-spandex.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist
@@ -1208,7 +1208,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("Basketball Jersey and Shorts.glb")) {
+    if (modelParam.includes("basketball-jersey-and-shorts.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Jersey sections first (Front, Back, Trim), then Shorts sections (Front, Back)
@@ -1244,7 +1244,7 @@ export async function GET(request: Request) {
 
     if (
       modelParam.includes(
-        "basketball shooting shirt, short sleeve without a hoodie.glb",
+        "basketball-shooting-shirt-short-sleeve-without-a-hoodie.glb",
       )
     ) {
       const reordered = [...sections];
@@ -1285,8 +1285,8 @@ export async function GET(request: Request) {
   // Special handling for Volleyball models - individual nodes for coloring
   let sections: MaterialSection[];
   if (
-    modelParam.includes("Volleyball short sleeve tops.glb") ||
-    modelParam.includes("Volleyball long sleeve tops.glb")
+    modelParam.includes("volleyball-short-sleeve-tops.glb") ||
+    modelParam.includes("volleyball-long-sleeve-tops.glb")
   ) {
     sections = lines.map((name, idx) => {
       // Categorize based on mesh name
@@ -1340,7 +1340,7 @@ export async function GET(request: Request) {
   // Handle combined sections for Basketball shooting shirt with hoodie
   if (
     modelParam.includes(
-      "basketball shooting shirt short sleeve with hoodie.glb",
+      "basketball-shooting-shirt-short-sleeve-with-hoodie.glb",
     )
   ) {
     // Group sections with the same name (combined stoppers)
@@ -1371,7 +1371,7 @@ export async function GET(request: Request) {
   }
 
   // Handle combined sections for Volleyball Short Sleeve Tops (combine sleeve meshes)
-  if (modelParam.includes("Volleyball short sleeve tops.glb")) {
+  if (modelParam.includes("volleyball-short-sleeve-tops.glb")) {
     // Group sections with the same name (combined sleeves)
     const groupedSections = new Map<string, MaterialSection[]>();
 
@@ -1400,12 +1400,12 @@ export async function GET(request: Request) {
   }
 
   // Reorder sections if needed (skip for volleyball short sleeve tops in node mode)
-  if (!modelParam.includes("Volleyball short sleeve tops.glb")) {
+  if (!modelParam.includes("volleyball-short-sleeve-tops.glb")) {
     sections = reorderSectionsForModel(sections);
   }
 
   // Add trim line options for Basketball Jersey and Shorts
-  if (modelParam.includes("Basketball Jersey and Shorts.glb")) {
+  if (modelParam.includes("basketball-jersey-and-shorts.glb")) {
     const trimSections: MaterialSection[] = [
       {
         id: "trim_jersey_lines",
