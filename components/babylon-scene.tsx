@@ -163,58 +163,12 @@ export function BabylonScene() {
       pixelRatio: config.pixelRatio,
     });
 
-    // Check WebGL support first with more robust detection
-    const checkWebGLSupport = (): { supported: boolean; version: string } => {
-      try {
-        const testCanvas = document.createElement("canvas");
-        // Try WebGL2 first
-        const gl2 = testCanvas.getContext("webgl2");
-        if (gl2) {
-          testCanvas.remove();
-          return { supported: true, version: "webgl2" };
-        }
-        // Fallback to WebGL1
-        const gl1 = testCanvas.getContext("webgl") || testCanvas.getContext("experimental-webgl");
-        if (gl1) {
-          testCanvas.remove();
-          return { supported: true, version: "webgl" };
-        }
-        testCanvas.remove();
-        return { supported: false, version: "none" };
-      } catch (e) {
-        console.warn("WebGL detection error:", e);
-        return { supported: false, version: "none" };
-      }
-    };
-
     // Check if we're in an iframe (Shopify, etc.)
     const isInIframe = window.self !== window.top;
-    
-    const webglCheck = checkWebGLSupport();
-    if (!webglCheck.supported) {
-      // In iframes, be much more patient with retries
-      const maxRetriesForContext = isInIframe ? 10 : maxRetries;
-      const retryDelay = isInIframe ? 500 : 1000;
-      
-      initializationAttemptRef.current++;
-      if (initializationAttemptRef.current < maxRetriesForContext) {
-        console.log(`⏳ WebGL not available yet (iframe: ${isInIframe}), retrying... (attempt ${initializationAttemptRef.current}/${maxRetriesForContext})`);
-        setTimeout(() => {
-          setRetryCount(r => r + 1);
-        }, retryDelay);
-        return;
-      }
-      
-      // Only show error after many retries
-      console.error("❌ WebGL not supported after multiple retries");
-      setInitError("WebGL is not supported on this device. Please try a different browser or device.");
-      return;
-    }
-    
-    console.log(`✅ WebGL supported: ${webglCheck.version}`, {
+    console.log("⚙️ Attempting WebGL init", {
       isInIframe,
       userAgent: navigator.userAgent.substring(0, 50),
-      canvas: !!canvasRef.current
+      canvas: !!canvasRef.current,
     });
 
     let engine: Engine;
@@ -531,7 +485,8 @@ export function BabylonScene() {
       
       // Check if we're in an iframe - be more patient
       const isInIframe = window.self !== window.top;
-      const maxRetriesForContext = isInIframe ? 10 : maxRetries;
+      const maxRetriesForContext = isInIframe ? 20 : Math.max(maxRetries, 6);
+      const retryDelay = isInIframe ? 400 : 900;
       
       // If this is an initialization attempt that failed, try again
       initializationAttemptRef.current++;
@@ -539,7 +494,7 @@ export function BabylonScene() {
         console.log(`⏳ Engine init failed (iframe: ${isInIframe}), retrying... (attempt ${initializationAttemptRef.current}/${maxRetriesForContext})`);
         setTimeout(() => {
           setRetryCount(r => r + 1);
-        }, isInIframe ? 500 : 1000);
+        }, retryDelay);
         return;
       }
       
