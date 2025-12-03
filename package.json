@@ -11,7 +11,10 @@
     "extract-materials": "node scripts/extract-materials.js",
     "optimize-backpack": "node scripts/optimize-backpack.js",
     "compress-models": "node scripts/compress-models.js",
-    "replace-with-compressed": "node scripts/replace-with-compressed.js"
+    "replace-with-compressed": "node scripts/replace-with-compressed.js",
+    "generate-lod": "node scripts/generate-lod-models.js",
+    "optimize-mobile": "npm run generate-lod",
+    "verify-optimization": "node scripts/verify-optimization.js"
   },
   "dependencies": {
     "@babylonjs/core": "^8.37.0",

@@ -10,6 +10,8 @@ import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { ErrorLoggerInit } from "@/app/error-logger-init";
+import { ServiceWorkerInit } from "@/components/service-worker-init";
+import { ConnectionIndicator } from "@/components/connection-indicator";
 import "./globals.css";
 
 const inter = Inter({
@@ -67,6 +69,8 @@ export default function RootLayout({
         <Analytics />
         {shouldInjectToolbar && <VercelToolbar />}
         <ErrorLoggerInit />
+        <ServiceWorkerInit />
+        <ConnectionIndicator />
       </body>
     </html>
   );

@@ -32,6 +32,7 @@ import {
 import { extractCompleteUVMapBabylon } from "@/lib/babylon-uv-utils";
 import { useMobilePerformance, getEngineOptions } from "@/hooks/use-mobile-performance";
 import { ClearCacheButton } from "@/components/clear-cache-button";
+import { loadModelProgressive, detectConnectionSpeed, type LoadingProgress } from "@/lib/model-loader-optimized";
 
 // Helper function to get theme-aware background color
 const getThemeBackgroundColor = (
@@ -80,6 +81,9 @@ export function BabylonScene() {
   const [webglContextLost, setWebglContextLost] = React.useState(false);
   const [initError, setInitError] = React.useState<string | null>(null);
   const contextLostTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Progressive loading state
+  const [loadingProgress, setLoadingProgress] = React.useState<LoadingProgress | null>(null);
 
   const { theme } = useTheme();
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
@@ -1194,31 +1198,27 @@ export function BabylonScene() {
     // Clear old UV map to prevent showing stale data
     setCompleteUVMap(null);
 
-    // Load new model (may use a lower-res model for low-end devices / slow networks)
+    // Load new model with progressive loading optimization
     (async () => {
       const config = effectivePerfRef.current;
-      let modelToLoad = currentModelUrl;
-      // Heuristic: try to load a <name>-low.glb if available for low devices
-      const maybeLow = (url: string) => url.replace(/(\.glb)$/i, "-low$1");
-      if (config.isLowEndDevice || forceLowPerformance) {
-        const alt = maybeLow(currentModelUrl);
-        try {
-          const resp = await fetch(alt, { method: "HEAD" });
-          if (resp.ok) {
-            modelToLoad = alt;
-            console.log("📉 Loading smaller LOD model for performance:", alt);
-          }
-        } catch (e) {
-          // ignore, fallback to original
-        }
-      }
-
-      SceneLoader.ImportMesh(
-        "",
-        "",
-        modelToLoad,
-        sceneRef.current,
-      (meshes) => {
+      const connectionSpeed = detectConnectionSpeed();
+      
+      console.log(`📡 Connection: ${connectionSpeed}, Device: ${config.isLowEndDevice ? 'low-end' : 'normal'}`);
+      
+      try {
+        // Use progressive loading for better mobile experience
+        const rootMesh = await loadModelProgressive({
+          modelUrl: currentModelUrl,
+          scene: sceneRef.current!,
+          forceQuality: forceLowPerformance ? 'low' : 'auto',
+          enableProgressive: connectionSpeed === 'slow' || config.isLowEndDevice,
+          onProgress: (progress) => {
+            setLoadingProgress(progress);
+            console.log(`📦 Loading ${progress.stage}: ${progress.percent.toFixed(0)}%`);
+          },
+        });
+        
+        const meshes = [rootMesh, ...rootMesh.getChildMeshes(false)];
         console.log("✅ Model loaded, meshes:", meshes.length);
 
         if (meshes.length === 0) {
@@ -1227,8 +1227,7 @@ export function BabylonScene() {
           return;
         }
 
-        // Get root mesh
-        const rootMesh = meshes[0];
+        // Store root mesh
         currentMeshRef.current = rootMesh;
 
         // ───────────────────────────────────────────────────────────────
@@ -2013,23 +2012,16 @@ export function BabylonScene() {
           });
 
         setModelLoading(false);
+        setLoadingProgress(null);
         console.log("🎨 Model ready with entrance animation");
-      },
-      (progress) => {
-        // Progress callback
-        if (progress.lengthComputable) {
-          const percent = (progress.loaded / progress.total) * 100;
-          console.log(`Loading: ${percent.toFixed(0)}%`);
-        }
-      },
-      (scene, message, exception) => {
-        console.error("❌ Model loading error:", { message, exception });
-        const errorMsg =
-          message || exception?.message || "Failed to load model";
+        
+      } catch (error) {
+        console.error("❌ Model loading error:", error);
+        const errorMsg = error instanceof Error ? error.message : "Failed to load model";
         setModelError(errorMsg);
         setModelLoading(false);
-      },
-    );
+        setLoadingProgress(null);
+      }
     })();
   }, [currentModelUrl, setModelLoading, setModelError]);
 
@@ -2101,12 +2093,31 @@ export function BabylonScene() {
 
       {modelLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm z-10">
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-6 max-w-sm px-6">
             <Spinner className="size-12 text-primary" />
-            <div className="text-center">
+            <div className="text-center w-full">
               <p className="text-lg font-semibold text-foreground mb-2">
-                Loading 3D Model
+                {loadingProgress?.stage === 'detecting' && 'Detecting Connection...'}
+                {loadingProgress?.stage === 'loading-low' && 'Loading Preview...'}
+                {loadingProgress?.stage === 'loading-high' && 'Loading Full Quality...'}
+                {!loadingProgress && 'Loading 3D Model'}
               </p>
+              
+              {loadingProgress && loadingProgress.percent > 0 && (
+                <div className="w-full mb-3">
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-primary h-full transition-all duration-300 ease-out"
+                      style={{ width: `${loadingProgress.percent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {loadingProgress.percent.toFixed(0)}%
+                    {loadingProgress.connectionSpeed && ` • ${loadingProgress.connectionSpeed} connection`}
+                  </p>
+                </div>
+              )}
+              
               <div className="flex items-center justify-center gap-1">
                 <div
                   className="w-2 h-2 bg-primary rounded-full animate-bounce"

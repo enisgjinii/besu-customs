@@ -35,11 +35,42 @@ const nextConfig = {
   },
   // Enable compression for static assets
   compress: true,
-  // Add headers for better caching of 3D models
+  
+  // Add headers for better caching and compression
   async headers() {
     return [
       {
         source: "/models/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+          {
+            key: "Content-Encoding",
+            value: "gzip",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+        ],
+      },
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
+      {
+        source: "/:path*.(jpg|jpeg|png|webp|svg)",
         headers: [
           {
             key: "Cache-Control",
