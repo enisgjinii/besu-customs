@@ -78,7 +78,11 @@ export function BabylonScene() {
   // Error and context loss state
   const [webglContextLost, setWebglContextLost] = React.useState(false);
   const [initError, setInitError] = React.useState<string | null>(null);
+  const [engineReady, setEngineReady] = React.useState(false);
   const contextLostTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [retryCount, setRetryCount] = React.useState(0);
+  const maxRetries = 3;
+  const initializationAttemptRef = useRef(0);
 
   const { theme } = useTheme();
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
@@ -159,19 +163,46 @@ export function BabylonScene() {
       pixelRatio: config.pixelRatio,
     });
 
-    // Check WebGL support first
-    try {
-      const testCanvas = document.createElement("canvas");
-      const gl = testCanvas.getContext("webgl2") || testCanvas.getContext("webgl");
-      testCanvas.remove();
-      if (!gl) {
-        setInitError("WebGL is not supported on this device. Please try a different browser or device.");
+    // Check WebGL support first with more robust detection
+    const checkWebGLSupport = (): { supported: boolean; version: string } => {
+      try {
+        const testCanvas = document.createElement("canvas");
+        // Try WebGL2 first
+        const gl2 = testCanvas.getContext("webgl2");
+        if (gl2) {
+          testCanvas.remove();
+          return { supported: true, version: "webgl2" };
+        }
+        // Fallback to WebGL1
+        const gl1 = testCanvas.getContext("webgl") || testCanvas.getContext("experimental-webgl");
+        if (gl1) {
+          testCanvas.remove();
+          return { supported: true, version: "webgl" };
+        }
+        testCanvas.remove();
+        return { supported: false, version: "none" };
+      } catch (e) {
+        console.warn("WebGL detection error:", e);
+        return { supported: false, version: "none" };
+      }
+    };
+
+    const webglCheck = checkWebGLSupport();
+    if (!webglCheck.supported) {
+      // Don't immediately give up - wait a bit and retry (for iframe loading scenarios)
+      initializationAttemptRef.current++;
+      if (initializationAttemptRef.current < maxRetries) {
+        console.log(`⏳ WebGL not available yet, retrying... (attempt ${initializationAttemptRef.current}/${maxRetries})`);
+        setTimeout(() => {
+          setRetryCount(r => r + 1); // Trigger re-render to retry initialization
+        }, 1000);
         return;
       }
-    } catch (e) {
-      setInitError("Failed to initialize 3D graphics. Please try a different browser.");
+      setInitError("WebGL is not supported on this device. Please try a different browser or device.");
       return;
     }
+    
+    console.log(`✅ WebGL supported: ${webglCheck.version}`);
 
     let engine: Engine;
     try {
@@ -287,9 +318,10 @@ export function BabylonScene() {
       scene.render();
     });
 
-    // Handle WebGL context loss
-    const handleContextLost = () => {
+    // Handle WebGL context loss with improved recovery
+    const handleContextLost = (event: Event) => {
       console.warn("⚠️ WebGL context lost");
+      event.preventDefault(); // Allow browser to try to restore context
       setWebglContextLost(true);
       
       // Clear any pending timeout
@@ -301,13 +333,26 @@ export function BabylonScene() {
       contextLostTimeoutRef.current = setTimeout(() => {
         console.log("🔄 Attempting to restore WebGL context...");
         try {
-          engine.resize();
-          setWebglContextLost(false);
-          console.log("✅ WebGL context restored");
+          // First try a simple resize
+          if (engineRef.current) {
+            engineRef.current.resize();
+          }
+          
+          // If engine is still valid, reset context lost state
+          if (engineRef.current && !engineRef.current.isDisposed) {
+            setWebglContextLost(false);
+            console.log("✅ WebGL context restored via resize");
+          } else {
+            // Engine was disposed, need full reinitialize
+            console.log("🔄 Engine disposed, triggering full reinitialize...");
+            setRetryCount(r => r + 1);
+          }
         } catch (e) {
           console.error("❌ Failed to restore WebGL context:", e);
+          // Trigger a full reinitialize
+          setRetryCount(r => r + 1);
         }
-      }, 2000);
+      }, 1500);
     };
 
     const handleContextRestored = () => {
@@ -315,6 +360,15 @@ export function BabylonScene() {
       setWebglContextLost(false);
       if (contextLostTimeoutRef.current) {
         clearTimeout(contextLostTimeoutRef.current);
+      }
+      // Force a re-render of the scene
+      if (sceneRef.current && engineRef.current) {
+        try {
+          engineRef.current.resize();
+          sceneRef.current.render();
+        } catch (e) {
+          console.warn("Scene re-render after context restore failed:", e);
+        }
       }
     };
 
@@ -346,6 +400,8 @@ export function BabylonScene() {
 
     console.log("✅ Babylon.js engine initialized");
     setInitError(null);
+    setEngineReady(true);
+    initializationAttemptRef.current = 0; // Reset retry counter on success
 
     // Store references for cleanup
     const currentCanvas = canvasRef.current;
@@ -427,14 +483,24 @@ export function BabylonScene() {
       engineRef.current = null;
       sceneRef.current = null;
       cameraRef.current = null;
+      setEngineReady(false);
     };
 
     } catch (e) {
       console.error("❌ Failed to initialize Babylon.js engine:", e);
+      // If this is an initialization attempt that failed, try again
+      initializationAttemptRef.current++;
+      if (initializationAttemptRef.current < maxRetries) {
+        console.log(`⏳ Engine init failed, retrying... (attempt ${initializationAttemptRef.current}/${maxRetries})`);
+        setTimeout(() => {
+          setRetryCount(r => r + 1);
+        }, 1000);
+        return;
+      }
       setInitError(e instanceof Error ? e.message : "Failed to initialize 3D graphics engine");
       return;
     }
-  }, [setCameraControlsRef]);
+  }, [setCameraControlsRef, retryCount]); // Add retryCount to trigger reinitialize
 
   // Handle pointer events for 3D interaction with 2D texture
   useEffect(() => {
@@ -2045,12 +2111,24 @@ export function BabylonScene() {
             </div>
             <h2 className="text-xl font-bold mb-2">3D Graphics Error</h2>
             <p className="text-muted-foreground mb-4">{initError}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Reload Page
-            </button>
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={() => {
+                  setInitError(null);
+                  initializationAttemptRef.current = 0;
+                  setRetryCount(r => r + 1);
+                }}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Try Again
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2068,9 +2146,19 @@ export function BabylonScene() {
             <p className="text-muted-foreground mb-4">
               The 3D graphics context was temporarily lost. Attempting to recover...
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-4">
               If this persists, try closing other browser tabs or apps.
             </p>
+            <button 
+              onClick={() => {
+                setWebglContextLost(false);
+                initializationAttemptRef.current = 0;
+                setRetryCount(r => r + 1);
+              }}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            >
+              Force Retry
+            </button>
           </div>
         </div>
       )}
@@ -2080,6 +2168,28 @@ export function BabylonScene() {
         className="w-full h-full outline-none"
         style={{ touchAction: "none" }}
       />
+
+      {/* No model loaded state - show when engine is ready but no model selected */}
+      {engineReady && !modelLoading && !modelError && !currentModelUrl && !initError && !webglContextLost && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-5">
+          <div className="text-center text-muted-foreground">
+            <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <p className="text-sm">Select a product to view 3D model</p>
+          </div>
+        </div>
+      )}
+
+      {/* Engine initializing state */}
+      {!engineReady && !initError && !webglContextLost && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
+          <div className="flex flex-col items-center gap-4">
+            <Spinner className="size-10 text-primary" />
+            <p className="text-sm text-muted-foreground">Initializing 3D engine...</p>
+          </div>
+        </div>
+      )}
 
 
 
