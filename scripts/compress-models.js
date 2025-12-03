@@ -3,9 +3,13 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const modelsDir = path.join(__dirname, '../public/models');
-const outputDir = path.join(__dirname, '../public/models-compressed');
+const backupDir = path.join(__dirname, '../public/models-backup-temp');
+const outputDir = path.join(__dirname, '../public/models-compressed-temp');
 
-// Create output directory if it doesn't exist
+// Create directories if they don't exist
+if (!fs.existsSync(backupDir)) {
+  fs.mkdirSync(backupDir, { recursive: true });
+}
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
@@ -21,6 +25,7 @@ const compressionStats = [];
 
 files.forEach((file, index) => {
   const inputPath = path.join(modelsDir, file);
+  const backupPath = path.join(backupDir, file);
   const outputPath = path.join(outputDir, file);
   
   console.log(`[${index + 1}/${files.length}] Compressing: ${file}`);
@@ -28,6 +33,9 @@ files.forEach((file, index) => {
   try {
     const inputStats = fs.statSync(inputPath);
     const inputSize = inputStats.size;
+    
+    // Backup original
+    fs.copyFileSync(inputPath, backupPath);
     
     // Run gltf-pipeline with Draco compression
     execSync(
@@ -73,5 +81,8 @@ fs.writeFileSync(
   JSON.stringify(compressionStats, null, 2)
 );
 
-console.log(`\nCompressed models saved to: ${outputDir}`);
+console.log(`\nOriginal models backed up to: ${backupDir}`);
+console.log(`Compressed models saved to: ${outputDir}`);
 console.log('Stats saved to: compression-stats.json');
+console.log('\nTo replace originals with compressed versions, run:');
+console.log('  npm run replace-with-compressed');

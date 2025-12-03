@@ -1,2 +1,25 @@
-public/models/Backpack_original-processed.glb
-public/models/Backpack_original.glb
+# Documentation files
+*.md
+!README.md
+
+# Development files
+.vscode/
+.cursor/
+.DS_Store
+
+# Test files
+test-*.js
+
+# Scripts (not needed in production)
+scripts/
+
+# Temporary files
+tmp/
+
+# Phase folders (not needed in production)
+Models (Phase 1)/
+Models (Phase 2)/
+Phase_03 (1)/
+
+# Material output (not needed in production)
+materials-output/

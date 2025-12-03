@@ -1,11 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
+  output: 'standalone',
   images: {
     unoptimized: true,
   },
   turbopack: {},
-  webpack: (config) => {
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@babylonjs/core/**/*.d.ts',
+      'node_modules/@babylonjs/loaders/**/*.d.ts',
+      'node_modules/@babylonjs/materials/**/*.d.ts',
+      'node_modules/@swc/core-linux-x64-gnu',
+      'node_modules/@swc/core-linux-x64-musl',
+      'node_modules/@esbuild/linux-x64',
+    ],
+  },
+  webpack: (config, { isServer }) => {
     // Optimize GLB/GLTF file loading
     config.module.rules.push({
       test: /\.(glb|gltf)$/,
@@ -14,6 +25,12 @@ const nextConfig = {
         filename: "static/models/[hash][ext][query]",
       },
     });
+    
+    // Exclude large dependencies from server bundle
+    if (isServer) {
+      config.externals = [...(config.externals || []), '@babylonjs/core', '@babylonjs/loaders'];
+    }
+    
     return config;
   },
   // Enable compression for static assets

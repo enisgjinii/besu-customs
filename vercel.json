@@ -1,9 +1,22 @@
 {
   "functions": {
     "app/api/**": {
-      "excludeFiles": "public/models/**"
+      "maxDuration": 10,
+      "excludeFiles": "{public/models/**,node_modules/@babylonjs/**}"
     }
   },
+  "outputDirectory": ".next",
   "cleanUrls": true,
-  "rewrites": []
+  "rewrites": [],
+  "headers": [
+    {
+      "source": "/models/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
