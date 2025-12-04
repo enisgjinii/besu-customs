@@ -96,7 +96,7 @@ export function ColorPickerModal({
     setTempColor(color);
     onColorChange(color);
     onAddRecentColor?.(color);
-    onClose();
+    // Don't close on color select - let user see the change live
   };
 
   return (
