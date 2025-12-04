@@ -161,6 +161,9 @@ export function applyMaterialsToThreeModel(
             targetMaterial.wireframe = section.wireframe;
           }
 
+          // Enable double-sided rendering
+          targetMaterial.side = THREE.DoubleSide;
+
           targetMaterial.needsUpdate = true;
         }
       });

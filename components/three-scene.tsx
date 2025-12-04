@@ -169,6 +169,7 @@ function Model({
           if (material instanceof THREE.MeshStandardMaterial) {
             material.map = texture;
             material.color = new THREE.Color(0xffffff);
+            material.side = THREE.DoubleSide;
             material.needsUpdate = true;
           }
         });
