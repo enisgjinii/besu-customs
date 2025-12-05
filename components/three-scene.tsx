@@ -302,7 +302,6 @@ export function ThreeScene() {
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const setSections = useConfiguratorStore((s) => s.setSections);
   const setCompleteUVMap = useConfiguratorStore((s) => s.setCompleteUVMap);
-  const forceLowPerformance = useConfiguratorStore((s) => s.forceLowPerformance);
   
   const perfConfig = useMobilePerformance();
   
@@ -324,7 +323,7 @@ export function ThreeScene() {
     });
     
     // Find best model URL based on connection
-    getBestModelUrl(currentModelUrl, forceLowPerformance ? 'low' : 'auto')
+    getBestModelUrl(currentModelUrl, 'auto')
       .then(({ url, quality }) => {
         console.log(`📦 Loading ${quality} quality: ${url}`);
         setModelUrl(url);
@@ -333,7 +332,7 @@ export function ThreeScene() {
         console.error("Failed to determine model URL:", error);
         setModelUrl(currentModelUrl); // Fallback to original
       });
-  }, [currentModelUrl, forceLowPerformance, setModelLoading, setModelError]);
+  }, [currentModelUrl, setModelLoading, setModelError]);
   
   const handleModelLoad = useCallback(() => {
     setModelLoading(false);
@@ -561,7 +560,7 @@ export function ThreeScene() {
       )}
       
       {/* Performance indicator */}
-      {(perfConfig.isLowEndDevice || forceLowPerformance) && (
+      {perfConfig.isLowEndDevice && (
         <div className="absolute top-4 left-4 bg-yellow-500/90 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs shadow-md border border-yellow-400/20 z-20">
           <div className="flex items-center gap-2">
             <span className="font-medium">Reduced performance mode</span>

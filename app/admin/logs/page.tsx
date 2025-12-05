@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,11 +29,7 @@ export default function AdminLogsPage() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    fetchLogs();
-  }, [filter]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -49,7 +45,11 @@ export default function AdminLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -135,7 +135,7 @@ export default function AdminLogsPage() {
                   className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex items-start gap-3">
-                    <Badge variant={getLevelColor(log.level) as any}>
+                    <Badge variant={getLevelColor(log.level)}>
                       {log.level}
                     </Badge>
                     <div className="flex-1 space-y-1">

@@ -168,10 +168,6 @@ export interface ConfiguratorState {
   modelError: string | null;
   setModelError: (err: string | null) => void;
 
-  // Force low-performance mode for low devices/slow networks
-  forceLowPerformance: boolean;
-  setForceLowPerformance: (enabled: boolean) => void;
-
   // Entrance Animation Settings
   entranceAnimation: EntranceAnimationType;
   setEntranceAnimation: (animation: EntranceAnimationType) => void;
@@ -571,10 +567,6 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   setFabricCanvas: (canvas: any | null) => set({ fabricCanvas: canvas }),
   enable3DTextureInteraction: true,
   setEnable3DTextureInteraction: (enabled: boolean) => set({ enable3DTextureInteraction: enabled }),
-
-  // Force low-performance mode flag
-  forceLowPerformance: false,
-  setForceLowPerformance: (enabled: boolean) => set({ forceLowPerformance: enabled }),
 
   // Model loading
   modelLoading: false,

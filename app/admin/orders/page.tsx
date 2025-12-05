@@ -4,7 +4,7 @@
 
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Download, Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
