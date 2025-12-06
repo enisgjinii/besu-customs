@@ -69,12 +69,15 @@ export function ColorPickerModal({
 
   // Prevent body scroll when modal is open on mobile
   useEffect(() => {
-    if (isOpen && isMobile) {
+    // Only lock body scroll for desktop (full-screen modal).
+    if (isOpen && !isMobile) {
+      const prev = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       return () => {
-        document.body.style.overflow = "";
+        document.body.style.overflow = prev || "";
       };
     }
+    return;
   }, [isOpen, isMobile]);
 
   const handleColorSelect = useCallback((color: string) => {
@@ -91,49 +94,52 @@ export function ColorPickerModal({
 
   if (!isOpen) return null;
 
-  // Mobile full-screen modal (rendered via portal to avoid sidebar clipping)
+  // Mobile bottom sheet (non-blocking) rendered via portal so 3D view remains visible
   if (isMobile) {
     return createPortal(
-      <div className="fixed inset-0 z-50 bg-background">
-        {/* Header */}
-        <div className="sticky top-0 bg-background border-b border-border z-10 pt-safe">
-          <div className="flex items-center justify-between px-4 py-3">
-            {activeSection === "custom" ? (
+      <div className="fixed left-0 right-0 bottom-0 z-50">
+        <div className="mx-4 mb-safe bg-card rounded-t-2xl shadow-xl max-h-[50vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div>
+              {activeSection === "custom" ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveSection("main")}
+                  className="h-9 px-2"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-9 px-2"
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+            <h2 className="font-semibold text-sm">Choose Color</h2>
+            <div>
               <Button
-                variant="ghost"
                 size="sm"
-                onClick={() => setActiveSection("main")}
-                className="h-10 px-2"
+                onClick={handleApplyColor}
+                disabled={disabled}
+                className="h-9"
               >
-                <ChevronLeft className="w-5 h-5 mr-1" />
-                Back
+                Done
               </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-10 px-2"
-              >
-                Cancel
-              </Button>
-            )}
-            <h2 className="font-semibold text-lg">Choose Color</h2>
-            <Button
-              size="sm"
-              onClick={handleApplyColor}
-              disabled={disabled}
-              className="h-10"
-            >
-              Done
-            </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto pb-safe" style={{ height: "calc(100vh - 60px)" }}>
-          {activeSection === "main" ? (
-            <div className="p-4 space-y-6">
+          {/* Content */}
+          <div className="p-4">
+            {activeSection === "main" ? (
+              <div className="space-y-4">
               {/* Current Color Preview */}
               <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
                 <div
@@ -238,10 +244,10 @@ export function ColorPickerModal({
                 <Palette className="w-5 h-5" />
                 <span>Custom Color</span>
               </Button>
-            </div>
-          ) : (
-            /* Custom Color Section */
-            <div className="p-4 space-y-6">
+              </div>
+            ) : (
+              /* Custom Color Section */
+              <div className="space-y-4">
               {/* Large Color Preview */}
               <div className="flex flex-col items-center gap-4">
                 <div
@@ -290,8 +296,9 @@ export function ColorPickerModal({
                 <Check className="w-5 h-5" />
                 <span>Apply Color</span>
               </Button>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </div>,
       // portal target: body
