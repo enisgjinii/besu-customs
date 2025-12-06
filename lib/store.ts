@@ -174,6 +174,12 @@ export interface ConfiguratorState {
   enableEntranceAnimation: boolean;
   setEnableEntranceAnimation: (enabled: boolean) => void;
 
+  // Mobile panel state
+  mobilePanelOpen: boolean;
+  mobilePanelHeight: number;
+  setMobilePanelOpen: (open: boolean) => void;
+  setMobilePanelHeight: (height: number) => void;
+
   // Presets
   presets: Array<{
     name: string;
@@ -581,6 +587,12 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   enableEntranceAnimation: true,
   setEnableEntranceAnimation: (enabled: boolean) =>
     set({ enableEntranceAnimation: enabled }),
+
+  // Mobile panel state
+  mobilePanelOpen: false,
+  mobilePanelHeight: 0,
+  setMobilePanelOpen: (open: boolean) => set({ mobilePanelOpen: open }),
+  setMobilePanelHeight: (height: number) => set({ mobilePanelHeight: height }),
 
   // Recent colors
   recentColors: [],

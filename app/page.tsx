@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
 // Dynamic import for Three.js Scene component
@@ -32,6 +32,10 @@ export default function Home() {
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
+  
+  // Mobile panel state from store
+  const mobilePanelOpen = useConfiguratorStore((state) => state.mobilePanelOpen);
+  const mobilePanelHeight = useConfiguratorStore((state) => state.mobilePanelHeight);
 
   // Detect mobile device
   useEffect(() => {
@@ -95,23 +99,28 @@ export default function Home() {
 
       {/* Main 3D Viewer */}
       <main
-        className={`flex-1 relative min-w-0 transition-all duration-300 ${
-          // Mobile: full height minus bottom nav
-          isMobile ? "h-[calc(100dvh-72px)]" : ""
-        } ${
+        className={`flex-1 relative min-w-0 transition-all duration-300 ease-out ${
           // Desktop: account for sidebar width
           sidebarCollapsed ? "md:pl-[80px]" : "md:pl-[440px]"
         }`}
         style={{ 
           touchAction: 'none',
-          // Ensure proper height on mobile
-          ...(isMobile ? { paddingBottom: 0 } : {})
+          // Mobile: shift up when panel is open
+          ...(isMobile ? {
+            height: mobilePanelOpen 
+              ? `calc(100dvh - 72px - ${mobilePanelHeight}vh)` 
+              : 'calc(100dvh - 72px)',
+            transform: mobilePanelOpen 
+              ? `translateY(-${mobilePanelHeight * 0.3}vh)` 
+              : 'translateY(0)',
+            transition: 'transform 0.3s ease-out, height 0.3s ease-out',
+          } : {})
         }}
       >
         <Scene />
         
         {/* Mobile: Floating hint when no model selected */}
-        {isMobile && !currentModelUrl && (
+        {isMobile && !currentModelUrl && !mobilePanelOpen && (
           <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
             <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl p-4 shadow-lg">
               <p className="text-sm text-center text-muted-foreground">

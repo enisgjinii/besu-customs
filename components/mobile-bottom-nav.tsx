@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
+import React, { useState, useCallback, memo, useRef } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import {
   Palette,
@@ -15,7 +15,6 @@ import {
   Film,
   Pause,
   Info,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -100,24 +99,32 @@ export function MobileBottomNav() {
   const autoRotate = useConfiguratorStore((state) => state.autoRotate);
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
   const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef);
+  const setMobilePanelOpen = useConfiguratorStore((state) => state.setMobilePanelOpen);
+  const setMobilePanelHeight = useConfiguratorStore((state) => state.setMobilePanelHeight);
 
   // Handle tab click
   const handleTabClick = useCallback((tab: TabType) => {
     if (activeTab === tab && isExpanded) {
       setIsExpanded(false);
+      setMobilePanelOpen(false);
+      setMobilePanelHeight(0);
       setTimeout(() => setActiveTab(null), 300);
     } else {
       setActiveTab(tab);
       setIsExpanded(true);
       setPanelHeight(60);
+      setMobilePanelOpen(true);
+      setMobilePanelHeight(60);
     }
-  }, [activeTab, isExpanded]);
+  }, [activeTab, isExpanded, setMobilePanelOpen, setMobilePanelHeight]);
 
   // Close panel
   const closePanel = useCallback(() => {
     setIsExpanded(false);
+    setMobilePanelOpen(false);
+    setMobilePanelHeight(0);
     setTimeout(() => setActiveTab(null), 300);
-  }, []);
+  }, [setMobilePanelOpen, setMobilePanelHeight]);
 
   // Handle drag to resize panel
   const handleDragStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
@@ -135,7 +142,8 @@ export function MobileBottomNav() {
     const newHeight = Math.min(85, Math.max(30, dragStartHeight.current + deltaPercent));
     
     setPanelHeight(newHeight);
-  }, []);
+    setMobilePanelHeight(newHeight);
+  }, [setMobilePanelHeight]);
 
   const handleDragEnd = useCallback(() => {
     dragStartY.current = 0;
