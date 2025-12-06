@@ -101,19 +101,19 @@ export function MaterialEditor() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6" data-tour="material-editor">
+    <div className="space-y-5 md:space-y-6" data-tour="material-editor">
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm md:text-sm font-semibold flex items-center gap-2">
-            <Palette className="w-4 h-4" />
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base md:text-sm font-bold flex items-center gap-2">
+            <Palette className="w-5 h-5" />
             {isVolleyballModel ? "Colors" : "Material Sections"}
           </h3>
           {linkedSections.size > 0 && (
             <button
               onClick={clearSectionLinks}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 min-h-[36px] px-2"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg hover:bg-accent/50"
             >
-              <Unlink className="w-3 h-3" />
+              <Unlink className="w-4 h-4" />
               Clear Links
             </button>
           )}
@@ -121,29 +121,26 @@ export function MaterialEditor() {
 
         {/* Linked sections info */}
         {selectedSectionId && linkedSections.size > 0 && (
-          <div className="mb-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-            <div className="flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                <span className="font-medium">
-                  {linkedSections.size} linked
-                </span>{" "}
-                - edits apply to all
+          <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+            <div className="flex items-center gap-3">
+              <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                {linkedSections.size} linked - edits apply to all
               </p>
             </div>
           </div>
         )}
 
-        <div className="space-y-3 md:space-y-4">
+        <div className="space-y-4 md:space-y-4">
           {Object.entries(groupedSections).map(
             ([category, categorySections]) => (
               <div key={category}>
                 {/* Category Header with Expand/Collapse */}
                 <button
                   onClick={() => toggleCategory(category)}
-                  className="w-full flex items-center justify-between p-3 text-left rounded-xl hover:bg-secondary/50 active:bg-secondary/70 transition-colors mb-2 min-h-[48px]"
+                  className="w-full flex items-center justify-between p-4 text-left rounded-2xl hover:bg-secondary/50 active:bg-secondary/70 transition-colors mb-3 min-h-[56px]"
                 >
-                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                     {category}
                   </h4>
                   {expandedCategories[category] ? (
@@ -155,7 +152,7 @@ export function MaterialEditor() {
 
                 {/* Category Sections - Only show if expanded */}
                 {expandedCategories[category] && (
-                  <div className="space-y-2 ml-2 pl-3 border-l-2 border-border/50">
+                  <div className="space-y-3 ml-2 pl-4 border-l-2 border-border/50">
                     {categorySections.map((section) => {
                       const isSelected = selectedSectionId === section.id;
                       const isLinked = linkedSections.has(section.id);
@@ -164,7 +161,7 @@ export function MaterialEditor() {
                       return (
                         <div
                           key={section.id}
-                          className={`group relative rounded-xl transition-all ${
+                          className={`group relative rounded-2xl transition-all ${
                             isLinked ? "ring-2 ring-blue-500/50" : ""
                           }`}
                           onMouseEnter={() => setHighlightedSection(section.id)}
@@ -175,26 +172,26 @@ export function MaterialEditor() {
                               setSelectedSection(section.id);
                               setHighlightedSection(section.id);
                             }}
-                            className={`w-full text-left px-3 py-3 md:py-2.5 text-sm rounded-xl transition-all min-h-[52px] md:min-h-[44px] ${
+                            className={`w-full text-left px-4 py-4 text-base rounded-2xl transition-all min-h-[60px] md:min-h-[48px] ${
                               isSelected
-                                ? "bg-accent text-accent-foreground shadow-sm"
+                                ? "bg-accent text-accent-foreground shadow-md"
                                 : "bg-secondary/30 hover:bg-secondary/50 active:bg-secondary/70"
                             }`}
                           >
-                            <div className="flex items-center justify-start gap-3">
+                            <div className="flex items-center justify-start gap-4">
                               <div
-                                className="w-7 h-7 md:w-5 md:h-5 rounded-lg md:rounded-md flex-shrink-0 ring-1 ring-border/50 shadow-sm"
+                                className="w-8 h-8 md:w-6 md:h-6 rounded-lg flex-shrink-0 ring-1.5 ring-border/50 shadow-sm"
                                 style={{ backgroundColor: section.color }}
                               />
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="truncate font-medium text-sm md:text-sm">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="truncate font-semibold text-base md:text-sm">
                                     {section.name}
                                   </span>
                                   {badge && (
                                     <Badge
                                       variant={badge.variant}
-                                      className="text-xs px-1.5 py-0.5 flex-shrink-0"
+                                      className="text-xs px-2 py-0.5 flex-shrink-0"
                                     >
                                       {badge.text}
                                     </Badge>
@@ -202,7 +199,7 @@ export function MaterialEditor() {
                                 </div>
                               </div>
                               {isLinked && (
-                                <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                               )}
                             </div>
                           </button>
@@ -210,9 +207,9 @@ export function MaterialEditor() {
                             selectedSectionId !== section.id && (
                               <button
                                 onClick={() => toggleSectionLink(section.id)}
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all min-w-[40px] min-h-[40px] flex items-center justify-center ${
+                                className={`absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-xl transition-all min-w-[44px] min-h-[44px] flex items-center justify-center ${
                                   isLinked
-                                    ? "bg-blue-500 text-white shadow-sm"
+                                    ? "bg-blue-500 text-white shadow-md"
                                     : "bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background md:opacity-0 md:group-hover:opacity-100"
                                 }`}
                                 title={
@@ -221,7 +218,7 @@ export function MaterialEditor() {
                                     : "Click to link with selected"
                                 }
                               >
-                                <Link2 className="w-4 h-4" />
+                                <Link2 className="w-5 h-5" />
                               </button>
                             )}
                         </div>
@@ -236,17 +233,17 @@ export function MaterialEditor() {
       </div>
 
       {selectedSection && (
-        <div className="border-t border-border/50 pt-4 md:pt-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Sliders className="w-4 h-4" />
+        <div className="border-t border-border/50 pt-5 md:pt-6">
+          <div className="mb-5">
+            <h3 className="text-base md:text-sm font-bold flex items-center gap-2">
+              <Sliders className="w-5 h-5" />
               Editing: {selectedSection.name}
             </h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {!isVolleyballModel && selectedSection.customTexture && (
-              <div className="p-4 bg-secondary/30 rounded-xl">
+              <div className="p-4 bg-secondary/30 rounded-2xl">
                 <p className="text-sm text-muted-foreground mb-3">
                   Custom texture applied
                 </p>
@@ -258,7 +255,7 @@ export function MaterialEditor() {
                       customTexture: undefined,
                     })
                   }
-                  className="w-full min-h-[48px]"
+                  className="w-full min-h-[56px] text-base rounded-xl font-medium"
                 >
                   Remove Texture
                 </Button>
@@ -266,14 +263,14 @@ export function MaterialEditor() {
             )}
 
             <div>
-              <label className="block text-sm font-medium mb-3">
+              <label className="block text-base md:text-sm font-bold mb-4">
                 Base Color
               </label>
 
               {/* Color Preview and Picker Button - Mobile optimized */}
-              <div className="flex items-center gap-4 mb-3">
+              <div className="flex items-center gap-4 mb-4">
                 <div
-                  className="w-14 h-14 md:w-12 md:h-12 rounded-xl border-2 border-border shadow-sm flex-shrink-0"
+                  className="w-16 h-16 md:w-14 md:h-14 rounded-2xl border-2.5 border-border shadow-md flex-shrink-0"
                   style={{ backgroundColor: selectedSection.color }}
                 />
                 <Button
@@ -283,25 +280,25 @@ export function MaterialEditor() {
                     !!selectedSection.gradient?.enabled
                   }
                   variant="outline"
-                  className="flex-1 justify-start min-h-[52px] md:min-h-[44px] text-base md:text-sm"
+                  className="flex-1 justify-start min-h-[56px] md:min-h-[48px] text-base md:text-sm font-medium rounded-xl"
                   data-tour="color-picker"
                 >
-                  <Palette className="w-5 h-5 mr-2" />
-                  Choose Color
+                  <Palette className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <span>Choose Color</span>
                 </Button>
               </div>
 
-              <div className="text-sm text-muted-foreground font-mono bg-secondary/30 px-4 py-3 rounded-xl">
+              <div className="text-sm text-muted-foreground font-mono bg-secondary/30 px-4 py-3 rounded-2xl border border-border/30">
                 {selectedSection.color.toUpperCase()}
               </div>
 
               {selectedSection.customTexture && (
-                <p className="text-sm text-muted-foreground mt-3">
+                <p className="text-sm text-muted-foreground mt-4">
                   Color picker disabled when texture is applied
                 </p>
               )}
               {selectedSection.gradient?.enabled && (
-                <p className="text-sm text-muted-foreground mt-3">
+                <p className="text-sm text-muted-foreground mt-4">
                   Color picker disabled when gradient is enabled
                 </p>
               )}

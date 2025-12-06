@@ -147,10 +147,10 @@ export default function Home() {
         
         {/* Mobile: Floating hint when no model selected */}
         {isMobile && !currentModelUrl && !mobilePanelOpen && (
-          <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
-            <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl p-4 shadow-lg">
-              <p className="text-sm text-center text-muted-foreground">
-                Tap <span className="font-medium text-foreground">Materials</span> below to select a 3D model
+          <div className="absolute bottom-6 left-6 right-6 pointer-events-none">
+            <div className="bg-card/98 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-lg animate-pulse-subtle">
+              <p className="text-base text-center font-medium text-foreground">
+                👇 Tap <span className="font-bold text-primary">Materials</span> to start
               </p>
             </div>
           </div>

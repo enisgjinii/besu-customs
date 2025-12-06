@@ -71,12 +71,16 @@ const NavButton = memo(function NavButton({
   return (
     <button
       onClick={onClick}
-      className={`mobile-nav-item ${isActive ? "active" : "text-muted-foreground"}`}
+      className={`mobile-nav-item transition-all duration-200 ${
+        isActive 
+          ? "active bg-primary text-primary-foreground shadow-md" 
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      }`}
       aria-label={label}
       aria-pressed={isActive}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-[11px] font-medium">{label}</span>
+      <Icon className="w-6 h-6" />
+      <span className="text-[10px] font-semibold tracking-tight">{label}</span>
     </button>
   );
 });
@@ -195,10 +199,10 @@ export function MobileBottomNav() {
       className="md:hidden fixed bottom-0 left-0 right-0 z-50"
       style={{ transform: 'translateZ(0)' }}
     >
-      {/* Backdrop */}
+      {/* Backdrop - Enhanced */}
       {isExpanded && (
         <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+          className="fixed inset-0 bg-black/40 backdrop-blur-md z-40 mobile-backdrop"
           onClick={closePanel}
           style={{ transform: 'translateZ(0)' }}
         />
@@ -207,7 +211,7 @@ export function MobileBottomNav() {
       {/* Expanded Panel */}
       <div
         ref={panelRef}
-        className={`fixed left-0 right-0 bottom-0 bg-card border-t border-border/50 rounded-t-2xl z-50 mobile-sheet ${
+        className={`fixed left-0 right-0 bottom-0 bg-card/98 backdrop-blur-xl border-t border-border/50 rounded-t-3xl z-50 mobile-sheet shadow-2xl ${
           isExpanded ? "mobile-panel-enter" : "mobile-panel-exit pointer-events-none"
         }`}
         style={{ 
@@ -216,9 +220,9 @@ export function MobileBottomNav() {
           transform: 'translateZ(0)',
         }}
       >
-        {/* Drag Handle */}
+        {/* Drag Handle - Enhanced */}
         <div 
-          className="w-full py-2 cursor-grab active:cursor-grabbing touch-none"
+          className="w-full py-3 cursor-grab active:cursor-grabbing touch-none bg-gradient-to-b from-background/5 to-transparent"
           onTouchStart={handleDragStart}
           onTouchMove={handleDrag}
           onTouchEnd={handleDragEnd}
@@ -226,17 +230,17 @@ export function MobileBottomNav() {
           onMouseMove={handleDrag}
           onMouseUp={handleDragEnd}
         >
-          <div className="mobile-sheet-handle" />
+          <div className="mobile-sheet-handle mx-auto" />
         </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pb-3 border-b border-border/30">
-          <h3 className="font-semibold text-base">{getTabTitle(activeTab)}</h3>
+        {/* Header - Enhanced */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border/30 bg-gradient-to-b from-background/50 to-transparent sticky top-0 z-10">
+          <h3 className="font-bold text-lg tracking-tight">{getTabTitle(activeTab)}</h3>
           <Button
             variant="ghost"
             size="sm"
             onClick={closePanel}
-            className="h-9 w-9 p-0 rounded-full"
+            className="h-10 w-10 p-0 rounded-full hover:bg-accent"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -245,18 +249,18 @@ export function MobileBottomNav() {
         {/* Content */}
         <div className="overflow-y-auto thin-scrollbar overscroll-contain" style={{ height: 'calc(100% - 60px)' }}>
           {activeTab === "materials" && (
-            <div className="p-4 space-y-4">
+            <div className="p-5 space-y-5 pb-6">
               {/* Model Selector */}
-              <div className="card-mobile">
-                <label className="section-header-mobile block mb-2">
-                  Select Model
+              <div className="card-mobile rounded-2xl border border-border/30 bg-background/40 p-4">
+                <label className="section-header-mobile block mb-3 text-sm font-semibold">
+                  Select 3D Model
                 </label>
                 <Select
                   value={selectedProductId || ""}
                   onValueChange={setSelectedProduct}
                 >
-                  <SelectTrigger className="w-full h-12 text-base">
-                    <SelectValue placeholder="Choose a 3D model..." />
+                  <SelectTrigger className="w-full h-14 text-base rounded-xl font-medium">
+                    <SelectValue placeholder="Choose a model..." />
                   </SelectTrigger>
                   <SelectContent>
                     {products.map((product) => (
@@ -269,7 +273,9 @@ export function MobileBottomNav() {
               </div>
 
               {/* Material Editor */}
-              <MaterialEditor />
+              <div className="pb-4">
+                <MaterialEditor />
+              </div>
             </div>
           )}
 
@@ -280,73 +286,73 @@ export function MobileBottomNav() {
           )}
 
           {activeTab === "export" && (
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 pb-6">
               {/* Quick Actions */}
               <div className="card-mobile">
-                <h4 className="section-header-mobile">View Controls</h4>
+                <h4 className="section-header-mobile mb-4">View Controls</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
-                    className="btn-mobile justify-start"
+                    className="btn-mobile h-14 justify-start text-base rounded-xl"
                     onClick={handleResetCamera}
                   >
-                    <RotateCcw className="w-5 h-5" />
-                    <span>Reset View</span>
+                    <RotateCcw className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex-1 text-left">Reset</span>
                   </Button>
                   <Button
                     variant={autoRotate ? "default" : "outline"}
-                    className="btn-mobile justify-start"
+                    className="btn-mobile h-14 justify-start text-base rounded-xl"
                     onClick={() => setAutoRotate(!autoRotate)}
                   >
-                    {autoRotate ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                    <span>{autoRotate ? "Stop" : "Rotate"}</span>
+                    {autoRotate ? <Pause className="w-5 h-5 flex-shrink-0" /> : <Play className="w-5 h-5 flex-shrink-0" />}
+                    <span className="flex-1 text-left">{autoRotate ? "Stop" : "Rotate"}</span>
                   </Button>
                   <Button
                     variant={showGrid ? "default" : "outline"}
-                    className="btn-mobile justify-start"
+                    className="btn-mobile h-14 justify-start text-base rounded-xl"
                     onClick={toggleGrid}
                   >
-                    <Grid3x3 className="w-5 h-5" />
-                    <span>{showGrid ? "Hide" : "Show"} Grid</span>
+                    <Grid3x3 className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex-1 text-left">{showGrid ? "Hide" : "Show"} Grid</span>
                   </Button>
                   <Button
                     variant="outline"
-                    className="btn-mobile justify-start"
+                    className="btn-mobile h-14 justify-start text-base rounded-xl"
                     onClick={handleScreenshot}
                   >
-                    <Camera className="w-5 h-5" />
-                    <span>Screenshot</span>
+                    <Camera className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex-1 text-left">Screenshot</span>
                   </Button>
                 </div>
               </div>
 
               {/* Export Options */}
               <div className="card-mobile">
-                <h4 className="section-header-mobile">Export</h4>
+                <h4 className="section-header-mobile mb-4">Export</h4>
                 <div className="space-y-3">
                   <Button
                     variant="outline"
-                    className="btn-mobile w-full justify-start"
+                    className="btn-mobile w-full h-14 justify-start text-base rounded-xl"
                     onClick={handleScreenshot}
                   >
-                    <FileImage className="w-5 h-5" />
-                    <span>Save as Image</span>
+                    <FileImage className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex-1 text-left">Save as Image</span>
                   </Button>
                   <Button
                     variant="outline"
-                    className="btn-mobile w-full justify-start"
+                    className="btn-mobile w-full h-14 justify-start text-base rounded-xl disabled:opacity-50"
                     disabled={isRecording}
                   >
-                    <Film className="w-5 h-5" />
-                    <span>{isRecording ? "Recording..." : "Record Video"}</span>
+                    <Film className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex-1 text-left">{isRecording ? "Recording..." : "Record Video"}</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Info */}
-              <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+              {/* Info - Improved */}
+              <div className="flex items-start gap-3 p-4 bg-primary/8 rounded-2xl border border-primary/20">
                 <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   For advanced export options like 4K images and model files, use the desktop version.
                 </p>
               </div>
@@ -355,9 +361,9 @@ export function MobileBottomNav() {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar */}
+      {/* Bottom Navigation Bar - Enhanced */}
       <div 
-        className="bg-card/95 backdrop-blur-md border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg pb-safe relative z-50"
+        className="bg-card/98 backdrop-blur-xl border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-2xl pb-safe relative z-50"
         style={{ transform: 'translateZ(0)' }}
       >
         <NavButton
