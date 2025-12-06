@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, Palette, Check, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -90,9 +91,9 @@ export function ColorPickerModal({
 
   if (!isOpen) return null;
 
-  // Mobile full-screen modal
+  // Mobile full-screen modal (rendered via portal to avoid sidebar clipping)
   if (isMobile) {
-    return (
+    return createPortal(
       <div className="fixed inset-0 z-50 bg-background">
         {/* Header */}
         <div className="sticky top-0 bg-background border-b border-border z-10 pt-safe">
@@ -292,12 +293,14 @@ export function ColorPickerModal({
             </div>
           )}
         </div>
-      </div>
+      </div>,
+      // portal target: body
+      document.body
     );
   }
 
-  // Desktop modal (original design with improvements)
-  return (
+  // Desktop modal (original design with improvements) rendered via portal
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
@@ -438,6 +441,8 @@ export function ColorPickerModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    // portal target: body
+    document.body
   );
 }

@@ -53,21 +53,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { ColorPickerModal } from "./color-picker-modal";
 import { toast } from "sonner";
 
 interface UnifiedSidebarProps {
   sidebarOpen?: boolean;
   onToggleSidebar?: (open: boolean) => void;
+  isColorPickerOpen?: boolean;
+  onColorPickerOpen?: () => void;
+  onColorPickerClose?: () => void;
 }
 
-export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarProps) {
+export function UnifiedSidebar({ sidebarOpen, onToggleSidebar, isColorPickerOpen = false, onColorPickerOpen, onColorPickerClose }: UnifiedSidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"materials" | "texture" | "view">(
     "materials",
   );
   const [isRecording, setIsRecording] = useState(false);
-  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState("");
   const [productsLoaded, setProductsLoaded] = useState(false);
@@ -671,7 +672,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
 
   const handleApplyBackgroundColor = (color: string) => {
     setBackgroundColor(color);
-    setIsColorPickerOpen(false);
+    onColorPickerClose?.();
   };
 
   const isCollapsed = sidebarOpen === false;
@@ -959,7 +960,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
                           variant="outline"
                           size="sm"
                           className="ml-auto text-xs h-6 px-2"
-                          onClick={() => setIsColorPickerOpen(true)}
+                          onClick={onColorPickerOpen}
                         >
                           Change
                         </Button>
@@ -1437,12 +1438,6 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             </Tabs>
           </div>
         )}
-        <ColorPickerModal
-          isOpen={isColorPickerOpen}
-          onClose={() => setIsColorPickerOpen(false)}
-          currentColor={backgroundColor}
-          onColorChange={handleApplyBackgroundColor}
-        />
       </div>}
     </div>
   );

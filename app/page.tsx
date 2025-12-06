@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { ColorPickerModal } from "@/components/color-picker-modal";
 import { useState, useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -28,6 +29,7 @@ const Scene = dynamic(
 export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
@@ -36,6 +38,18 @@ export default function Home() {
   // Mobile panel state from store
   const mobilePanelOpen = useConfiguratorStore((state) => state.mobilePanelOpen);
   const mobilePanelHeight = useConfiguratorStore((state) => state.mobilePanelHeight);
+
+  // Background color state
+  const backgroundColor = useConfiguratorStore((state) => state.backgroundColor);
+  const setBackgroundColor = useConfiguratorStore((state) => state.setBackgroundColor);
+
+  // Color picker handlers
+  const handleColorPickerOpen = () => setIsColorPickerOpen(true);
+  const handleColorPickerClose = () => setIsColorPickerOpen(false);
+  const handleApplyBackgroundColor = (color: string) => {
+    setBackgroundColor(color);
+    setIsColorPickerOpen(false);
+  };
 
   // Detect mobile device
   useEffect(() => {
@@ -94,6 +108,9 @@ export default function Home() {
         <UnifiedSidebar
           sidebarOpen={!sidebarCollapsed}
           onToggleSidebar={(open) => setSidebarCollapsed(!open)}
+          isColorPickerOpen={isColorPickerOpen}
+          onColorPickerOpen={handleColorPickerOpen}
+          onColorPickerClose={handleColorPickerClose}
         />
       </div>
 
@@ -133,6 +150,14 @@ export default function Home() {
 
       {/* Mobile: Bottom Navigation */}
       <MobileBottomNav />
+
+      {/* Color Picker Modal - outside sidebar */}
+      <ColorPickerModal
+        isOpen={isColorPickerOpen}
+        onClose={handleColorPickerClose}
+        currentColor={backgroundColor}
+        onColorChange={handleApplyBackgroundColor}
+      />
     </div>
   );
 }
