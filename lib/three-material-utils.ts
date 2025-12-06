@@ -134,7 +134,17 @@ export function applyMaterialsToThreeModel(
             texture.flipY = false;
             texture.colorSpace = THREE.SRGBColorSpace;
             targetMaterial.map = texture;
-            targetMaterial.color = new THREE.Color(0xffffff);
+            // PRESERVE original color - blend with texture instead of replacing with white
+            if (section.color) {
+              targetMaterial.color = new THREE.Color(section.color);
+              // Add subtle emissive to maintain color vibrancy
+              const baseColor = new THREE.Color(section.color);
+              if (baseColor.getHex() !== 0xffffff) {
+                targetMaterial.emissive = baseColor.clone().multiplyScalar(0.12);
+              }
+            } else {
+              targetMaterial.color = new THREE.Color(0xffffff);
+            }
           }
 
           // Apply gradient

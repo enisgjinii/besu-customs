@@ -51,11 +51,11 @@ export default function AdminLogsPage() {
     fetchLogs();
   }, [fetchLogs]);
 
-  const getLevelColor = (level: string) => {
+  const getLevelColor = (level: string): "default" | "destructive" | "secondary" | "outline" => {
     switch (level) {
       case 'critical': return 'destructive';
       case 'error': return 'destructive';
-      case 'warn': return 'warning';
+      case 'warn': return 'outline'; // Changed from 'warning' to 'outline'
       case 'info': return 'default';
       case 'debug': return 'secondary';
       default: return 'default';

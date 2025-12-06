@@ -11,18 +11,20 @@ export interface Pattern {
 }
 
 export type PatternCategory = 
-  | "abstract" 
-  | "animal" 
+  | "sports" 
+  | "stripes" 
+  | "geometric"
   | "camo" 
-  | "college" 
-  | "league";
+  | "abstract"
+  | "animal";
 
 export const PATTERN_CATEGORIES: { id: PatternCategory; name: string; icon: string }[] = [
-  { id: "abstract", name: "Abstract", icon: "🎨" },
-  { id: "animal", name: "Animal", icon: "🐾" },
-  { id: "camo", name: "Camo", icon: "🌲" },
-  { id: "college", name: "College", icon: "🎓" },
-  { id: "league", name: "League", icon: "🏆" },
+  { id: "sports", name: "Sports", icon: "Sports" },
+  { id: "stripes", name: "Stripes & Lines", icon: "Stripes" },
+  { id: "geometric", name: "Geometric", icon: "Geometric" },
+  { id: "camo", name: "Camouflage", icon: "Camo" },
+  { id: "abstract", name: "Abstract Art", icon: "Abstract" },
+  { id: "animal", name: "Animal Prints", icon: "Animal" },
 ];
 
 // Generate SVG pattern data URLs
@@ -367,12 +369,12 @@ const camoPatterns: Pattern[] = [
   },
 ];
 
-// College/University patterns
-const collegePatterns: Pattern[] = [
+// Additional sports patterns (varsity/team styles)
+const additionalSportsPatterns: Pattern[] = [
   {
-    id: "college-classic",
+    id: "sports-classic-varsity",
     name: "Classic Varsity",
-    category: "college",
+    category: "sports",
     description: "Traditional varsity stripes",
     colors: ["#1E40AF", "#FBBF24"],
     thumbnail: createSVGDataUrl(`
@@ -385,9 +387,9 @@ const collegePatterns: Pattern[] = [
     `),
   },
   {
-    id: "college-diagonal",
+    id: "sports-diagonal-spirit",
     name: "Diagonal Spirit",
-    category: "college",
+    category: "sports",
     description: "School spirit diagonal",
     colors: ["#DC2626", "#FFFFFF"],
     thumbnail: createSVGDataUrl(`
@@ -398,10 +400,10 @@ const collegePatterns: Pattern[] = [
     `),
   },
   {
-    id: "college-checkered",
+    id: "geometric-checkered",
     name: "Checkered Pride",
-    category: "college",
-    description: "School checkered pattern",
+    category: "geometric",
+    description: "Checkered pattern",
     colors: ["#7C3AED", "#FFFFFF"],
     thumbnail: createSVGDataUrl(`
       <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
@@ -418,9 +420,9 @@ const collegePatterns: Pattern[] = [
     `),
   },
   {
-    id: "college-letterblock",
+    id: "sports-letterblock",
     name: "Letter Block",
-    category: "college",
+    category: "sports",
     description: "Bold letter block style",
     colors: ["#047857", "#FFFFFF"],
     thumbnail: createSVGDataUrl(`
@@ -432,9 +434,9 @@ const collegePatterns: Pattern[] = [
     `),
   },
   {
-    id: "college-pennant",
+    id: "sports-pennant",
     name: "Pennant",
-    category: "college",
+    category: "sports",
     description: "Retro pennant style",
     colors: ["#B91C1C", "#FEF3C7"],
     thumbnail: createSVGDataUrl(`
@@ -445,9 +447,9 @@ const collegePatterns: Pattern[] = [
     `),
   },
   {
-    id: "college-argyle",
+    id: "geometric-argyle",
     name: "Argyle",
-    category: "college",
+    category: "geometric",
     description: "Classic argyle pattern",
     colors: ["#1E3A8A", "#FCD34D", "#FFFFFF"],
     thumbnail: createSVGDataUrl(`
@@ -463,12 +465,12 @@ const collegePatterns: Pattern[] = [
   },
 ];
 
-// Professional league patterns
-const leaguePatterns: Pattern[] = [
+// Championship/Pro patterns (sports category)
+const championshipPatterns: Pattern[] = [
   {
-    id: "league-championship",
+    id: "sports-championship",
     name: "Championship",
-    category: "league",
+    category: "sports",
     description: "Championship gold accents",
     colors: ["#1C1917", "#FFD700"],
     thumbnail: createSVGDataUrl(`
@@ -480,9 +482,9 @@ const leaguePatterns: Pattern[] = [
     `),
   },
   {
-    id: "league-allstar",
+    id: "sports-allstar",
     name: "All-Star",
-    category: "league",
+    category: "sports",
     description: "All-star game style",
     colors: ["#1E40AF", "#DC2626", "#FFFFFF"],
     thumbnail: createSVGDataUrl(`
@@ -494,9 +496,9 @@ const leaguePatterns: Pattern[] = [
     `),
   },
   {
-    id: "league-playoff",
+    id: "sports-playoff",
     name: "Playoff Edition",
-    category: "league",
+    category: "sports",
     description: "Playoff intensity design",
     colors: ["#0F172A", "#3B82F6", "#EF4444"],
     thumbnail: createSVGDataUrl(`
@@ -509,9 +511,9 @@ const leaguePatterns: Pattern[] = [
     `),
   },
   {
-    id: "league-draft",
+    id: "sports-draft",
     name: "Draft Pick",
-    category: "league",
+    category: "sports",
     description: "Draft day special",
     colors: ["#166534", "#FFFFFF", "#1F2937"],
     thumbnail: createSVGDataUrl(`
@@ -523,9 +525,9 @@ const leaguePatterns: Pattern[] = [
     `),
   },
   {
-    id: "league-mvp",
+    id: "sports-mvp",
     name: "MVP",
-    category: "league",
+    category: "sports",
     description: "Most valuable player style",
     colors: ["#7C2D12", "#FFD700", "#FFFFFF"],
     thumbnail: createSVGDataUrl(`
@@ -538,9 +540,9 @@ const leaguePatterns: Pattern[] = [
     `),
   },
   {
-    id: "league-classic",
+    id: "sports-classic-pro",
     name: "Classic Pro",
-    category: "league",
+    category: "sports",
     description: "Timeless professional look",
     colors: ["#1F2937", "#9CA3AF", "#FFFFFF"],
     thumbnail: createSVGDataUrl(`
@@ -555,13 +557,238 @@ const leaguePatterns: Pattern[] = [
   },
 ];
 
+// Sports patterns - athletic and performance designs
+const sportsPatterns: Pattern[] = [
+  {
+    id: "sports-mesh",
+    name: "Athletic Mesh",
+    category: "sports",
+    description: "Performance mesh pattern",
+    colors: ["#3B82F6", "#1E40AF"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#3B82F6" width="100" height="100"/>
+        <g fill="none" stroke="#1E40AF" stroke-width="1.5">
+          ${Array.from({length: 10}, (_, i) => `<line x1="0" y1="${i * 10}" x2="100" y2="${i * 10}"/>`).join('')}
+          ${Array.from({length: 10}, (_, i) => `<line x1="${i * 10}" y1="0" x2="${i * 10}" y2="100"/>`).join('')}
+        </g>
+      </svg>
+    `),
+  },
+  {
+    id: "sports-speed",
+    name: "Speed Lines",
+    category: "sports",
+    description: "Dynamic speed effect",
+    colors: ["#EF4444", "#000000"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#EF4444" width="100" height="100"/>
+        <g fill="#000000" opacity="0.6">
+          <path d="M0 20 L80 20 L70 25 L0 25Z"/>
+          <path d="M10 35 L90 35 L80 40 L10 40Z"/>
+          <path d="M0 50 L85 50 L75 55 L0 55Z"/>
+          <path d="M15 65 L95 65 L85 70 L15 70Z"/>
+          <path d="M5 80 L75 80 L65 85 L5 85Z"/>
+        </g>
+      </svg>
+    `),
+  },
+  {
+    id: "sports-jersey",
+    name: "Classic Jersey",
+    category: "sports",
+    description: "Traditional jersey design",
+    colors: ["#1E40AF", "#FBBF24"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#1E40AF" width="100" height="100"/>
+        <rect fill="#FBBF24" y="20" width="100" height="8"/>
+        <rect fill="#FBBF24" y="72" width="100" height="8"/>
+        <text x="50" y="55" text-anchor="middle" fill="#FBBF24" font-size="32" font-weight="bold" font-family="sans-serif">23</text>
+      </svg>
+    `),
+  },
+  {
+    id: "sports-hexagon",
+    name: "Hexagon Tech",
+    category: "sports",
+    description: "Modern hexagonal pattern",
+    colors: ["#10B981", "#047857"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <defs>
+          <pattern id="hexagons" x="0" y="0" width="30" height="26" patternUnits="userSpaceOnUse">
+            <polygon fill="#047857" points="15,0 30,8 30,22 15,30 0,22 0,8" stroke="#10B981" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect fill="#10B981" width="100" height="100"/>
+        <rect fill="url(#hexagons)" width="100" height="100"/>
+      </svg>
+    `),
+  },
+];
+
+// Stripes patterns - lines and stripe variations
+const stripesPatterns: Pattern[] = [
+  {
+    id: "stripes-horizontal",
+    name: "Horizontal Stripes",
+    category: "stripes",
+    description: "Classic horizontal stripes",
+    colors: ["#000000", "#FFFFFF"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#000000" width="100" height="100"/>
+        <rect fill="#FFFFFF" y="0" width="100" height="12"/>
+        <rect fill="#FFFFFF" y="25" width="100" height="12"/>
+        <rect fill="#FFFFFF" y="50" width="100" height="12"/>
+        <rect fill="#FFFFFF" y="75" width="100" height="12"/>
+      </svg>
+    `),
+  },
+  {
+    id: "stripes-vertical",
+    name: "Vertical Stripes",
+    category: "stripes",
+    description: "Bold vertical stripes",
+    colors: ["#1E40AF", "#FBBF24"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#1E40AF" width="100" height="100"/>
+        <rect fill="#FBBF24" x="0" width="15" height="100"/>
+        <rect fill="#FBBF24" x="30" width="15" height="100"/>
+        <rect fill="#FBBF24" x="60" width="15" height="100"/>
+        <rect fill="#FBBF24" x="90" width="10" height="100"/>
+      </svg>
+    `),
+  },
+  {
+    id: "stripes-diagonal",
+    name: "Diagonal Stripes",
+    category: "stripes",
+    description: "Dynamic diagonal stripes",
+    colors: ["#EF4444", "#FCD34D"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#EF4444" width="100" height="100"/>
+        <path fill="#FCD34D" d="M0 0 L20 0 L100 80 L100 100 L80 100 L0 20Z"/>
+        <path fill="#FCD34D" d="M40 0 L60 0 L100 40 L100 60Z"/>
+        <path fill="#FCD34D" d="M0 40 L0 60 L40 100 L60 100Z"/>
+      </svg>
+    `),
+  },
+  {
+    id: "stripes-racing",
+    name: "Racing Stripes",
+    category: "stripes",
+    description: "Aggressive racing stripes",
+    colors: ["#000000", "#DC2626", "#FFFFFF"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#000000" width="100" height="100"/>
+        <rect fill="#DC2626" x="30" width="15" height="100"/>
+        <rect fill="#FFFFFF" x="50" width="5" height="100"/>
+        <rect fill="#DC2626" x="55" width="15" height="100"/>
+      </svg>
+    `),
+  },
+  {
+    id: "stripes-chevron",
+    name: "Chevron Stripes",
+    category: "stripes",
+    description: "Modern chevron pattern",
+    colors: ["#7C3AED", "#FFFFFF"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#7C3AED" width="100" height="100"/>
+        <path fill="#FFFFFF" d="M0 0 L50 50 L0 100 L10 100 L60 50 L10 0Z"/>
+        <path fill="#FFFFFF" d="M40 0 L90 50 L40 100 L50 100 L100 50 L50 0Z"/>
+      </svg>
+    `),
+  },
+];
+
+// Geometric patterns - shapes and modern designs
+const geometricPatterns: Pattern[] = [
+  {
+    id: "geometric-triangles",
+    name: "Triangles",
+    category: "geometric",
+    description: "Modern triangle mosaic",
+    colors: ["#8B5CF6", "#EC4899"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#8B5CF6" width="100" height="100"/>
+        <polygon fill="#EC4899" points="0,0 50,50 0,100"/>
+        <polygon fill="#A855F7" points="100,0 50,50 100,100"/>
+        <circle fill="#F472B6" cx="50" cy="50" r="15"/>
+      </svg>
+    `),
+  },
+  {
+    id: "geometric-squares",
+    name: "Squares",
+    category: "geometric",
+    description: "Pixel-style squares",
+    colors: ["#3B82F6", "#1E3A8A"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#3B82F6" width="100" height="100"/>
+        ${Array.from({length: 25}, (_, i) => {
+          const x = (i % 5) * 20;
+          const y = Math.floor(i / 5) * 20;
+          const color = i % 2 === 0 ? '#1E3A8A' : '#60A5FA';
+          return `<rect fill="${color}" x="${x}" y="${y}" width="20" height="20"/>`;
+        }).join('')}
+      </svg>
+    `),
+  },
+  {
+    id: "geometric-circles",
+    name: "Circles",
+    category: "geometric",
+    description: "Overlapping circles",
+    colors: ["#10B981", "#FFFFFF"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#10B981" width="100" height="100"/>
+        <circle fill="#FFFFFF" opacity="0.5" cx="25" cy="25" r="20"/>
+        <circle fill="#FFFFFF" opacity="0.5" cx="75" cy="25" r="20"/>
+        <circle fill="#FFFFFF" opacity="0.5" cx="50" cy="50" r="20"/>
+        <circle fill="#FFFFFF" opacity="0.5" cx="25" cy="75" r="20"/>
+        <circle fill="#FFFFFF" opacity="0.5" cx="75" cy="75" r="20"/>
+      </svg>
+    `),
+  },
+  {
+    id: "geometric-diamonds",
+    name: "Diamonds",
+    category: "geometric",
+    description: "Diamond lattice pattern",
+    colors: ["#F59E0B", "#7C2D12"],
+    thumbnail: createSVGDataUrl(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <rect fill="#F59E0B" width="100" height="100"/>
+        <g fill="#7C2D12">
+          <polygon points="25,0 50,25 25,50 0,25"/>
+          <polygon points="75,0 100,25 75,50 50,25"/>
+          <polygon points="25,50 50,75 25,100 0,75"/>
+          <polygon points="75,50 100,75 75,100 50,75"/>
+        </g>
+      </svg>
+    `),
+  },
+];
+
 // Combine all patterns
 export const ALL_PATTERNS: Pattern[] = [
+  ...sportsPatterns,
+  ...stripesPatterns,
+  ...geometricPatterns,
+  ...camoPatterns,
   ...abstractPatterns,
   ...animalPatterns,
-  ...camoPatterns,
-  ...collegePatterns,
-  ...leaguePatterns,
 ];
 
 // Get patterns by category

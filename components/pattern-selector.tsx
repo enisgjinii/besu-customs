@@ -99,15 +99,14 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
         onValueChange={(v) => setActiveCategory(v as PatternCategory)}
         className="w-full"
       >
-        <TabsList className="w-full grid grid-cols-5 h-auto p-1 mb-4">
+        <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 h-auto p-1 mb-4 gap-1">
           {PATTERN_CATEGORIES.map((category) => (
             <TabsTrigger
               key={category.id}
               value={category.id}
-              className="flex flex-col items-center gap-1 py-2 px-1 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="flex flex-col items-center gap-1 py-2 px-2 text-[10px] leading-tight data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
-              <span className="text-lg">{category.icon}</span>
-              <span className="hidden sm:inline truncate">{category.name}</span>
+              <span className="font-semibold text-xs truncate w-full text-center">{category.name}</span>
             </TabsTrigger>
           ))}
         </TabsList>

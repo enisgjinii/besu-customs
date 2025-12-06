@@ -167,8 +167,15 @@ function Model({
         
         materials.forEach((material) => {
           if (material instanceof THREE.MeshStandardMaterial) {
+            // Store original color before applying texture
+            const originalColor = material.color.clone();
             material.map = texture;
-            material.color = new THREE.Color(0xffffff);
+            // PRESERVE original color for blending with texture
+            material.color = originalColor;
+            // Add slight emissive to maintain color vibrancy
+            if (originalColor.getHex() !== 0xffffff) {
+              material.emissive = originalColor.clone().multiplyScalar(0.15);
+            }
             material.side = THREE.DoubleSide;
             material.needsUpdate = true;
           }
