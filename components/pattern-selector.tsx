@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ALL_PATTERNS, 
-  PATTERN_CATEGORIES, 
+import {
+  ALL_PATTERNS,
+  PATTERN_CATEGORIES,
   getPatternsByCategory,
-  type Pattern, 
-  type PatternCategory 
+  type Pattern,
+  type PatternCategory
 } from "@/lib/patterns";
 import { Paintbrush, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,8 +23,8 @@ interface PatternSelectorProps {
 
 export function PatternSelector({ onPatternSelect, className }: PatternSelectorProps) {
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<PatternCategory>("abstract");
-  
+  const [activeCategory, setActiveCategory] = useState<PatternCategory>("college");
+
   const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
   const fabricCanvas = useConfiguratorStore((s) => s.fabricCanvas);
 
@@ -36,20 +36,28 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
 
     try {
       const { FabricImage } = await import("fabric");
-      
+
       // Convert SVG data URL to full-size pattern image
       const img = await FabricImage.fromURL(pattern.thumbnail);
-      
+
       // Scale to fill canvas as a tiled pattern or stretched background
       const canvas = fabricCanvas;
       const canvasWidth = canvas.width || 2048;
       const canvasHeight = canvas.height || 2048;
-      
+
       // Scale the pattern to fill the canvas
       const scaleX = canvasWidth / (img.width || 100);
       const scaleY = canvasHeight / (img.height || 100);
-      
+
+      // Check for existing pattern and remove it
+      const objects = canvas.getObjects();
+      const existingPattern = objects.find((obj: any) => obj.id === 'background-pattern');
+      if (existingPattern) {
+        canvas.remove(existingPattern);
+      }
+
       img.set({
+        id: 'background-pattern', // Tag as pattern for easy removal
         scaleX: scaleX,
         scaleY: scaleY,
         left: 0,
@@ -68,10 +76,10 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
         canvas.sendToBack(img);
       }
       canvas.renderAll();
-      
+
       // Fire modified event to trigger texture update
       canvas.fire('object:modified', { target: img });
-      
+
       console.log(`✅ Applied pattern: ${pattern.name}`);
     } catch (error) {
       console.error("Failed to apply pattern:", error);
@@ -89,73 +97,75 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex items-center gap-2 mb-4">
-        <Paintbrush className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold">Pattern Library</h3>
+        <div className="flex-1">
+          <h3 className="font-bold text-lg">Step 1: Choose Your Style</h3>
+          <p className="text-xs text-muted-foreground">Select a base design pattern for your jersey</p>
+        </div>
         <Sparkles className="w-4 h-4 text-yellow-500" />
       </div>
 
-      <Tabs 
-        value={activeCategory} 
+      <Tabs
+        value={activeCategory}
         onValueChange={(v) => setActiveCategory(v as PatternCategory)}
         className="w-full"
       >
-        <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 h-auto p-1 mb-4 gap-1">
+        <TabsList className="w-full flex flex-wrap h-auto p-1 mb-4 gap-1 bg-muted/50">
           {PATTERN_CATEGORIES.map((category) => (
             <TabsTrigger
               key={category.id}
               value={category.id}
-              className="flex flex-col items-center gap-1 py-2 px-2 text-[10px] leading-tight data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="flex-1 min-w-[70px] flex flex-col items-center gap-1 py-2 px-2 text-[10px] leading-tight data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
             >
               <span className="font-semibold text-xs truncate w-full text-center">{category.name}</span>
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {PATTERN_CATEGORIES.map((category) => (
-          <TabsContent key={category.id} value={category.id} className="mt-0">
-            <ScrollArea className="h-[300px] pr-2">
-              <div className="grid grid-cols-3 gap-2">
+        <ScrollArea className="h-[400px] pr-2 -mr-2">
+          {PATTERN_CATEGORIES.map((category) => (
+            <TabsContent key={category.id} value={category.id} className="mt-0">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-4">
                 {getPatternsByCategory(category.id).map((pattern) => (
                   <button
                     key={pattern.id}
                     onClick={() => handlePatternClick(pattern)}
                     className={cn(
-                      "relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 hover:shadow-lg group",
+                      "flex flex-col rounded-lg overflow-hidden border bg-card transition-all hover:shadow-md text-left group",
                       selectedPattern === pattern.id
-                        ? "border-primary ring-2 ring-primary ring-offset-2"
+                        ? "border-primary ring-1 ring-primary"
                         : "border-border hover:border-primary/50"
                     )}
                   >
-                    <img
-                      src={pattern.thumbnail}
-                      alt={pattern.name}
-                      className="w-full h-full object-cover"
-                    />
-                    
-                    {/* Overlay with name */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
-                      <span className="text-white text-xs font-medium px-2 text-center truncate max-w-full">
-                        {pattern.name}
-                      </span>
+                    <div className="aspect-square w-full relative bg-muted/20">
+                      <img
+                        src={pattern.thumbnail}
+                        alt={pattern.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Selected checkmark overlay */}
+                      {selectedPattern === pattern.id && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                          <Check className="w-4 h-4 text-primary-foreground" />
+                        </div>
+                      )}
                     </div>
 
-                    {/* Selected checkmark */}
-                    {selectedPattern === pattern.id && (
-                      <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <Check className="w-3 h-3 text-primary-foreground" />
-                      </div>
-                    )}
+                    {/* Text below image */}
+                    <div className="p-2 border-t border-border/50 bg-background group-hover:bg-muted/30 transition-colors">
+                      <span className="text-xs font-semibold block truncate">
+                        {pattern.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate block">
+                        {pattern.description}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
-            </ScrollArea>
-          </TabsContent>
-        ))}
+            </TabsContent>
+          ))}
+        </ScrollArea>
       </Tabs>
-
-      <p className="text-xs text-muted-foreground mt-3 text-center">
-        Click a pattern to apply it to your design
-      </p>
     </Card>
   );
 }
