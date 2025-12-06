@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, Palette } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, Palette, Check, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ColorPickerModalProps {
@@ -30,48 +30,11 @@ const TEAM_COLORS = [
 ];
 
 const BASIC_COLORS = [
-  "#FF0000",
-  "#00FF00",
-  "#0000FF",
-  "#FFFF00",
-  "#FF00FF",
-  "#00FFFF",
-  "#FFA500",
-  "#800080",
-  "#FFC0CB",
-  "#A52A2A",
-  "#808080",
-  "#000080",
-  "#008000",
-  "#FF4500",
-  "#FFD700",
-  "#C0C0C0",
-  "#800000",
-  "#808000",
-  "#008080",
-  "#ADFF2F",
-  "#FF69B4",
-];
-
-const PALETTE_COLORS = [
-  "#FFFFFF", // White
-  "#000000", // Black
-  "#FF0000", // Red
-  "#00FF00", // Green
-  "#0000FF", // Blue
-  "#FFFF00", // Yellow
-  "#FF00FF", // Magenta
-  "#00FFFF", // Cyan
-  "#FFA500", // Orange
-  "#800080", // Purple
-];
-
-const GRADIENT_COLORS = [
-  "linear-gradient(45deg, #ff0000, #0000ff)", // Red to Blue
-  "linear-gradient(45deg, #00ff00, #ff0000)", // Green to Red
-  "linear-gradient(45deg, #0000ff, #00ff00)", // Blue to Green
-  "linear-gradient(45deg, #ffff00, #ff00ff)", // Yellow to Magenta
-  "linear-gradient(45deg, #00ffff, #ffff00)", // Cyan to Yellow
+  "#FF0000", "#FF4500", "#FFA500", "#FFD700",
+  "#FFFF00", "#ADFF2F", "#00FF00", "#008000",
+  "#00FFFF", "#008080", "#0000FF", "#000080",
+  "#800080", "#FF00FF", "#FF69B4", "#FFC0CB",
+  "#A52A2A", "#800000", "#808080", "#000000",
 ];
 
 export function ColorPickerModal({
@@ -84,24 +47,259 @@ export function ColorPickerModal({
   onAddRecentColor,
 }: ColorPickerModalProps) {
   const [tempColor, setTempColor] = useState(currentColor);
+  const [activeSection, setActiveSection] = useState<"main" | "custom">("main");
+  const [isMobile, setIsMobile] = useState(false);
 
-  if (!isOpen) return null;
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
-  const handleApplyColor = () => {
-    onColorChange(tempColor);
-    onClose();
-  };
+  // Sync temp color with current color when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTempColor(currentColor);
+      setActiveSection("main");
+    }
+  }, [isOpen, currentColor]);
 
-  const handleColorSelect = (color: string) => {
+  // Prevent body scroll when modal is open on mobile
+  useEffect(() => {
+    if (isOpen && isMobile) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen, isMobile]);
+
+  const handleColorSelect = useCallback((color: string) => {
     setTempColor(color);
     onColorChange(color);
     onAddRecentColor?.(color);
-    // Don't close on color select - let user see the change live
-  };
+  }, [onColorChange, onAddRecentColor]);
 
+  const handleApplyColor = useCallback(() => {
+    onColorChange(tempColor);
+    onAddRecentColor?.(tempColor);
+    onClose();
+  }, [tempColor, onColorChange, onAddRecentColor, onClose]);
+
+  if (!isOpen) return null;
+
+  // Mobile full-screen modal
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        {/* Header */}
+        <div className="sticky top-0 bg-background border-b border-border z-10 pt-safe">
+          <div className="flex items-center justify-between px-4 py-3">
+            {activeSection === "custom" ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveSection("main")}
+                className="h-10 px-2"
+              >
+                <ChevronLeft className="w-5 h-5 mr-1" />
+                Back
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-10 px-2"
+              >
+                Cancel
+              </Button>
+            )}
+            <h2 className="font-semibold text-lg">Choose Color</h2>
+            <Button
+              size="sm"
+              onClick={handleApplyColor}
+              disabled={disabled}
+              className="h-10"
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto pb-safe" style={{ height: "calc(100vh - 60px)" }}>
+          {activeSection === "main" ? (
+            <div className="p-4 space-y-6">
+              {/* Current Color Preview */}
+              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
+                <div
+                  className="w-16 h-16 rounded-xl border-2 border-border shadow-sm flex-shrink-0"
+                  style={{ backgroundColor: tempColor }}
+                />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-1">Selected Color</p>
+                  <p className="font-mono text-lg font-medium">{tempColor.toUpperCase()}</p>
+                </div>
+                {tempColor !== currentColor && (
+                  <div className="flex items-center gap-1 text-primary">
+                    <Check className="w-4 h-4" />
+                    <span className="text-xs">Changed</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Colors */}
+              {recentColors.length > 0 && (
+                <div>
+                  <h3 className="section-header-mobile mb-3">Recent Colors</h3>
+                  <div className="color-grid-mobile">
+                    {recentColors.slice(0, 8).map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => handleColorSelect(color)}
+                        disabled={disabled}
+                        className={`color-swatch-mobile ${
+                          tempColor.toLowerCase() === color.toLowerCase() ? "selected" : ""
+                        }`}
+                        style={{ backgroundColor: color }}
+                        aria-label={`Select color ${color}`}
+                      >
+                        {tempColor.toLowerCase() === color.toLowerCase() && (
+                          <Check className="w-5 h-5 text-white drop-shadow-md mx-auto" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Team Colors */}
+              <div>
+                <h3 className="section-header-mobile mb-3">Team Colors</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {TEAM_COLORS.map(({ name, color }) => (
+                    <button
+                      key={color}
+                      onClick={() => handleColorSelect(color)}
+                      disabled={disabled}
+                      className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                        tempColor.toLowerCase() === color.toLowerCase()
+                          ? "border-primary bg-primary/5"
+                          : "border-border active:border-primary/50 active:bg-secondary/50"
+                      }`}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-lg border border-border/50 shadow-sm flex-shrink-0"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-sm font-medium">{name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Basic Colors */}
+              <div>
+                <h3 className="section-header-mobile mb-3">Basic Colors</h3>
+                <div className="color-grid-mobile grid-cols-5">
+                  {BASIC_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => handleColorSelect(color)}
+                      disabled={disabled}
+                      className={`color-swatch-mobile ${
+                        tempColor.toLowerCase() === color.toLowerCase() ? "selected" : ""
+                      }`}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Select color ${color}`}
+                    >
+                      {tempColor.toLowerCase() === color.toLowerCase() && (
+                        <Check className={`w-5 h-5 mx-auto drop-shadow-md ${
+                          color === "#FFFFFF" || color === "#FFD700" || color === "#FFFF00" 
+                            ? "text-gray-800" 
+                            : "text-white"
+                        }`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Color Button */}
+              <Button
+                variant="outline"
+                className="w-full btn-mobile"
+                onClick={() => setActiveSection("custom")}
+              >
+                <Palette className="w-5 h-5" />
+                <span>Custom Color</span>
+              </Button>
+            </div>
+          ) : (
+            /* Custom Color Section */
+            <div className="p-4 space-y-6">
+              {/* Large Color Preview */}
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className="w-32 h-32 rounded-2xl border-4 border-border shadow-lg"
+                  style={{ backgroundColor: tempColor }}
+                />
+                <p className="font-mono text-xl font-medium">{tempColor.toUpperCase()}</p>
+              </div>
+
+              {/* Color Picker */}
+              <div className="space-y-4">
+                <label className="section-header-mobile block">Pick a Color</label>
+                <input
+                  type="color"
+                  value={tempColor}
+                  onChange={(e) => setTempColor(e.target.value)}
+                  disabled={disabled}
+                  className="w-full h-20 rounded-xl border-2 border-border cursor-pointer"
+                />
+              </div>
+
+              {/* Hex Input */}
+              <div className="space-y-2">
+                <label className="section-header-mobile block">Hex Code</label>
+                <input
+                  type="text"
+                  value={tempColor}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                      setTempColor(val);
+                    }
+                  }}
+                  disabled={disabled}
+                  className="w-full h-14 px-4 text-lg font-mono rounded-xl border-2 border-border bg-background"
+                  placeholder="#000000"
+                />
+              </div>
+
+              {/* Apply Button */}
+              <Button
+                className="w-full btn-mobile"
+                onClick={handleApplyColor}
+                disabled={disabled}
+              >
+                <Check className="w-5 h-5" />
+                <span>Apply Color</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop modal (original design with improvements)
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -180,16 +378,16 @@ export function ColorPickerModal({
             </div>
           )}
 
-          {/* Palette Colors */}
+          {/* Basic Colors */}
           <div className="mb-6">
-            <h4 className="text-sm font-medium mb-3">Palette Colors</h4>
-            <div className="grid grid-cols-5 gap-2">
-              {PALETTE_COLORS.map((color) => (
+            <h4 className="text-sm font-medium mb-3">Basic Colors</h4>
+            <div className="grid grid-cols-10 gap-2">
+              {BASIC_COLORS.map((color) => (
                 <button
                   key={color}
                   onClick={() => handleColorSelect(color)}
                   disabled={disabled}
-                  className={`w-10 h-10 rounded-lg border-2 border-border/50 hover:border-primary transition-all ${
+                  className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${
                     currentColor.toLowerCase() === color.toLowerCase()
                       ? "ring-2 ring-primary"
                       : ""

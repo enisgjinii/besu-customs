@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useCallback, useMemo, memo } from "react";
+import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import {
   Palette,
   Paintbrush,
   Camera,
-  ChevronUp,
+  ChevronDown,
   X,
-  Download,
   Grid3x3,
   RotateCcw,
   Play,
   FileImage,
   Film,
-  Package2,
+  Pause,
+  Info,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -26,12 +27,18 @@ import {
 } from "@/components/ui/select";
 import dynamic from "next/dynamic";
 
-// Lazy load heavy components to improve initial render
+// Lazy load heavy components
 const MaterialEditor = dynamic(
   () => import("./material-editor").then((mod) => ({ default: mod.MaterialEditor })),
   { 
     ssr: false,
-    loading: () => <div className="animate-pulse h-32 bg-muted rounded" />
+    loading: () => (
+      <div className="space-y-3 p-4">
+        <div className="h-8 bg-muted rounded-lg mobile-skeleton" />
+        <div className="h-24 bg-muted rounded-lg mobile-skeleton" />
+        <div className="h-16 bg-muted rounded-lg mobile-skeleton" />
+      </div>
+    )
   }
 );
 
@@ -39,72 +46,110 @@ const UVTextureEditor = dynamic(
   () => import("./uv-texture-editor").then((mod) => ({ default: mod.UVTextureEditor })),
   { 
     ssr: false,
-    loading: () => <div className="animate-pulse h-32 bg-muted rounded" />
+    loading: () => (
+      <div className="space-y-3 p-4">
+        <div className="h-8 bg-muted rounded-lg mobile-skeleton" />
+        <div className="aspect-square bg-muted rounded-lg mobile-skeleton" />
+      </div>
+    )
   }
 );
 
 type TabType = "materials" | "texture" | "export" | null;
 
+// Memoized nav button component
+const NavButton = memo(function NavButton({
+  icon: Icon,
+  label,
+  isActive,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`mobile-nav-item ${isActive ? "active" : "text-muted-foreground"}`}
+      aria-label={label}
+      aria-pressed={isActive}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="text-[11px] font-medium">{label}</span>
+    </button>
+  );
+});
+
 export function MobileBottomNav() {
   const [activeTab, setActiveTab] = useState<TabType>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [panelHeight, setPanelHeight] = useState(60); // percentage
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number>(0);
+  const dragStartHeight = useRef<number>(0);
 
-  // Memoized store selectors to prevent unnecessary re-renders
+  // Store selectors
   const products = useConfiguratorStore((state) => state.products);
-  const selectedProductId = useConfiguratorStore(
-    (state) => state.selectedProductId,
-  );
-  const setSelectedProduct = useConfiguratorStore(
-    (state) => state.setSelectedProduct,
-  );
+  const selectedProductId = useConfiguratorStore((state) => state.selectedProductId);
+  const setSelectedProduct = useConfiguratorStore((state) => state.setSelectedProduct);
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
   const autoRotate = useConfiguratorStore((state) => state.autoRotate);
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
-  const cameraControlsRef = useConfiguratorStore(
-    (state) => state.cameraControlsRef,
-  );
-  const completeUVMap = useConfiguratorStore(
-    (state) =>
-      (state as unknown as { completeUVMap: string | null }).completeUVMap,
-  );
-  const selectedSectionId = useConfiguratorStore(
-    (state) => state.selectedSectionId,
-  );
-  const sections = useConfiguratorStore((state) => state.sections);
-  
-  // Memoize derived state
-  const selectedSection = useMemo(
-    () => sections.find((s) => s.id === selectedSectionId),
-    [sections, selectedSectionId]
-  );
+  const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef);
 
-  // Memoized callbacks to prevent child re-renders
+  // Handle tab click
   const handleTabClick = useCallback((tab: TabType) => {
-    setActiveTab((currentTab) => {
-      if (currentTab === tab) {
-        setIsExpanded((expanded) => !expanded);
-        return currentTab;
-      } else {
-        setIsExpanded(true);
-        return tab;
-      }
-    });
-  }, []);
+    if (activeTab === tab && isExpanded) {
+      setIsExpanded(false);
+      setTimeout(() => setActiveTab(null), 300);
+    } else {
+      setActiveTab(tab);
+      setIsExpanded(true);
+      setPanelHeight(60);
+    }
+  }, [activeTab, isExpanded]);
 
+  // Close panel
   const closePanel = useCallback(() => {
     setIsExpanded(false);
     setTimeout(() => setActiveTab(null), 300);
   }, []);
 
-  const handleScreenshot = useCallback(() => {
-    // Use the canvas element directly for Babylon.js
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
-    if (!canvas) {
-      alert("Canvas not found");
-      return;
+  // Handle drag to resize panel
+  const handleDragStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    dragStartY.current = clientY;
+    dragStartHeight.current = panelHeight;
+  }, [panelHeight]);
+
+  const handleDrag = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    if (dragStartY.current === 0) return;
+    
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const deltaY = dragStartY.current - clientY;
+    const deltaPercent = (deltaY / window.innerHeight) * 100;
+    const newHeight = Math.min(85, Math.max(30, dragStartHeight.current + deltaPercent));
+    
+    setPanelHeight(newHeight);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    dragStartY.current = 0;
+    
+    // Snap to close if dragged down enough
+    if (panelHeight < 35) {
+      closePanel();
     }
+  }, [panelHeight, closePanel]);
+
+  // Screenshot handler
+  const handleScreenshot = useCallback(() => {
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    if (!canvas) return;
 
     try {
       const dataURL = canvas.toDataURL("image/png", 1.0);
@@ -116,226 +161,222 @@ export function MobileBottomNav() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Screenshot failed:", error);
-      alert("Failed to capture screenshot. Please try again.");
     }
   }, []);
 
+  // Reset camera handler
   const handleResetCamera = useCallback(() => {
-    const controls = cameraControlsRef as {
-      reset: (enableTransition: boolean) => void;
-    } | null;
-    if (controls) {
+    const controls = cameraControlsRef as { reset?: (enableTransition: boolean) => void } | null;
+    if (controls?.reset) {
       controls.reset(true);
     }
   }, [cameraControlsRef]);
 
-  const handleDownloadUVMap = useCallback(() => {
-    if (!completeUVMap) {
-      alert("UV Map not available yet");
-      return;
+  // Get tab title
+  const getTabTitle = useCallback((tab: TabType) => {
+    switch (tab) {
+      case "materials": return "Materials & Colors";
+      case "texture": return "Texture Editor";
+      case "export": return "Export & Controls";
+      default: return "";
     }
-
-    const link = document.createElement("a");
-    link.download = `uv-map-${Date.now()}.png`;
-    link.href = completeUVMap;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [completeUVMap]);
-
-  const handleStartRecording = useCallback(() => {
-    // TODO: Implement screen recording
-    setIsRecording(true);
-    setTimeout(() => {
-      setIsRecording(false);
-      alert("Screen recording would start here. This is a placeholder.");
-    }, 1000);
   }, []);
-
-  // Memoize toggle handlers
-  const handleToggleAutoRotate = useCallback(() => {
-    setAutoRotate(!autoRotate);
-  }, [autoRotate, setAutoRotate]);
 
   return (
     <div
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe"
-      data-tour="mobile-nav"
-      style={{ transform: 'translateZ(0)' }} /* Hardware acceleration */
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+      style={{ transform: 'translateZ(0)' }}
     >
-      {/* Expanded Panel - Only render content when expanded for performance */}
+      {/* Backdrop */}
+      {isExpanded && (
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+          onClick={closePanel}
+          style={{ transform: 'translateZ(0)' }}
+        />
+      )}
+
+      {/* Expanded Panel */}
       <div
-        className={`bg-card border-t border-border/50 transition-transform duration-200 ease-out overflow-hidden will-change-transform ${
-          isExpanded ? "max-h-[70vh]" : "max-h-0"
+        ref={panelRef}
+        className={`fixed left-0 right-0 bottom-0 bg-card border-t border-border/50 rounded-t-2xl z-50 mobile-sheet ${
+          isExpanded ? "mobile-panel-enter" : "mobile-panel-exit pointer-events-none"
         }`}
-        style={{ transform: 'translateZ(0)' }}
+        style={{ 
+          height: isExpanded ? `${panelHeight}vh` : '0',
+          maxHeight: '85vh',
+          transform: 'translateZ(0)',
+        }}
       >
-        <div className="overflow-y-auto max-h-[70vh] pb-4 overscroll-contain">
-          {/* Header */}
-          <div className="sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/50 p-3 flex items-center justify-between">
-            <h3 className="font-semibold text-sm">
-              {activeTab === "materials" && "Materials"}
-              {activeTab === "texture" && "Texture & UV Map"}
-              {activeTab === "export" && "Export & Controls"}
-            </h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={closePanel}
-              className="h-8 w-8 p-0"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+        {/* Drag Handle */}
+        <div 
+          className="w-full py-2 cursor-grab active:cursor-grabbing touch-none"
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDrag}
+          onTouchEnd={handleDragEnd}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDrag}
+          onMouseUp={handleDragEnd}
+        >
+          <div className="mobile-sheet-handle" />
+        </div>
 
-          {/* Content */}
-          <div className="p-4">
-            {activeTab === "materials" && (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                    Select Model
-                  </label>
-                  <Select
-                    value={selectedProductId || ""}
-                    onValueChange={setSelectedProduct}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a 3D model to begin..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <MaterialEditor />
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pb-3 border-b border-border/30">
+          <h3 className="font-semibold text-base">{getTabTitle(activeTab)}</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={closePanel}
+            className="h-9 w-9 p-0 rounded-full"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto thin-scrollbar overscroll-contain" style={{ height: 'calc(100% - 60px)' }}>
+          {activeTab === "materials" && (
+            <div className="p-4 space-y-4">
+              {/* Model Selector */}
+              <div className="card-mobile">
+                <label className="section-header-mobile block mb-2">
+                  Select Model
+                </label>
+                <Select
+                  value={selectedProductId || ""}
+                  onValueChange={setSelectedProduct}
+                >
+                  <SelectTrigger className="w-full h-12 text-base">
+                    <SelectValue placeholder="Choose a 3D model..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id} className="py-3">
+                        {product.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
 
-            {activeTab === "texture" && (
-              <div className="space-y-4">
-                <UVTextureEditor />
-              </div>
-            )}
+              {/* Material Editor */}
+              <MaterialEditor />
+            </div>
+          )}
 
-            {activeTab === "export" && (
-              <div className="space-y-3">
-                {/* Quick Actions */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-medium text-muted-foreground">
-                    Quick Actions
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetCamera}
-                    >
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Reset View
-                    </Button>
-                    <Button
-                      variant={autoRotate ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setAutoRotate(!autoRotate)}
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      {autoRotate ? "Stop" : "Rotate"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={toggleGrid}>
-                      <Grid3x3 className="w-4 h-4 mr-2" />
-                      {showGrid ? "Hide" : "Show"} Grid
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleScreenshot}
-                    >
-                      <Camera className="w-4 h-4 mr-2" />
-                      Screenshot
-                    </Button>
-                  </div>
-                </div>
+          {activeTab === "texture" && (
+            <div className="p-4">
+              <UVTextureEditor />
+            </div>
+          )}
 
-                <div className="space-y-2 w-full">
+          {activeTab === "export" && (
+            <div className="p-4 space-y-4">
+              {/* Quick Actions */}
+              <div className="card-mobile">
+                <h4 className="section-header-mobile">View Controls</h4>
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-2"
+                    className="btn-mobile justify-start"
+                    onClick={handleResetCamera}
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                    <span>Reset View</span>
+                  </Button>
+                  <Button
+                    variant={autoRotate ? "default" : "outline"}
+                    className="btn-mobile justify-start"
+                    onClick={() => setAutoRotate(!autoRotate)}
+                  >
+                    {autoRotate ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    <span>{autoRotate ? "Stop" : "Rotate"}</span>
+                  </Button>
+                  <Button
+                    variant={showGrid ? "default" : "outline"}
+                    className="btn-mobile justify-start"
+                    onClick={toggleGrid}
+                  >
+                    <Grid3x3 className="w-5 h-5" />
+                    <span>{showGrid ? "Hide" : "Show"} Grid</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="btn-mobile justify-start"
                     onClick={handleScreenshot}
                   >
-                    <FileImage className="h-4 w-4" />
-                    Take Screenshot
+                    <Camera className="w-5 h-5" />
+                    <span>Screenshot</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Export Options */}
+              <div className="card-mobile">
+                <h4 className="section-header-mobile">Export</h4>
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="btn-mobile w-full justify-start"
+                    onClick={handleScreenshot}
+                  >
+                    <FileImage className="w-5 h-5" />
+                    <span>Save as Image</span>
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-2"
-                    onClick={handleStartRecording}
+                    className="btn-mobile w-full justify-start"
                     disabled={isRecording}
                   >
-                    <Film className="h-4 w-4" />
-                    {isRecording ? "Recording..." : "Record Video"}
+                    <Film className="w-5 h-5" />
+                    <span>{isRecording ? "Recording..." : "Record Video"}</span>
                   </Button>
                 </div>
-
-                <div className="text-[10px] text-muted-foreground px-2 py-1 bg-yellow-500/5 rounded">
-                  Full export options available on desktop
-                </div>
               </div>
-            )}
-          </div>
+
+              {/* Info */}
+              <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-muted-foreground">
+                  For advanced export options like 4K images and model files, use the desktop version.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Bottom Navigation Bar - Hardware accelerated */}
+      {/* Bottom Navigation Bar */}
       <div 
-        className="bg-card/95 backdrop-blur-sm border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg"
+        className="bg-card/95 backdrop-blur-md border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-lg pb-safe relative z-50"
         style={{ transform: 'translateZ(0)' }}
       >
-        <button
+        <NavButton
+          icon={Palette}
+          label="Materials"
+          isActive={activeTab === "materials"}
           onClick={() => handleTabClick("materials")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors duration-150 touch-manipulation ${activeTab === "materials"
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground active:text-foreground active:bg-secondary/50"
-            }`}
-        >
-          <Palette className="w-5 h-5" />
-          <span className="text-[10px] font-medium">Materials</span>
-        </button>
-
-        <button
+        />
+        <NavButton
+          icon={Paintbrush}
+          label="Texture"
+          isActive={activeTab === "texture"}
           onClick={() => handleTabClick("texture")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors duration-150 touch-manipulation ${activeTab === "texture"
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground active:text-foreground active:bg-secondary/50"
-            }`}
-        >
-          <Paintbrush className="w-5 h-5" />
-          <span className="text-[10px] font-medium">Texture</span>
-        </button>
-
-        <button
+        />
+        <NavButton
+          icon={Camera}
+          label="Export"
+          isActive={activeTab === "export"}
           onClick={() => handleTabClick("export")}
-          className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors duration-150 touch-manipulation ${activeTab === "export"
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground active:text-foreground active:bg-secondary/50"
-            }`}
-        >
-          <Camera className="w-5 h-5" />
-          <span className="text-[10px] font-medium">Export</span>
-        </button>
-
+        />
         {isExpanded && (
-          <button
+          <NavButton
+            icon={ChevronDown}
+            label="Close"
+            isActive={false}
             onClick={closePanel}
-            className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-muted-foreground active:text-foreground active:bg-secondary/50 transition-colors duration-150 touch-manipulation"
-          >
-            <ChevronUp className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Close</span>
-          </button>
+          />
         )}
       </div>
     </div>

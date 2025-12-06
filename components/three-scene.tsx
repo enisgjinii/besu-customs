@@ -12,21 +12,25 @@ import { detectConnectionSpeed, getBestModelUrl, type LoadingProgress } from "@/
 import { extractSectionsFromThreeModel, applyMaterialsToThreeModel, extractUVMapFromThreeModel } from "@/lib/three-material-utils";
 import * as THREE from "three";
 
-// Loading progress component - uses ref to avoid setState during render
+// Loading progress component - uses ref and startTransition to avoid setState during render
 function LoadingProgress({ onProgress }: { onProgress: (progress: LoadingProgress) => void }) {
   const { progress, active } = useProgress();
   const speed = detectConnectionSpeed();
   const onProgressRef = useRef(onProgress);
+  const previousProgressRef = useRef<number>(-1);
   
   // Keep ref updated
   useEffect(() => {
     onProgressRef.current = onProgress;
   }, [onProgress]);
   
+  // Use startTransition to defer state updates in React 19
   useEffect(() => {
-    if (active) {
-      // Use setTimeout to defer state update to next tick
-      const timeoutId = setTimeout(() => {
+    if (active && progress !== previousProgressRef.current) {
+      previousProgressRef.current = progress;
+      
+      // Use queueMicrotask to ensure updates happen outside render phase
+      queueMicrotask(() => {
         onProgressRef.current({
           stage: progress < 50 ? 'loading-low' : 'loading-high',
           percent: progress,
@@ -34,9 +38,7 @@ function LoadingProgress({ onProgress }: { onProgress: (progress: LoadingProgres
           bytesTotal: 0,
           connectionSpeed: speed,
         });
-      }, 0);
-      
-      return () => clearTimeout(timeoutId);
+      });
     }
   }, [progress, active, speed]);
   

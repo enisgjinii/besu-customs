@@ -150,8 +150,8 @@ export function OnboardingWelcome() {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 p-4">
-      <Card className="onboarding-welcome-modal w-full max-w-2xl mx-auto p-6 text-center space-y-6 animate-in zoom-in-95 duration-500 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 p-0 md:p-4">
+      <Card className="onboarding-welcome-modal w-full max-w-2xl mx-auto p-5 md:p-6 text-center space-y-5 md:space-y-6 animate-in slide-in-from-bottom-4 md:zoom-in-95 duration-500 shadow-2xl max-h-[90vh] md:max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl">
         {/* Welcome Step */}
         {step === "welcome" && (
           <>
@@ -197,9 +197,9 @@ export function OnboardingWelcome() {
             <div className="space-y-3">
               <Button
                 onClick={() => setStep("userType")}
-                className="w-full font-medium"
+                className="w-full font-medium min-h-[52px] md:min-h-[44px] text-base md:text-sm"
               >
-                <Play className="w-4 h-4 mr-2" />
+                <Play className="w-5 h-5 md:w-4 md:h-4 mr-2" />
                 Get Personal Tour
               </Button>
 
@@ -207,16 +207,16 @@ export function OnboardingWelcome() {
                 <Button
                   variant="outline"
                   onClick={handleSkip}
-                  className="flex-1 text-sm"
+                  className="flex-1 text-base md:text-sm min-h-[48px] md:min-h-[40px]"
                 >
                   Later
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleSkip}
-                  className="flex-1 text-sm"
+                  className="flex-1 text-base md:text-sm min-h-[48px] md:min-h-[40px]"
                 >
-                  <X className="w-3 h-3 mr-1" />
+                  <X className="w-4 h-4 md:w-3 md:h-3 mr-1" />
                   Skip
                 </Button>
               </div>
@@ -247,10 +247,10 @@ export function OnboardingWelcome() {
                   <button
                     key={userType.type}
                     onClick={() => handleUserTypeSelect(userType.type)}
-                    className={`p-4 rounded-lg border text-left transition-all duration-200 hover:scale-[1.02] ${
+                    className={`p-4 rounded-xl border text-left transition-all duration-200 active:scale-[0.98] md:hover:scale-[1.02] min-h-[80px] ${
                       isSelected
                         ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/30"
+                        : "border-border active:border-primary/50 md:hover:border-primary/30"
                     }`}
                   >
                     <div className="flex items-start space-x-3">
@@ -354,7 +354,7 @@ export function OnboardingWelcome() {
             </div>
 
             <div className="space-y-3">
-              <Button onClick={handleStartTour} className="w-full font-medium">
+              <Button onClick={handleStartTour} className="w-full font-medium min-h-[52px] md:min-h-[44px] text-base md:text-sm">
                 Start Tour
               </Button>
 
@@ -362,14 +362,14 @@ export function OnboardingWelcome() {
                 <Button
                   variant="outline"
                   onClick={handleBackToUserType}
-                  className="flex-1 text-sm"
+                  className="flex-1 text-base md:text-sm min-h-[48px] md:min-h-[40px]"
                 >
                   Change
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleSkip}
-                  className="flex-1 text-sm"
+                  className="flex-1 text-base md:text-sm min-h-[48px] md:min-h-[40px]"
                 >
                   Skip
                 </Button>
