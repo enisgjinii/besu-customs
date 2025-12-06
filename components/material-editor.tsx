@@ -32,7 +32,6 @@ function getSectionBadge(section: { name: string; originalName?: string }) {
 }
 
 export function MaterialEditor() {
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   // State to track expanded categories
   const [expandedCategories, setExpandedCategories] = useState<
     Record<string, boolean>
@@ -59,6 +58,7 @@ export function MaterialEditor() {
   );
   const recentColors = useConfiguratorStore((state) => state.recentColors);
   const addRecentColor = useConfiguratorStore((state) => state.addRecentColor);
+  const openSectionColorPicker = useConfiguratorStore((s) => s.openSectionColorPicker);
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
@@ -277,7 +277,7 @@ export function MaterialEditor() {
                   style={{ backgroundColor: selectedSection.color }}
                 />
                 <Button
-                  onClick={() => setColorPickerOpen(true)}
+                  onClick={() => openSectionColorPicker(selectedSection.id)}
                   disabled={
                     !!selectedSection.customTexture ||
                     !!selectedSection.gradient?.enabled
@@ -574,23 +574,7 @@ export function MaterialEditor() {
         </div>
       )}
 
-      {/* Color Picker Modal */}
-      {selectedSection && (
-        <ColorPickerModal
-          isOpen={colorPickerOpen}
-          onClose={() => setColorPickerOpen(false)}
-          currentColor={selectedSection.color}
-          onColorChange={(color) =>
-            updateSection(selectedSection.id, { color })
-          }
-          disabled={
-            !!selectedSection.customTexture ||
-            !!selectedSection.gradient?.enabled
-          }
-          recentColors={recentColors}
-          onAddRecentColor={addRecentColor}
-        />
-      )}
+      {/* Color picker is rendered at top-level (app/page) via global store control */}
     </div>
   );
 }

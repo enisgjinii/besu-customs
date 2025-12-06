@@ -115,6 +115,11 @@ export interface ConfiguratorState {
   clearSectionLinks: () => void;
   recentColors: string[];
   addRecentColor: (color: string) => void;
+  // Section color picker (global control)
+  sectionColorPickerOpen: boolean;
+  sectionColorPickerSectionId: string | null;
+  openSectionColorPicker: (sectionId: string) => void;
+  closeSectionColorPicker: () => void;
   // Product updates
   updateProduct: (id: string, updates: Partial<Product>) => void;
 
@@ -605,6 +610,14 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         ),
       ].slice(0, 8),
     })),
+
+  // Section color picker (global control so modal can render at top-level)
+  sectionColorPickerOpen: false,
+  sectionColorPickerSectionId: null,
+  openSectionColorPicker: (sectionId: string) =>
+    set({ sectionColorPickerOpen: true, sectionColorPickerSectionId: sectionId }),
+  closeSectionColorPicker: () =>
+    set({ sectionColorPickerOpen: false, sectionColorPickerSectionId: null }),
 
   // Presets
   presets: [],

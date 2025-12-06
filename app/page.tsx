@@ -51,6 +51,15 @@ export default function Home() {
     setIsColorPickerOpen(false);
   };
 
+  // Section color picker (global)
+  const sectionColorPickerOpen = useConfiguratorStore((s) => s.sectionColorPickerOpen);
+  const sectionColorPickerSectionId = useConfiguratorStore((s) => s.sectionColorPickerSectionId);
+  const closeSectionColorPicker = useConfiguratorStore((s) => s.closeSectionColorPicker);
+  const updateSection = useConfiguratorStore((s) => s.updateSection);
+  const sections = useConfiguratorStore((s) => s.sections);
+  const recentColors = useConfiguratorStore((s) => s.recentColors);
+  const addRecentColor = useConfiguratorStore((s) => s.addRecentColor);
+
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
@@ -158,6 +167,26 @@ export default function Home() {
         currentColor={backgroundColor}
         onColorChange={handleApplyBackgroundColor}
       />
+
+      {/* Section Color Picker Modal (global) */}
+      {sectionColorPickerOpen && sectionColorPickerSectionId && (
+        <ColorPickerModal
+          isOpen={sectionColorPickerOpen}
+          onClose={closeSectionColorPicker}
+          currentColor={
+            sections.find((s) => s.id === sectionColorPickerSectionId)?.color || "#000000"
+          }
+          onColorChange={(color: string) => {
+            updateSection(sectionColorPickerSectionId, { color });
+          }}
+          disabled={
+            !!sections.find((s) => s.id === sectionColorPickerSectionId)?.customTexture ||
+            !!sections.find((s) => s.id === sectionColorPickerSectionId)?.gradient?.enabled
+          }
+          recentColors={recentColors}
+          onAddRecentColor={addRecentColor}
+        />
+      )}
     </div>
   );
 }
