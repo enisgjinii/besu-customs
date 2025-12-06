@@ -1060,10 +1060,6 @@ export function UVTextureEditor() {
             <ImageIcon className="w-4 h-4" />
             <span className="hidden sm:inline">Image</span>
           </TabsTrigger>
-          <TabsTrigger value="logos" className="flex items-center gap-1">
-            <School className="w-4 h-4" />
-            <span className="hidden sm:inline">Logos</span>
-          </TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-1">
             <Bot className="w-4 h-4" />
             <span className="hidden sm:inline">AI Gen</span>
@@ -1390,56 +1386,7 @@ export function UVTextureEditor() {
           </Card>
         </TabsContent>
 
-        {/* Logos Tab */}
-        <TabsContent value="logos" className="mt-4">
-          <Card className="p-4 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search logos..."
-                className="pl-8"
-                value={logoSearch}
-                onChange={(e) => setLogoSearch(e.target.value)}
-              />
-            </div>
-            <ScrollArea className="h-[400px] pr-2">
-              <div className="grid grid-cols-3 gap-2">
-                {schoolLogos
-                  .filter(logo => logo.name.toLowerCase().includes(logoSearch.toLowerCase()))
-                  .slice(0, 50) // Limit render for performance until virtualized
-                  .map((logo, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleAddLogo(logo.path)}
-                      className="group relative aspect-square bg-muted/20 border rounded-lg overflow-hidden hover:border-primary transition-all p-2 flex items-center justify-center"
-                      title={logo.name}
-                    >
-                      <img
-                        src={logo.path}
-                        alt={logo.name}
-                        className="max-w-full max-h-full object-contain"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
-                        <span className="text-white text-[10px] text-center line-clamp-2">{logo.name}</span>
-                      </div>
-                    </button>
-                  ))}
-                {schoolLogos.filter(logo => logo.name.toLowerCase().includes(logoSearch.toLowerCase())).length === 0 && (
-                  <div className="col-span-3 text-center py-8 text-muted-foreground text-sm">
-                    No logos found
-                  </div>
-                )}
-              </div>
-              {schoolLogos.filter(logo => logo.name.toLowerCase().includes(logoSearch.toLowerCase())).length > 50 && (
-                <p className="text-xs text-center text-muted-foreground mt-4">
-                  Showing top 50 matches. Refine search to see more.
-                </p>
-              )}
-            </ScrollArea>
-          </Card>
-        </TabsContent>
+
 
         {/* AI Gen Tab */}
         <TabsContent value="ai" className="mt-4">
