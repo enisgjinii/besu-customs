@@ -22,8 +22,8 @@ import { Step09View } from "./wizard-steps/step-09-view";
 const STEPS = [
     { id: 1, title: "Apparel", component: Step01Apparel },
     { id: 2, title: "Colors", component: Step02Colors },
-    { id: 3, title: "Style", component: Step03Style },
-    { id: 4, title: "School Logo", component: Step04SchoolLogo },
+    { id: 3, title: "School Logo", component: Step04SchoolLogo },
+    { id: 4, title: "Style", component: Step03Style },
     { id: 5, title: "Patterns", component: Step05Patterns },
     { id: 6, title: "Text", component: Step06Text },
     { id: 7, title: "Images", component: Step07Images },
