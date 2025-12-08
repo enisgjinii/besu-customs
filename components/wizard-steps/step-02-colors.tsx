@@ -59,18 +59,22 @@ export function Step02Colors() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 text-[10px] text-muted-foreground hover:text-primary px-2"
+                            className="h-7 text-[10px] text-muted-foreground hover:text-primary px-2 gap-1"
                             onClick={handleApplyToAll}
+                            title="Apply color to all parts"
                         >
+                            <Link2 className="w-3 h-3" />
                             Apply All
                         </Button>
                         <div className="h-3 w-px bg-border mx-1" />
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 text-[10px] text-muted-foreground hover:text-destructive px-2"
+                            className="h-7 text-[10px] text-muted-foreground hover:text-destructive px-2 gap-1"
                             onClick={() => updateAllSections({ color: "#ffffff" })}
+                            title="Reset all colors to white"
                         >
+                            <Link2Off className="w-3 h-3" />
                             Unlink All
                         </Button>
                     </div>
@@ -100,7 +104,7 @@ export function Step02Colors() {
             </div>
 
             <div className="flex-1 flex flex-col gap-2 min-h-0">
-                <div className="flex-1 overflow-y-auto pr-2">
+                <div className="flex-1 overflow-y-auto pr-2 touch-none">
                     <div className="grid grid-cols-7 sm:grid-cols-10 gap-2 pb-4 pt-1">
                         {PRESET_COLORS.map((color) => (
                             <button

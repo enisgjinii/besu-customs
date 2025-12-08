@@ -19,11 +19,12 @@ import { cn } from "@/lib/utils";
 interface PatternSelectorProps {
   onPatternSelect?: (pattern: Pattern) => void;
   className?: string;
+  lockedCategory?: PatternCategory;
 }
 
-export function PatternSelector({ onPatternSelect, className }: PatternSelectorProps) {
+export function PatternSelector({ onPatternSelect, className, lockedCategory }: PatternSelectorProps) {
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<PatternCategory>("college");
+  const [activeCategory, setActiveCategory] = useState<PatternCategory>(lockedCategory || "school-logos");
 
   const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
   const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
@@ -74,78 +75,99 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
 
   const currentPatterns = getPatternsByCategory(activeCategory);
 
+  const showTabs = !lockedCategory;
+
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex items-center gap-2 mb-4">
         <div className="flex-1">
-          <h3 className="font-bold text-lg">Step 1: Choose Your Style</h3>
-          <p className="text-xs text-muted-foreground">Select a base design pattern for your jersey</p>
+          {/* Header removed to be flexible */}
+          <p className="text-xs text-muted-foreground">
+            {lockedCategory ? "Select a logo below" : "Select a pattern category"}
+          </p>
         </div>
         <Sparkles className="w-4 h-4 text-yellow-500" />
       </div>
 
-      <Tabs
-        value={activeCategory}
-        onValueChange={(v) => setActiveCategory(v as PatternCategory)}
-        className="w-full"
-      >
-        <TabsList className="w-full flex flex-wrap h-auto p-1 mb-4 gap-1 bg-muted/50">
-          {PATTERN_CATEGORIES.map((category) => (
-            <TabsTrigger
-              key={category.id}
-              value={category.id}
-              className="flex-1 min-w-[70px] flex flex-col items-center gap-1 py-2 px-2 text-[10px] leading-tight data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
-            >
-              <span className="font-semibold text-xs truncate w-full text-center">{category.name}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {showTabs && (
+        <Tabs
+          value={activeCategory}
+          onValueChange={(v) => setActiveCategory(v as PatternCategory)}
+          className="w-full"
+        >
+          <TabsList className="w-full flex flex-wrap h-auto p-1 mb-4 gap-1 bg-muted/50">
+            {PATTERN_CATEGORIES.map((category) => (
+              <TabsTrigger
+                key={category.id}
+                value={category.id}
+                className="flex-1 min-w-[70px] flex flex-col items-center gap-1 py-2 px-2 text-[10px] leading-tight data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+              >
+                <span className="font-semibold text-xs truncate w-full text-center">{category.name}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
+          {/* Render Content for each tab if tabs are shown */}
+          <ScrollArea className="h-[400px] pr-2 -mr-2">
+            {PATTERN_CATEGORIES.map((category) => (
+              <TabsContent key={category.id} value={category.id} className="mt-0">
+                <CategoryGrid categoryId={category.id} selectedPattern={selectedPattern} onSelect={handlePatternClick} />
+              </TabsContent>
+            ))}
+          </ScrollArea>
+        </Tabs>
+      )}
+
+      {!showTabs && (
         <ScrollArea className="h-[400px] pr-2 -mr-2">
-          {PATTERN_CATEGORIES.map((category) => (
-            <TabsContent key={category.id} value={category.id} className="mt-0">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-4">
-                {getPatternsByCategory(category.id).map((pattern) => (
-                  <button
-                    key={pattern.id}
-                    onClick={() => handlePatternClick(pattern)}
-                    className={cn(
-                      "flex flex-col rounded-lg overflow-hidden border bg-card transition-all hover:shadow-md text-left group",
-                      selectedPattern === pattern.id
-                        ? "border-primary ring-1 ring-primary"
-                        : "border-border hover:border-primary/50"
-                    )}
-                  >
-                    <div className="aspect-square w-full relative bg-muted/20">
-                      <img
-                        src={pattern.thumbnail}
-                        alt={pattern.name}
-                        className="w-full h-full object-cover"
-                      />
-                      {/* Selected checkmark overlay */}
-                      {selectedPattern === pattern.id && (
-                        <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-sm">
-                          <Check className="w-4 h-4 text-primary-foreground" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Text below image */}
-                    <div className="p-2 border-t border-border/50 bg-background group-hover:bg-muted/30 transition-colors">
-                      <span className="text-xs font-semibold block truncate">
-                        {pattern.name}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground truncate block">
-                        {pattern.description}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </TabsContent>
-          ))}
+          <CategoryGrid categoryId={activeCategory} selectedPattern={selectedPattern} onSelect={handlePatternClick} />
         </ScrollArea>
-      </Tabs>
+      )}
     </Card>
   );
+}
+
+// Helper component for grid to reduce duplication
+function CategoryGrid({ categoryId, selectedPattern, onSelect }: { categoryId: string, selectedPattern: string | null, onSelect: (p: Pattern) => void }) {
+  const patterns = getPatternsByCategory(categoryId as PatternCategory);
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-4">
+      {patterns.map((pattern) => (
+        <button
+          key={pattern.id}
+          onClick={() => onSelect(pattern)}
+          className={cn(
+            "flex flex-col rounded-lg overflow-hidden border bg-card transition-all hover:shadow-md text-left group",
+            selectedPattern === pattern.id
+              ? "border-primary ring-1 ring-primary"
+              : "border-border hover:border-primary/50"
+          )}
+        >
+          <div className="aspect-square w-full relative bg-muted/20">
+            <img
+              src={pattern.thumbnail}
+              alt={pattern.name}
+              className="w-full h-full object-cover"
+            />
+            {/* Selected checkmark overlay */}
+            {selectedPattern === pattern.id && (
+              <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                <Check className="w-4 h-4 text-primary-foreground" />
+              </div>
+            )}
+          </div>
+
+          {/* Text below image */}
+          <div className="p-2 border-t border-border/50 bg-background group-hover:bg-muted/30 transition-colors">
+            <span className="text-xs font-semibold block truncate">
+              {pattern.name}
+            </span>
+            <span className="text-[10px] text-muted-foreground truncate block">
+              {pattern.description}
+            </span>
+          </div>
+        </button>
+      ))}
+    </div>
+  )
 }

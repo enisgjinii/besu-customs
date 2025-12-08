@@ -2,11 +2,14 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Upload, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
+
+import { PatternSelector } from "@/components/pattern-selector";
 
 export function Step04SchoolLogo() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
@@ -16,7 +19,6 @@ export function Step04SchoolLogo() {
     const updateTextureLayer = useConfiguratorStore((state) => state.updateTextureLayer);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // ... (keep existing) ...
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
@@ -35,7 +37,7 @@ export function Step04SchoolLogo() {
                     // Center in World Space (Average Front Vector for Decal)
                     position: [0, 0, 1],
                     rotation: [0, 0, 0],
-                    scale: [0.3, 0.3, 1], // Z scale doesn't matter much for Decal
+                    scale: [0.3, 0.3, 1],
                 });
                 toast.success("Logo added to scene");
             };
@@ -51,8 +53,25 @@ export function Step04SchoolLogo() {
             <div className="space-y-2">
                 <h2 className="text-lg font-semibold">Choose Your School Logo</h2>
                 <p className="text-sm text-muted-foreground">
-                    Upload a logo. Use the sliders to resize/rotate, and drag on the 3D model to position.
+                    Select a school logo from the list below, or upload your own custom logo.
                 </p>
+            </div>
+
+            {/* PRESET SCHOOL LOGOS */}
+            <div>
+                <Label className="mb-2 block">Select School Logo</Label>
+                <div className="h-[300px]">
+                    <PatternSelector lockedCategory="school-logos" className="h-full border-none shadow-none p-0" />
+                </div>
+            </div>
+
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or Upload Custom</span>
+                </div>
             </div>
 
             <div className="p-4 border-2 border-dashed rounded-xl hover:bg-accent/50 transition-colors text-center cursor-pointer relative">
@@ -71,6 +90,7 @@ export function Step04SchoolLogo() {
                 </div>
             </div>
 
+            {/* Active Layers List */}
             <div className="space-y-4">
                 <h3 className="text-sm font-medium">Active Logos</h3>
                 {logos.length === 0 && (
@@ -83,8 +103,15 @@ export function Step04SchoolLogo() {
                                 <img src={layer.imageUrl} alt={layer.name} className="w-8 h-8 object-contain rounded bg-muted/50 p-0.5" />
                             )}
                             <span className="text-sm font-medium truncate flex-1">{layer.name}</span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                                onClick={() => removeTextureLayer(layer.id)}
+                            >
+                                <Trash2 className="w-3 h-3" />
+                            </Button>
                         </div>
-
                         {/* Unified Controls */}
                         <LayerControls layerId={layer.id} />
                     </div>

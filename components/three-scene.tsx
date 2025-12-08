@@ -107,13 +107,19 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   return null;
 }
 
-// Decal Component for individual layers
-// Decal Component for individual layers
-// Decal Component for individual layers
+// Decal Component with userData for Raycasting
 function LayerDecal({ layer, targetMesh }: { layer: TextureLayer; targetMesh: THREE.Mesh }) {
   const texture = useTexture(layer.imageUrl!);
-  const meshRef = useRef(targetMesh);
-  meshRef.current = targetMesh; // Ensure ref is always up to date
+  const { gl } = useThree();
+
+  useEffect(() => {
+    if (texture) {
+      texture.anisotropy = gl.capabilities.getMaxAnisotropy();
+      texture.needsUpdate = true;
+    }
+  }, [texture, gl]);
+
+  const meshRef = useRef<THREE.Mesh>(null);
 
   // Basic Decal setup
   return (
@@ -121,19 +127,27 @@ function LayerDecal({ layer, targetMesh }: { layer: TextureLayer; targetMesh: TH
       position={new THREE.Vector3(...(layer.position || [0, 0, 1]))}
       rotation={new THREE.Euler(...(layer.rotation || [0, 0, 0]))}
       scale={new THREE.Vector3(...(layer.scale || [0.3, 0.3, 1]))}
-      mesh={meshRef}
+      mesh={targetMesh} // Target the passed mesh
     >
       <meshStandardMaterial
+        ref={meshRef}
         map={texture}
         transparent
         polygonOffset
-        polygonOffsetFactor={-1} // Ensure it sits on top
+        polygonOffsetFactor={-1 - (layer.order || 0)}
         depthTest={true}
         depthWrite={false}
+        userData={{ isDecal: true, layerId: layer.id }} // CRITICAL: Identity for raycaster
       />
     </Decal>
   );
 }
+
+// ... (CameraViewLock is fine)
+
+// ...
+
+
 
 // Camera View Lock Component
 function CameraViewLock() {
@@ -269,10 +283,20 @@ function Model({ url, onLoad, onError, onSectionsExtracted }: any) {
       // Simplified Interaction:
       // If we hit the model, start dragging the LAST active layer (like before).
       const intersects = raycaster.intersectObjects(clonedScene.children, true);
-      if (intersects.length > 0) {
-        // Logic: Pick the LAST added Image/Text layer (Decal)
-        // Ideally we check if we hit a Decal mesh specifically, but Decals are invisible containers usually
-        // Simplified: Just select the top-most layer if we click the model
+
+      // Filter for Decals first
+      const decalHit = intersects.find((hit) => hit.object.userData?.isDecal && hit.object.userData?.layerId);
+
+      if (decalHit) {
+        // HIT SPECIFIC DECAL
+        selectedLayerRef.current = decalHit.object.userData.layerId;
+        isDraggingRef.current = true;
+        if (controls) (controls as any).enabled = false;
+        // Optionally bring to front?
+        // updateTextureLayer(decalHit.object.userData.layerId, { order: textureLayers.length });
+      } else if (intersects.length > 0) {
+        // Fallback: Click on body -> Pick Last Layer (if any exists)
+        // Only if we hit the body mesh
         const activeDecals = useConfiguratorStore.getState().textureLayers
           .filter(l => l.type !== 'pattern' && l.visible);
 
@@ -491,7 +515,7 @@ export function ThreeScene() {
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 10, 5]} intensity={1.2} />
 
-        <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
+        <OrbitControls makeDefault enableDamping dampingFactor={0.05} enableRotate={!useConfiguratorStore.getState().lockedView} />
         <CameraViewLock />
 
         {modelUrl && (
@@ -518,6 +542,5 @@ export function ThreeScene() {
     </div>
   );
 }
-
 // Preload
 // useGLTF.preload(url); // Removed to prevent ReferenceError if url is undefined or method differs
