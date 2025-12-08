@@ -86,6 +86,11 @@ export interface TextureLayer {
   textColor?: string;
   fontSize?: number;
   imageUrl?: string;
+  // 3D Transform properties for Decals
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+  targetMeshId?: string; // The specific mesh this layer is attached to
 }
 
 export interface CameraState {
@@ -132,6 +137,9 @@ export interface ConfiguratorState {
   // Global texture apply
   globalCustomTexture: string | null;
   setGlobalCustomTexture: (url: string | null) => void;
+
+  currentStep: number;
+  setStep: (step: number) => void;
 
   // Texture layers management
   textureLayers: TextureLayer[];
@@ -533,6 +541,9 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   globalCustomTexture: null,
   setGlobalCustomTexture: (url: string | null) =>
     set({ globalCustomTexture: url }),
+
+  currentStep: 0,
+  setStep: (step: number) => set({ currentStep: step }),
 
   // Texture layers management
   textureLayers: [],

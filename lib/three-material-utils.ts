@@ -10,20 +10,54 @@ import type { MaterialSection } from "./store";
 
 // Parse material name to get display name
 function parseMaterialName(name: string): string {
-  // Remove common prefixes/suffixes
+  // Common specific overrides
+  const overrides: Record<string, string> = {
+    "fabric_front": "Front Body",
+    "fabric_back": "Back Body",
+    "fabric_sleeve_l": "Left Sleeve",
+    "fabric_sleeve_r": "Right Sleeve",
+    "collar_1": "Collar",
+    "trim_neck": "Neck Trim",
+  };
+
+  const lowerName = name.toLowerCase();
+
+  // Check strict overrides first
+  if (overrides[lowerName]) return overrides[lowerName];
+
+  // Logic to clean up technical names
   let displayName = name
-    .replace(/^(mat_|material_|mtl_)/i, "")
-    .replace(/(_mat|_material|_mtl)$/i, "")
-    .replace(/_/g, " ")
-    .replace(/-/g, " ");
+    // Remove "generated", "instance", "clone" often found in 3D exports
+    .replace(/(generated|instance|clone|copy)/gi, "")
+    // Remove common prefixes
+    .replace(/^(mat_|material_|mtl_|mesh_|obj_)/i, "")
+    // Remove common suffixes like .001, _001
+    .replace(/[._-]\d{3,}$/i, "")
+    // Replace separators with spaces
+    .replace(/[._-]/g, " ")
+    // Split camelCase (e.g., "FrontBody" -> "Front Body")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // Split numbers from text (e.g., "Sleeve2" -> "Sleeve 2")
+    .replace(/([a-zA-Z])(\d)/g, "$1 $2");
+
+  // Filter out redundant technical terms
+  displayName = displayName.replace(/\b(lambert|phong|standard|pbr|blinn)\b/gi, "").trim();
 
   // Capitalize first letter of each word
   displayName = displayName
-    .split(" ")
+    .split(/\s+/)
+    .filter(Boolean) // remove empty strings
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 
-  return displayName || "Material";
+  // Final cleanup for dangling numbers or known short codes
+  displayName = displayName
+    .replace(/\bL\b/g, "Left")
+    .replace(/\bR\b/g, "Right")
+    .replace(/\bF\b/g, "Front")
+    .replace(/\bB\b/g, "Back");
+
+  return displayName || "Part";
 }
 
 // Extract material sections from a Three.js scene
