@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree, createPortal } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, useGLTF, Environment, Decal, useTexture, TransformControls } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, useGLTF, Environment, Decal, useTexture, TransformControls, Center } from "@react-three/drei";
 import { useConfiguratorStore, TextureLayer, MaterialSection } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
@@ -372,34 +372,50 @@ function Model({ url, onLoad, onError, onSectionsExtracted }: any) {
     }
   });
 
-  // Find the primary mesh to stick decals to (or stick to all?)
-  // Usually stick to the specific mesh that was hit. But for simplicity, stick to 'Body' if found, or first Mesh.
-  // Actually, we can just iterate layers and stick them to a "Target Mesh" if we saved it.
-  // If not, we scan children.
-
+  // Find the primary mesh to stick decals to
+  // Use LARGEST mesh by bounding box volume (main body, not accessories)
   const meshes: THREE.Mesh[] = [];
   if (clonedScene) {
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh) meshes.push(child);
     });
   }
-  // Use first mesh as default target for decals for now (fallback)
-  const targetMesh = meshes.length > 0 ? meshes[0] : null;
+
+  // Find largest mesh by bounding box volume
+  let targetMesh: THREE.Mesh | null = null;
+  let maxVolume = 0;
+  meshes.forEach((mesh) => {
+    const box = new THREE.Box3().setFromObject(mesh);
+    const size = box.getSize(new THREE.Vector3());
+    const volume = size.x * size.y * size.z;
+    if (volume > maxVolume) {
+      maxVolume = volume;
+      targetMesh = mesh;
+    }
+  });
 
   return (
     <group ref={modelRef}>
       {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
-      {clonedScene && <primitive object={clonedScene} />}
 
-      {/* 1. Patterns via Texture Map (Base Layer) */}
-      {clonedScene && <TextureCompositor scene={clonedScene} />}
+      <Center onCentered={(props) => {
+        // Optional: Scale model to fit a unit box if it's too huge/small?
+        // For now, just centering is enough to make (0,0,0) meaningful.
+        const { width, height, depth } = props;
+        // console.log("Model Dimensions:", width, height, depth);
+      }}>
+        {clonedScene && <primitive object={clonedScene} />}
 
-      {/* 2. Images/Logos via Decals (Overlay Layer - Untinted) */}
-      {targetMesh && textureLayers.map((layer) => (
-        layer.visible && layer.imageUrl && layer.type !== 'pattern' && (
-          <LayerDecal key={layer.id} layer={layer} targetMesh={targetMesh} />
-        )
-      ))}
+        {/* 1. Patterns via Texture Map (Base Layer) */}
+        {clonedScene && <TextureCompositor scene={clonedScene} />}
+
+        {/* 2. Images/Logos via Decals (Overlay Layer - Untinted) */}
+        {targetMesh && textureLayers.map((layer) => (
+          layer.visible && layer.imageUrl && layer.type !== 'pattern' && (
+            <LayerDecal key={layer.id} layer={layer} targetMesh={targetMesh!} />
+          )
+        ))}
+      </Center>
     </group>
   );
 }

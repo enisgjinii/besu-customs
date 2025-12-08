@@ -11,7 +11,7 @@ export function Step08AIImages() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
     const textureLayers = useConfiguratorStore((state) => state.textureLayers);
 
-    // Helper to remove background (simple corner color detection)
+    // Helper to remove background (improved multi-corner detection)
     const processImageWithTransparency = async (imageUrl: string): Promise<string> => {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -30,26 +30,41 @@ export function Step08AIImages() {
 
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
+                const w = canvas.width;
+                const h = canvas.height;
 
-                // Detect background color from top-left pixel
-                const rBg = data[0];
-                const gBg = data[1];
-                const bBg = data[2];
+                // Sample background color from all 4 corners
+                const getPixel = (x: number, y: number) => {
+                    const i = (y * w + x) * 4;
+                    return [data[i], data[i + 1], data[i + 2]];
+                };
 
-                // Simple threshold
-                const tolerance = 40;
+                const corners = [
+                    getPixel(0, 0),           // top-left
+                    getPixel(w - 1, 0),         // top-right
+                    getPixel(0, h - 1),         // bottom-left
+                    getPixel(w - 1, h - 1)        // bottom-right
+                ];
+
+                // Average the corner colors
+                const rBg = Math.round(corners.reduce((s, c) => s + c[0], 0) / 4);
+                const gBg = Math.round(corners.reduce((s, c) => s + c[1], 0) / 4);
+                const bBg = Math.round(corners.reduce((s, c) => s + c[2], 0) / 4);
+
+                // Higher tolerance for better background removal
+                const tolerance = 60;
 
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i];
                     const g = data[i + 1];
                     const b = data[i + 2];
 
-                    if (
-                        Math.abs(r - rBg) < tolerance &&
-                        Math.abs(g - gBg) < tolerance &&
-                        Math.abs(b - bBg) < tolerance
-                    ) {
-                        data[i + 3] = 0; // Set alpha to 0 (transparent)
+                    const diff = Math.abs(r - rBg) + Math.abs(g - gBg) + Math.abs(b - bBg);
+
+                    if (diff < tolerance * 3) {
+                        // Gradual transparency based on how close to background
+                        const alpha = Math.min(255, Math.max(0, (diff / (tolerance * 3)) * 255));
+                        data[i + 3] = alpha;
                     }
                 }
 

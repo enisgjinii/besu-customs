@@ -69,10 +69,20 @@ export function Step03Style() {
     const handleApplyStyle = (preset: typeof STYLE_PRESETS[0]) => {
         setSelectedStyle(preset.id);
 
+        // Track if Body color was applied to any section
+        let bodyApplied = false;
+        const bodyColor = preset.colors["Body"];
+
         Object.entries(preset.colors).forEach(([key, color]) => {
             const matchingSections = sections.filter(s => s.name.toLowerCase().includes(key.toLowerCase()));
             matchingSections.forEach(s => updateSection(s.id, { color }));
+            if (key === "Body" && matchingSections.length > 0) bodyApplied = true;
         });
+
+        // Fallback: If no "Body" section found, apply body color to ALL sections
+        if (!bodyApplied && bodyColor && sections.length > 0) {
+            sections.forEach(s => updateSection(s.id, { color: bodyColor }));
+        }
 
         if (preset.patternId) {
             const patternUrl = `https://placehold.co/1024x1024/png?text=${preset.patternId}`;
