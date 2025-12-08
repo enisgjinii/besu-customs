@@ -109,8 +109,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
 // Decal Component for individual layers
 // Decal Component for individual layers
-function LayerDecal({ layer }: { layer: TextureLayer }) {
+// Decal Component for individual layers
+function LayerDecal({ layer, targetMesh }: { layer: TextureLayer; targetMesh: THREE.Mesh }) {
   const texture = useTexture(layer.imageUrl!);
+  const meshRef = useRef(targetMesh);
+  meshRef.current = targetMesh; // Ensure ref is always up to date
 
   // Basic Decal setup
   return (
@@ -118,6 +121,7 @@ function LayerDecal({ layer }: { layer: TextureLayer }) {
       position={new THREE.Vector3(...(layer.position || [0, 0, 1]))}
       rotation={new THREE.Euler(...(layer.rotation || [0, 0, 0]))}
       scale={new THREE.Vector3(...(layer.scale || [0.3, 0.3, 1]))}
+      mesh={meshRef}
     >
       <meshStandardMaterial
         map={texture}
@@ -292,14 +296,26 @@ function Model({ url, onLoad, onError, onSectionsExtracted }: any) {
       const intersects = raycaster.intersectObject(clonedScene, true);
       if (intersects.length > 0) {
         const hit = intersects[0];
-        const pos = hit.point;
-        const normal = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0, 0, 1);
+        const pos = hit.point.clone();
 
-        // Orient decal to potential normal
-        // Simple LookAt for rotation
+        // Convert World Position to Model Local Position
+        // This ensures the decal sticks to the rotating model correctly
+        if (modelRef.current) {
+          modelRef.current.worldToLocal(pos);
+        }
+
+        const worldNormal = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0, 0, 1);
+
+        // Transform normal to local space
+        const localNormal = worldNormal.clone();
+        if (modelRef.current) {
+          const inverseMatrix = new THREE.Matrix4().copy(modelRef.current.matrixWorld).invert();
+          localNormal.transformDirection(inverseMatrix);
+        }
+
         const dummy = new THREE.Object3D();
         dummy.position.copy(pos);
-        dummy.lookAt(pos.clone().add(normal));
+        dummy.lookAt(pos.clone().add(localNormal));
 
         updateTextureLayer(selectedLayerRef.current, {
           position: [pos.x, pos.y, pos.z],
@@ -356,12 +372,7 @@ function Model({ url, onLoad, onError, onSectionsExtracted }: any) {
       {/* 2. Images/Logos via Decals (Overlay Layer - Untinted) */}
       {targetMesh && textureLayers.map((layer) => (
         layer.visible && layer.imageUrl && layer.type !== 'pattern' && (
-          <React.Fragment key={layer.id}>
-            {createPortal(
-              <LayerDecal layer={layer} />,
-              targetMesh
-            )}
-          </React.Fragment>
+          <LayerDecal key={layer.id} layer={layer} targetMesh={targetMesh} />
         )
       ))}
     </group>
