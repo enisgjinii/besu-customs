@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ConfiguratorHeader } from "@/components/configurator-header";
-import { ConfiguratorBottomBar } from "@/components/configurator-bottom-bar";
+import { ConfiguratorWizard } from "@/components/configurator-wizard";
 import { useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -43,18 +43,20 @@ export default function Home() {
       <ConfiguratorHeader />
 
       {/* 3D Viewer - Full screen with padding for header/footer */}
+      {/* 3D Viewer - Full screen with padding for header */}
+      {/* 3D Viewer - Full screen with padding for header */}
       <main
-        className="flex-1 relative"
+        className="flex-1 relative w-full h-full"
         style={{
           paddingTop: '60px', // Header height
-          paddingBottom: '140px', // Bottom bar height
+          paddingBottom: '320px', // Reserve space for Bottom Wizard
         }}
       >
         <Scene />
 
         {/* Empty State Overlay */}
         {!currentModelUrl && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: '60px', bottom: '140px' }}>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: '60px', bottom: '320px' }}>
             <div className="text-center px-8">
               <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
                 <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,15 +65,15 @@ export default function Home() {
               </div>
               <h2 className="text-xl font-semibold text-black dark:text-white mb-2">Select a Product</h2>
               <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
-                Choose a 3D model to start customizing your design
+                Use the bottom bar to start customizing.
               </p>
             </div>
           </div>
         )}
       </main>
 
-      {/* Bottom Bar - Fixed at bottom */}
-      <ConfiguratorBottomBar />
+      {/* Wizard Bottom Bar */}
+      <ConfiguratorWizard />
     </div>
   );
 }

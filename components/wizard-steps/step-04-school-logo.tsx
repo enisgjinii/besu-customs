@@ -12,7 +12,10 @@ export function Step04SchoolLogo() {
     const textureLayers = useConfiguratorStore((state) => state.textureLayers);
     const removeTextureLayer = useConfiguratorStore((state) => state.removeTextureLayer);
 
+    const updateTextureLayer = useConfiguratorStore((state) => state.updateTextureLayer);
+
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // ... (keep existing) ...
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
@@ -28,16 +31,15 @@ export function Step04SchoolLogo() {
                     blendMode: "normal",
                     order: textureLayers.length,
                     imageUrl: result,
-                    // Initial position at center of screen/model effectively
-                    position: [0, 0, 0.1],
+                    // Center in UV space
+                    position: [0.5, 0.5, 0],
                     rotation: [0, 0, 0],
-                    scale: [1, 1, 1],
+                    scale: [0.3, 0.3, 0.3], // Reasonable default size
                 });
                 toast.success("Logo added to scene");
             };
             reader.readAsDataURL(file);
         }
-        // Reset input
         e.target.value = "";
     };
 
@@ -48,7 +50,7 @@ export function Step04SchoolLogo() {
             <div className="space-y-2">
                 <h2 className="text-lg font-semibold">Choose Your School Logo</h2>
                 <p className="text-sm text-muted-foreground">
-                    Upload your school logo to place on the product. Drag and drop on the 3D model to position it.
+                    Upload a logo. Use the sliders to resize/rotate, and drag on the 3D model to position.
                 </p>
             </div>
 
@@ -68,22 +70,60 @@ export function Step04SchoolLogo() {
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
                 <h3 className="text-sm font-medium">Active Logos</h3>
                 {logos.length === 0 && (
                     <p className="text-xs text-muted-foreground italic">No logos added yet.</p>
                 )}
                 {logos.map((layer) => (
-                    <div key={layer.id} className="flex items-center justify-between p-2 rounded-md border bg-card">
-                        <div className="flex items-center gap-3">
-                            {layer.imageUrl && (
-                                <img src={layer.imageUrl} alt={layer.name} className="w-8 h-8 object-contain rounded bg-muted/50 p-0.5" />
-                            )}
-                            <span className="text-sm truncate max-w-[150px]">{layer.name}</span>
+                    <div key={layer.id} className="p-3 rounded-md border bg-card space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {layer.imageUrl && (
+                                    <img src={layer.imageUrl} alt={layer.name} className="w-8 h-8 object-contain rounded bg-muted/50 p-0.5" />
+                                )}
+                                <span className="text-sm font-medium truncate max-w-[120px]">{layer.name}</span>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => removeTextureLayer(layer.id)} className="h-8 w-8 text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeTextureLayer(layer.id)} className="h-8 w-8 text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                        {/* Controls */}
+                        <div className="grid grid-cols-1 gap-4 px-1">
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Size</span>
+                                    <span>{Math.round((layer.scale?.[0] || 0.3) * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0.05" max="1.0" step="0.01"
+                                    value={layer.scale?.[0] || 0.3}
+                                    onChange={(e) => {
+                                        const s = parseFloat(e.target.value);
+                                        updateTextureLayer(layer.id, { scale: [s, s, s] });
+                                    }}
+                                    className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Rotation</span>
+                                    <span>{Math.round(((layer.rotation?.[2] || 0) * 180) / Math.PI)}°</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0" max={Math.PI * 2} step="0.1"
+                                    value={layer.rotation?.[2] || 0}
+                                    onChange={(e) => {
+                                        const r = parseFloat(e.target.value);
+                                        updateTextureLayer(layer.id, { rotation: [0, 0, r] });
+                                    }}
+                                    className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                />
+                            </div>
+                        </div>
                     </div>
                 ))}
             </div>

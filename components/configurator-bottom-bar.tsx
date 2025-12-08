@@ -444,6 +444,53 @@ export function ConfiguratorBottomBar() {
                   key={p}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    // Generate distinct placeholder patterns for now
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512; canvas.height = 512;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                      ctx.fillStyle = '#ffffff';
+                      ctx.fillRect(0, 0, 512, 512);
+                      ctx.fillStyle = '#000000';
+                      ctx.globalAlpha = 0.2;
+
+                      if (p === 'Stripes') {
+                        for (let i = 0; i < 512; i += 40) ctx.fillRect(i, 0, 20, 512);
+                      } else if (p === 'Geometric') {
+                        for (let i = 0; i < 512; i += 40) {
+                          for (let j = 0; j < 512; j += 40) {
+                            if ((i + j) % 80 === 0) ctx.fillRect(i, j, 20, 20);
+                          }
+                        }
+                      } else if (p === 'Camo') {
+                        // Simple noise/blobs
+                        for (let i = 0; i < 20; i++) {
+                          ctx.beginPath();
+                          ctx.arc(Math.random() * 512, Math.random() * 512, 50, 0, Math.PI * 2);
+                          ctx.fill();
+                        }
+                      } else {
+                        // Default noise
+                        for (let i = 0; i < 100; i++) ctx.fillRect(Math.random() * 512, Math.random() * 512, 40, 40);
+                      }
+
+                      addTextureLayer({
+                        id: `pattern-${Date.now()}`,
+                        name: p,
+                        type: 'image', // Treat pattern as image layer for now
+                        visible: true,
+                        locked: false,
+                        opacity: 0.5,
+                        blendMode: 'multiply',
+                        order: 0, // Bottom
+                        imageUrl: canvas.toDataURL(),
+                        position: [0.5, 0.5, 0],
+                        rotation: [0, 0, 0],
+                        scale: [1, 1, 1], // Full coverage relative to canvas
+                      });
+                    }
+                  }}
                   className="px-2 py-2 text-xs font-medium border border-gray-200 dark:border-gray-700 rounded-lg hover:border-black"
                 >
                   {p}

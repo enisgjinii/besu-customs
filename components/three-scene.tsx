@@ -135,11 +135,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     });
   }, [scene, texture]);
 
-  // 3. Handle 3D interaction (Raycasting to UV)
-  const { camera, raycaster, gl } = useThree();
+  // 1. Texture Compositor Fix for Dragging
+  const { camera, raycaster, gl, controls } = useThree();
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
+      // ... existing pointer down logic ...
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -151,11 +152,13 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         const hit = intersects[0];
         if (hit.uv) {
           const layers = useConfiguratorStore.getState().textureLayers;
+          // Reverse check to pick topmost visible layer at this UV? 
+          // For now simple last-added logic:
           if (layers.length > 0) {
             const topLayer = layers[layers.length - 1];
             selectedLayerRef.current = topLayer.id;
             isDraggingRef.current = true;
-            // Disable orbit controls temporarily?
+            if (controls) (controls as any).enabled = false; // Disable controls
           }
         }
       }
@@ -180,8 +183,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     };
 
     const handlePointerUp = () => {
-      isDraggingRef.current = false;
-      selectedLayerRef.current = null;
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        selectedLayerRef.current = null;
+        if (controls) (controls as any).enabled = true; // Re-enable controls
+      }
     };
 
     gl.domElement.addEventListener('pointerdown', handlePointerDown);
@@ -193,7 +199,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       gl.domElement.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [scene, camera, gl, updateTextureLayer]);
+  }, [scene, camera, gl, updateTextureLayer, controls]);
 
   return null;
 }
@@ -223,7 +229,6 @@ function CameraViewLock() {
   return null;
 }
 
-// Model component
 function Model({
   url,
   onLoad,
@@ -242,10 +247,11 @@ function Model({
   const modelRef = useRef<THREE.Group>(null);
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
   const autoRotate = useConfiguratorStore((s) => s.autoRotate);
+  const sections = useConfiguratorStore((s) => s.sections); // Add sections subscription
   const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
   const perfConfig = useMobilePerformance();
 
-  // Callbacks refs
+  // ... refs ...
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
   const onUVMapExtractedRef = useRef(onUVMapExtracted);
   const onLoadRef = useRef(onLoad);
@@ -258,9 +264,8 @@ function Model({
 
   useEffect(() => {
     if (scene) {
+      // ... (existing clone logic) ...
       const cloned = scene.clone(true);
-
-      // Center and scale
       const box = new THREE.Box3().setFromObject(cloned);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
@@ -272,7 +277,7 @@ function Model({
 
       setClonedScene(cloned);
 
-      // Process model for sections if needed
+      // ... extract sections ...
       setTimeout(() => {
         if (cloned) {
           const sections = extractSectionsFromThreeModel(cloned, url);
@@ -283,25 +288,30 @@ function Model({
     }
   }, [scene, url]);
 
-  // Handle Global Texture (single texture replacement)
-  // Logic mostly replaced by TextureCompositor if textureLayers are used
-  // But we keep this for backward compatibility or direct texture set
+  // Sync Sections Colors to 3D Mesh Materials
   useEffect(() => {
-    if (!clonedScene || !globalCustomTexture) return;
-    const loader = new THREE.TextureLoader();
-    const texture = loader.load(globalCustomTexture);
-    texture.flipY = false;
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = perfConfig.isLowEndDevice ? 4 : 16;
+    if (!clonedScene || sections.length === 0) return;
 
     clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material) {
-        const material = child.material as THREE.MeshStandardMaterial;
-        material.map = texture;
-        material.needsUpdate = true;
+      if (child instanceof THREE.Mesh) {
+        // Try to find matching section by ID (child.uuid) or Name
+        // Assuming extractSections matched them previously
+        const section = sections.find(s => s.id === child.uuid || s.name === child.name);
+
+        if (section && child.material) {
+          const mat = child.material as THREE.MeshStandardMaterial;
+          if (section.color) {
+            mat.color.set(section.color);
+          }
+          // We ignore customTexture here because TextureCompositor handles it globally via maps
+          mat.needsUpdate = true;
+        }
       }
     });
-  }, [globalCustomTexture, clonedScene, perfConfig]);
+  }, [clonedScene, sections]);
+
+  // Legacy Global Texture logic (keep as fallback or remove if confusing)
+  // ...
 
   useFrame(() => {
     if (autoRotate && modelRef.current) {

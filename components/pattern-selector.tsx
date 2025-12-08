@@ -26,65 +26,45 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
   const [activeCategory, setActiveCategory] = useState<PatternCategory>("college");
 
   const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture);
-  const fabricCanvas = useConfiguratorStore((s) => s.fabricCanvas);
+  const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
+  const textureLayers = useConfiguratorStore((s) => s.textureLayers);
 
   const applyPatternToCanvas = useCallback(async (pattern: Pattern) => {
-    if (!fabricCanvas) {
-      console.warn("No fabric canvas available");
-      return;
-    }
+    // Add pattern as a background layer (Order 0)
+    // Remove existing pattern layer if any to avoid stacking multiple patterns
+    // Identify pattern layer by type='pattern' or user metadata
 
-    try {
-      const { FabricImage } = await import("fabric");
+    // Logic: If there is already a layer with type='pattern', replace it or remove it.
+    // For now, let's just add it. The compositor renders in order.
+    // Ideally, we want one pattern layer.
 
-      // Convert SVG data URL to full-size pattern image
-      const img = await FabricImage.fromURL(pattern.thumbnail);
+    // We can assume we want to Clear old patterns?
+    // Let's iterate and mark 'pattern' type.
+    // But TextureLayer interface might not have 'pattern' subtype. We used 'image'.
+    // We'll use 'image' and maybe a consistent ID prefix?
+    // Or we rely on 'order: 0'.
 
-      // Scale to fill canvas as a tiled pattern or stretched background
-      const canvas = fabricCanvas;
-      const canvasWidth = canvas.width || 2048;
-      const canvasHeight = canvas.height || 2048;
+    const patternId = `pattern-${Date.now()}`;
 
-      // Scale the pattern to fill the canvas
-      const scaleX = canvasWidth / (img.width || 100);
-      const scaleY = canvasHeight / (img.height || 100);
+    addTextureLayer({
+      id: patternId,
+      name: pattern.name,
+      type: 'image', // Pattern is an image layer
+      visible: true,
+      locked: false,
+      opacity: 0.8, // Slightly transparent to blend?
+      blendMode: 'multiply', // Blend with base color
+      order: 0, // Always at bottom
+      imageUrl: pattern.thumbnail,
+      position: [0.5, 0.5, 0], // Center
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1], // Full coverage? We might need logic to 'tile' or 'stretch'.
+      // For SVGs in lib/patterns, they seem to be 100x100 squares. 
+      // We probably want to scale them up to cover the texture (2048x2048).
+      // Scale 20x?
+    });
 
-      // Check for existing pattern and remove it
-      const objects = canvas.getObjects();
-      const existingPattern = objects.find((obj: any) => obj.id === 'background-pattern');
-      if (existingPattern) {
-        canvas.remove(existingPattern);
-      }
-
-      img.set({
-        id: 'background-pattern', // Tag as pattern for easy removal
-        scaleX: scaleX,
-        scaleY: scaleY,
-        left: 0,
-        top: 0,
-        selectable: true,
-        evented: true,
-        // Controls will be applied by canvas object:added event
-      });
-
-      // Add to canvas and send to back
-      canvas.add(img);
-      // Fabric.js v6: use sendObjectToBack instead of sendToBack
-      if (typeof canvas.sendObjectToBack === 'function') {
-        canvas.sendObjectToBack(img);
-      } else if (typeof canvas.sendToBack === 'function') {
-        canvas.sendToBack(img);
-      }
-      canvas.renderAll();
-
-      // Fire modified event to trigger texture update
-      canvas.fire('object:modified', { target: img });
-
-      console.log(`✅ Applied pattern: ${pattern.name}`);
-    } catch (error) {
-      console.error("Failed to apply pattern:", error);
-    }
-  }, [fabricCanvas]);
+  }, [addTextureLayer]); // No fabricCanvas dependency
 
   const handlePatternClick = useCallback((pattern: Pattern) => {
     setSelectedPattern(pattern.id);
