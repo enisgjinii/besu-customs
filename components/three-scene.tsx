@@ -119,7 +119,9 @@ function LayerDecal({ layer, targetMesh }: { layer: TextureLayer; targetMesh: TH
     }
   }, [texture, gl]);
 
-  const meshRef = useRef<THREE.Mesh>(null);
+  // Create a stable ref object for the Decal's mesh prop
+  const meshRef = useRef<THREE.Mesh>(targetMesh);
+  meshRef.current = targetMesh;
 
   // Basic Decal setup
   return (
@@ -127,17 +129,16 @@ function LayerDecal({ layer, targetMesh }: { layer: TextureLayer; targetMesh: TH
       position={new THREE.Vector3(...(layer.position || [0, 0, 1]))}
       rotation={new THREE.Euler(...(layer.rotation || [0, 0, 0]))}
       scale={new THREE.Vector3(...(layer.scale || [0.3, 0.3, 1]))}
-      mesh={targetMesh} // Target the passed mesh
+      mesh={meshRef}
     >
       <meshStandardMaterial
-        ref={meshRef}
         map={texture}
         transparent
         polygonOffset
         polygonOffsetFactor={-1 - (layer.order || 0)}
         depthTest={true}
         depthWrite={false}
-        userData={{ isDecal: true, layerId: layer.id }} // CRITICAL: Identity for raycaster
+        userData={{ isDecal: true, layerId: layer.id }}
       />
     </Decal>
   );
