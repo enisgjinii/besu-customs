@@ -64,28 +64,48 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
   );
 }
 
-// Decal Component
+// Interactive Decal with drag/scale/rotate support
 function DraggableDecal({
   layer,
   isSelected,
+  onSelect,
 }: {
   layer: TextureLayer;
   isSelected?: boolean;
+  onSelect?: () => void;
 }) {
   const texture = useTexture(layer.imageUrl!);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
 
-  // Position, rotation, scale defaults
-  const pos: [number, number, number] = layer.position || [0, 0, 0.1];
+  // Improve texture quality
+  useEffect(() => {
+    if (texture) {
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.anisotropy = 16;
+      texture.needsUpdate = true;
+    }
+  }, [texture]);
+
+  // Position, rotation, scale defaults  
+  const pos: [number, number, number] = layer.position || [0, 0, 0.5];
   const rot: [number, number, number] = layer.rotation || [0, 0, 0];
-  const scale: [number, number, number] = layer.scale || [1, 1, 1];
+  const scl: [number, number, number] = layer.scale || [0.5, 0.5, 0.5];
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    onSelect?.();
+  };
 
   return (
     <Decal
+      ref={meshRef}
       position={pos}
       rotation={rot}
-      scale={scale}
+      scale={scl}
       map={texture}
-      debug={isSelected}
+      onClick={handleClick}
     >
       <meshStandardMaterial
         transparent
@@ -95,6 +115,7 @@ function DraggableDecal({
         toneMapped={false}
         depthTest={true}
         depthWrite={false}
+        opacity={isSelected ? 1 : 0.95}
       />
     </Decal>
   );
@@ -104,6 +125,7 @@ function DraggableDecal({
 function DecalManager({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const [targetMesh, setTargetMesh] = useState<THREE.Mesh | null>(null);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!scene) return;
@@ -135,15 +157,60 @@ function DecalManager({ scene }: { scene: THREE.Group }) {
   return createPortal(
     <>
       {decalLayers.map((layer) => (
-        <DraggableDecal
-          key={layer.id}
-          layer={layer}
-          isSelected={false} // Selection logic deferred
-        />
+        <Suspense key={layer.id} fallback={null}>
+          <DraggableDecal
+            layer={layer}
+            isSelected={layer.id === selectedLayerId}
+            onSelect={() => setSelectedLayerId(layer.id === selectedLayerId ? null : layer.id)}
+          />
+        </Suspense>
       ))}
     </>,
     targetMesh
   );
+}
+
+// Camera View Lock Component
+function CameraViewLock() {
+  const lockedView = useConfiguratorStore((s) => s.lockedView);
+  const { camera, controls } = useThree();
+
+  useEffect(() => {
+    if (!lockedView || !controls) return;
+
+    const orbitControls = controls as any; // OrbitControls type
+    const distance = 5;
+
+    // Position camera based on view
+    const positions: Record<string, [number, number, number]> = {
+      "Front": [0, 0, distance],
+      "Back": [0, 0, -distance],
+      "Left": [-distance, 0, 0],
+      "Right": [distance, 0, 0],
+      "Top": [0, distance, 0],
+      "Bottom": [0, -distance, 0],
+    };
+
+    const pos = positions[lockedView];
+    if (pos) {
+      camera.position.set(pos[0], pos[1], pos[2]);
+      camera.lookAt(0, 0, 0);
+
+      // Disable rotation when locked
+      if (orbitControls.enableRotate !== undefined) {
+        orbitControls.enableRotate = false;
+      }
+    }
+
+    return () => {
+      // Re-enable rotation when unlocked
+      if (orbitControls.enableRotate !== undefined) {
+        orbitControls.enableRotate = true;
+      }
+    };
+  }, [lockedView, camera, controls]);
+
+  return null;
 }
 
 // Model component
@@ -165,6 +232,17 @@ function Model({
   const { camera } = useThree();
   const clonedScene = useRef<THREE.Group | null>(null);
 
+  // Use refs for callbacks to prevent setState during render issues
+  const onSectionsExtractedRef = useRef(onSectionsExtracted);
+  const onUVMapExtractedRef = useRef(onUVMapExtracted);
+  const onLoadRef = useRef(onLoad);
+
+  useEffect(() => {
+    onSectionsExtractedRef.current = onSectionsExtracted;
+    onUVMapExtractedRef.current = onUVMapExtracted;
+    onLoadRef.current = onLoad;
+  }, [onSectionsExtracted, onUVMapExtracted, onLoad]);
+
   const sections = useConfiguratorStore((s) => s.sections);
   const autoRotate = useConfiguratorStore((s) => s.autoRotate);
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
@@ -176,15 +254,19 @@ function Model({
     if (!scene) return;
     clonedScene.current = scene.clone(true);
 
-    // Extract stuff
-    const extractedSections = extractSectionsFromThreeModel(clonedScene.current, url);
-    onSectionsExtracted?.(extractedSections);
+    // Use setTimeout to defer state updates to next tick
+    setTimeout(() => {
+      if (clonedScene.current) {
+        const extractedSections = extractSectionsFromThreeModel(clonedScene.current, url);
+        onSectionsExtractedRef.current?.(extractedSections);
 
-    const uvMap = extractUVMapFromThreeModel(clonedScene.current, 2048, 2048);
-    onUVMapExtracted?.(uvMap);
+        const uvMap = extractUVMapFromThreeModel(clonedScene.current, 2048, 2048);
+        onUVMapExtractedRef.current?.(uvMap);
+      }
+    }, 0);
 
     console.log("✅ Model cloned and sections extracted");
-  }, [scene, url, onSectionsExtracted, onUVMapExtracted]);
+  }, [scene, url]);
 
   // Center and scale model
   useEffect(() => {
@@ -220,8 +302,8 @@ function Model({
       camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
     }
-    onLoad?.();
-  }, [scene, camera, onLoad]);
+    onLoadRef.current?.();
+  }, [scene, camera]);
 
   // Apply materials
   useEffect(() => {
@@ -408,6 +490,7 @@ export function ThreeScene() {
         <directionalLight position={[10, 10, 5]} intensity={1.2} />
 
         <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
+        <CameraViewLock />
 
         {modelUrl && (
           <Suspense fallback={null}>

@@ -166,6 +166,8 @@ export interface ConfiguratorState {
   setCameraControlsRef: (ref: unknown | null) => void;
   autoRotate: boolean;
   setAutoRotate: (enabled: boolean) => void;
+  lockedView: string | null;
+  setLockedView: (view: string | null) => void;
   glRef: unknown | null;
   setGlRef: (ref: unknown | null) => void;
 
@@ -581,6 +583,8 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     set({ cameraControlsRef: ref }),
   autoRotate: false,
   setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
+  lockedView: null,
+  setLockedView: (view: string | null) => set({ lockedView: view }),
   glRef: null,
   setGlRef: (ref: unknown | null) => set({ glRef: ref }),
 

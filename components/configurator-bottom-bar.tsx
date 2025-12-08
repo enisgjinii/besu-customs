@@ -1,8 +1,9 @@
 "use client";
 
-import { useConfiguratorStore, Product } from "@/lib/store";
-import { ChevronLeft, ChevronRight, ChevronDown, Menu, X, Layers, RotateCcw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useConfiguratorStore } from "@/lib/store";
+import { ChevronLeft, ChevronRight, Menu, X, Layers, RotateCcw, Type, Image, Palette, Sparkles, Shirt } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
   SelectContent,
@@ -11,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Predefined color palette (Nike-style)
 const COLOR_PALETTE = [
   { name: "Black", hex: "#1a1a1a" },
   { name: "White", hex: "#ffffff" },
@@ -27,14 +27,14 @@ const COLOR_PALETTE = [
   { name: "Pollen", hex: "#d4a84b" },
 ];
 
-// View angles for locking camera
-const VIEW_ANGLES = [
-  { name: "Front", icon: "F" },
-  { name: "Back", icon: "B" },
-  { name: "Left", icon: "L" },
-  { name: "Right", icon: "R" },
-  { name: "Top", icon: "T" },
-  { name: "Bottom", icon: "↓" },
+const VIEW_ANGLES = ["Front", "Back", "Left", "Right", "Top", "Bottom"];
+
+const MODES = [
+  { id: "colors", label: "Colors", icon: Palette },
+  { id: "logos", label: "Logos", icon: Shirt },
+  { id: "patterns", label: "Patterns", icon: Sparkles },
+  { id: "text", label: "Text", icon: Type },
+  { id: "images", label: "Images", icon: Image },
 ];
 
 export function ConfiguratorBottomBar() {
@@ -43,289 +43,456 @@ export function ConfiguratorBottomBar() {
   const setSelectedSection = useConfiguratorStore((s) => s.setSelectedSection);
   const updateSection = useConfiguratorStore((s) => s.updateSection);
   const updateAllSections = useConfiguratorStore((s) => s.updateAllSections);
-
-  // Product selection
+  const textureLayers = useConfiguratorStore((s) => s.textureLayers);
+  const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
   const products = useConfiguratorStore((s) => s.products);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
   const setSelectedProduct = useConfiguratorStore((s) => s.setSelectedProduct);
   const setProducts = useConfiguratorStore((s) => s.setProducts);
+  const lockedView = useConfiguratorStore((s) => s.lockedView);
+  const setLockedView = useConfiguratorStore((s) => s.setLockedView);
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [productSelectorOpen, setProductSelectorOpen] = useState(false);
   const [productsLoaded, setProductsLoaded] = useState(false);
-  const [activeView, setActiveView] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [activeMode, setActiveMode] = useState<string>("colors");
 
-  // Load products on mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const loadProducts = async () => {
       try {
         const response = await fetch("/api/models?active=true");
         if (response.ok) {
           const { models } = await response.json();
-          if (models && models.length > 0) {
-            const activeProducts = models.map((model: any) => ({
-              id: model.id,
-              title: model.name,
-              modelUrl: model.file_path,
-              category: model.category || undefined,
-            }));
-            setProducts(activeProducts);
+          if (models?.length > 0) {
+            setProducts(
+              models.map((m: any) => ({
+                id: m.id,
+                title: m.name,
+                modelUrl: m.file_path,
+                category: m.category,
+              }))
+            );
           }
         }
         setProductsLoaded(true);
-      } catch (error) {
-        console.error("Failed to load products:", error);
+      } catch {
         setProductsLoaded(true);
       }
     };
-
-    if (!productsLoaded && products.length === 0) {
-      loadProducts();
-    }
+    if (!productsLoaded && products.length === 0) loadProducts();
   }, [productsLoaded, products.length, setProducts]);
 
-  // Current section index
   const currentIndex = sections.findIndex((s) => s.id === selectedSectionId);
   const effectiveIndex = currentIndex === -1 ? 0 : currentIndex;
   const currentSection = sections[effectiveIndex];
 
-  const handlePrev = () => {
-    if (effectiveIndex > 0) {
-      setSelectedSection(sections[effectiveIndex - 1].id);
-    }
-  };
-
-  const handleNext = () => {
-    if (effectiveIndex < sections.length - 1) {
-      setSelectedSection(sections[effectiveIndex + 1].id);
-    }
-  };
-
   const handleColorSelect = (hex: string) => {
-    if (currentSection) {
-      updateSection(currentSection.id, { color: hex });
-    }
+    if (currentSection) updateSection(currentSection.id, { color: hex });
   };
 
-  const handleApplyToAll = () => {
-    if (currentSection?.color) {
-      updateAllSections({ color: currentSection.color });
-    }
-  };
+  const handleAddImage = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        addTextureLayer({
+          id: `layer-${Date.now()}`,
+          name: file.name,
+          type: "image",
+          visible: true,
+          locked: false,
+          opacity: 1,
+          blendMode: "normal",
+          order: textureLayers.length,
+          imageUrl: e.target?.result as string,
+          position: [0, 0, 0.5],
+          rotation: [0, 0, 0],
+          scale: [0.5, 0.5, 0.5],
+        });
+      };
+      reader.readAsDataURL(file);
+    },
+    [addTextureLayer, textureLayers.length]
+  );
 
-  // Find currently selected color name
   const selectedColorName = currentSection
-    ? COLOR_PALETTE.find((c) => c.hex.toLowerCase() === currentSection.color?.toLowerCase())?.name || "Custom"
+    ? COLOR_PALETTE.find(
+      (c) => c.hex.toLowerCase() === currentSection.color?.toLowerCase()
+    )?.name || "Custom"
     : "";
 
-  // Product not selected - show product selector
-  if (sections.length === 0) {
+  if (!mounted) {
     return (
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10 py-4 px-4">
-        <div className="max-w-md mx-auto">
-          <p className="text-xs text-gray-500 mb-2 text-center">Select a product to start</p>
-          <Select
-            value={selectedProductId || ""}
-            onValueChange={setSelectedProduct}
-          >
-            <SelectTrigger className="w-full h-12 text-base">
-              <SelectValue placeholder="Choose your product..." />
-            </SelectTrigger>
-            <SelectContent>
-              {products.map((product) => (
-                <SelectItem key={product.id} value={product.id}>
-                  {product.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <div className="text-center text-sm text-gray-400">Loading...</div>
       </div>
     );
   }
 
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10">
-      {/* View Lock Buttons */}
-      <div className="flex items-center justify-center gap-1 px-4 py-2 border-b border-black/5 bg-gray-50">
-        <span className="text-xs text-gray-500 mr-2">View:</span>
-        {VIEW_ANGLES.map((view) => (
-          <button
-            key={view.name}
-            onClick={() => setActiveView(activeView === view.name ? null : view.name)}
-            className={`w-7 h-7 rounded text-xs font-medium transition-all ${activeView === view.name
-              ? "bg-black text-white"
-              : "bg-white border border-gray-200 text-gray-600 hover:border-black"
-              }`}
-            title={view.name}
-          >
-            {view.icon}
-          </button>
-        ))}
-        {activeView && (
-          <button
-            onClick={() => setActiveView(null)}
-            className="ml-2 p-1 text-gray-400 hover:text-black"
-            title="Free rotate"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Section Navigation */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-black/5">
-        {/* Product Dropdown */}
-        <button
-          onClick={() => setProductSelectorOpen(!productSelectorOpen)}
-          className="flex items-center gap-1 text-gray-600 hover:text-black transition-colors"
-        >
-          <ChevronDown className={`w-5 h-5 transition-transform ${productSelectorOpen ? "rotate-180" : ""}`} />
-        </button>
-
-        {/* Section Selector */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handlePrev}
-            disabled={effectiveIndex === 0}
-            className="p-1 text-gray-400 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <div className="text-center min-w-[120px]">
-            <span className="text-sm font-medium text-black">
-              {currentSection?.name || "Section"}
-            </span>
-            <span className="text-sm text-gray-400 ml-2">
-              {effectiveIndex + 1} / {sections.length}
-            </span>
-          </div>
-
-          <button
-            onClick={handleNext}
-            disabled={effectiveIndex === sections.length - 1}
-            className="p-1 text-gray-400 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Menu Button */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="flex items-center gap-2 px-3 py-1.5 border border-black/20 rounded-full text-sm font-medium hover:bg-black/5 transition-colors"
-        >
-          <Menu className="w-4 h-4" />
-          Menu
-        </button>
-      </div>
-
-      {/* Product Selector Overlay */}
-      {productSelectorOpen && (
-        <div className="px-4 py-3 bg-gray-50 border-b border-black/10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-500">Switch Product</span>
-            <button onClick={() => setProductSelectorOpen(false)} className="text-gray-400 hover:text-black">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <Select
-            value={selectedProductId || ""}
-            onValueChange={(v) => {
-              setSelectedProduct(v);
-              setProductSelectorOpen(false);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose product..." />
+  if (sections.length === 0) {
+    return (
+      <motion.div
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10 py-4 px-4"
+      >
+        <div className="max-w-md mx-auto">
+          <p className="text-xs text-gray-500 mb-2 text-center">
+            Select a product to start
+          </p>
+          <Select value={selectedProductId || ""} onValueChange={setSelectedProduct}>
+            <SelectTrigger className="w-full h-12 text-base">
+              <SelectValue placeholder="Choose your apparel..." />
             </SelectTrigger>
             <SelectContent>
-              {products.map((product) => (
-                <SelectItem key={product.id} value={product.id}>
-                  {product.title}
+              {products.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.title}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      )}
+      </motion.div>
+    );
+  }
 
-      {/* Color Swatches */}
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          {COLOR_PALETTE.map((color) => (
-            <button
-              key={color.hex}
-              onClick={() => handleColorSelect(color.hex)}
-              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${currentSection?.color?.toLowerCase() === color.hex.toLowerCase()
-                ? "border-black ring-2 ring-black/20"
-                : "border-gray-200"
+  return (
+    <motion.div
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10"
+    >
+      {/* Mode Tabs */}
+      <div className="flex items-center justify-center gap-1 px-2 py-2 border-b border-black/5 bg-gray-50 overflow-x-auto">
+        {MODES.map((mode) => {
+          const Icon = mode.icon;
+          return (
+            <motion.button
+              key={mode.id}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveMode(mode.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${activeMode === mode.id
+                  ? "bg-black text-white"
+                  : "bg-white border border-gray-200 text-gray-600 hover:border-black"
                 }`}
-              style={{ backgroundColor: color.hex }}
-              title={color.name}
-            />
-          ))}
-        </div>
-
-        {/* Color Name + Apply to All */}
-        <div className="flex items-center justify-center gap-4 mt-3">
-          <span className="text-xs text-gray-500">{selectedColorName}</span>
-          <button
-            onClick={handleApplyToAll}
-            className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-black text-white rounded-full hover:bg-black/80 transition-colors"
-          >
-            <Layers className="w-3 h-3" />
-            Apply to All
-          </button>
-        </div>
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {mode.label}
+            </motion.button>
+          );
+        })}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="ml-2 flex items-center gap-1 px-3 py-1.5 border border-black/20 rounded-full text-xs font-medium"
+        >
+          <Menu className="w-3.5 h-3.5" />
+        </motion.button>
       </div>
 
-      {/* Menu Overlay */}
-      {menuOpen && (
-        <div className="absolute bottom-full left-0 right-0 bg-white border-t border-black/10 shadow-lg">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-black">Export Design</h3>
-              <button onClick={() => setMenuOpen(false)} className="text-gray-400 hover:text-black">
-                <X className="w-5 h-5" />
+      {/* View Lock for placement modes */}
+      {["logos", "text", "images"].includes(activeMode) && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          className="flex items-center justify-center gap-1 px-4 py-2 border-b border-black/5"
+        >
+          <span className="text-xs text-gray-500 mr-2">Lock View:</span>
+          {VIEW_ANGLES.map((view) => (
+            <motion.button
+              key={view}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setLockedView(lockedView === view ? null : view)}
+              className={`w-6 h-6 rounded text-xs font-medium ${lockedView === view
+                  ? "bg-black text-white"
+                  : "bg-white border border-gray-200 text-gray-500"
+                }`}
+            >
+              {view[0]}
+            </motion.button>
+          ))}
+          {lockedView && (
+            <button
+              onClick={() => setLockedView(null)}
+              className="ml-1 p-1 text-gray-400"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </motion.div>
+      )}
+
+      {/* Mode Content */}
+      <AnimatePresence mode="wait">
+        {activeMode === "colors" && (
+          <motion.div
+            key="colors"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.15 }}
+          >
+            {/* Section Navigation */}
+            <div className="flex items-center justify-center gap-4 px-4 py-2 border-b border-black/5">
+              <button
+                onClick={() =>
+                  effectiveIndex > 0 &&
+                  setSelectedSection(sections[effectiveIndex - 1].id)
+                }
+                disabled={effectiveIndex === 0}
+                className="p-1 text-gray-400 disabled:opacity-30"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="text-center min-w-[100px]">
+                <span className="text-sm font-medium">
+                  {currentSection?.name}
+                </span>
+                <span className="text-xs text-gray-400 ml-1">
+                  {effectiveIndex + 1}/{sections.length}
+                </span>
+              </div>
+              <button
+                onClick={() =>
+                  effectiveIndex < sections.length - 1 &&
+                  setSelectedSection(sections[effectiveIndex + 1].id)
+                }
+                disabled={effectiveIndex === sections.length - 1}
+                className="p-1 text-gray-400 disabled:opacity-30"
+              >
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">File Name</label>
+            {/* Color Swatches */}
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {COLOR_PALETTE.map((c) => (
+                  <motion.button
+                    key={c.hex}
+                    whileHover={{ scale: 1.15 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleColorSelect(c.hex)}
+                    className={`w-8 h-8 rounded-full border-2 ${currentSection?.color?.toLowerCase() ===
+                        c.hex.toLowerCase()
+                        ? "border-black ring-2 ring-black/20"
+                        : "border-gray-200"
+                      }`}
+                    style={{ backgroundColor: c.hex }}
+                    title={c.name}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center justify-center gap-4 mt-3">
+                <span className="text-xs text-gray-500">{selectedColorName}</span>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() =>
+                    currentSection?.color &&
+                    updateAllSections({ color: currentSection.color })
+                  }
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-black text-white rounded-full"
+                >
+                  <Layers className="w-3 h-3" /> Apply to All
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeMode === "logos" && (
+          <motion.div
+            key="logos"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.15 }}
+            className="px-4 py-4"
+          >
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-3">
+                {lockedView
+                  ? `Upload logo to ${lockedView} view:`
+                  : "Lock a view above first"}
+              </p>
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-black/80">
+                <Image className="w-4 h-4" />
+                Upload Logo
                 <input
-                  type="text"
-                  placeholder="my-custom-design"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleAddImage(file);
+                  }}
                 />
-              </div>
+              </label>
+              {textureLayers.length > 0 && (
+                <p className="text-xs text-gray-400 mt-2">
+                  {textureLayers.length} layer(s)
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
 
-              <div>
-                <label className="text-xs text-gray-500 block mb-2">Image Format</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {["PNG", "JPG", "SVG", "PDF"].map((format) => (
-                    <button
-                      key={format}
-                      className="px-3 py-2 text-xs font-medium border border-gray-200 rounded-lg hover:border-black hover:bg-gray-50 transition-colors"
-                    >
-                      {format}
-                    </button>
-                  ))}
+        {activeMode === "patterns" && (
+          <motion.div
+            key="patterns"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.15 }}
+            className="px-4 py-4"
+          >
+            <p className="text-xs text-gray-500 text-center mb-3">
+              Choose a pattern:
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                "Abstract",
+                "Animal",
+                "Camo",
+                "Sports",
+                "Stripes",
+                "Geometric",
+                "League",
+                "Custom",
+              ].map((p) => (
+                <motion.button
+                  key={p}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-2 py-2 text-xs font-medium border border-gray-200 rounded-lg hover:border-black"
+                >
+                  {p}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {activeMode === "text" && (
+          <motion.div
+            key="text"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.15 }}
+            className="px-4 py-4"
+          >
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-3">
+                {lockedView ? `Add text to ${lockedView}:` : "Lock a view above"}
+              </p>
+              <input
+                type="text"
+                placeholder="Enter your text..."
+                className="w-full max-w-xs px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black mb-2"
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg"
+              >
+                Add Text
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {activeMode === "images" && (
+          <motion.div
+            key="images"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.15 }}
+            className="px-4 py-4"
+          >
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-3">
+                {lockedView
+                  ? `Upload image to ${lockedView}:`
+                  : "Lock a view above"}
+              </p>
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-black/80">
+                <Image className="w-4 h-4" />
+                Upload Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleAddImage(file);
+                  }}
+                />
+              </label>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Menu Overlay */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-full left-0 right-0 bg-white border-t border-black/10 shadow-lg"
+          >
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Export Design</h3>
+                <button onClick={() => setMenuOpen(false)}>
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">
+                    File Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="my-custom-design"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  />
                 </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-gray-500 block mb-2">Video (Spinning Product)</label>
-                <button className="w-full px-3 py-2 text-xs font-medium border border-gray-200 rounded-lg hover:border-black hover:bg-gray-50 transition-colors">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-2">
+                    Image Format
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {["PNG", "JPG", "SVG", "PDF"].map((f) => (
+                      <button
+                        key={f}
+                        className="px-3 py-2 text-xs font-medium border rounded-lg hover:border-black"
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button className="w-full px-3 py-2 text-xs font-medium border rounded-lg hover:border-black">
                   Export MP4
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
