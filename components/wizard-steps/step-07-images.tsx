@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { LayerControls } from "@/components/layer-controls";
 
 export function Step07Images() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
@@ -71,16 +72,15 @@ export function Step07Images() {
                     <p className="text-xs text-muted-foreground italic">No images added yet.</p>
                 )}
                 {layers.map((layer) => (
-                    <div key={layer.id} className="flex items-center justify-between p-2 rounded-md border bg-card">
+                    <div key={layer.id} className="p-3 rounded-md border bg-card space-y-3">
                         <div className="flex items-center gap-3">
                             {layer.imageUrl && (
                                 <img src={layer.imageUrl} alt={layer.name} className="w-8 h-8 object-contain rounded bg-muted/50 p-0.5" />
                             )}
-                            <span className="text-sm truncate max-w-[150px]">{layer.name}</span>
+                            <span className="text-sm font-medium truncate flex-1">{layer.name}</span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeTextureLayer(layer.id)} className="h-8 w-8 text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                        <LayerControls layerId={layer.id} />
                     </div>
                 ))}
             </div>

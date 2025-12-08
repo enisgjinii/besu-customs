@@ -7,6 +7,7 @@ import { Trash2, Type } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { LayerControls } from "@/components/layer-controls";
 
 export function Step06Text() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
@@ -87,14 +88,15 @@ export function Step06Text() {
                     <p className="text-xs text-muted-foreground italic">No text added yet.</p>
                 )}
                 {textLayers.map((layer) => (
-                    <div key={layer.id} className="flex items-center justify-between p-2 rounded-md border bg-card">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <span className="text-sm truncate font-bold text-primary">T</span>
-                            <span className="text-sm truncate">{layer.name.replace("Text: ", "")}</span>
+                    <div key={layer.id} className="p-3 rounded-md border bg-card space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20">
+                                T
+                            </div>
+                            <span className="text-sm font-medium truncate flex-1">{layer.name.replace("Text: ", "")}</span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeTextureLayer(layer.id)} className="h-8 w-8 text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                        <LayerControls layerId={layer.id} />
                     </div>
                 ))}
             </div>

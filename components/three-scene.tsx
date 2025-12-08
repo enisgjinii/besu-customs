@@ -98,6 +98,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle);
+
+        if (layer.flipX) {
+          ctx.scale(-1, 1);
+        }
+
         ctx.drawImage(img, -width / 2, -height / 2, width, height);
         ctx.restore();
 
@@ -130,6 +135,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         const material = child.material as THREE.MeshStandardMaterial;
         material.map = texture;
         material.transparent = false; // Opaque to ensure visibility
+        material.side = THREE.DoubleSide; // Force Double Side
         material.needsUpdate = true;
       }
     });
@@ -293,19 +299,25 @@ function Model({
     if (!clonedScene || sections.length === 0) return;
 
     clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        // Try to find matching section by ID (child.uuid) or Name
-        // Assuming extractSections matched them previously
-        const section = sections.find(s => s.id === child.uuid || s.name === child.name);
+      if (child instanceof THREE.Mesh && child.material) {
+        // Handle both single and array materials
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
 
-        if (section && child.material) {
-          const mat = child.material as THREE.MeshStandardMaterial;
-          if (section.color) {
-            mat.color.set(section.color);
+        materials.forEach(mat => {
+          // Section ID is based on Material Name (from extractSectionsFromThreeModel)
+          // So we must match s.id === mat.name
+          const section = sections.find(s => s.id === mat.name);
+
+          if (section && mat instanceof THREE.MeshStandardMaterial) {
+            if (section.color) {
+              mat.color.set(section.color);
+            }
+            // IMPORTANT: Ensure transparent is false so color shows up on white texture
+            mat.transparent = false;
+            mat.side = THREE.DoubleSide;
+            mat.needsUpdate = true;
           }
-          // We ignore customTexture here because TextureCompositor handles it globally via maps
-          mat.needsUpdate = true;
-        }
+        });
       }
     });
   }, [clonedScene, sections]);
@@ -390,19 +402,10 @@ export function ThreeScene() {
       setModelUrl(null);
       return;
     }
-    setModelLoading(true);
+    // Direct load, skipping connection check optimization
+    setModelUrl(currentModelUrl);
     setModelError(null);
-
-    getBestModelUrl(currentModelUrl, 'auto')
-      .then(({ url, quality }) => {
-        console.log(`📦 Loading ${quality} quality: ${url}`);
-        setModelUrl(url);
-      })
-      .catch((error) => {
-        console.error("Failed to determine model URL:", error);
-        setModelUrl(currentModelUrl);
-      });
-  }, [currentModelUrl, setModelLoading, setModelError]);
+  }, [currentModelUrl, setModelError]);
 
   const handleModelLoad = useCallback(() => {
     setModelLoading(false);

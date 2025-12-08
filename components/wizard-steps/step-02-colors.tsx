@@ -89,10 +89,8 @@ export function Step02Colors() {
             </div>
 
             <div className="flex-1 flex flex-col gap-2 min-h-0">
-                <h2 className="text-sm font-semibold">Choose Color</h2>
-
                 <div className="flex-1 overflow-y-auto pr-2">
-                    <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-3 pb-4">
+                    <div className="grid grid-cols-7 sm:grid-cols-10 gap-2 pb-4 pt-1">
                         {PRESET_COLORS.map((color) => (
                             <button
                                 key={color}

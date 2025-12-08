@@ -90,6 +90,7 @@ export interface TextureLayer {
   position?: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
+  flipX?: boolean;
   targetMeshId?: string; // The specific mesh this layer is attached to
 }
 

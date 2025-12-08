@@ -137,7 +137,7 @@ export function ConfiguratorWizard() {
                 {/* Main Step Content */}
                 <div className="flex-1 overflow-hidden relative">
                     <ScrollArea className="h-full w-full">
-                        <div className="max-w-3xl mx-auto p-6">
+                        <div className="max-w-3xl mx-auto p-3 md:p-6">
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={currentStep}
