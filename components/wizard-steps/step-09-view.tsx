@@ -16,13 +16,16 @@ import { toast } from "sonner";
 
 export function Step09View() {
     const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+    const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
+
     const [format, setFormat] = useState<"png" | "svg" | "pdf" | "jpg">("png");
-    const [fileName, setFileName] = useState("my-custom-design");
+    const [fileName, setFileName] = useState("my-besu-design");
     const [isExporting, setIsExporting] = useState(false);
 
     const handleExportImage = async () => {
         setIsExporting(true);
         const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+
         if (!canvas) {
             toast.error("3D Canvas not found");
             setIsExporting(false);
@@ -30,17 +33,48 @@ export function Step09View() {
         }
 
         try {
-            // High quality export
-            const dataURL = canvas.toDataURL(`image/${format === 'jpg' ? 'jpeg' : format}`, 1.0);
+            // Force a render
+            const dataUrl = canvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 1.0);
 
-            const link = document.createElement("a");
-            link.download = `${fileName}.${format}`;
-            link.href = dataURL;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (format === 'pdf') {
+                // PDF Export: Open print window
+                const win = window.open('', '_blank');
+                if (win) {
+                    win.document.write(`
+                        <html>
+                            <head><title>${fileName}</title></head>
+                            <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh;">
+                                <img src="${dataUrl}" style="max-width:100%; max-height:100%; object-fit:contain; border: 1px solid #ccc"/>
+                                <script>
+                                    setTimeout(() => {
+                                        window.print();
+                                        window.close();
+                                    }, 500);
+                                </script>
+                            </body>
+                        </html>
+                    `);
+                    win.document.close();
+                    toast.success("Ready to Print/Save as PDF");
+                } else {
+                    toast.error("Popup blocked. Please allow popups.");
+                }
+            } else if (format === 'svg') {
+                // SVG Export: Embed PNG in SVG
+                const svgContent = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+                        <image href="${dataUrl}" x="0" y="0" width="${canvas.width}" height="${canvas.height}" />
+                    </svg>
+                `.trim();
+                const blob = new Blob([svgContent], { type: "image/svg+xml" });
+                const url = URL.createObjectURL(blob);
+                downloadFile(url, `${fileName}.svg`);
+            } else {
+                // PNG / JPG
+                downloadFile(dataUrl, `${fileName}.${format}`);
+            }
 
-            toast.success(`Exported as ${format.toUpperCase()}`);
+            if (format !== 'pdf') toast.success(`Exported as ${format.toUpperCase()}`);
         } catch (e) {
             console.error(e);
             toast.error("Export failed");
@@ -49,11 +83,49 @@ export function Step09View() {
         }
     };
 
+    const downloadFile = (url: string, name: string) => {
+        const link = document.createElement("a");
+        link.download = name;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleExportVideo = () => {
-        // This functionality existed in unified-sidebar, we can trigger it or reuse logic
-        // For now, toast placeholder as implementation requires MediaRecorder logic again
-        toast.info("Video export started (simulated)");
-        // TODO: Connect to existing video export logic from store or utils
+        const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+        if (!canvas) return;
+
+        toast.info("Recording video... (Please wait 5s)");
+        setIsExporting(true);
+        setAutoRotate(true); // Start rotation
+
+        const stream = canvas.captureStream(30); // 30 FPS
+        const chunks: BlobPart[] = [];
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+        recorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+            setAutoRotate(false); // Stop rotation
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+
+            // Convert to MP4 naming (container is usually WebM from browser, but .mp4 extension works for many players or requires conversion)
+            // Browsers primarily record WebM. We'll download as .webm and label it "Video".
+            downloadFile(url, `${fileName}.webm`);
+            toast.success("Video exported (WebM format)");
+            setIsExporting(false);
+        };
+
+        recorder.start();
+
+        // Record for 5 seconds (approx 1 full rotation usually)
+        setTimeout(() => {
+            recorder.stop();
+        }, 5000);
     };
 
     return (
@@ -63,6 +135,9 @@ export function Step09View() {
                 <p className="text-sm text-muted-foreground">
                     Review your design and export the final result.
                 </p>
+                <div className="p-4 bg-muted/20 border rounded-lg text-xs text-muted-foreground">
+                    ℹ️ <strong>Tip:</strong> Position the 3D model exactly how you want it before exporting.
+                </div>
             </div>
 
             <div className="space-y-4">
@@ -80,8 +155,8 @@ export function Step09View() {
                         <SelectContent>
                             <SelectItem value="png">PNG (High Quality)</SelectItem>
                             <SelectItem value="jpg">JPG (Small File)</SelectItem>
-                            <SelectItem value="svg">SVG (Vector - Experimental)</SelectItem>
-                            <SelectItem value="pdf">PDF (Document)</SelectItem>
+                            <SelectItem value="svg">SVG (Vector Wrapper)</SelectItem>
+                            <SelectItem value="pdf">PDF (Print Layout)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -89,17 +164,17 @@ export function Step09View() {
                 <div className="pt-4 space-y-3">
                     <Button className="w-full" size="lg" onClick={handleExportImage} disabled={isExporting}>
                         <Download className="w-4 h-4 mr-2" />
-                        {isExporting ? "Exporting..." : `Download ${format.toUpperCase()}`}
+                        {isExporting ? "Processing..." : `Download ${format.toUpperCase()}`}
                     </Button>
 
-                    <Button variant="outline" className="w-full" onClick={handleExportVideo}>
+                    <Button variant="outline" className="w-full" onClick={handleExportVideo} disabled={isExporting}>
                         <Video className="w-4 h-4 mr-2" />
-                        Download Video (MP4)
+                        {isExporting ? "Recording..." : "Record 360° Video"}
                     </Button>
 
                     <Button variant="ghost" className="w-full">
                         <Share2 className="w-4 h-4 mr-2" />
-                        Share Design
+                        Share Design Link
                     </Button>
                 </div>
             </div>

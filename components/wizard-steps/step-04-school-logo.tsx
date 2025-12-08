@@ -6,6 +6,7 @@ import { Upload, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { LayerControls } from "@/components/layer-controls";
 
 export function Step04SchoolLogo() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);

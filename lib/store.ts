@@ -1,7 +1,7 @@
-// Clean Zustand store for the configurator. Single, self-contained file.
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { Model } from "./models-service";
+import { idbStorage } from "./indexed-db-storage";
 
 // Animation types for model entrance
 export type EntranceAnimationType =
@@ -680,6 +680,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
     }),
     {
       name: 'besu-configurator-storage',
+      storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         // Only persist these specific fields
         textureLayers: state.textureLayers,
