@@ -7,7 +7,6 @@ import { useConfiguratorStore, TextureLayer, MaterialSection } from "@/lib/store
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
-import { ClearCacheButton } from "@/components/clear-cache-button";
 import { detectConnectionSpeed, getBestModelUrl, type LoadingProgress } from "@/lib/model-loader-optimized";
 import { extractSectionsFromThreeModel, applyMaterialsToThreeModel, extractUVMapFromThreeModel } from "@/lib/three-material-utils";
 import * as THREE from "three";
@@ -212,12 +211,12 @@ function Model({
       clonedScene.current.position.sub(boxCenter);
 
       const maxDim = Math.max(boxSize.x, boxSize.y, boxSize.z);
-      const targetSize = 4;
+      const targetSize = 5;
       const scale = maxDim > 0 ? targetSize / maxDim : 1;
       group.scale.setScalar(scale);
 
-      const cameraDistance = targetSize * 2;
-      camera.position.set(cameraDistance, cameraDistance * 0.5, cameraDistance);
+      const cameraDistance = targetSize * 1.0; // Tighter zoom (was 1.5)
+      camera.position.set(cameraDistance, cameraDistance * 0.4, cameraDistance); // Lower angle slightly
       camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
     }

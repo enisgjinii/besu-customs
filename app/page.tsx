@@ -1,10 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { UnifiedSidebar } from "@/components/unified-sidebar";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { ColorPickerModal } from "@/components/color-picker-modal";
-import { useState, useEffect } from "react";
+import { ConfiguratorHeader } from "@/components/configurator-header";
+import { ConfiguratorBottomBar } from "@/components/configurator-bottom-bar";
+import { useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
 // Dynamic import for Three.js Scene component
@@ -16,10 +15,10 @@ const Scene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center h-full bg-background">
+      <div className="flex items-center justify-center h-full bg-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-sm text-muted-foreground">Loading 3D viewer...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+          <p className="text-sm text-gray-500">Loading 3D viewer...</p>
         </div>
       </div>
     ),
@@ -27,166 +26,52 @@ const Scene = dynamic(
 );
 
 export default function Home() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const sections = useConfiguratorStore((state) => state.sections);
+  const setSelectedSection = useConfiguratorStore((state) => state.setSelectedSection);
 
-  const currentModelUrl = useConfiguratorStore(
-    (state) => state.currentModelUrl,
-  );
-  
-  // Mobile panel state from store
-  const mobilePanelOpen = useConfiguratorStore((state) => state.mobilePanelOpen);
-  const mobilePanelHeight = useConfiguratorStore((state) => state.mobilePanelHeight);
-
-  // Background color state
-  const backgroundColor = useConfiguratorStore((state) => state.backgroundColor);
-  const setBackgroundColor = useConfiguratorStore((state) => state.setBackgroundColor);
-
-  // Color picker handlers
-  const handleColorPickerOpen = () => setIsColorPickerOpen(true);
-  const handleColorPickerClose = () => setIsColorPickerOpen(false);
-  const handleApplyBackgroundColor = (color: string) => {
-    setBackgroundColor(color);
-    setIsColorPickerOpen(false);
-  };
-
-  // Section color picker (global)
-  const sectionColorPickerOpen = useConfiguratorStore((s) => s.sectionColorPickerOpen);
-  const sectionColorPickerSectionId = useConfiguratorStore((s) => s.sectionColorPickerSectionId);
-  const closeSectionColorPicker = useConfiguratorStore((s) => s.closeSectionColorPicker);
-  const updateSection = useConfiguratorStore((s) => s.updateSection);
-  const sections = useConfiguratorStore((s) => s.sections);
-  const recentColors = useConfiguratorStore((s) => s.recentColors);
-  const addRecentColor = useConfiguratorStore((s) => s.addRecentColor);
-
-  // Detect mobile device
+  // Auto-select first section when sections are loaded
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Toggle sidebar with 'B' key on desktop
-      if (e.key === "b" && !isMobile && !e.ctrlKey && !e.metaKey) {
-        const activeElement = document.activeElement;
-        if (activeElement?.tagName !== "INPUT" && activeElement?.tagName !== "TEXTAREA") {
-          setSidebarCollapsed((prev) => !prev);
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isMobile]);
-
-  // Prevent pull-to-refresh on mobile
-  useEffect(() => {
-    if (!isMobile) return;
-
-    const preventPullToRefresh = (e: TouchEvent) => {
-      // Only prevent if at top of page and pulling down
-      if (window.scrollY === 0 && e.touches[0].clientY > 0) {
-        const touch = e.touches[0];
-        if (touch.clientY > 10) {
-          // Allow some tolerance
-          return;
-        }
-      }
-    };
-
-    document.addEventListener("touchmove", preventPullToRefresh, { passive: false });
-    return () => document.removeEventListener("touchmove", preventPullToRefresh);
-  }, [isMobile]);
+    if (sections.length > 0 && !useConfiguratorStore.getState().selectedSectionId) {
+      setSelectedSection(sections[0].id);
+    }
+  }, [sections, setSelectedSection]);
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden overscroll-none">
-      {/* Desktop: Unified Left Sidebar */}
-      <div
-        className={`hidden md:block fixed top-4 left-4 z-40 transition-all duration-300 ${
-          sidebarCollapsed ? "w-[60px]" : "w-[420px]"
-        }`}
-      >
-        <UnifiedSidebar
-          sidebarOpen={!sidebarCollapsed}
-          onToggleSidebar={(open) => setSidebarCollapsed(!open)}
-          isColorPickerOpen={isColorPickerOpen}
-          onColorPickerOpen={handleColorPickerOpen}
-          onColorPickerClose={handleColorPickerClose}
-        />
-      </div>
+    <div className="h-screen w-screen bg-white overflow-hidden flex flex-col">
+      {/* Header - Fixed at top */}
+      <ConfiguratorHeader />
 
-      {/* Main 3D Viewer */}
+      {/* 3D Viewer - Full screen with padding for header/footer */}
       <main
-        className={`flex-1 relative min-w-0 transition-all duration-300 ease-out ${
-          // Desktop: account for sidebar width
-          sidebarCollapsed ? "md:pl-[80px]" : "md:pl-[440px]"
-        }`}
-        style={{ 
-          touchAction: 'none',
-          // Mobile: shift up when panel is open
-          ...(isMobile ? {
-            height: mobilePanelOpen 
-              ? `calc(100dvh - 72px - ${mobilePanelHeight}vh)` 
-              : 'calc(100dvh - 72px)',
-            transform: mobilePanelOpen 
-              ? `translateY(-${mobilePanelHeight * 0.3}vh)` 
-              : 'translateY(0)',
-            transition: 'transform 0.3s ease-out, height 0.3s ease-out',
-          } : {})
+        className="flex-1 relative"
+        style={{
+          paddingTop: '60px', // Header height
+          paddingBottom: '140px', // Bottom bar height
         }}
       >
         <Scene />
-        
-        {/* Mobile: Floating hint when no model selected */}
-        {isMobile && !currentModelUrl && !mobilePanelOpen && (
-          <div className="absolute bottom-6 left-6 right-6 pointer-events-none">
-            <div className="bg-card/98 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-lg animate-pulse-subtle">
-              <p className="text-base text-center font-medium text-foreground">
-                👇 Tap <span className="font-bold text-primary">Materials</span> to start
+
+        {/* Empty State Overlay */}
+        {!currentModelUrl && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: '60px', bottom: '140px' }}>
+            <div className="text-center px-8">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-black mb-2">Select a Product</h2>
+              <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                Choose a 3D model to start customizing your design
               </p>
             </div>
           </div>
         )}
       </main>
 
-      {/* Mobile: Bottom Navigation */}
-      <MobileBottomNav />
-
-      {/* Color Picker Modal - outside sidebar */}
-      <ColorPickerModal
-        isOpen={isColorPickerOpen}
-        onClose={handleColorPickerClose}
-        currentColor={backgroundColor}
-        onColorChange={handleApplyBackgroundColor}
-      />
-
-      {/* Section Color Picker Modal (global) */}
-      {sectionColorPickerOpen && sectionColorPickerSectionId && (
-        <ColorPickerModal
-          isOpen={sectionColorPickerOpen}
-          onClose={closeSectionColorPicker}
-          currentColor={
-            sections.find((s) => s.id === sectionColorPickerSectionId)?.color || "#000000"
-          }
-          onColorChange={(color: string) => {
-            updateSection(sectionColorPickerSectionId, { color });
-          }}
-          disabled={
-            !!sections.find((s) => s.id === sectionColorPickerSectionId)?.customTexture ||
-            !!sections.find((s) => s.id === sectionColorPickerSectionId)?.gradient?.enabled
-          }
-          recentColors={recentColors}
-          onAddRecentColor={addRecentColor}
-        />
-      )}
+      {/* Bottom Bar - Fixed at bottom */}
+      <ConfiguratorBottomBar />
     </div>
   );
 }
