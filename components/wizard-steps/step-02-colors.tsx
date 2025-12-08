@@ -55,14 +55,25 @@ export function Step02Colors() {
             <div className="flex-none space-y-1">
                 <div className="flex items-center justify-between">
                     <h2 className="text-sm font-semibold">Select Part</h2>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-[10px] text-muted-foreground hover:text-primary px-2"
-                        onClick={handleApplyToAll}
-                    >
-                        Apply Color to All
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] text-muted-foreground hover:text-primary px-2"
+                            onClick={handleApplyToAll}
+                        >
+                            Apply All
+                        </Button>
+                        <div className="h-3 w-px bg-border mx-1" />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] text-muted-foreground hover:text-destructive px-2"
+                            onClick={() => updateAllSections({ color: "#ffffff" })}
+                        >
+                            Unlink All
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Horizontal Section List */}

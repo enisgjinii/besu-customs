@@ -47,8 +47,9 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
   const deviceMemory = (navigator as any).deviceMemory || 4; // GB
   const hardwareConcurrency = navigator.hardwareConcurrency || 4;
   const connection = (navigator as any).connection;
-  const isSlowConnection = connection?.effectiveType === "2g" || connection?.effectiveType === "slow-2g";
-  
+  // User requested to remove slow connection checks to force high quality
+  const isSlowConnection = false;
+
   // Detect GPU capabilities (rough estimate)
   let gpuTier = "high";
   try {
@@ -71,21 +72,21 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
     // Ignore errors
   }
 
-  const isLowEndDevice = 
-    deviceMemory <= 2 || 
-    hardwareConcurrency <= 2 || 
+  const isLowEndDevice =
+    deviceMemory <= 2 ||
+    hardwareConcurrency <= 2 ||
     gpuTier === "low" ||
     isSlowConnection;
 
-  const isMediumDevice = 
-    deviceMemory <= 4 || 
-    hardwareConcurrency <= 4 || 
+  const isMediumDevice =
+    deviceMemory <= 4 ||
+    hardwareConcurrency <= 4 ||
     gpuTier === "medium";
 
   // Calculate optimal pixel ratio - allow higher ratios for better quality on capable devices
   const basePixelRatio = Math.min(window.devicePixelRatio || 1, 3); // Allow up to 3x for retina displays
   let pixelRatio = basePixelRatio;
-  
+
   if (isLowEndDevice) {
     pixelRatio = Math.min(basePixelRatio, 1.5); // Increased from 1 for better quality
   } else if (isMobile && !isTablet) {
@@ -116,16 +117,16 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
     return {
       isMobile: true,
       isLowEndDevice: false,
-      pixelRatio,
-      maxTextureSize: 2048,
-      uvCanvasSize: 2048,
-      antialias: true, // Enable for better edge quality
-      shadowsEnabled: false,
-      maxLights: 3, // Allow more lights for better lighting
+      pixelRatio: Math.min(pixelRatio, 2), // Cap at 2x for visual fidelity
+      maxTextureSize: 4096, // Allow high res textures
+      uvCanvasSize: 4096,
+      antialias: true,
+      shadowsEnabled: true, // Enable shadows for "High Quality" look
+      maxLights: 4,
       targetFPS: 60,
       debounceMs: 200,
-      enablePostProcessing: false,
-      hardwareScaling: 1.0, // Full resolution for sharp rendering
+      enablePostProcessing: true, // Enable post processing (Bloom etc)
+      hardwareScaling: 1.0,
     };
   }
 
@@ -230,7 +231,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
 // Check if device supports WebGL 2
 export function checkWebGL2Support(): boolean {
   if (typeof window === "undefined") return true;
-  
+
   try {
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl2");
@@ -244,10 +245,10 @@ export function checkWebGL2Support(): boolean {
 // Get recommended engine options based on device
 export function getEngineOptions(config: MobilePerformanceConfig) {
   // Use high-performance mode for non-low-end mobile devices for better quality
-  const powerPref = config.isLowEndDevice 
-    ? "low-power" 
-    : config.isMobile && !config.antialias 
-      ? "default" 
+  const powerPref = config.isLowEndDevice
+    ? "low-power"
+    : config.isMobile && !config.antialias
+      ? "default"
       : "high-performance";
 
   return {

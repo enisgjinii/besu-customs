@@ -34,13 +34,15 @@ const STEPS = [
 export function ConfiguratorWizard() {
     const [currentStep, setCurrentStep] = useState(1);
     const [isMobile, setIsMobile] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     // Store integration for View Locking
     const lockedView = useConfiguratorStore((s) => s.lockedView);
     const setLockedView = useConfiguratorStore((s) => s.setLockedView);
 
-    // Responsive check
+    // Responsive check and Mount check
     useEffect(() => {
+        setIsMounted(true);
         const checkMobile = () => setIsMobile(window.innerWidth < 1024); // lg breakpoint
         checkMobile();
         window.addEventListener("resize", checkMobile);
@@ -56,6 +58,9 @@ export function ConfiguratorWizard() {
     };
 
     const CurrentComponent = STEPS[currentStep - 1].component;
+
+    // Prevent hydration mismatch
+    if (!isMounted) return null;
 
     // Render View Lock Controls for relevant steps (Logo, Text, Images)
     // Step 4, 6, 7 benefit from locking view
