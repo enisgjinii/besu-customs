@@ -32,10 +32,10 @@ export function Step04SchoolLogo() {
                     blendMode: "normal",
                     order: textureLayers.length,
                     imageUrl: result,
-                    // Center in UV space
-                    position: [0.5, 0.5, 0],
+                    // Center in World Space (Average Front Vector for Decal)
+                    position: [0, 0, 1],
                     rotation: [0, 0, 0],
-                    scale: [0.3, 0.3, 0.3], // Reasonable default size
+                    scale: [0.3, 0.3, 1], // Z scale doesn't matter much for Decal
                 });
                 toast.success("Logo added to scene");
             };

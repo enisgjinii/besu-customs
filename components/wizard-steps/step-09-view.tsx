@@ -102,7 +102,13 @@ export function Step09View() {
 
         const stream = canvas.captureStream(30); // 30 FPS
         const chunks: BlobPart[] = [];
-        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const mimeType = MediaRecorder.isTypeSupported("video/mp4")
+            ? "video/mp4"
+            : "video/webm"; // Fallback
+
+        const extension = mimeType === "video/mp4" ? "mp4" : "webm";
+
+        const recorder = new MediaRecorder(stream, { mimeType });
 
         recorder.ondataavailable = (e) => {
             if (e.data.size > 0) chunks.push(e.data);
@@ -110,13 +116,17 @@ export function Step09View() {
 
         recorder.onstop = () => {
             setAutoRotate(false); // Stop rotation
-            const blob = new Blob(chunks, { type: 'video/webm' });
+            const blob = new Blob(chunks, { type: mimeType });
             const url = URL.createObjectURL(blob);
 
-            // Convert to MP4 naming (container is usually WebM from browser, but .mp4 extension works for many players or requires conversion)
-            // Browsers primarily record WebM. We'll download as .webm and label it "Video".
-            downloadFile(url, `${fileName}.webm`);
-            toast.success("Video exported (WebM format)");
+            downloadFile(url, `${fileName}.${extension}`);
+
+            if (extension === 'mp4') {
+                toast.success("Video exported as MP4");
+            } else {
+                toast.warning("MP4 not supported by this browser. Exported as WebM.");
+            }
+
             setIsExporting(false);
         };
 

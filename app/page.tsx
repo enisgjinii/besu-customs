@@ -39,16 +39,11 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
-      {/* Header - Fixed at top */}
-      <ConfiguratorHeader />
-
-      {/* 3D Viewer - Full screen with padding for header/footer */}
-      {/* 3D Viewer - Full screen with padding for header */}
-      {/* 3D Viewer - Full screen with padding for header */}
+      {/* 3D Viewer - Full screen */}
       <main
         className="flex-1 relative w-full h-full"
         style={{
-          paddingTop: '60px', // Header height
+          paddingTop: '0px',
           paddingBottom: '320px', // Reserve space for Bottom Wizard
         }}
       >

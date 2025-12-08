@@ -49,9 +49,9 @@ export function Step06Text() {
             blendMode: "normal",
             order: textureLayers.length,
             imageUrl: dataUrl,
-            position: [0, 0, 0.1],
+            position: [0, 0, 1], // Front Decal
             rotation: [0, 0, 0],
-            scale: [1, 1, 1],
+            scale: [0.5, 0.5, 1], // Larger text default
         });
 
         setTextInput("");

@@ -75,7 +75,7 @@ export interface MaterialSection {
 export interface TextureLayer {
   id: string;
   name: string;
-  type: "text" | "image";
+  type: "text" | "image" | "pattern";
   visible: boolean;
   locked: boolean;
   opacity: number;

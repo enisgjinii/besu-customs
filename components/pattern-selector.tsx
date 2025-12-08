@@ -49,7 +49,7 @@ export function PatternSelector({ onPatternSelect, className }: PatternSelectorP
     addTextureLayer({
       id: patternId,
       name: pattern.name,
-      type: 'image', // Pattern is an image layer
+      type: 'pattern', // Pattern is a texture map layer
       visible: true,
       locked: false,
       opacity: 0.8, // Slightly transparent to blend?

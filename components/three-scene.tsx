@@ -35,179 +35,100 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
   );
 }
 
-// UV Texture Compositor Component
+// UV Texture Compositor Component - RESTORED for Patterns
 function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
-  const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
+  // We only care about PATTERNS here
+  const patternLayers = textureLayers.filter(l => l.type === 'pattern');
+
   const [canvas] = useState(() => {
     const c = document.createElement('canvas');
-    c.width = 2048;
-    c.height = 2048;
+    c.width = 2048; c.height = 2048;
     return c;
   });
   const [texture] = useState(() => new THREE.CanvasTexture(canvas));
 
-  const selectedLayerRef = useRef<string | null>(null);
-  const isDraggingRef = useRef(false);
-
-  // 1. Compose layers onto the canvas whenever they change
   useEffect(() => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Fill background with white to ensure model takes base color (tinted)
-    // instead of being invisible if texture was transparent
+    // Fill white (neutral) - Color comes from Material.color
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Check if we have any layers
-    const activeLayers = textureLayers.filter(l => l.visible);
+    const activePatterns = patternLayers.filter(l => l.visible);
 
-    // Always update texture even if empty (to ensure white background)
-    texture.needsUpdate = true;
-
-    if (activeLayers.length === 0) {
+    if (activePatterns.length === 0) {
+      texture.needsUpdate = true;
       return;
     }
 
-    let imagesLoaded = 0;
-    activeLayers.forEach(layer => {
+    // Draw Patterns
+    activePatterns.forEach(layer => {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.src = layer.imageUrl!;
-
-      const draw = () => {
-        // Position is now UV coordinates (0-1)
-        const u = layer.position ? layer.position[0] : 0.5;
-        const v = layer.position ? layer.position[1] : 0.5;
-
-        const x = u * canvas.width;
-        // Invert V for canvas (0 at top) vs UV (0 at bottom)
-        const y = (1 - v) * canvas.height;
-
-        // Scale relative to canvas size
-        const scale = layer.scale ? layer.scale[0] : 0.3;
-        const width = canvas.width * scale;
-        const height = width * (img.height / img.width);
-
-        const angle = layer.rotation ? layer.rotation[2] : 0;
-
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-
-        if (layer.flipX) {
-          ctx.scale(-1, 1);
-        }
-
-        ctx.drawImage(img, -width / 2, -height / 2, width, height);
-        ctx.restore();
-
-        imagesLoaded++;
-        if (imagesLoaded === activeLayers.length) {
-          texture.needsUpdate = true;
-        }
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        texture.needsUpdate = true;
       };
-
-      img.onload = draw;
+      // Handle data uri sync load if needed
       if (img.complete && img.src.startsWith('data:')) {
-        draw();
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        texture.needsUpdate = true;
       }
     });
+    texture.needsUpdate = true;
 
-  }, [textureLayers, canvas, texture]);
+  }, [patternLayers, canvas, texture]);
 
-  // 2. Apply the dynamic texture to the model
+  // Apply Texture to Material
   useEffect(() => {
     if (!scene) return;
-
     texture.flipY = false;
-    texture.minFilter = THREE.LinearMipmapLinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.anisotropy = 16;
     texture.colorSpace = THREE.SRGBColorSpace;
+
+    const hasPattern = patternLayers.some(l => l.visible);
 
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
-        const material = child.material as THREE.MeshStandardMaterial;
-        material.map = texture;
-        material.transparent = false; // Opaque to ensure visibility
-        material.side = THREE.DoubleSide; // Force Double Side
-        material.needsUpdate = true;
+        const mat = child.material as THREE.MeshStandardMaterial;
+        if (hasPattern) {
+          mat.map = texture;
+        } else {
+          mat.map = null; // Clear map if no patterns
+        }
+        mat.needsUpdate = true;
       }
     });
-  }, [scene, texture]);
-
-  // 1. Texture Compositor Fix for Dragging
-  const { camera, raycaster, gl, controls } = useThree();
-
-  useEffect(() => {
-    const handlePointerDown = (e: PointerEvent) => {
-      // ... existing pointer down logic ...
-      const rect = gl.domElement.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
-
-      if (intersects.length > 0) {
-        const hit = intersects[0];
-        if (hit.uv) {
-          const layers = useConfiguratorStore.getState().textureLayers;
-          // Reverse check to pick topmost visible layer at this UV? 
-          // For now simple last-added logic:
-          if (layers.length > 0) {
-            const topLayer = layers[layers.length - 1];
-            selectedLayerRef.current = topLayer.id;
-            isDraggingRef.current = true;
-            if (controls) (controls as any).enabled = false; // Disable controls
-          }
-        }
-      }
-    };
-
-    const handlePointerMove = (e: PointerEvent) => {
-      if (!isDraggingRef.current || !selectedLayerRef.current) return;
-
-      const rect = gl.domElement.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
-
-      if (intersects.length > 0 && intersects[0].uv) {
-        const uv = intersects[0].uv;
-        updateTextureLayer(selectedLayerRef.current, {
-          position: [uv.x, uv.y, 0]
-        });
-      }
-    };
-
-    const handlePointerUp = () => {
-      if (isDraggingRef.current) {
-        isDraggingRef.current = false;
-        selectedLayerRef.current = null;
-        if (controls) (controls as any).enabled = true; // Re-enable controls
-      }
-    };
-
-    gl.domElement.addEventListener('pointerdown', handlePointerDown);
-    gl.domElement.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-
-    return () => {
-      gl.domElement.removeEventListener('pointerdown', handlePointerDown);
-      gl.domElement.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-  }, [scene, camera, gl, updateTextureLayer, controls]);
+  }, [scene, texture, patternLayers]);
 
   return null;
+}
+
+// Decal Component for individual layers
+// Decal Component for individual layers
+function LayerDecal({ layer }: { layer: TextureLayer }) {
+  const texture = useTexture(layer.imageUrl!);
+
+  // Basic Decal setup
+  return (
+    <Decal
+      position={new THREE.Vector3(...(layer.position || [0, 0, 1]))}
+      rotation={new THREE.Euler(...(layer.rotation || [0, 0, 0]))}
+      scale={new THREE.Vector3(...(layer.scale || [0.3, 0.3, 1]))}
+    >
+      <meshStandardMaterial
+        map={texture}
+        transparent
+        polygonOffset
+        polygonOffsetFactor={-1} // Ensure it sits on top
+        depthTest={true}
+        depthWrite={false}
+      />
+    </Decal>
+  );
 }
 
 // Camera View Lock Component
@@ -235,84 +156,73 @@ function CameraViewLock() {
   return null;
 }
 
-function Model({
-  url,
-  onLoad,
-  onError,
-  onSectionsExtracted,
-  onUVMapExtracted,
-}: {
-  url: string;
-  onLoad?: () => void;
-  onError?: (error: Error) => void;
-  onSectionsExtracted?: (sections: MaterialSection[]) => void;
-  onUVMapExtracted?: (uvMap: string | null) => void;
-}) {
-  const { scene } = useGLTF(url);
+function Model({ url, onLoad, onError, onSectionsExtracted }: any) {
+  const { scene } = useGLTF(url) as GLTF;
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
   const modelRef = useRef<THREE.Group>(null);
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
   const autoRotate = useConfiguratorStore((s) => s.autoRotate);
-  const sections = useConfiguratorStore((s) => s.sections); // Add sections subscription
-  const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
+  const sections = useConfiguratorStore((s) => s.sections);
+  const textureLayers = useConfiguratorStore((s) => s.textureLayers);
+  const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
+
   const perfConfig = useMobilePerformance();
 
-  // ... refs ...
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
-  const onUVMapExtractedRef = useRef(onUVMapExtracted);
   const onLoadRef = useRef(onLoad);
 
-  useEffect(() => {
-    onSectionsExtractedRef.current = onSectionsExtracted;
-    onUVMapExtractedRef.current = onUVMapExtracted;
-    onLoadRef.current = onLoad;
-  }, [onSectionsExtracted, onUVMapExtracted, onLoad]);
-
+  // Clone logic ... (simplified for this edit, assume similar to before)
   useEffect(() => {
     if (scene) {
-      // ... (existing clone logic) ...
       const cloned = scene.clone(true);
       const box = new THREE.Box3().setFromObject(cloned);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
       const scale = 5 / maxDim;
-
       cloned.position.sub(center.multiplyScalar(scale));
       cloned.scale.setScalar(scale);
 
       setClonedScene(cloned);
 
-      // ... extract sections ...
       setTimeout(() => {
-        if (cloned) {
-          const sections = extractSectionsFromThreeModel(cloned, url);
-          onSectionsExtractedRef.current?.(sections);
-          onLoadRef.current?.();
-        }
+        const extracted = extractSectionsFromThreeModel(cloned, url);
+        onSectionsExtractedRef.current?.(extracted);
+        onLoadRef.current?.();
+
+        // Ensure materials are ready for decals
+        cloned.traverse((node) => {
+          if ((node as THREE.Mesh).isMesh) {
+            const m = node as THREE.Mesh;
+            m.castShadow = true;
+            m.receiveShadow = true;
+            // Ensure unique materials for unique colors? clone materials?
+            // GLTF loader usually shares materials. Cloning scene clones materials? 
+            // Typically yes if strict, but let's ensure.
+          }
+        });
       }, 0);
     }
   }, [scene, url]);
 
-  // Sync Sections Colors to 3D Mesh Materials
+
+  // Sync Colors - Base Layer
   useEffect(() => {
     if (!clonedScene || sections.length === 0) return;
-
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
-        // Handle both single and array materials
         const materials = Array.isArray(child.material) ? child.material : [child.material];
-
         materials.forEach(mat => {
-          // Section ID is based on Material Name (from extractSectionsFromThreeModel)
-          // So we must match s.id === mat.name
           const section = sections.find(s => s.id === mat.name);
-
           if (section && mat instanceof THREE.MeshStandardMaterial) {
             if (section.color) {
               mat.color.set(section.color);
             }
-            // IMPORTANT: Ensure transparent is false so color shows up on white texture
+            // Remove map if we are using Decals, unless it's a specific pattern map? 
+            // For now, assume Decals replace the need for baked map for Images/Logos.
+            // If we have "Patterns", we might set map here. 
+            // But to fix "Color Over Image", we relying on Decals.
+            // mat.map = null; // Removed as patterns will use mat.map
             mat.transparent = false;
             mat.side = THREE.DoubleSide;
             mat.needsUpdate = true;
@@ -322,8 +232,98 @@ function Model({
     });
   }, [clonedScene, sections]);
 
-  // Legacy Global Texture logic (keep as fallback or remove if confusing)
-  // ...
+  // Interaction Logic (Raycasting)
+  const { camera, raycaster, gl, controls } = useThree();
+  const selectedLayerRef = useRef<string | null>(null);
+  const isDraggingRef = useRef(false);
+
+  // Dragging logic rewritten for Surface Point (Decal)
+  useEffect(() => {
+    // ... Pointer events ...
+    // If we consistently use Decals, we need to raycast against the MODEL meshes.
+    // And update the active layer's POSITION (x,y,z) and ROTATION/NORMAL.
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!clonedScene) return;
+      const rect = gl.domElement.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+
+      // Intersect with Decal meshes? 
+      // Actually, creating Decals creates Mesh objects. 
+      // We can check if we hit a decal?
+      // OR we interact with the "Controls" overlay.
+
+      // For simplicity: If we click on the model, move the SELECTED layer to that point?
+      // Or drag existing?
+
+      // Prioritize: Check if we hit an existing layer/decal?
+      // This is hard without specific refs.
+
+      // Simplified Interaction:
+      // If we hit the model, start dragging the LAST active layer (like before).
+      const intersects = raycaster.intersectObjects(clonedScene.children, true);
+      if (intersects.length > 0) {
+        // Logic: Pick the LAST added Image/Text layer (Decal)
+        // Ideally we check if we hit a Decal mesh specifically, but Decals are invisible containers usually
+        // Simplified: Just select the top-most layer if we click the model
+        const activeDecals = useConfiguratorStore.getState().textureLayers
+          .filter(l => l.type !== 'pattern' && l.visible);
+
+        if (activeDecals.length > 0) {
+          selectedLayerRef.current = activeDecals[activeDecals.length - 1].id;
+          isDraggingRef.current = true;
+          if (controls) (controls as any).enabled = false;
+        }
+      }
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!isDraggingRef.current || !selectedLayerRef.current) return;
+      if (!clonedScene) return;
+
+      const rect = gl.domElement.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+
+      const intersects = raycaster.intersectObject(clonedScene, true);
+      if (intersects.length > 0) {
+        const hit = intersects[0];
+        const pos = hit.point;
+        const normal = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0, 0, 1);
+
+        // Orient decal to potential normal
+        // Simple LookAt for rotation
+        const dummy = new THREE.Object3D();
+        dummy.position.copy(pos);
+        dummy.lookAt(pos.clone().add(normal));
+
+        updateTextureLayer(selectedLayerRef.current, {
+          position: [pos.x, pos.y, pos.z],
+          rotation: [dummy.rotation.x, dummy.rotation.y, dummy.rotation.z]
+        });
+      }
+    };
+
+    const handlePointerUp = () => {
+      isDraggingRef.current = false;
+      selectedLayerRef.current = null;
+      if (controls) (controls as any).enabled = true;
+    };
+
+    gl.domElement.addEventListener('pointerdown', handlePointerDown);
+    gl.domElement.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      gl.domElement.removeEventListener('pointerdown', handlePointerDown);
+      gl.domElement.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [clonedScene, camera, gl, updateTextureLayer, controls]);
 
   useFrame(() => {
     if (autoRotate && modelRef.current) {
@@ -331,15 +331,45 @@ function Model({
     }
   });
 
+  // Find the primary mesh to stick decals to (or stick to all?)
+  // Usually stick to the specific mesh that was hit. But for simplicity, stick to 'Body' if found, or first Mesh.
+  // Actually, we can just iterate layers and stick them to a "Target Mesh" if we saved it.
+  // If not, we scan children.
+
+  const meshes: THREE.Mesh[] = [];
+  if (clonedScene) {
+    clonedScene.traverse((child) => {
+      if (child instanceof THREE.Mesh) meshes.push(child);
+    });
+  }
+  // Use first mesh as default target for decals for now (fallback)
+  const targetMesh = meshes.length > 0 ? meshes[0] : null;
+
   return (
     <group ref={modelRef}>
       {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
       {clonedScene && <primitive object={clonedScene} />}
-      {/* Texture Compositor for Multi-layer drawing */}
+
+      {/* 1. Patterns via Texture Map (Base Layer) */}
       {clonedScene && <TextureCompositor scene={clonedScene} />}
+
+      {/* 2. Images/Logos via Decals (Overlay Layer - Untinted) */}
+      {targetMesh && textureLayers.map((layer) => (
+        layer.visible && layer.imageUrl && layer.type !== 'pattern' && (
+          <React.Fragment key={layer.id}>
+            {createPortal(
+              <LayerDecal layer={layer} />,
+              targetMesh
+            )}
+          </React.Fragment>
+        )
+      ))}
     </group>
   );
 }
+
+// ... rest of SceneSetup, CameraControlsHandler, ThreeScene ...
+
 
 // Scene setup component
 function SceneSetup() {
@@ -479,4 +509,4 @@ export function ThreeScene() {
 }
 
 // Preload
-useGLTF.preload;
+// useGLTF.preload(url); // Removed to prevent ReferenceError if url is undefined or method differs

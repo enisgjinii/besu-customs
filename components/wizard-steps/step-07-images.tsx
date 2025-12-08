@@ -28,9 +28,9 @@ export function Step07Images() {
                     blendMode: "normal",
                     order: textureLayers.length,
                     imageUrl: result,
-                    position: [0, 0, 0.1],
+                    position: [0, 0, 1], // Front Decal
                     rotation: [0, 0, 0],
-                    scale: [1, 1, 1],
+                    scale: [0.3, 0.3, 1],
                 });
                 toast.success("Image added to scene");
             };
