@@ -35,173 +35,190 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
   );
 }
 
-// Interactive Decal with drag/scale/rotate support
-function DraggableDecal({
-  layer,
-  isSelected,
-  onSelect,
-}: {
-  layer: TextureLayer;
-  isSelected?: boolean;
-  onSelect?: () => void;
-}) {
-  const texture = useTexture(layer.imageUrl!);
-  const meshRef = useRef<THREE.Mesh>(null);
-  const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
-  const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
-  const { controls } = useThree();
-
-  // Improve texture quality
-  useEffect(() => {
-    if (texture) {
-      texture.minFilter = THREE.LinearMipmapLinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      texture.anisotropy = 16;
-      texture.needsUpdate = true;
-    }
-  }, [texture]);
-
-  const onTransformEnd = () => {
-    if (meshRef.current) {
-      updateTextureLayer(layer.id, {
-        position: meshRef.current.position.toArray(),
-        rotation: meshRef.current.rotation.toArray().slice(0, 3) as [number, number, number],
-        scale: meshRef.current.scale.toArray(),
-      });
-    }
-  };
-
-  const handleClick = (e: any) => {
-    e.stopPropagation();
-    if (!isSelected) {
-      onSelect?.();
-      setMode('translate');
-    } else {
-      setMode((prev) => prev === 'translate' ? 'rotate' : prev === 'rotate' ? 'scale' : 'translate');
-    }
-  };
-
-  return (
-    <>
-      <Decal
-        ref={meshRef}
-        position={layer.position || [0, 0, 3.0]}
-        rotation={layer.rotation || [0, 0, 0]}
-        scale={layer.scale || [0.75, 0.75, 4.0]}
-        map={texture}
-        onClick={handleClick}
-      >
-        <meshStandardMaterial
-          transparent
-          polygonOffset
-          polygonOffsetFactor={-1}
-          map={texture}
-          toneMapped={false}
-          depthTest={true}
-          depthWrite={false}
-          opacity={isSelected ? 1 : 0.95}
-        />
-      </Decal>
-      {isSelected && meshRef.current && (
-        <TransformControls
-          object={meshRef.current}
-          mode={mode}
-          onMouseDown={() => { if (controls) (controls as any).enabled = false; }}
-          onMouseUp={() => { if (controls) (controls as any).enabled = true; onTransformEnd(); }}
-        />
-      )}
-    </>
-  );
-}
-
-// Decal Manager Component - using Portal to render inside target mesh
-function DecalManager({ scene }: { scene: THREE.Group }) {
+// UV Texture Compositor Component
+function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
-  const [targetMesh, setTargetMesh] = useState<THREE.Mesh | null>(null);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
+  const [canvas] = useState(() => {
+    const c = document.createElement('canvas');
+    c.width = 2048;
+    c.height = 2048;
+    return c;
+  });
+  const [texture] = useState(() => new THREE.CanvasTexture(canvas));
 
+  const selectedLayerRef = useRef<string | null>(null);
+  const isDraggingRef = useRef(false);
+
+  // 1. Compose layers onto the canvas whenever they change
   useEffect(() => {
-    if (!scene) return;
-    // Find the best mesh to attach decals to (largest by bounding sphere)
-    let maxRadius = 0;
-    let bestMesh: THREE.Mesh | null = null;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    scene.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.geometry) {
-        if (!child.geometry.boundingSphere) child.geometry.computeBoundingSphere();
-        const radius = child.geometry.boundingSphere?.radius || 0;
-        if (radius > maxRadius) {
-          maxRadius = radius;
-          bestMesh = child;
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Fill background with white to ensure model takes base color (tinted)
+    // instead of being invisible if texture was transparent
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Check if we have any layers
+    const activeLayers = textureLayers.filter(l => l.visible);
+
+    // Always update texture even if empty (to ensure white background)
+    texture.needsUpdate = true;
+
+    if (activeLayers.length === 0) {
+      return;
+    }
+
+    let imagesLoaded = 0;
+    activeLayers.forEach(layer => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = layer.imageUrl!;
+
+      const draw = () => {
+        // Position is now UV coordinates (0-1)
+        const u = layer.position ? layer.position[0] : 0.5;
+        const v = layer.position ? layer.position[1] : 0.5;
+
+        const x = u * canvas.width;
+        // Invert V for canvas (0 at top) vs UV (0 at bottom)
+        const y = (1 - v) * canvas.height;
+
+        // Scale relative to canvas size
+        const scale = layer.scale ? layer.scale[0] : 0.3;
+        const width = canvas.width * scale;
+        const height = width * (img.height / img.width);
+
+        const angle = layer.rotation ? layer.rotation[2] : 0;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.drawImage(img, -width / 2, -height / 2, width, height);
+        ctx.restore();
+
+        imagesLoaded++;
+        if (imagesLoaded === activeLayers.length) {
+          texture.needsUpdate = true;
         }
+      };
+
+      img.onload = draw;
+      if (img.complete && img.src.startsWith('data:')) {
+        draw();
       }
     });
 
-    if (bestMesh) setTargetMesh(bestMesh);
-  }, [scene]);
+  }, [textureLayers, canvas, texture]);
 
-  // If no mesh found, we can't project
-  if (!targetMesh) return <group />;
+  // 2. Apply the dynamic texture to the model
+  useEffect(() => {
+    if (!scene) return;
 
-  const decalLayers = textureLayers.filter(
-    (layer) => layer.type === "image" && layer.visible && layer.imageUrl
-  );
+    texture.flipY = false;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.anisotropy = 16;
+    texture.colorSpace = THREE.SRGBColorSpace;
 
-  return createPortal(
-    <>
-      {decalLayers.map((layer) => (
-        <Suspense key={layer.id} fallback={null}>
-          <DraggableDecal
-            layer={layer}
-            isSelected={layer.id === selectedLayerId}
-            onSelect={() => setSelectedLayerId(layer.id === selectedLayerId ? null : layer.id)}
-          />
-        </Suspense>
-      ))}
-    </>,
-    targetMesh
-  );
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material) {
+        const material = child.material as THREE.MeshStandardMaterial;
+        material.map = texture;
+        material.transparent = false; // Opaque to ensure visibility
+        material.needsUpdate = true;
+      }
+    });
+  }, [scene, texture]);
+
+  // 3. Handle 3D interaction (Raycasting to UV)
+  const { camera, raycaster, gl } = useThree();
+
+  useEffect(() => {
+    const handlePointerDown = (e: PointerEvent) => {
+      const rect = gl.domElement.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      if (intersects.length > 0) {
+        const hit = intersects[0];
+        if (hit.uv) {
+          const layers = useConfiguratorStore.getState().textureLayers;
+          if (layers.length > 0) {
+            const topLayer = layers[layers.length - 1];
+            selectedLayerRef.current = topLayer.id;
+            isDraggingRef.current = true;
+            // Disable orbit controls temporarily?
+          }
+        }
+      }
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!isDraggingRef.current || !selectedLayerRef.current) return;
+
+      const rect = gl.domElement.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      if (intersects.length > 0 && intersects[0].uv) {
+        const uv = intersects[0].uv;
+        updateTextureLayer(selectedLayerRef.current, {
+          position: [uv.x, uv.y, 0]
+        });
+      }
+    };
+
+    const handlePointerUp = () => {
+      isDraggingRef.current = false;
+      selectedLayerRef.current = null;
+    };
+
+    gl.domElement.addEventListener('pointerdown', handlePointerDown);
+    gl.domElement.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      gl.domElement.removeEventListener('pointerdown', handlePointerDown);
+      gl.domElement.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [scene, camera, gl, updateTextureLayer]);
+
+  return null;
 }
 
 // Camera View Lock Component
 function CameraViewLock() {
-  const lockedView = useConfiguratorStore((s) => s.lockedView);
   const { camera, controls } = useThree();
+  const lockedView = useConfiguratorStore((s) => s.lockedView);
 
   useEffect(() => {
-    if (!lockedView || !controls) return;
-
-    const orbitControls = controls as any; // OrbitControls type
-    const distance = 5;
-
-    // Position camera based on view
-    const positions: Record<string, [number, number, number]> = {
-      "Front": [0, 0, distance],
-      "Back": [0, 0, -distance],
-      "Left": [-distance, 0, 0],
-      "Right": [distance, 0, 0],
-      "Top": [0, distance, 0],
-      "Bottom": [0, -distance, 0],
-    };
-
-    const pos = positions[lockedView];
-    if (pos) {
-      camera.position.set(pos[0], pos[1], pos[2]);
-      camera.lookAt(0, 0, 0);
-
-      // Disable rotation when locked
-      if (orbitControls.enableRotate !== undefined) {
-        orbitControls.enableRotate = false;
+    if (lockedView && controls) {
+      if (typeof (controls as any).setAzimuthalAngle === 'function') {
+        const c = controls as any;
+        switch (lockedView) {
+          case 'Front': c.setAzimuthalAngle(0); c.setPolarAngle(Math.PI / 2); break;
+          case 'Back': c.setAzimuthalAngle(Math.PI); c.setPolarAngle(Math.PI / 2); break;
+          case 'Left': c.setAzimuthalAngle(-Math.PI / 2); c.setPolarAngle(Math.PI / 2); break;
+          case 'Right': c.setAzimuthalAngle(Math.PI / 2); c.setPolarAngle(Math.PI / 2); break;
+          case 'Top': c.setPolarAngle(0); break;
+          case 'Bottom': c.setPolarAngle(Math.PI); break;
+        }
+        c.update();
       }
     }
-
-    return () => {
-      // Re-enable rotation when unlocked
-      if (orbitControls.enableRotate !== undefined) {
-        orbitControls.enableRotate = true;
-      }
-    };
-  }, [lockedView, camera, controls]);
+  }, [lockedView, controls]);
 
   return null;
 }
@@ -220,12 +237,15 @@ function Model({
   onSectionsExtracted?: (sections: MaterialSection[]) => void;
   onUVMapExtracted?: (uvMap: string | null) => void;
 }) {
-  const { scene } = useGLTF(url) as GLTF & { scene: THREE.Group };
+  const { scene } = useGLTF(url);
+  const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
   const modelRef = useRef<THREE.Group>(null);
-  const { camera } = useThree();
-  const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null); // Changed from useRef to useState
+  const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
+  const autoRotate = useConfiguratorStore((s) => s.autoRotate);
+  const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
+  const perfConfig = useMobilePerformance();
 
-  // Use refs for callbacks to prevent setState during render issues
+  // Callbacks refs
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
   const onUVMapExtractedRef = useRef(onUVMapExtracted);
   const onLoadRef = useRef(onLoad);
@@ -236,76 +256,36 @@ function Model({
     onLoadRef.current = onLoad;
   }, [onSectionsExtracted, onUVMapExtracted, onLoad]);
 
-  const sections = useConfiguratorStore((s) => s.sections);
-  const autoRotate = useConfiguratorStore((s) => s.autoRotate);
-  const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
-  const globalCustomTexture = useConfiguratorStore((s) => s.globalCustomTexture);
-  const perfConfig = useMobilePerformance();
-
-  // Clone scene on first load
   useEffect(() => {
-    if (!scene) return;
-    const cloned = scene.clone(true);
-    setClonedScene(cloned);
+    if (scene) {
+      const cloned = scene.clone(true);
 
-    // Use setTimeout to defer state updates to next tick
-    setTimeout(() => {
-      if (cloned) {
-        const extractedSections = extractSectionsFromThreeModel(cloned, url);
-        onSectionsExtractedRef.current?.(extractedSections);
+      // Center and scale
+      const box = new THREE.Box3().setFromObject(cloned);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 5 / maxDim;
 
-        const uvMap = extractUVMapFromThreeModel(cloned, 2048, 2048);
-        onUVMapExtractedRef.current?.(uvMap);
-      }
-    }, 0);
+      cloned.position.sub(center.multiplyScalar(scale));
+      cloned.scale.setScalar(scale);
 
-    console.log("✅ Model cloned and sections extracted");
+      setClonedScene(cloned);
+
+      // Process model for sections if needed
+      setTimeout(() => {
+        if (cloned) {
+          const sections = extractSectionsFromThreeModel(cloned, url);
+          onSectionsExtractedRef.current?.(sections);
+          onLoadRef.current?.();
+        }
+      }, 0);
+    }
   }, [scene, url]);
 
-  // Center and scale model
-  useEffect(() => {
-    if (!modelRef.current || !clonedScene) return;
-
-    const group = modelRef.current;
-    group.position.set(0, 0, 0);
-    group.scale.set(1, 1, 1);
-    group.rotation.set(0, 0, 0);
-
-    while (group.children.length > 0) {
-      group.remove(group.children[0]);
-    }
-    group.add(clonedScene);
-    group.updateMatrixWorld(true);
-
-    const boundingBox = new THREE.Box3().setFromObject(group);
-    if (!boundingBox.isEmpty()) {
-      const boxCenter = new THREE.Vector3();
-      const boxSize = new THREE.Vector3();
-      boundingBox.getCenter(boxCenter);
-      boundingBox.getSize(boxSize);
-
-      clonedScene.position.sub(boxCenter);
-
-      const maxDim = Math.max(boxSize.x, boxSize.y, boxSize.z);
-      const targetSize = 5;
-      const scale = maxDim > 0 ? targetSize / maxDim : 1;
-      group.scale.setScalar(scale);
-
-      const cameraDistance = targetSize * 1.0; // Tighter zoom (was 1.5)
-      camera.position.set(cameraDistance, cameraDistance * 0.4, cameraDistance); // Lower angle slightly
-      camera.lookAt(0, 0, 0);
-      camera.updateProjectionMatrix();
-    }
-    onLoadRef.current?.();
-  }, [clonedScene, camera]);
-
-  // Apply materials
-  useEffect(() => {
-    if (!clonedScene || sections.length === 0) return;
-    applyMaterialsToThreeModel(clonedScene, sections);
-  }, [sections]);
-
-  // Apply global texture
+  // Handle Global Texture (single texture replacement)
+  // Logic mostly replaced by TextureCompositor if textureLayers are used
+  // But we keep this for backward compatibility or direct texture set
   useEffect(() => {
     if (!clonedScene || !globalCustomTexture) return;
     const loader = new THREE.TextureLoader();
@@ -316,24 +296,13 @@ function Model({
 
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
-        const materials = Array.isArray(child.material) ? child.material : [child.material];
-        materials.forEach((material) => {
-          if (material instanceof THREE.MeshStandardMaterial) {
-            const originalColor = material.color.clone();
-            material.map = texture;
-            material.color = originalColor;
-            if (originalColor.getHex() !== 0xffffff) {
-              material.emissive = originalColor.clone().multiplyScalar(0.15);
-            }
-            material.side = THREE.DoubleSide;
-            material.needsUpdate = true;
-          }
-        });
+        const material = child.material as THREE.MeshStandardMaterial;
+        material.map = texture;
+        material.needsUpdate = true;
       }
     });
-  }, [globalCustomTexture, perfConfig.isLowEndDevice]);
+  }, [globalCustomTexture, clonedScene, perfConfig]);
 
-  // Auto-rotation
   useFrame(() => {
     if (autoRotate && modelRef.current) {
       modelRef.current.rotation.y += 0.005;
@@ -343,8 +312,9 @@ function Model({
   return (
     <group ref={modelRef}>
       {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
-      {/* Multi-layer decal system for logos, text, images */}
-      {clonedScene && <DecalManager scene={clonedScene} />}
+      {clonedScene && <primitive object={clonedScene} />}
+      {/* Texture Compositor for Multi-layer drawing */}
+      {clonedScene && <TextureCompositor scene={clonedScene} />}
     </group>
   );
 }

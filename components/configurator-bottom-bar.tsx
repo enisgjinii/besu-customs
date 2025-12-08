@@ -81,18 +81,12 @@ export function ConfiguratorBottomBar() {
 
       const dataUrl = canvas.toDataURL('image/png');
 
-      // Determine position based on locked view
-      let pos: [number, number, number] = [0, 0, 3.0];
-      let rot: [number, number, number] = [0, 0, 0];
+      // Use UV coordinates for position (0-1)
+      // Default to center of texture map
+      const pos: [number, number, number] = [0.5, 0.5, 0];
+      const rot: [number, number, number] = [0, 0, 0];
 
-      if (lockedView === "Front") { pos = [0, 0, 3.0]; rot = [0, 0, 0]; }
-      else if (lockedView === "Back") { pos = [0, 0, -3.0]; rot = [0, Math.PI, 0]; }
-      else if (lockedView === "Left") { pos = [-3.0, 0, 0]; rot = [0, -Math.PI / 2, 0]; }
-      else if (lockedView === "Right") { pos = [3.0, 0, 0]; rot = [0, Math.PI / 2, 0]; }
-      else if (lockedView === "Top") { pos = [0, 3.0, 0]; rot = [-Math.PI / 2, 0, 0]; }
-      else if (lockedView === "Bottom") { pos = [0, -3.0, 0]; rot = [Math.PI / 2, 0, 0]; }
-
-      // Add as a positioned decal layer
+      // Add as a texture layer
       addTextureLayer({
         id: `text-${Date.now()}`,
         name: textInput,
@@ -105,7 +99,7 @@ export function ConfiguratorBottomBar() {
         imageUrl: dataUrl,
         position: pos,
         rotation: rot,
-        scale: [1.5, 0.5, 4.0], // Wide for text
+        scale: [0.3, 0.3, 1], // Relative to texture size
       });
       setTextInput("");
     }
@@ -152,18 +146,11 @@ export function ConfiguratorBottomBar() {
     (file: File) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        // Determine position based on locked view
-        let pos: [number, number, number] = [0, 0, 3.0];
-        let rot: [number, number, number] = [0, 0, 0];
+        // Use UV coordinates (0-1)
+        const pos: [number, number, number] = [0.5, 0.5, 0];
+        const rot: [number, number, number] = [0, 0, 0];
 
-        if (lockedView === "Front") { pos = [0, 0, 3.0]; rot = [0, 0, 0]; }
-        else if (lockedView === "Back") { pos = [0, 0, -3.0]; rot = [0, Math.PI, 0]; }
-        else if (lockedView === "Left") { pos = [-3.0, 0, 0]; rot = [0, -Math.PI / 2, 0]; }
-        else if (lockedView === "Right") { pos = [3.0, 0, 0]; rot = [0, Math.PI / 2, 0]; }
-        else if (lockedView === "Top") { pos = [0, 3.0, 0]; rot = [-Math.PI / 2, 0, 0]; }
-        else if (lockedView === "Bottom") { pos = [0, -3.0, 0]; rot = [Math.PI / 2, 0, 0]; }
-
-        // Add as a positioned decal layer
+        // Add as a texture layer
         addTextureLayer({
           id: `layer-${Date.now()}`,
           name: file.name,
@@ -176,12 +163,12 @@ export function ConfiguratorBottomBar() {
           imageUrl: e.target?.result as string,
           position: pos,
           rotation: rot,
-          scale: [1, 1, 4.0], // Square aspect for images
+          scale: [0.3, 0.3, 1],
         });
       };
       reader.readAsDataURL(file);
     },
-    [addTextureLayer, textureLayers.length, lockedView]
+    [addTextureLayer, textureLayers.length]
   );
 
   const selectedColorName = currentSection
