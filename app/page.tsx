@@ -38,7 +38,7 @@ export default function Home() {
   }, [sections, setSelectedSection]);
 
   return (
-    <div className="h-screen w-screen bg-white overflow-hidden flex flex-col">
+    <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
       {/* Header - Fixed at top */}
       <ConfiguratorHeader />
 
@@ -56,13 +56,13 @@ export default function Home() {
         {!currentModelUrl && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: '60px', bottom: '140px' }}>
             <div className="text-center px-8">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
                 <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-black mb-2">Select a Product</h2>
-              <p className="text-gray-500 text-sm max-w-xs mx-auto">
+              <h2 className="text-xl font-semibold text-black dark:text-white mb-2">Select a Product</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
                 Choose a 3D model to start customizing your design
               </p>
             </div>

@@ -45,6 +45,8 @@ export function ConfiguratorBottomBar() {
   const updateAllSections = useConfiguratorStore((s) => s.updateAllSections);
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
+  const clearTextureLayers = useConfiguratorStore((s) => s.clearTextureLayers);
+  const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture); // For full texture coverage
   const products = useConfiguratorStore((s) => s.products);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
   const setSelectedProduct = useConfiguratorStore((s) => s.setSelectedProduct);
@@ -56,6 +58,58 @@ export function ConfiguratorBottomBar() {
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [activeMode, setActiveMode] = useState<string>("colors");
+  const [textInput, setTextInput] = useState("");
+
+  const handleAddText = () => {
+    if (!textInput.trim()) return;
+
+    // Create a high-quality canvas for readable text
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // Transparent background
+      ctx.clearRect(0, 0, 1024, 512);
+
+      // Draw text in contrasting color
+      ctx.fillStyle = currentSection?.color && currentSection.color !== '#ffffff' ? '#ffffff' : '#000000';
+      ctx.font = 'bold 180px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(textInput, 512, 256);
+
+      const dataUrl = canvas.toDataURL('image/png');
+
+      // Determine position based on locked view
+      let pos: [number, number, number] = [0, 0, 3.0];
+      let rot: [number, number, number] = [0, 0, 0];
+
+      if (lockedView === "Front") { pos = [0, 0, 3.0]; rot = [0, 0, 0]; }
+      else if (lockedView === "Back") { pos = [0, 0, -3.0]; rot = [0, Math.PI, 0]; }
+      else if (lockedView === "Left") { pos = [-3.0, 0, 0]; rot = [0, -Math.PI / 2, 0]; }
+      else if (lockedView === "Right") { pos = [3.0, 0, 0]; rot = [0, Math.PI / 2, 0]; }
+      else if (lockedView === "Top") { pos = [0, 3.0, 0]; rot = [-Math.PI / 2, 0, 0]; }
+      else if (lockedView === "Bottom") { pos = [0, -3.0, 0]; rot = [Math.PI / 2, 0, 0]; }
+
+      // Add as a positioned decal layer
+      addTextureLayer({
+        id: `text-${Date.now()}`,
+        name: textInput,
+        type: "image",
+        visible: true,
+        locked: false,
+        opacity: 1,
+        blendMode: "normal",
+        order: textureLayers.length,
+        imageUrl: dataUrl,
+        position: pos,
+        rotation: rot,
+        scale: [1.5, 0.5, 4.0], // Wide for text
+      });
+      setTextInput("");
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -98,6 +152,18 @@ export function ConfiguratorBottomBar() {
     (file: File) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        // Determine position based on locked view
+        let pos: [number, number, number] = [0, 0, 3.0];
+        let rot: [number, number, number] = [0, 0, 0];
+
+        if (lockedView === "Front") { pos = [0, 0, 3.0]; rot = [0, 0, 0]; }
+        else if (lockedView === "Back") { pos = [0, 0, -3.0]; rot = [0, Math.PI, 0]; }
+        else if (lockedView === "Left") { pos = [-3.0, 0, 0]; rot = [0, -Math.PI / 2, 0]; }
+        else if (lockedView === "Right") { pos = [3.0, 0, 0]; rot = [0, Math.PI / 2, 0]; }
+        else if (lockedView === "Top") { pos = [0, 3.0, 0]; rot = [-Math.PI / 2, 0, 0]; }
+        else if (lockedView === "Bottom") { pos = [0, -3.0, 0]; rot = [Math.PI / 2, 0, 0]; }
+
+        // Add as a positioned decal layer
         addTextureLayer({
           id: `layer-${Date.now()}`,
           name: file.name,
@@ -108,14 +174,14 @@ export function ConfiguratorBottomBar() {
           blendMode: "normal",
           order: textureLayers.length,
           imageUrl: e.target?.result as string,
-          position: [0, 0, 0.5],
-          rotation: [0, 0, 0],
-          scale: [0.5, 0.5, 0.5],
+          position: pos,
+          rotation: rot,
+          scale: [1, 1, 4.0], // Square aspect for images
         });
       };
       reader.readAsDataURL(file);
     },
-    [addTextureLayer, textureLayers.length]
+    [addTextureLayer, textureLayers.length, lockedView]
   );
 
   const selectedColorName = currentSection
@@ -126,7 +192,7 @@ export function ConfiguratorBottomBar() {
 
   if (!mounted) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10 py-4 px-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-black/10 dark:border-white/10 py-4 px-4">
         <div className="text-center text-sm text-gray-400">Loading...</div>
       </div>
     );
@@ -137,10 +203,10 @@ export function ConfiguratorBottomBar() {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10 py-4 px-4"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-black/10 dark:border-white/10 py-4 px-4"
       >
         <div className="max-w-md mx-auto">
-          <p className="text-xs text-gray-500 mb-2 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">
             Select a product to start
           </p>
           <Select value={selectedProductId || ""} onValueChange={setSelectedProduct}>
@@ -164,10 +230,10 @@ export function ConfiguratorBottomBar() {
     <motion.div
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-black/10 dark:border-white/10"
     >
       {/* Mode Tabs */}
-      <div className="flex items-center justify-center gap-1 px-2 py-2 border-b border-black/5 bg-gray-50 overflow-x-auto">
+      <div className="flex items-center justify-center gap-1 px-2 py-2 border-b border-black/5 dark:border-white/5 bg-gray-50 dark:bg-gray-900 overflow-x-auto">
         {MODES.map((mode) => {
           const Icon = mode.icon;
           return (
@@ -177,8 +243,8 @@ export function ConfiguratorBottomBar() {
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveMode(mode.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${activeMode === mode.id
-                  ? "bg-black text-white"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-black"
+                ? "bg-black dark:bg-white text-white dark:text-black"
+                : "bg-white border border-gray-200 dark:border-gray-700 text-gray-600 hover:border-black"
                 }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -203,7 +269,7 @@ export function ConfiguratorBottomBar() {
           animate={{ height: "auto", opacity: 1 }}
           className="flex items-center justify-center gap-1 px-4 py-2 border-b border-black/5"
         >
-          <span className="text-xs text-gray-500 mr-2">Lock View:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">Lock View:</span>
           {VIEW_ANGLES.map((view) => (
             <motion.button
               key={view}
@@ -211,8 +277,8 @@ export function ConfiguratorBottomBar() {
               whileTap={{ scale: 0.9 }}
               onClick={() => setLockedView(lockedView === view ? null : view)}
               className={`w-6 h-6 rounded text-xs font-medium ${lockedView === view
-                  ? "bg-black text-white"
-                  : "bg-white border border-gray-200 text-gray-500"
+                ? "bg-black dark:bg-white text-white dark:text-black"
+                : "bg-white border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
                 }`}
             >
               {view[0]}
@@ -225,6 +291,25 @@ export function ConfiguratorBottomBar() {
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
+          )}
+
+          {/* Layer counter and Clear All button */}
+          {textureLayers.length > 0 && (
+            <>
+              <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {textureLayers.length} layer{textureLayers.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={() => {
+                  clearTextureLayers();
+                  setGlobalCustomTexture(null);
+                }}
+                className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Clear All
+              </button>
+            </>
           )}
         </motion.div>
       )}
@@ -281,9 +366,9 @@ export function ConfiguratorBottomBar() {
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleColorSelect(c.hex)}
                     className={`w-8 h-8 rounded-full border-2 ${currentSection?.color?.toLowerCase() ===
-                        c.hex.toLowerCase()
-                        ? "border-black ring-2 ring-black/20"
-                        : "border-gray-200"
+                      c.hex.toLowerCase()
+                      ? "border-black ring-2 ring-black/20"
+                      : "border-gray-200 dark:border-gray-700"
                       }`}
                     style={{ backgroundColor: c.hex }}
                     title={c.name}
@@ -291,7 +376,7 @@ export function ConfiguratorBottomBar() {
                 ))}
               </div>
               <div className="flex items-center justify-center gap-4 mt-3">
-                <span className="text-xs text-gray-500">{selectedColorName}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{selectedColorName}</span>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -299,7 +384,7 @@ export function ConfiguratorBottomBar() {
                     currentSection?.color &&
                     updateAllSections({ color: currentSection.color })
                   }
-                  className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-black text-white rounded-full"
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-black dark:bg-white text-white dark:text-black rounded-full"
                 >
                   <Layers className="w-3 h-3" /> Apply to All
                 </motion.button>
@@ -318,12 +403,12 @@ export function ConfiguratorBottomBar() {
             className="px-4 py-4"
           >
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                 {lockedView
                   ? `Upload logo to ${lockedView} view:`
                   : "Lock a view above first"}
               </p>
-              <label className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-black/80">
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-medium rounded-lg cursor-pointer hover:bg-black/80">
                 <Image className="w-4 h-4" />
                 Upload Logo
                 <input
@@ -354,7 +439,7 @@ export function ConfiguratorBottomBar() {
             transition={{ duration: 0.15 }}
             className="px-4 py-4"
           >
-            <p className="text-xs text-gray-500 text-center mb-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
               Choose a pattern:
             </p>
             <div className="grid grid-cols-4 gap-2">
@@ -372,7 +457,7 @@ export function ConfiguratorBottomBar() {
                   key={p}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-2 py-2 text-xs font-medium border border-gray-200 rounded-lg hover:border-black"
+                  className="px-2 py-2 text-xs font-medium border border-gray-200 dark:border-gray-700 rounded-lg hover:border-black"
                 >
                   {p}
                 </motion.button>
@@ -380,6 +465,8 @@ export function ConfiguratorBottomBar() {
             </div>
           </motion.div>
         )}
+
+        {/* ... rest of render ... */}
 
         {activeMode === "text" && (
           <motion.div
@@ -391,18 +478,21 @@ export function ConfiguratorBottomBar() {
             className="px-4 py-4"
           >
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                 {lockedView ? `Add text to ${lockedView}:` : "Lock a view above"}
               </p>
               <input
                 type="text"
                 placeholder="Enter your text..."
-                className="w-full max-w-xs px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black mb-2"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                className="w-full max-w-xs px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:border-black mb-2"
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg"
+                onClick={handleAddText}
+                className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-medium rounded-lg"
               >
                 Add Text
               </motion.button>
@@ -420,12 +510,12 @@ export function ConfiguratorBottomBar() {
             className="px-4 py-4"
           >
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                 {lockedView
                   ? `Upload image to ${lockedView}:`
                   : "Lock a view above"}
               </p>
-              <label className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-black/80">
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-medium rounded-lg cursor-pointer hover:bg-black/80">
                 <Image className="w-4 h-4" />
                 Upload Image
                 <input
@@ -450,7 +540,7 @@ export function ConfiguratorBottomBar() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-full left-0 right-0 bg-white border-t border-black/10 shadow-lg"
+            className="absolute bottom-full left-0 right-0 bg-white dark:bg-black border-t border-black/10 dark:border-white/10 shadow-lg"
           >
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
@@ -461,17 +551,17 @@ export function ConfiguratorBottomBar() {
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">
+                  <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                     File Name
                   </label>
                   <input
                     type="text"
                     placeholder="my-custom-design"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-2">
+                  <label className="text-xs text-gray-500 dark:text-gray-400 block mb-2">
                     Image Format
                   </label>
                   <div className="grid grid-cols-4 gap-2">

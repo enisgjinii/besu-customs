@@ -2,44 +2,15 @@
 
 import React, { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree, createPortal } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, useGLTF, Environment, useProgress, Decal, useTexture } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, useGLTF, Environment, Decal, useTexture, TransformControls } from "@react-three/drei";
 import { useConfiguratorStore, TextureLayer, MaterialSection } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
-import { detectConnectionSpeed, getBestModelUrl, type LoadingProgress } from "@/lib/model-loader-optimized";
+import { detectConnectionSpeed, getBestModelUrl } from "@/lib/model-loader-optimized";
 import { extractSectionsFromThreeModel, applyMaterialsToThreeModel, extractUVMapFromThreeModel } from "@/lib/three-material-utils";
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
-
-// Loading progress component
-function LoadingProgress({ onProgress }: { onProgress: (progress: LoadingProgress) => void }) {
-  const { progress, active } = useProgress();
-  const speed = detectConnectionSpeed();
-  const onProgressRef = useRef(onProgress);
-  const previousProgressRef = useRef<number>(-1);
-
-  useEffect(() => {
-    onProgressRef.current = onProgress;
-  }, [onProgress]);
-
-  useEffect(() => {
-    if (active && progress !== previousProgressRef.current) {
-      previousProgressRef.current = progress;
-      queueMicrotask(() => {
-        onProgressRef.current({
-          stage: progress < 50 ? 'loading-low' : 'loading-high',
-          percent: progress,
-          bytesLoaded: 0,
-          bytesTotal: 0,
-          connectionSpeed: speed,
-        });
-      });
-    }
-  }, [progress, active, speed]);
-
-  return null;
-}
 
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
@@ -77,6 +48,8 @@ function DraggableDecal({
   const texture = useTexture(layer.imageUrl!);
   const meshRef = useRef<THREE.Mesh>(null);
   const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
+  const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
+  const { controls } = useThree();
 
   // Improve texture quality
   useEffect(() => {
@@ -88,36 +61,56 @@ function DraggableDecal({
     }
   }, [texture]);
 
-  // Position, rotation, scale defaults  
-  const pos: [number, number, number] = layer.position || [0, 0, 0.5];
-  const rot: [number, number, number] = layer.rotation || [0, 0, 0];
-  const scl: [number, number, number] = layer.scale || [0.5, 0.5, 0.5];
+  const onTransformEnd = () => {
+    if (meshRef.current) {
+      updateTextureLayer(layer.id, {
+        position: meshRef.current.position.toArray(),
+        rotation: meshRef.current.rotation.toArray().slice(0, 3) as [number, number, number],
+        scale: meshRef.current.scale.toArray(),
+      });
+    }
+  };
 
   const handleClick = (e: any) => {
     e.stopPropagation();
-    onSelect?.();
+    if (!isSelected) {
+      onSelect?.();
+      setMode('translate');
+    } else {
+      setMode((prev) => prev === 'translate' ? 'rotate' : prev === 'rotate' ? 'scale' : 'translate');
+    }
   };
 
   return (
-    <Decal
-      ref={meshRef}
-      position={pos}
-      rotation={rot}
-      scale={scl}
-      map={texture}
-      onClick={handleClick}
-    >
-      <meshStandardMaterial
-        transparent
-        polygonOffset
-        polygonOffsetFactor={-1}
+    <>
+      <Decal
+        ref={meshRef}
+        position={layer.position || [0, 0, 3.0]}
+        rotation={layer.rotation || [0, 0, 0]}
+        scale={layer.scale || [0.75, 0.75, 4.0]}
         map={texture}
-        toneMapped={false}
-        depthTest={true}
-        depthWrite={false}
-        opacity={isSelected ? 1 : 0.95}
-      />
-    </Decal>
+        onClick={handleClick}
+      >
+        <meshStandardMaterial
+          transparent
+          polygonOffset
+          polygonOffsetFactor={-1}
+          map={texture}
+          toneMapped={false}
+          depthTest={true}
+          depthWrite={false}
+          opacity={isSelected ? 1 : 0.95}
+        />
+      </Decal>
+      {isSelected && meshRef.current && (
+        <TransformControls
+          object={meshRef.current}
+          mode={mode}
+          onMouseDown={() => { if (controls) (controls as any).enabled = false; }}
+          onMouseUp={() => { if (controls) (controls as any).enabled = true; onTransformEnd(); }}
+        />
+      )}
+    </>
   );
 }
 
@@ -230,7 +223,7 @@ function Model({
   const { scene } = useGLTF(url) as GLTF & { scene: THREE.Group };
   const modelRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
-  const clonedScene = useRef<THREE.Group | null>(null);
+  const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null); // Changed from useRef to useState
 
   // Use refs for callbacks to prevent setState during render issues
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
@@ -252,15 +245,16 @@ function Model({
   // Clone scene on first load
   useEffect(() => {
     if (!scene) return;
-    clonedScene.current = scene.clone(true);
+    const cloned = scene.clone(true);
+    setClonedScene(cloned);
 
     // Use setTimeout to defer state updates to next tick
     setTimeout(() => {
-      if (clonedScene.current) {
-        const extractedSections = extractSectionsFromThreeModel(clonedScene.current, url);
+      if (cloned) {
+        const extractedSections = extractSectionsFromThreeModel(cloned, url);
         onSectionsExtractedRef.current?.(extractedSections);
 
-        const uvMap = extractUVMapFromThreeModel(clonedScene.current, 2048, 2048);
+        const uvMap = extractUVMapFromThreeModel(cloned, 2048, 2048);
         onUVMapExtractedRef.current?.(uvMap);
       }
     }, 0);
@@ -270,7 +264,7 @@ function Model({
 
   // Center and scale model
   useEffect(() => {
-    if (!modelRef.current || !clonedScene.current) return;
+    if (!modelRef.current || !clonedScene) return;
 
     const group = modelRef.current;
     group.position.set(0, 0, 0);
@@ -280,7 +274,7 @@ function Model({
     while (group.children.length > 0) {
       group.remove(group.children[0]);
     }
-    group.add(clonedScene.current);
+    group.add(clonedScene);
     group.updateMatrixWorld(true);
 
     const boundingBox = new THREE.Box3().setFromObject(group);
@@ -290,7 +284,7 @@ function Model({
       boundingBox.getCenter(boxCenter);
       boundingBox.getSize(boxSize);
 
-      clonedScene.current.position.sub(boxCenter);
+      clonedScene.position.sub(boxCenter);
 
       const maxDim = Math.max(boxSize.x, boxSize.y, boxSize.z);
       const targetSize = 5;
@@ -303,24 +297,24 @@ function Model({
       camera.updateProjectionMatrix();
     }
     onLoadRef.current?.();
-  }, [scene, camera]);
+  }, [clonedScene, camera]);
 
   // Apply materials
   useEffect(() => {
-    if (!clonedScene.current || sections.length === 0) return;
-    applyMaterialsToThreeModel(clonedScene.current, sections);
+    if (!clonedScene || sections.length === 0) return;
+    applyMaterialsToThreeModel(clonedScene, sections);
   }, [sections]);
 
   // Apply global texture
   useEffect(() => {
-    if (!clonedScene.current || !globalCustomTexture) return;
+    if (!clonedScene || !globalCustomTexture) return;
     const loader = new THREE.TextureLoader();
     const texture = loader.load(globalCustomTexture);
     texture.flipY = false;
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = perfConfig.isLowEndDevice ? 4 : 16;
 
-    clonedScene.current.traverse((child) => {
+    clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         materials.forEach((material) => {
@@ -349,8 +343,8 @@ function Model({
   return (
     <group ref={modelRef}>
       {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
-      {/* Helper to render decals inside the cloned scene's main mesh */}
-      {clonedScene.current && <DecalManager scene={clonedScene.current} />}
+      {/* Multi-layer decal system for logos, text, images */}
+      {clonedScene && <DecalManager scene={clonedScene} />}
     </group>
   );
 }
@@ -400,7 +394,6 @@ function CameraControlsHandler() {
 // Main Three.js Scene Component
 export function ThreeScene() {
   const [initError, setInitError] = useState<string | null>(null);
-  const [loadingProgress, setLoadingProgress] = useState<LoadingProgress | null>(null);
   const [modelUrl, setModelUrl] = useState<string | null>(null);
 
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
@@ -419,13 +412,6 @@ export function ThreeScene() {
     }
     setModelLoading(true);
     setModelError(null);
-    setLoadingProgress({
-      stage: 'detecting',
-      percent: 0,
-      bytesLoaded: 0,
-      bytesTotal: 0,
-      connectionSpeed: detectConnectionSpeed(),
-    });
 
     getBestModelUrl(currentModelUrl, 'auto')
       .then(({ url, quality }) => {
@@ -440,27 +426,20 @@ export function ThreeScene() {
 
   const handleModelLoad = useCallback(() => {
     setModelLoading(false);
-    setLoadingProgress(null);
   }, [setModelLoading]);
 
   const handleModelError = useCallback((error: Error) => {
     setModelError(error.message);
     setModelLoading(false);
-    setLoadingProgress(null);
   }, [setModelError, setModelLoading]);
 
   const handleSectionsExtracted = useCallback((extractedSections: MaterialSection[]) => {
-    // Reuse logic for API fetching if needed, for now just set
     setSections(extractedSections);
   }, [setSections]);
 
   const handleUVMapExtracted = useCallback((uvMap: string | null) => {
     setCompleteUVMap(uvMap);
   }, [setCompleteUVMap]);
-
-  const handleProgress = useCallback((progress: LoadingProgress) => {
-    setLoadingProgress(progress);
-  }, []);
 
   // WebGL Check
   useEffect(() => {
@@ -484,7 +463,6 @@ export function ThreeScene() {
       >
         <SceneSetup />
         <CameraControlsHandler />
-        <LoadingProgress onProgress={handleProgress} />
 
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 10, 5]} intensity={1.2} />

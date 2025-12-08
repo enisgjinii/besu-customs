@@ -422,258 +422,273 @@ const loadActiveProducts = async (): Promise<Product[]> => {
   });
 };
 
-export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
-  products: initialProducts,
-  selectedProductId: null, // Start with no model selected
-  setProducts: (products: Product[]) => set({ products }),
-  refreshProducts: async () => {
-    try {
-      const activeProducts = await loadActiveProducts();
-      set({
-        products: activeProducts,
-        // Don't auto-select any model on refresh
-        selectedProductId: null,
-        currentModelUrl: null,
-      });
-    } catch (error) {
-      console.error("Failed to refresh products:", error);
-    }
-  },
-  setSelectedProduct: (id: string) => {
-    const product = get().products.find((p) => p.id === id) ?? null;
-    if (product?.modelUrl) {
-      // Optimistically set selection and model
-      set({ selectedProductId: id, currentModelUrl: product.modelUrl });
-
-      // Try to fetch precomputed material sections for this model
-      (async () => {
+export const useConfiguratorStore = create<ConfiguratorState>()(
+  persist(
+    (set, get) => ({
+      products: initialProducts,
+      selectedProductId: null, // Start with no model selected
+      setProducts: (products: Product[]) => set({ products }),
+      refreshProducts: async () => {
         try {
-          const resp = await fetch(
-            `/api/materials?model=${encodeURIComponent(product.modelUrl!)}`,
-          );
-          if (resp.ok) {
-            const json = await resp.json();
-            if (json?.sections) {
-              // Populate sections from precomputed file
-              set({ sections: json.sections });
-              return;
+          const activeProducts = await loadActiveProducts();
+          set({
+            products: activeProducts,
+            // Don't auto-select any model on refresh
+            selectedProductId: null,
+            currentModelUrl: null,
+          });
+        } catch (error) {
+          console.error("Failed to refresh products:", error);
+        }
+      },
+      setSelectedProduct: (id: string) => {
+        const product = get().products.find((p) => p.id === id) ?? null;
+        if (product?.modelUrl) {
+          // Optimistically set selection and model
+          set({ selectedProductId: id, currentModelUrl: product.modelUrl });
+
+          // Try to fetch precomputed material sections for this model
+          (async () => {
+            try {
+              const resp = await fetch(
+                `/api/materials?model=${encodeURIComponent(product.modelUrl!)}`,
+              );
+              if (resp.ok) {
+                const json = await resp.json();
+                if (json?.sections) {
+                  // Populate sections from precomputed file
+                  set({ sections: json.sections });
+                  return;
+                }
+              }
+            } catch {
+              // ignore and fall back to client extraction
             }
-          }
-        } catch {
-          // ignore and fall back to client extraction
+            // No precomputed sections — leave sections empty so ModelLoader will extract
+            set({ sections: [] });
+          })();
+        } else set({ selectedProductId: id });
+      },
+
+      currentModelUrl: null,
+      setCurrentModelUrl: (url: string | null) => set({ currentModelUrl: url }),
+
+      sections: [],
+      selectedSectionId: null,
+      highlightedSectionId: null,
+      linkedSections: new Set<string>(),
+      setSections: (sections: MaterialSection[]) => {
+        console.log("🏪 Store.setSections called:", {
+          count: sections.length,
+          withTextures: sections.filter((s) => s.customTexture).length,
+          sampleSection: sections[0]
+            ? {
+              id: sections[0].id,
+              name: sections[0].name,
+              hasTexture: !!sections[0].customTexture,
+              textureLength: sections[0].customTexture?.length || 0,
+            }
+            : null,
+        });
+        return set({ sections });
+      },
+      updateSection: (id: string, updates: Partial<MaterialSection>) =>
+        set((state) => {
+          const idsToUpdate = state.linkedSections.has(id)
+            ? [id, ...Array.from(state.linkedSections)]
+            : [id];
+
+          return {
+            sections: state.sections.map((s) =>
+              idsToUpdate.includes(s.id) ? { ...s, ...updates } : s,
+            ),
+          };
+        }),
+      updateAllSections: (updates: Partial<MaterialSection>) => {
+        set((state) => ({
+          sections: state.sections.map((s) => ({ ...s, ...updates })),
+        }));
+      },
+      setSelectedSection: (id: string | null) => set({ selectedSectionId: id }),
+      setHighlightedSection: (id: string | null) =>
+        set({ highlightedSectionId: id }),
+      toggleSectionLink: (sectionId: string) =>
+        set((state) => {
+          const newLinked = new Set(state.linkedSections);
+          if (newLinked.has(sectionId)) newLinked.delete(sectionId);
+          else newLinked.add(sectionId);
+          return { linkedSections: newLinked };
+        }),
+      clearSectionLinks: () => set({ linkedSections: new Set() }),
+
+      // Product updates
+      updateProduct: (id: string, updates: Partial<Product>) =>
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.id === id ? { ...p, ...updates } : p,
+          ),
+        })),
+
+      // UV map management
+      uvMaps: new Map<string, string>(),
+      setUVMap: (sectionId: string, uvMapUrl: string | null) =>
+        set((state) => {
+          const newMaps = new Map(state.uvMaps);
+          if (uvMapUrl === null) newMaps.delete(sectionId);
+          else newMaps.set(sectionId, uvMapUrl);
+          return { uvMaps: newMaps };
+        }),
+      completeUVMap: null,
+      setCompleteUVMap: (url: string | null) => set({ completeUVMap: url }),
+
+      // Global texture apply
+      globalCustomTexture: null,
+      setGlobalCustomTexture: (url: string | null) =>
+        set({ globalCustomTexture: url }),
+
+      currentStep: 0,
+      setStep: (step: number) => set({ currentStep: step }),
+
+      // Texture layers management
+      textureLayers: [],
+      addTextureLayer: (layer: TextureLayer) =>
+        set((state) => ({ textureLayers: [...state.textureLayers, layer] })),
+      updateTextureLayer: (id: string, updates: Partial<TextureLayer>) =>
+        set((state) => ({
+          textureLayers: state.textureLayers.map((layer) =>
+            layer.id === id ? { ...layer, ...updates } : layer,
+          ),
+        })),
+      removeTextureLayer: (id: string) =>
+        set((state) => ({
+          textureLayers: state.textureLayers.filter((layer) => layer.id !== id),
+        })),
+      reorderTextureLayers: (layers: TextureLayer[]) =>
+        set({ textureLayers: layers }),
+      clearTextureLayers: () => set({ textureLayers: [] }),
+
+      // Scene controls
+      showGrid: false,
+      toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+      showBoundingBox: false,
+      toggleBoundingBox: () => set((state) => ({ showBoundingBox: !state.showBoundingBox })),
+      backgroundColor: "#f0f0f0",
+      setBackgroundColor: (color: string) => set({ backgroundColor: color }),
+      backgroundImage: null,
+      setBackgroundImage: (image: string | null) => set({ backgroundImage: image }),
+      backgroundVideo: null,
+      setBackgroundVideo: (video: string | null) => set({ backgroundVideo: video }),
+      isVideoPlaying: false,
+      setIsVideoPlaying: (playing: boolean) => set({ isVideoPlaying: playing }),
+      cameraControlsRef: null,
+      setCameraControlsRef: (ref: unknown | null) =>
+        set({ cameraControlsRef: ref }),
+      autoRotate: false,
+      setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
+      lockedView: null,
+      setLockedView: (view: string | null) => set({ lockedView: view }),
+      glRef: null,
+      setGlRef: (ref: unknown | null) => set({ glRef: ref }),
+
+      // Fabric.js integration
+      fabricCanvas: null,
+      setFabricCanvas: (canvas: any | null) => set({ fabricCanvas: canvas }),
+      enable3DTextureInteraction: true,
+      setEnable3DTextureInteraction: (enabled: boolean) => set({ enable3DTextureInteraction: enabled }),
+
+      // Model loading
+      modelLoading: false,
+      setModelLoading: (loading: boolean) => set({ modelLoading: loading }),
+      modelError: null,
+      setModelError: (err: string | null) => set({ modelError: err }),
+
+      // Entrance Animation Settings
+      entranceAnimation: "zoomRotate" as EntranceAnimationType,
+      setEntranceAnimation: (animation: EntranceAnimationType) =>
+        set({ entranceAnimation: animation }),
+      enableEntranceAnimation: true,
+      setEnableEntranceAnimation: (enabled: boolean) =>
+        set({ enableEntranceAnimation: enabled }),
+
+      // Mobile panel state
+      mobilePanelOpen: false,
+      mobilePanelHeight: 0,
+      setMobilePanelOpen: (open: boolean) => set({ mobilePanelOpen: open }),
+      setMobilePanelHeight: (height: number) => set({ mobilePanelHeight: height }),
+
+      // Recent colors
+      recentColors: [],
+      addRecentColor: (color: string) =>
+        set((state) => ({
+          recentColors: [
+            color,
+            ...state.recentColors.filter(
+              (c) => c.toLowerCase() !== color.toLowerCase(),
+            ),
+          ].slice(0, 8),
+        })),
+
+      // Section color picker (global control so modal can render at top-level)
+      sectionColorPickerOpen: false,
+      sectionColorPickerSectionId: null,
+      openSectionColorPicker: (sectionId: string) =>
+        set({ sectionColorPickerOpen: true, sectionColorPickerSectionId: sectionId }),
+      closeSectionColorPicker: () =>
+        set({ sectionColorPickerOpen: false, sectionColorPickerSectionId: null }),
+
+      // Presets
+      presets: [],
+      savePreset: (name: string, camera?: CameraState) =>
+        set((state) => ({
+          presets: [
+            ...state.presets,
+            {
+              name,
+              sections: state.sections,
+              camera,
+              productId: state.selectedProductId,
+            },
+          ],
+        })),
+      loadPreset: (preset: {
+        name: string;
+        sections: MaterialSection[];
+        camera?: CameraState;
+      }) => set({ sections: preset.sections }),
+      deletePreset: (name: string) =>
+        set((state) => ({
+          presets: state.presets.filter((p) => p.name !== name),
+        })),
+      exportPreset: () => {
+        const state = get();
+        return JSON.stringify(
+          { sections: state.sections, productId: state.selectedProductId },
+          null,
+          2,
+        );
+      },
+      importPreset: (json: string) => {
+        try {
+          const data = JSON.parse(json);
+          if (data.sections) set({ sections: data.sections });
+        } catch (err) {
+          console.error("Failed to import preset:", err);
         }
-        // No precomputed sections — leave sections empty so ModelLoader will extract
-        set({ sections: [] });
-      })();
-    } else set({ selectedProductId: id });
-  },
-
-  currentModelUrl: null,
-  setCurrentModelUrl: (url: string | null) => set({ currentModelUrl: url }),
-
-  sections: [],
-  selectedSectionId: null,
-  highlightedSectionId: null,
-  linkedSections: new Set<string>(),
-  setSections: (sections: MaterialSection[]) => {
-    console.log("🏪 Store.setSections called:", {
-      count: sections.length,
-      withTextures: sections.filter((s) => s.customTexture).length,
-      sampleSection: sections[0]
-        ? {
-          id: sections[0].id,
-          name: sections[0].name,
-          hasTexture: !!sections[0].customTexture,
-          textureLength: sections[0].customTexture?.length || 0,
-        }
-        : null,
-    });
-    return set({ sections });
-  },
-  updateSection: (id: string, updates: Partial<MaterialSection>) =>
-    set((state) => {
-      const idsToUpdate = state.linkedSections.has(id)
-        ? [id, ...Array.from(state.linkedSections)]
-        : [id];
-
-      return {
-        sections: state.sections.map((s) =>
-          idsToUpdate.includes(s.id) ? { ...s, ...updates } : s,
-        ),
-      };
+      },
+      // ensure the store stays valid
     }),
-  updateAllSections: (updates: Partial<MaterialSection>) => {
-    set((state) => ({
-      sections: state.sections.map((s) => ({ ...s, ...updates })),
-    }));
-  },
-  setSelectedSection: (id: string | null) => set({ selectedSectionId: id }),
-  setHighlightedSection: (id: string | null) =>
-    set({ highlightedSectionId: id }),
-  toggleSectionLink: (sectionId: string) =>
-    set((state) => {
-      const newLinked = new Set(state.linkedSections);
-      if (newLinked.has(sectionId)) newLinked.delete(sectionId);
-      else newLinked.add(sectionId);
-      return { linkedSections: newLinked };
-    }),
-  clearSectionLinks: () => set({ linkedSections: new Set() }),
-
-  // Product updates
-  updateProduct: (id: string, updates: Partial<Product>) =>
-    set((state) => ({
-      products: state.products.map((p) =>
-        p.id === id ? { ...p, ...updates } : p,
-      ),
-    })),
-
-  // UV map management
-  uvMaps: new Map<string, string>(),
-  setUVMap: (sectionId: string, uvMapUrl: string | null) =>
-    set((state) => {
-      const newMaps = new Map(state.uvMaps);
-      if (uvMapUrl === null) newMaps.delete(sectionId);
-      else newMaps.set(sectionId, uvMapUrl);
-      return { uvMaps: newMaps };
-    }),
-  completeUVMap: null,
-  setCompleteUVMap: (url: string | null) => set({ completeUVMap: url }),
-
-  // Global texture apply
-  globalCustomTexture: null,
-  setGlobalCustomTexture: (url: string | null) =>
-    set({ globalCustomTexture: url }),
-
-  currentStep: 0,
-  setStep: (step: number) => set({ currentStep: step }),
-
-  // Texture layers management
-  textureLayers: [],
-  addTextureLayer: (layer: TextureLayer) =>
-    set((state) => ({ textureLayers: [...state.textureLayers, layer] })),
-  updateTextureLayer: (id: string, updates: Partial<TextureLayer>) =>
-    set((state) => ({
-      textureLayers: state.textureLayers.map((layer) =>
-        layer.id === id ? { ...layer, ...updates } : layer,
-      ),
-    })),
-  removeTextureLayer: (id: string) =>
-    set((state) => ({
-      textureLayers: state.textureLayers.filter((layer) => layer.id !== id),
-    })),
-  reorderTextureLayers: (layers: TextureLayer[]) =>
-    set({ textureLayers: layers }),
-  clearTextureLayers: () => set({ textureLayers: [] }),
-
-  // Scene controls
-  showGrid: false,
-  toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
-  showBoundingBox: false,
-  toggleBoundingBox: () => set((state) => ({ showBoundingBox: !state.showBoundingBox })),
-  backgroundColor: "#f0f0f0",
-  setBackgroundColor: (color: string) => set({ backgroundColor: color }),
-  backgroundImage: null,
-  setBackgroundImage: (image: string | null) => set({ backgroundImage: image }),
-  backgroundVideo: null,
-  setBackgroundVideo: (video: string | null) => set({ backgroundVideo: video }),
-  isVideoPlaying: false,
-  setIsVideoPlaying: (playing: boolean) => set({ isVideoPlaying: playing }),
-  cameraControlsRef: null,
-  setCameraControlsRef: (ref: unknown | null) =>
-    set({ cameraControlsRef: ref }),
-  autoRotate: false,
-  setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
-  lockedView: null,
-  setLockedView: (view: string | null) => set({ lockedView: view }),
-  glRef: null,
-  setGlRef: (ref: unknown | null) => set({ glRef: ref }),
-
-  // Fabric.js integration
-  fabricCanvas: null,
-  setFabricCanvas: (canvas: any | null) => set({ fabricCanvas: canvas }),
-  enable3DTextureInteraction: true,
-  setEnable3DTextureInteraction: (enabled: boolean) => set({ enable3DTextureInteraction: enabled }),
-
-  // Model loading
-  modelLoading: false,
-  setModelLoading: (loading: boolean) => set({ modelLoading: loading }),
-  modelError: null,
-  setModelError: (err: string | null) => set({ modelError: err }),
-
-  // Entrance Animation Settings
-  entranceAnimation: "zoomRotate" as EntranceAnimationType,
-  setEntranceAnimation: (animation: EntranceAnimationType) =>
-    set({ entranceAnimation: animation }),
-  enableEntranceAnimation: true,
-  setEnableEntranceAnimation: (enabled: boolean) =>
-    set({ enableEntranceAnimation: enabled }),
-
-  // Mobile panel state
-  mobilePanelOpen: false,
-  mobilePanelHeight: 0,
-  setMobilePanelOpen: (open: boolean) => set({ mobilePanelOpen: open }),
-  setMobilePanelHeight: (height: number) => set({ mobilePanelHeight: height }),
-
-  // Recent colors
-  recentColors: [],
-  addRecentColor: (color: string) =>
-    set((state) => ({
-      recentColors: [
-        color,
-        ...state.recentColors.filter(
-          (c) => c.toLowerCase() !== color.toLowerCase(),
-        ),
-      ].slice(0, 8),
-    })),
-
-  // Section color picker (global control so modal can render at top-level)
-  sectionColorPickerOpen: false,
-  sectionColorPickerSectionId: null,
-  openSectionColorPicker: (sectionId: string) =>
-    set({ sectionColorPickerOpen: true, sectionColorPickerSectionId: sectionId }),
-  closeSectionColorPicker: () =>
-    set({ sectionColorPickerOpen: false, sectionColorPickerSectionId: null }),
-
-  // Presets
-  presets: [],
-  savePreset: (name: string, camera?: CameraState) =>
-    set((state) => ({
-      presets: [
-        ...state.presets,
-        {
-          name,
-          sections: state.sections,
-          camera,
-          productId: state.selectedProductId,
-        },
-      ],
-    })),
-  loadPreset: (preset: {
-    name: string;
-    sections: MaterialSection[];
-    camera?: CameraState;
-  }) => set({ sections: preset.sections }),
-  deletePreset: (name: string) =>
-    set((state) => ({
-      presets: state.presets.filter((p) => p.name !== name),
-    })),
-  exportPreset: () => {
-    const state = get();
-    return JSON.stringify(
-      { sections: state.sections, productId: state.selectedProductId },
-      null,
-      2,
-    );
-  },
-  importPreset: (json: string) => {
-    try {
-      const data = JSON.parse(json);
-      if (data.sections) set({ sections: data.sections });
-    } catch (err) {
-      console.error("Failed to import preset:", err);
+    {
+      name: 'besu-configurator-storage',
+      partialize: (state) => ({
+        // Only persist these specific fields
+        textureLayers: state.textureLayers,
+        globalCustomTexture: state.globalCustomTexture,
+        sections: state.sections,
+        selectedProductId: state.selectedProductId,
+        currentModelUrl: state.currentModelUrl,
+      }),
     }
-  },
-  // ensure the store stays valid
-}));
+  )
+);
 
 export default useConfiguratorStore;
