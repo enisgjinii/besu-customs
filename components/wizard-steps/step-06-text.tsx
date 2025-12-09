@@ -15,50 +15,33 @@ export function Step06Text() {
     const removeTextureLayer = useConfiguratorStore((state) => state.removeTextureLayer);
 
     const [textInput, setTextInput] = useState("");
+    const [textColor, setTextColor] = useState("#000000");
 
     const handleAddText = () => {
         if (!textInput.trim()) return;
 
-        // Generate a simple text image via canvas
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        // High res canvas for sharp text
-        const fontSize = 100;
-        ctx.font = `bold ${fontSize}px Arial`;
-        const textMetrics = ctx.measureText(textInput);
-        canvas.width = textMetrics.width + 40; // padding
-        canvas.height = fontSize * 1.5;
-
-        // Redraw with correct size
-        ctx.font = `bold ${fontSize}px Arial`;
-        ctx.fillStyle = "black"; // Default black text
-        ctx.textBaseline = "middle";
-        ctx.fillText(textInput, 20, canvas.height / 2);
-
-        const dataUrl = canvas.toDataURL("image/png");
-
         addTextureLayer({
             id: uuidv4(),
             name: `Text: ${textInput}`,
-            type: "image", // Treat generated text as an image layer for decal
+            type: "text", // Dynamic text layer
             visible: true,
             locked: false,
             opacity: 1,
-            blendMode: "normal",
-            order: textureLayers.length,
-            imageUrl: dataUrl,
-            position: [0, 0, 1], // Front Decal
+            blendMode: "normal", // Usually normal for text
+            order: textureLayers.length + 1, // On top of patterns/logos
+            text: textInput,
+            textColor: textColor,
+            fontSize: 100, // Base font size relative to canvas 2048
+            position: [0.5, 0.5, 0], // Center UV
             rotation: [0, 0, 0],
-            scale: [0.5, 0.5, 1], // Larger text default
+            scale: [1, 1, 1],
         });
 
         setTextInput("");
         toast.success("Text added to scene");
     };
 
-    const textLayers = textureLayers.filter(l => l.name.startsWith("Text:"));
+    const textLayers = textureLayers.filter(l => l.type === "text" || l.name.startsWith("Text:"));
 
     return (
         <div className="space-y-6">
@@ -69,12 +52,20 @@ export function Step06Text() {
                 </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+                <input
+                    type="color"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="w-10 h-10 p-0 border rounded cursor-pointer"
+                    title="Text Color"
+                />
                 <Input
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="Enter text..."
                     onKeyDown={(e) => e.key === "Enter" && handleAddText()}
+                    className="flex-1"
                 />
                 <Button onClick={handleAddText}>
                     <Type className="w-4 h-4 mr-2" />
@@ -90,10 +81,10 @@ export function Step06Text() {
                 {textLayers.map((layer) => (
                     <div key={layer.id} className="p-3 rounded-md border bg-card space-y-3">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20">
+                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20" style={{ color: layer.textColor }}>
                                 T
                             </div>
-                            <span className="text-sm font-medium truncate flex-1">{layer.name.replace("Text: ", "")}</span>
+                            <span className="text-sm font-medium truncate flex-1">{layer.text || layer.name}</span>
                         </div>
 
                         <LayerControls layerId={layer.id} />

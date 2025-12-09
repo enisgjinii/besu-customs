@@ -31,41 +31,52 @@ export function PatternSelector({ onPatternSelect, className, lockedCategory }: 
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
 
   const applyPatternToCanvas = useCallback(async (pattern: Pattern) => {
-    // Add pattern as a background layer (Order 0)
-    // Remove existing pattern layer if any to avoid stacking multiple patterns
-    // Identify pattern layer by type='pattern' or user metadata
+    // Remove existing pattern layer if any to avoid stacking
+    const existingPatterns = textureLayers.filter(l => l.type === 'pattern');
+    // We can't batch remove easily with current store, but we can iterate.
+    // Ideally store has 'removeTextureLayers(ids[])'. 
+    // For now, we manually remove. Note: calling remove multiple times might trigger re-renders.
+    // Better: Add 'replaceTextureLayer' or just add new one with same ID? 
+    // No, ID should be unique.
 
-    // Logic: If there is already a layer with type='pattern', replace it or remove it.
-    // For now, let's just add it. The compositor renders in order.
-    // Ideally, we want one pattern layer.
+    // Let's use a fixed ID for the pattern layer? 
+    // If we use "global-pattern-layer" as ID, we can just update it or add it if missing?
+    // But 'addTextureLayer' generates a new entry.
+    // We need "upsert" or just check if exists.
 
-    // We can assume we want to Clear old patterns?
-    // Let's iterate and mark 'pattern' type.
-    // But TextureLayer interface might not have 'pattern' subtype. We used 'image'.
-    // We'll use 'image' and maybe a consistent ID prefix?
-    // Or we rely on 'order: 0'.
+    const PATTERN_LAYER_ID = "main-pattern-layer";
+    const existing = textureLayers.find(l => l.id === PATTERN_LAYER_ID);
 
-    const patternId = `pattern-${Date.now()}`;
-
-    addTextureLayer({
-      id: patternId,
-      name: pattern.name,
-      type: 'pattern', // Pattern is a texture map layer
-      visible: true,
-      locked: false,
-      opacity: 0.8, // Slightly transparent to blend?
-      blendMode: 'multiply', // Blend with base color
-      order: 0, // Always at bottom
-      imageUrl: pattern.thumbnail,
-      position: [0.5, 0.5, 0], // Center
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1], // Full coverage? We might need logic to 'tile' or 'stretch'.
-      // For SVGs in lib/patterns, they seem to be 100x100 squares. 
-      // We probably want to scale them up to cover the texture (2048x2048).
-      // Scale 20x?
-    });
-
-  }, [addTextureLayer]); // No fabricCanvas dependency
+    if (existing) {
+      // Update existing
+      useConfiguratorStore.getState().updateTextureLayer(PATTERN_LAYER_ID, {
+        name: pattern.name,
+        imageUrl: pattern.thumbnail,
+        // Reset transforms if needed? Or keep user edits?
+        // User says "patterns... cover the entire product".
+        // So we should probably reset to full coverage.
+        position: [0.5, 0.5, 0],
+        scale: [1, 1, 1],
+        rotation: [0, 0, 0]
+      });
+    } else {
+      // Create new
+      addTextureLayer({
+        id: PATTERN_LAYER_ID,
+        name: pattern.name,
+        type: 'pattern',
+        visible: true,
+        locked: false,
+        opacity: 0.9,
+        blendMode: 'multiply',
+        order: -1, // Ensure it is behind everything (Logos are usually order >= 0)
+        imageUrl: pattern.thumbnail,
+        position: [0.5, 0.5, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      });
+    }
+  }, [addTextureLayer, textureLayers]);
 
   const handlePatternClick = useCallback((pattern: Pattern) => {
     setSelectedPattern(pattern.id);

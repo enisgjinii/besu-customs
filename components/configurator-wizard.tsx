@@ -69,12 +69,12 @@ export function ConfiguratorWizard() {
     return (
         <div className={cn(
             "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 z-40 flex flex-col",
-            "h-[350px] lg:h-[350px]" // Fixed height for bottom bar style
+            "h-[350px]" // Fixed height for bottom bar style
         )}>
 
             {/* Header: Steps Indicator (Horizontal Scroll) */}
-            <div className="flex items-center justify-between px-6 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
-                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar mask-gradient w-full pr-4">
+            <div className="flex items-center justify-between px-3 md:px-6 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0 min-h-[44px]">
+                <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar mask-gradient w-full pr-4">
                     {STEPS.map((s, i) => (
                         <div
                             key={s.id}
@@ -98,12 +98,12 @@ export function ConfiguratorWizard() {
                 </div>
 
                 {/* Navigation Buttons (Top Right for easy access) */}
-                <div className="flex items-center gap-2 pl-4 border-l ml-auto flex-shrink-0">
-                    <Button variant="ghost" size="sm" onClick={handlePrev} disabled={currentStep === 1}>
+                <div className="flex items-center gap-1 md:gap-2 pl-2 md:pl-4 border-l ml-auto flex-shrink-0">
+                    <Button variant="ghost" size="sm" onClick={handlePrev} disabled={currentStep === 1} className="h-7 w-7 p-0 md:h-9 md:w-auto md:px-3">
                         <ChevronLeft className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" onClick={handleNext} disabled={currentStep === STEPS.length} className={cn(currentStep === STEPS.length && "bg-green-600")}>
-                        {currentStep === STEPS.length ? "Finish" : "Next"} <ChevronRight className="w-4 h-4" />
+                    <Button size="sm" onClick={handleNext} disabled={currentStep === STEPS.length} className={cn("h-7 text-xs px-2 md:h-9 md:text-sm md:px-4", currentStep === STEPS.length && "bg-green-600")}>
+                        {currentStep === STEPS.length ? "Finish" : "Next"} <ChevronRight className="w-3 h-3 md:w-4 md:h-4 ml-1" />
                     </Button>
                 </div>
             </div>
@@ -142,7 +142,7 @@ export function ConfiguratorWizard() {
                 {/* Main Step Content */}
                 <div className="flex-1 overflow-hidden relative">
                     <ScrollArea className="h-full w-full">
-                        <div className="max-w-3xl mx-auto p-3 md:p-6">
+                        <div className="max-w-3xl mx-auto p-2 md:p-6">
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={currentStep}

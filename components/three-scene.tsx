@@ -336,54 +336,48 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
   const selectedLayerRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
 
-  // Dragging logic rewritten for Surface Point (Decal)
-  useEffect(() => {
-    // ... Pointer events ...
-    // If we consistently use Decals, we need to raycast against the MODEL meshes.
-    // And update the active layer's POSITION (x,y,z) and ROTATION/NORMAL.
+  // Initial UV offset to allow dragging from the specific clicked point on the image
+  const dragOffsetRef = useRef<{ u: number, v: number }>({ u: 0, v: 0 });
 
+  useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
       if (!clonedScene) return;
+
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+      const intersects = raycaster.intersectObject(clonedScene, true);
 
-      // Intersect with Decal meshes? 
-      // Actually, creating Decals creates Mesh objects. 
-      // We can check if we hit a decal?
-      // OR we interact with the "Controls" overlay.
+      if (intersects.length > 0) {
+        // Find visible draggable layers (excluding patterns)
+        const activeLayers = useConfiguratorStore.getState().textureLayers
+          .filter(l => l.visible && l.type !== 'pattern');
 
-      // For simplicity: If we click on the model, move the SELECTED layer to that point?
-      // Or drag existing?
-
-      // Prioritize: Check if we hit an existing layer/decal?
-      // This is hard without specific refs.
-
-      // Simplified Interaction:
-      // If we hit the model, start dragging the LAST active layer (like before).
-      const intersects = raycaster.intersectObjects(clonedScene.children, true);
-
-      // Filter for Decals first
-      const decalHit = intersects.find((hit) => hit.object.userData?.isDecal && hit.object.userData?.layerId);
-
-      if (decalHit) {
-        // HIT SPECIFIC DECAL
-        selectedLayerRef.current = decalHit.object.userData.layerId;
-        isDraggingRef.current = true;
-        if (controls) (controls as any).enabled = false;
-        // Optionally bring to front?
-        // updateTextureLayer(decalHit.object.userData.layerId, { order: textureLayers.length });
-      } else if (intersects.length > 0) {
-        // Fallback: Click on body -> Pick Last Layer (if any exists)
-        // Only if we hit the body mesh
-        const activeDecals = useConfiguratorStore.getState().textureLayers
-          .filter(l => l.type !== 'pattern' && l.visible);
-
-        if (activeDecals.length > 0) {
-          selectedLayerRef.current = activeDecals[activeDecals.length - 1].id;
+        if (activeLayers.length > 0) {
+          // Select list's last layer (top-most)
+          const targetLayer = activeLayers[activeLayers.length - 1];
+          selectedLayerRef.current = targetLayer.id;
           isDraggingRef.current = true;
+
+          if (intersects[0].uv) {
+            // Calculate offset: ImageCenter - CursorHit
+            // This 'locks' the relative position of the cursor on the image
+            const currentU = targetLayer.position?.[0] ?? 0.5;
+            const currentV = targetLayer.position?.[1] ?? 0.5;
+            dragOffsetRef.current = {
+              u: currentU - intersects[0].uv.x,
+              // Flip Y: Invert V logic
+              // If dragging Down (UV increases) makes image move UP (V increases), we need to invert.
+              // Logic: newV = startV - (currentUV.y - startUV.y)
+              // So stored offset = startV + startUV.y
+              v: currentV + intersects[0].uv.y
+            };
+          } else {
+            dragOffsetRef.current = { u: 0, v: 0 };
+          }
+
           if (controls) (controls as any).enabled = false;
         }
       }
@@ -399,32 +393,18 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
 
       const intersects = raycaster.intersectObject(clonedScene, true);
-      if (intersects.length > 0) {
-        const hit = intersects[0];
-        const pos = hit.point.clone();
 
-        // Convert World Position to Model Local Position
-        // This ensures the decal sticks to the rotating model correctly
-        if (modelRef.current) {
-          modelRef.current.worldToLocal(pos);
-        }
+      if (intersects.length > 0 && intersects[0].uv) {
+        const uv = intersects[0].uv;
 
-        const worldNormal = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0, 0, 1);
-
-        // Transform normal to local space
-        const localNormal = worldNormal.clone();
-        if (modelRef.current) {
-          const inverseMatrix = new THREE.Matrix4().copy(modelRef.current.matrixWorld).invert();
-          localNormal.transformDirection(inverseMatrix);
-        }
-
-        const dummy = new THREE.Object3D();
-        dummy.position.copy(pos);
-        dummy.lookAt(pos.clone().add(localNormal));
+        // Absolute positioning with offset
+        // This ensures the image moves exactly with the cursor 1:1 in UV space
+        const newU = uv.x + dragOffsetRef.current.u;
+        // Flip Y: newV = offset - uv.y
+        const newV = dragOffsetRef.current.v - uv.y;
 
         updateTextureLayer(selectedLayerRef.current, {
-          position: [pos.x, pos.y, pos.z],
-          rotation: [dummy.rotation.x, dummy.rotation.y, dummy.rotation.z]
+          position: [newU, newV, 0]
         });
       }
     };
@@ -611,9 +591,27 @@ export function ThreeScene({
       </Canvas>
 
       {/* Overlays for Loading, Empty State, Error - simplified for brevity in this rewrite */}
+      {/* Overlays for Loading, Empty State, Error */}
       {modelLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
           <Spinner className="text-primary w-12 h-12" />
+        </div>
+      )}
+
+      {/* Empty State Overlay - Moved inside ThreeScene to ensure it respects loading */}
+      {!modelUrl && !modelLoading && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none pb-[320px]">
+          <div className="text-center px-8">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-black dark:text-white mb-2">Select a Product</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
+              Use the bottom bar to start customizing.
+            </p>
+          </div>
         </div>
       )}
     </div>
