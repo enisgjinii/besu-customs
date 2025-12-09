@@ -175,13 +175,26 @@ function CameraViewLock() {
   return null;
 }
 
-function Model({ url, onLoad, onError, onSectionsExtracted }: any) {
+function Model({ url, onLoad, onError, onSectionsExtracted, customSections, customAutoRotate }: {
+  url: string;
+  onLoad?: () => void;
+  onError?: (error: Error) => void;
+  onSectionsExtracted?: (sections: MaterialSection[]) => void;
+  onUVMapExtracted?: (uvMap: string | null) => void;
+  customSections?: MaterialSection[];
+  customAutoRotate?: boolean; // New prop for local override
+}) {
   const { scene } = useGLTF(url) as GLTF;
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
   const modelRef = useRef<THREE.Group>(null);
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
-  const autoRotate = useConfiguratorStore((s) => s.autoRotate);
-  const sections = useConfiguratorStore((s) => s.sections);
+  const storeAutoRotate = useConfiguratorStore((s) => s.autoRotate);
+  const storeSections = useConfiguratorStore((s) => s.sections);
+
+  // Use custom props if provided, otherwise fallback to store
+  const autoRotate = customAutoRotate !== undefined ? customAutoRotate : storeAutoRotate;
+  const sections = customSections || storeSections;
+
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
 
@@ -466,7 +479,13 @@ function CameraControlsHandler() {
 }
 
 // Main Three.js Scene Component
-export function ThreeScene() {
+export function ThreeScene({
+  customSections,
+  customAutoRotate
+}: {
+  customSections?: MaterialSection[];
+  customAutoRotate?: boolean;
+}) {
   const [initError, setInitError] = useState<string | null>(null);
   const [modelUrl, setModelUrl] = useState<string | null>(null);
 
@@ -543,6 +562,8 @@ export function ThreeScene() {
               onError={handleModelError}
               onSectionsExtracted={handleSectionsExtracted}
               onUVMapExtracted={handleUVMapExtracted}
+              customSections={customSections}
+              customAutoRotate={customAutoRotate}
             />
           </Suspense>
         )}

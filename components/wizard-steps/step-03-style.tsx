@@ -2,8 +2,9 @@
 
 import { useConfiguratorStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Box } from "lucide-react";
 import { useState } from "react";
+import { ThreeScene } from "../three-scene";
 
 // --- PRESET DATA ---
 const STYLE_PRESETS = [
@@ -26,7 +27,7 @@ function StylePreviewIcon({ colors, hasPattern }: { colors: Record<string, strin
     const cuffColor = colors["Cuffs"] || "#888888";
 
     return (
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3">
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3 pointer-events-none">
             <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md" preserveAspectRatio="xMidYMid meet">
                 <defs>
                     {hasPattern && (
@@ -58,9 +59,93 @@ function StylePreviewIcon({ colors, hasPattern }: { colors: Record<string, strin
     );
 }
 
+function StyleCard({
+    preset,
+    isSelected,
+    isHovered,
+    onSelect,
+    onHover,
+    onLeave
+}: {
+    preset: typeof STYLE_PRESETS[0];
+    isSelected: boolean;
+    isHovered: boolean;
+    onSelect: () => void;
+    onHover: () => void;
+    onLeave: () => void;
+}) {
+    // Get global sections to find the structure
+    const globalSections = useConfiguratorStore((s) => s.sections);
+
+    // Compute local sections for this specific card
+    const localSections = globalSections.map(section => {
+        let newColor = section.color;
+        Object.entries(preset.colors).some(([key, color]) => {
+            if (section.name.toLowerCase().includes(key.toLowerCase())) {
+                newColor = color;
+                return true;
+            }
+            return false;
+        });
+        return { ...section, color: newColor };
+    });
+
+    return (
+        <button
+            onClick={onSelect}
+            onMouseEnter={onHover}
+            onMouseLeave={onLeave}
+            className={cn(
+                "group relative flex flex-col rounded-xl overflow-hidden border bg-card transition-all hover:shadow-lg text-left h-full",
+                isSelected
+                    ? "border-primary ring-2 ring-primary ring-offset-2 scale-[1.02] shadow-xl z-10"
+                    : "border-border hover:border-primary/50"
+            )}
+        >
+            <div className="aspect-square w-full relative bg-gray-100 dark:bg-gray-900 overflow-hidden">
+                {/* Show 3D ONLY when hovered - prevents too many WebGL contexts */}
+                {isHovered ? (
+                    <div className="absolute inset-0 animate-in fade-in duration-300">
+                        <ThreeScene
+                            customSections={localSections.length > 0 ? localSections : undefined}
+                            customAutoRotate={true}
+                        />
+                    </div>
+                ) : (
+                    <StylePreviewIcon colors={preset.colors} hasPattern={!!preset.patternId} />
+                )}
+
+                {/* Selection Indicator */}
+                {isSelected && (
+                    <div className="absolute top-2 right-2 px-2 py-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full shadow-sm flex items-center gap-1 z-20">
+                        <Check className="w-3 h-3" />
+                        Active
+                    </div>
+                )}
+
+                {/* Hover hint for non-hovered cards */}
+                {!isHovered && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
+                            <Box className="w-3 h-3" />
+                            <span>View 3D</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="p-2.5 border-t mt-auto relative z-20 bg-card">
+                <h3 className="font-semibold text-sm truncate">{preset.name}</h3>
+                <p className="text-xs text-muted-foreground truncate">{preset.description}</p>
+            </div>
+        </button>
+    );
+}
+
 // --- MAIN COMPONENT ---
 export function Step03Style() {
     const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
+    const [hoveredStyle, setHoveredStyle] = useState<string | null>(null);
 
     const sections = useConfiguratorStore((s) => s.sections);
     const updateSection = useConfiguratorStore((s) => s.updateSection);
@@ -69,7 +154,6 @@ export function Step03Style() {
     const handleApplyStyle = (preset: typeof STYLE_PRESETS[0]) => {
         setSelectedStyle(preset.id);
 
-        // Track if Body color was applied to any section
         let bodyApplied = false;
         const bodyColor = preset.colors["Body"];
 
@@ -79,7 +163,6 @@ export function Step03Style() {
             if (key === "Body" && matchingSections.length > 0) bodyApplied = true;
         });
 
-        // Fallback: If no "Body" section found, apply body color to ALL sections
         if (!bodyApplied && bodyColor && sections.length > 0) {
             sections.forEach(s => updateSection(s.id, { color: bodyColor }));
         }
@@ -102,36 +185,20 @@ export function Step03Style() {
                     <Sparkles className="w-5 h-5 text-yellow-500" />
                     <h2 className="text-lg font-semibold">Step 3: Choose Your Style</h2>
                 </div>
-                <p className="text-sm text-muted-foreground">Select a color preset to apply to your design.</p>
+                <p className="text-sm text-muted-foreground">Hover over a card to preview it in 3D.</p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {STYLE_PRESETS.map((preset) => (
-                    <button
+                    <StyleCard
                         key={preset.id}
-                        onClick={() => handleApplyStyle(preset)}
-                        className={cn(
-                            "group relative flex flex-col rounded-xl overflow-hidden border bg-card transition-all hover:shadow-lg text-left",
-                            selectedStyle === preset.id
-                                ? "border-primary ring-2 ring-primary ring-offset-2"
-                                : "border-border hover:border-primary/50"
-                        )}
-                    >
-                        <div className="aspect-square w-full relative">
-                            <StylePreviewIcon colors={preset.colors} hasPattern={!!preset.patternId} />
-
-                            {selectedStyle === preset.id && (
-                                <div className="absolute top-2 right-2 px-2 py-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full shadow-sm flex items-center gap-1">
-                                    <Check className="w-3 h-3" />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-2.5 border-t">
-                            <h3 className="font-semibold text-sm truncate">{preset.name}</h3>
-                            <p className="text-xs text-muted-foreground truncate">{preset.description}</p>
-                        </div>
-                    </button>
+                        preset={preset}
+                        isSelected={selectedStyle === preset.id}
+                        isHovered={hoveredStyle === preset.id}
+                        onSelect={() => handleApplyStyle(preset)}
+                        onHover={() => setHoveredStyle(preset.id)}
+                        onLeave={() => setHoveredStyle(null)}
+                    />
                 ))}
             </div>
         </div>
