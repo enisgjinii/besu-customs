@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree, createPortal } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, useGLTF, Environment, Decal, useTexture, TransformControls, Center } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, useGLTF, Environment, TransformControls, Center } from "@react-three/drei";
 import { useConfiguratorStore, TextureLayer, MaterialSection } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
@@ -35,53 +35,155 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
   );
 }
 
-// UV Texture Compositor Component - RESTORED for Patterns
+// UV Texture Compositor Component - Handles ALL layer types (patterns, images, text)
 function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
-  // We only care about PATTERNS here
-  const patternLayers = textureLayers.filter(l => l.type === 'pattern');
+  const CANVAS_SIZE = 2048;
 
   const [canvas] = useState(() => {
     const c = document.createElement('canvas');
-    c.width = 2048; c.height = 2048;
+    c.width = CANVAS_SIZE;
+    c.height = CANVAS_SIZE;
     return c;
   });
   const [texture] = useState(() => new THREE.CanvasTexture(canvas));
 
+  // Track loaded images to avoid reloading
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+
   useEffect(() => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Fill white (neutral) - Color comes from Material.color
+    // Clear canvas with white (neutral for multiply blending with material color)
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-    const activePatterns = patternLayers.filter(l => l.visible);
+    // Get visible layers sorted by order
+    const visibleLayers = textureLayers
+      .filter(l => l.visible)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    if (activePatterns.length === 0) {
+    if (visibleLayers.length === 0) {
       texture.needsUpdate = true;
       return;
     }
 
-    // Draw Patterns
-    activePatterns.forEach(layer => {
+    // Process each layer
+    let pendingImages = 0;
+    let processedImages = 0;
+
+    const renderAllLayers = () => {
+      // Clear and re-render all layers in order
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+      visibleLayers.forEach(layer => {
+        ctx.save();
+
+        // Set opacity and blend mode
+        ctx.globalAlpha = layer.opacity ?? 1;
+        switch (layer.blendMode) {
+          case 'multiply': ctx.globalCompositeOperation = 'multiply'; break;
+          case 'screen': ctx.globalCompositeOperation = 'screen'; break;
+          case 'overlay': ctx.globalCompositeOperation = 'overlay'; break;
+          case 'add': ctx.globalCompositeOperation = 'lighter'; break;
+          default: ctx.globalCompositeOperation = 'source-over';
+        }
+
+        if (layer.type === 'pattern' && layer.imageUrl) {
+          // Pattern: Draw full canvas
+          const img = imageCache.current.get(layer.imageUrl);
+          if (img && img.complete) {
+            ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+          }
+        } else if (layer.type === 'image' && layer.imageUrl) {
+          // Image: Draw at UV position with scale
+          const img = imageCache.current.get(layer.imageUrl);
+          if (img && img.complete) {
+            const u = layer.position?.[0] ?? 0.5;
+            const v = layer.position?.[1] ?? 0.5;
+            const scaleX = layer.scale?.[0] ?? 0.3;
+            const scaleY = layer.scale?.[1] ?? 0.3;
+            const rotation = layer.rotation?.[2] ?? 0;
+
+            // Calculate pixel position (UV 0-1 to canvas coords)
+            const imgWidth = CANVAS_SIZE * scaleX;
+            const imgHeight = CANVAS_SIZE * scaleY;
+            const x = u * CANVAS_SIZE;
+            const y = (1 - v) * CANVAS_SIZE; // Flip V for canvas (top-left origin)
+
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            if (layer.flipX) ctx.scale(-1, 1);
+            ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+          }
+        } else if (layer.type === 'text' && layer.text) {
+          // Text: Render at UV position
+          const u = layer.position?.[0] ?? 0.5;
+          const v = layer.position?.[1] ?? 0.5;
+          const fontSize = (layer.fontSize ?? 48) * (CANVAS_SIZE / 512); // Scale font to canvas
+          const rotation = layer.rotation?.[2] ?? 0;
+
+          const x = u * CANVAS_SIZE;
+          const y = (1 - v) * CANVAS_SIZE;
+
+          ctx.translate(x, y);
+          ctx.rotate(rotation);
+          ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+          ctx.fillStyle = layer.textColor || '#000000';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(layer.text, 0, 0);
+        }
+
+        ctx.restore();
+      });
+
+      texture.needsUpdate = true;
+    };
+
+    // Load all images first
+    visibleLayers.forEach(layer => {
+      const url = layer.imageUrl;
+      if (!url) return;
+
+      if (imageCache.current.has(url)) {
+        const img = imageCache.current.get(url)!;
+        if (img.complete) return;
+      }
+
+      pendingImages++;
       const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = layer.imageUrl!;
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        texture.needsUpdate = true;
+        imageCache.current.set(url, img);
+        processedImages++;
+        if (processedImages >= pendingImages) {
+          renderAllLayers();
+        }
       };
-      // Handle data uri sync load if needed
-      if (img.complete && img.src.startsWith('data:')) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        texture.needsUpdate = true;
+      img.onerror = () => {
+        processedImages++;
+        if (processedImages >= pendingImages) {
+          renderAllLayers();
+        }
+      };
+      img.src = url;
+      imageCache.current.set(url, img);
+
+      // Handle data URIs that load synchronously
+      if (img.complete) {
+        processedImages++;
       }
     });
-    texture.needsUpdate = true;
 
-  }, [patternLayers, canvas, texture]);
+    // If no images to load, render immediately
+    if (pendingImages === 0 || processedImages >= pendingImages) {
+      renderAllLayers();
+    }
+
+  }, [textureLayers, canvas, texture]);
 
   // Apply Texture to Material
   useEffect(() => {
@@ -89,62 +191,27 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture.flipY = false;
     texture.colorSpace = THREE.SRGBColorSpace;
 
-    const hasPattern = patternLayers.some(l => l.visible);
+    const hasLayers = textureLayers.some(l => l.visible);
 
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
         const mat = child.material as THREE.MeshStandardMaterial;
-        if (hasPattern) {
+        if (hasLayers) {
           mat.map = texture;
         } else {
-          mat.map = null; // Clear map if no patterns
+          mat.map = null;
         }
         mat.needsUpdate = true;
       }
     });
-  }, [scene, texture, patternLayers]);
+  }, [scene, texture, textureLayers]);
 
   return null;
 }
 
-// Decal Component with userData for Raycasting
-function LayerDecal({ layer, targetMesh }: { layer: TextureLayer; targetMesh: THREE.Mesh }) {
-  const texture = useTexture(layer.imageUrl!);
-  const { gl } = useThree();
 
-  useEffect(() => {
-    if (texture) {
-      texture.anisotropy = gl.capabilities.getMaxAnisotropy();
-      texture.needsUpdate = true;
-    }
-  }, [texture, gl]);
+// CameraViewLock - Handles locked camera views
 
-  // Create a stable ref object for the Decal's mesh prop
-  const meshRef = useRef<THREE.Mesh>(targetMesh);
-  meshRef.current = targetMesh;
-
-  // Basic Decal setup
-  return (
-    <Decal
-      position={new THREE.Vector3(...(layer.position || [0, 0, 1]))}
-      rotation={new THREE.Euler(...(layer.rotation || [0, 0, 0]))}
-      scale={new THREE.Vector3(...(layer.scale || [0.3, 0.3, 1]))}
-      mesh={meshRef}
-    >
-      <meshStandardMaterial
-        map={texture}
-        transparent
-        polygonOffset
-        polygonOffsetFactor={-1 - (layer.order || 0)}
-        depthTest={true}
-        depthWrite={false}
-        userData={{ isDecal: true, layerId: layer.id }}
-      />
-    </Decal>
-  );
-}
-
-// ... (CameraViewLock is fine)
 
 // ...
 
@@ -385,28 +452,6 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
     }
   });
 
-  // Find the primary mesh to stick decals to
-  // Use LARGEST mesh by bounding box volume (main body, not accessories)
-  const meshes: THREE.Mesh[] = [];
-  if (clonedScene) {
-    clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh) meshes.push(child);
-    });
-  }
-
-  // Find largest mesh by bounding box volume
-  let targetMesh: THREE.Mesh | null = null;
-  let maxVolume = 0;
-  meshes.forEach((mesh) => {
-    const box = new THREE.Box3().setFromObject(mesh);
-    const size = box.getSize(new THREE.Vector3());
-    const volume = size.x * size.y * size.z;
-    if (volume > maxVolume) {
-      maxVolume = volume;
-      targetMesh = mesh;
-    }
-  });
-
   return (
     <group ref={modelRef}>
       {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
@@ -419,19 +464,13 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
       }}>
         {clonedScene && <primitive object={clonedScene} />}
 
-        {/* 1. Patterns via Texture Map (Base Layer) */}
+        {/* All texture layers (patterns, images, text) via UV Map */}
         {clonedScene && <TextureCompositor scene={clonedScene} />}
-
-        {/* 2. Images/Logos via Decals (Overlay Layer - Untinted) */}
-        {targetMesh && textureLayers.map((layer) => (
-          layer.visible && layer.imageUrl && layer.type !== 'pattern' && (
-            <LayerDecal key={layer.id} layer={layer} targetMesh={targetMesh!} />
-          )
-        ))}
       </Center>
     </group>
   );
 }
+
 
 // ... rest of SceneSetup, CameraControlsHandler, ThreeScene ...
 
