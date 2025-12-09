@@ -18,6 +18,10 @@ function parseMaterialName(name: string): string {
     "fabric_sleeve_r": "Right Sleeve",
     "collar_1": "Collar",
     "trim_neck": "Neck Trim",
+    "fabric 1": "Main Body",
+    "fabric_1": "Main Body",
+    "fabic 1": "Main Body",
+    "material": "Base",
   };
 
   const lowerName = name.toLowerCase();

@@ -11,6 +11,7 @@ import { detectConnectionSpeed, getBestModelUrl } from "@/lib/model-loader-optim
 import { extractSectionsFromThreeModel, applyMaterialsToThreeModel, extractUVMapFromThreeModel } from "@/lib/three-material-utils";
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
+import { Texture3DControls } from "@/components/texture-3d-controls";
 
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
@@ -339,8 +340,22 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
   // Initial UV offset to allow dragging from the specific clicked point on the image
   const dragOffsetRef = useRef<{ u: number, v: number }>({ u: 0, v: 0 });
 
+  // State for UI selection context
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [selectionPoint, setSelectionPoint] = useState<THREE.Vector3 | null>(null);
+
+  // Sync ref with state for UI
+  useEffect(() => {
+    if (!selectedLayerId) {
+      selectedLayerRef.current = null;
+    }
+  }, [selectedLayerId]);
+
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
+      // If clicking on HTML overlay, don't trigger 3D logic
+      if ((e.target as HTMLElement).closest('.texture-context-menu')) return;
+
       if (!clonedScene) return;
 
       const rect = gl.domElement.getBoundingClientRect();
@@ -356,31 +371,38 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
           .filter(l => l.visible && l.type !== 'pattern');
 
         if (activeLayers.length > 0) {
-          // Select list's last layer (top-most)
+          // Select list's last layer (top-most) - Simplified selection logic
+          // Ideally we check if UV matches layer position within bounds, but for now assuming top layer
           const targetLayer = activeLayers[activeLayers.length - 1];
-          selectedLayerRef.current = targetLayer.id;
-          isDraggingRef.current = true;
 
-          if (intersects[0].uv) {
-            // Calculate offset: ImageCenter - CursorHit
-            // This 'locks' the relative position of the cursor on the image
-            const currentU = targetLayer.position?.[0] ?? 0.5;
-            const currentV = targetLayer.position?.[1] ?? 0.5;
-            dragOffsetRef.current = {
-              u: currentU - intersects[0].uv.x,
-              // Flip Y: Invert V logic
-              // If dragging Down (UV increases) makes image move UP (V increases), we need to invert.
-              // Logic: newV = startV - (currentUV.y - startUV.y)
-              // So stored offset = startV + startUV.y
-              v: currentV + intersects[0].uv.y
-            };
-          } else {
-            dragOffsetRef.current = { u: 0, v: 0 };
+          if (targetLayer) {
+            selectedLayerRef.current = targetLayer.id;
+            setSelectedLayerId(targetLayer.id);
+            setSelectionPoint(intersects[0].point);
+
+            isDraggingRef.current = true;
+
+            if (intersects[0].uv) {
+              const currentU = targetLayer.position?.[0] ?? 0.5;
+              const currentV = targetLayer.position?.[1] ?? 0.5;
+              dragOffsetRef.current = {
+                u: currentU - intersects[0].uv.x,
+                v: currentV + intersects[0].uv.y
+              };
+            } else {
+              dragOffsetRef.current = { u: 0, v: 0 };
+            }
+
+            if (controls) (controls as any).enabled = false;
+            // Stop propagation to prevent clearing selection immediately
+            return;
           }
-
-          if (controls) (controls as any).enabled = false;
         }
       }
+
+      // If we clicked empty space or model with no layers, clear selection
+      setSelectedLayerId(null);
+      setSelectionPoint(null);
     };
 
     const handlePointerMove = (e: PointerEvent) => {
@@ -395,12 +417,11 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
       const intersects = raycaster.intersectObject(clonedScene, true);
 
       if (intersects.length > 0 && intersects[0].uv) {
-        const uv = intersects[0].uv;
+        // Update selection point to follow drag for menu position
+        setSelectionPoint(intersects[0].point);
 
-        // Absolute positioning with offset
-        // This ensures the image moves exactly with the cursor 1:1 in UV space
+        const uv = intersects[0].uv;
         const newU = uv.x + dragOffsetRef.current.u;
-        // Flip Y: newV = offset - uv.y
         const newV = dragOffsetRef.current.v - uv.y;
 
         updateTextureLayer(selectedLayerRef.current, {
@@ -411,7 +432,7 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
 
     const handlePointerUp = () => {
       isDraggingRef.current = false;
-      selectedLayerRef.current = null;
+      // Don't clear selectedLayerRef here to keep selection active for menu
       if (controls) (controls as any).enabled = true;
     };
 
@@ -437,15 +458,25 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
       {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
 
       <Center onCentered={(props) => {
-        // Optional: Scale model to fit a unit box if it's too huge/small?
-        // For now, just centering is enough to make (0,0,0) meaningful.
-        const { width, height, depth } = props;
-        // console.log("Model Dimensions:", width, height, depth);
+        // Optional centering logic
       }}>
         {clonedScene && <primitive object={clonedScene} />}
 
         {/* All texture layers (patterns, images, text) via UV Map */}
         {clonedScene && <TextureCompositor scene={clonedScene} />}
+
+        {/* 3D Controls for Selected Layer */}
+        {selectedLayerId && selectionPoint && (
+          <group position={selectionPoint}>
+            <Texture3DControls
+              layerId={selectedLayerId}
+              onClose={() => {
+                setSelectedLayerId(null);
+                selectedLayerRef.current = null;
+              }}
+            />
+          </group>
+        )}
       </Center>
     </group>
   );

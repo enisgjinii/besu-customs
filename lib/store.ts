@@ -147,6 +147,7 @@ export interface ConfiguratorState {
   addTextureLayer: (layer: TextureLayer) => void;
   updateTextureLayer: (id: string, updates: Partial<TextureLayer>) => void;
   removeTextureLayer: (id: string) => void;
+  duplicateTextureLayer: (id: string) => void;
   reorderTextureLayers: (layers: TextureLayer[]) => void;
   clearTextureLayers: () => void;
 
@@ -564,6 +565,31 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         set((state) => ({
           textureLayers: state.textureLayers.filter((layer) => layer.id !== id),
         })),
+      duplicateTextureLayer: (id: string) =>
+        set((state) => {
+          const layerToClone = state.textureLayers.find((l) => l.id === id);
+          if (!layerToClone) return {};
+
+          const newId = crypto.randomUUID();
+          const position: [number, number, number] = layerToClone.position
+            ? [...layerToClone.position]
+            : [0.5, 0.5, 0];
+
+          // Slight offset so it's visible it was duplicated
+          position[0] = Math.min(Math.max(position[0] + 0.05, 0), 1);
+          position[1] = Math.min(Math.max(position[1] + 0.05, 0), 1);
+
+          const newLayer: TextureLayer = {
+            ...layerToClone,
+            id: newId,
+            name: `${layerToClone.name} (Copy)`,
+            position,
+          };
+
+          return {
+            textureLayers: [...state.textureLayers, newLayer],
+          };
+        }),
       reorderTextureLayers: (layers: TextureLayer[]) =>
         set({ textureLayers: layers }),
       clearTextureLayers: () => set({ textureLayers: [] }),
