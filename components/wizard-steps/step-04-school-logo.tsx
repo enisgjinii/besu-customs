@@ -4,11 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Trash2 } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
-
 import { PatternSelector } from "@/components/pattern-selector";
 
 export function Step04SchoolLogo() {
@@ -17,6 +15,12 @@ export function Step04SchoolLogo() {
     const removeTextureLayer = useConfiguratorStore((state) => state.removeTextureLayer);
 
     const updateTextureLayer = useConfiguratorStore((state) => state.updateTextureLayer);
+
+    // Preset position for school logos - left chest area
+    const SCHOOL_LOGO_PRESET = {
+        position: [0.0676, 0.3833, 0] as [number, number, number],
+        scale: [0.15, 0.15, 1] as [number, number, number],
+    };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -34,12 +38,12 @@ export function Step04SchoolLogo() {
                     blendMode: "normal",
                     order: textureLayers.length,
                     imageUrl: result,
-                    // Center in World Space (Average Front Vector for Decal)
-                    position: [0, 0, 1],
+                    // Auto-position at left chest for school logos
+                    position: SCHOOL_LOGO_PRESET.position,
                     rotation: [0, 0, 0],
-                    scale: [0.3, 0.3, 1],
+                    scale: SCHOOL_LOGO_PRESET.scale,
                 });
-                toast.success("Logo added to scene");
+                toast.success("Logo added at chest position");
             };
             reader.readAsDataURL(file);
         }

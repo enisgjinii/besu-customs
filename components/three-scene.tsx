@@ -421,6 +421,23 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
     };
 
     const handlePointerUp = () => {
+      // Log final position when dropping a layer - useful for capturing coordinates
+      if (selectedLayerRef.current) {
+        const layer = useConfiguratorStore.getState().textureLayers.find(
+          l => l.id === selectedLayerRef.current
+        );
+        if (layer) {
+          console.log('📍 LAYER POSITION:', {
+            name: layer.name,
+            type: layer.type,
+            position: layer.position,
+            scale: layer.scale,
+            rotation: layer.rotation,
+            // Copy-paste ready format:
+            preset: `{ position: [${layer.position?.[0]?.toFixed(4)}, ${layer.position?.[1]?.toFixed(4)}, 0], scale: [${layer.scale?.[0]?.toFixed(2)}, ${layer.scale?.[1]?.toFixed(2)}, 1] }`
+          });
+        }
+      }
       isDraggingRef.current = false;
       selectedLayerRef.current = null;
       if (controls) (controls as any).enabled = true;

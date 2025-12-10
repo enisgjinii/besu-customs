@@ -30,51 +30,80 @@ export function PatternSelector({ onPatternSelect, className, lockedCategory }: 
   const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
 
+  // Preset positions for school logos on different garment areas
+  // These coordinates were captured from manual positioning
+  const SCHOOL_LOGO_PRESET = {
+    // Left chest position - standard for school uniforms
+    position: [0.0676, 0.3833, 0] as [number, number, number],
+    scale: [0.15, 0.15, 1] as [number, number, number],
+    rotation: [0, 0, 0] as [number, number, number],
+  };
+
   const applyPatternToCanvas = useCallback(async (pattern: Pattern) => {
-    // Remove existing pattern layer if any to avoid stacking
-    const existingPatterns = textureLayers.filter(l => l.type === 'pattern');
-    // We can't batch remove easily with current store, but we can iterate.
-    // Ideally store has 'removeTextureLayers(ids[])'. 
-    // For now, we manually remove. Note: calling remove multiple times might trigger re-renders.
-    // Better: Add 'replaceTextureLayer' or just add new one with same ID? 
-    // No, ID should be unique.
-
-    // Let's use a fixed ID for the pattern layer? 
-    // If we use "global-pattern-layer" as ID, we can just update it or add it if missing?
-    // But 'addTextureLayer' generates a new entry.
-    // We need "upsert" or just check if exists.
-
-    const PATTERN_LAYER_ID = "main-pattern-layer";
-    const existing = textureLayers.find(l => l.id === PATTERN_LAYER_ID);
-
-    if (existing) {
-      // Update existing
-      useConfiguratorStore.getState().updateTextureLayer(PATTERN_LAYER_ID, {
-        name: pattern.name,
-        imageUrl: pattern.thumbnail,
-        // Reset transforms if needed? Or keep user edits?
-        // User says "patterns... cover the entire product".
-        // So we should probably reset to full coverage.
-        position: [0.5, 0.5, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0]
-      });
+    const isSchoolLogo = pattern.category === 'school-logos';
+    
+    if (isSchoolLogo) {
+      // School logos: Add as image layer at preset chest position
+      const LOGO_LAYER_ID = `school-logo-${pattern.id}`;
+      const existing = textureLayers.find(l => l.id === LOGO_LAYER_ID);
+      
+      if (existing) {
+        // Already added, just make sure it's visible
+        useConfiguratorStore.getState().updateTextureLayer(LOGO_LAYER_ID, {
+          visible: true,
+        });
+      } else {
+        // Add new school logo at preset chest position
+        addTextureLayer({
+          id: LOGO_LAYER_ID,
+          name: pattern.name,
+          type: 'image', // Image type for positioned logos
+          visible: true,
+          locked: false,
+          opacity: 1,
+          blendMode: 'normal',
+          order: textureLayers.length + 1, // On top
+          imageUrl: pattern.thumbnail,
+          position: SCHOOL_LOGO_PRESET.position,
+          rotation: SCHOOL_LOGO_PRESET.rotation,
+          scale: SCHOOL_LOGO_PRESET.scale,
+        });
+        
+        console.log('🏫 SCHOOL LOGO ADDED at preset position:', {
+          name: pattern.name,
+          position: SCHOOL_LOGO_PRESET.position,
+          scale: SCHOOL_LOGO_PRESET.scale,
+        });
+      }
     } else {
-      // Create new
-      addTextureLayer({
-        id: PATTERN_LAYER_ID,
-        name: pattern.name,
-        type: 'pattern',
-        visible: true,
-        locked: false,
-        opacity: 0.9,
-        blendMode: 'multiply',
-        order: -1, // Ensure it is behind everything (Logos are usually order >= 0)
-        imageUrl: pattern.thumbnail,
-        position: [0.5, 0.5, 0],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
-      });
+      // Regular patterns: Full coverage as before
+      const PATTERN_LAYER_ID = "main-pattern-layer";
+      const existing = textureLayers.find(l => l.id === PATTERN_LAYER_ID);
+
+      if (existing) {
+        useConfiguratorStore.getState().updateTextureLayer(PATTERN_LAYER_ID, {
+          name: pattern.name,
+          imageUrl: pattern.thumbnail,
+          position: [0.5, 0.5, 0],
+          scale: [1, 1, 1],
+          rotation: [0, 0, 0]
+        });
+      } else {
+        addTextureLayer({
+          id: PATTERN_LAYER_ID,
+          name: pattern.name,
+          type: 'pattern',
+          visible: true,
+          locked: false,
+          opacity: 0.9,
+          blendMode: 'multiply',
+          order: -1,
+          imageUrl: pattern.thumbnail,
+          position: [0.5, 0.5, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        });
+      }
     }
   }, [addTextureLayer, textureLayers]);
 

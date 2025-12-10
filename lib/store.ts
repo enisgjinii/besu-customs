@@ -553,8 +553,17 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
 
       // Texture layers management
       textureLayers: [],
-      addTextureLayer: (layer: TextureLayer) =>
-        set((state) => ({ textureLayers: [...state.textureLayers, layer] })),
+      addTextureLayer: (layer: TextureLayer) => {
+        // Log when layer is added - useful for capturing preset positions
+        console.log('🎨 LAYER ADDED:', {
+          name: layer.name,
+          type: layer.type,
+          position: layer.position,
+          scale: layer.scale,
+          rotation: layer.rotation,
+        });
+        set((state) => ({ textureLayers: [...state.textureLayers, layer] }));
+      },
       updateTextureLayer: (id: string, updates: Partial<TextureLayer>) =>
         set((state) => ({
           textureLayers: state.textureLayers.map((layer) =>
