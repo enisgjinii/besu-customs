@@ -563,15 +563,43 @@ export function ThreeScene({
   }, [setModelLoading]);
 
   const handleSectionsExtracted = useCallback((extractedSections: MaterialSection[]) => {
-    // Only set sections if the store doesn't already have sections from the API
-    // The API provides better human-readable names for model parts
-    const currentSections = useConfiguratorStore.getState().sections;
-    if (currentSections.length === 0) {
-      // No API sections, use extracted ones
-      setSections(extractedSections);
-    } else {
+    // Check if sections already came from API (better human-readable names)
+    const state = useConfiguratorStore.getState();
+    const { sections: currentSections, sectionsFromApi, sectionsLoading } = state;
+    
+    // If API is still loading, wait a bit and retry
+    if (sectionsLoading) {
+      console.log("⏳ Waiting for API sections to load...");
+      setTimeout(() => {
+        const newState = useConfiguratorStore.getState();
+        if (newState.sectionsFromApi && newState.sections.length > 0) {
+          // API sections loaded - merge colors
+          console.log("🔄 Merging extracted colors into API sections (after wait)");
+          const mergedSections = newState.sections.map(apiSection => {
+            const extracted = extractedSections.find(
+              e => e.id === apiSection.id || 
+                   e.originalName === apiSection.originalName ||
+                   e.id === apiSection.originalName
+            );
+            if (extracted && extracted.color && extracted.color !== '#ffffff') {
+              return { ...apiSection, color: extracted.color };
+            }
+            return apiSection;
+          });
+          setSections(mergedSections, true);
+        } else {
+          // API didn't return sections, use extracted
+          console.log("📋 Using extracted sections (API returned nothing)");
+          setSections(extractedSections, false);
+        }
+      }, 500); // Wait 500ms for API
+      return;
+    }
+    
+    if (sectionsFromApi && currentSections.length > 0) {
       // API sections exist - merge colors from extracted sections into API sections
       // This preserves API names while getting actual colors from the model
+      console.log("🔄 Merging extracted colors into API sections");
       const mergedSections = currentSections.map(apiSection => {
         const extracted = extractedSections.find(
           e => e.id === apiSection.id || 
@@ -583,7 +611,11 @@ export function ThreeScene({
         }
         return apiSection;
       });
-      setSections(mergedSections);
+      setSections(mergedSections, true); // Keep the fromApi flag
+    } else {
+      // No API sections yet, use extracted ones
+      console.log("📋 Using extracted sections (no API sections available)");
+      setSections(extractedSections, false);
     }
   }, [setSections]);
 

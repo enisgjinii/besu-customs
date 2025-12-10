@@ -10,6 +10,7 @@ import { Link2, RotateCcw, Loader2 } from "lucide-react";
 export function Step02Colors() {
     const sections = useConfiguratorStore((state) => state.sections);
     const modelLoading = useConfiguratorStore((state) => state.modelLoading);
+    const sectionsLoading = useConfiguratorStore((state) => state.sectionsLoading);
     const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
     const updateSection = useConfiguratorStore((state) => state.updateSection);
     const updateAllSections = useConfiguratorStore((state) => state.updateAllSections);
@@ -80,8 +81,8 @@ export function Step02Colors() {
         );
     }
 
-    // Show empty state if no sections
-    if (sections.length === 0) {
+    // Show loading state if sections are being fetched
+    if (sectionsLoading || sections.length === 0) {
         return (
             <div className="flex items-center justify-center py-8 text-muted-foreground">
                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -117,24 +118,24 @@ export function Step02Colors() {
                 <ScrollBar orientation="horizontal" className="h-2" />
             </ScrollArea>
 
-            {/* Color grid - scrollable horizontally */}
+            {/* Color grid - scrollable horizontally with touch-friendly sizing */}
             <ScrollArea className="w-full">
-                <div className="grid grid-rows-6 grid-flow-col gap-1.5 pb-2" style={{ gridAutoColumns: 'minmax(28px, 1fr)' }}>
+                <div className="grid grid-rows-6 grid-flow-col gap-2 pb-2" style={{ gridAutoColumns: 'minmax(32px, 1fr)' }}>
                     {PRESET_COLORS.map((color) => (
                         <button
                             key={color}
                             onClick={() => handleColorChange(color)}
                             className={cn(
-                                "w-7 h-7 rounded-full border transition-all touch-manipulation",
+                                "w-8 h-8 rounded-full border transition-all touch-manipulation",
                                 activeSection?.color?.toUpperCase() === color.toUpperCase()
-                                    ? "ring-2 ring-primary ring-offset-1 scale-110 z-10" 
+                                    ? "ring-2 ring-primary ring-offset-2 scale-110 z-10" 
                                     : "hover:scale-105 active:scale-95"
                             )}
                             style={{ backgroundColor: color }}
                         />
                     ))}
                 </div>
-                <ScrollBar orientation="horizontal" className="h-1.5" />
+                <ScrollBar orientation="horizontal" className="h-2" />
             </ScrollArea>
 
             {/* Inline color picker + actions */}

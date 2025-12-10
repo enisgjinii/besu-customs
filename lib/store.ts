@@ -109,10 +109,12 @@ export interface ConfiguratorState {
   currentModelUrl: string | null;
   setCurrentModelUrl: (url: string | null) => void;
   sections: MaterialSection[];
+  sectionsFromApi: boolean; // Track if sections came from API (better names)
+  sectionsLoading: boolean; // Track if API sections are being fetched
   selectedSectionId: string | null;
   highlightedSectionId: string | null;
   linkedSections: Set<string>;
-  setSections: (sections: MaterialSection[]) => void;
+  setSections: (sections: MaterialSection[], fromApi?: boolean) => void;
   updateSection: (id: string, updates: Partial<MaterialSection>) => void;
   updateAllSections: (updates: Partial<MaterialSection>) => void;
   setSelectedSection: (id: string | null) => void;
@@ -446,8 +448,14 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       setSelectedProduct: (id: string) => {
         const product = get().products.find((p) => p.id === id) ?? null;
         if (product?.modelUrl) {
-          // Optimistically set selection and model
-          set({ selectedProductId: id, currentModelUrl: product.modelUrl });
+          // Clear sections and set model URL - sections will be loaded from API
+          set({ 
+            selectedProductId: id, 
+            currentModelUrl: product.modelUrl,
+            sections: [],
+            sectionsFromApi: false,
+            sectionsLoading: true, // Start loading
+          });
 
           // Try to fetch precomputed material sections for this model
           (async () => {
@@ -457,17 +465,19 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
               );
               if (resp.ok) {
                 const json = await resp.json();
-                if (json?.sections) {
-                  // Populate sections from precomputed file
-                  set({ sections: json.sections });
+                if (json?.sections && json.sections.length > 0) {
+                  // Populate sections from API - these have better names
+                  console.log("📋 Loaded sections from API:", json.sections.length);
+                  set({ sections: json.sections, sectionsFromApi: true, sectionsLoading: false });
                   return;
                 }
               }
-            } catch {
-              // ignore and fall back to client extraction
+            } catch (err) {
+              console.warn("⚠️ Failed to fetch sections from API:", err);
             }
             // No precomputed sections — leave sections empty so ModelLoader will extract
-            set({ sections: [] });
+            // sectionsFromApi stays false
+            set({ sectionsLoading: false });
           })();
         } else set({ selectedProductId: id });
       },
@@ -476,12 +486,15 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       setCurrentModelUrl: (url: string | null) => set({ currentModelUrl: url }),
 
       sections: [],
+      sectionsFromApi: false,
+      sectionsLoading: false,
       selectedSectionId: null,
       highlightedSectionId: null,
       linkedSections: new Set<string>(),
-      setSections: (sections: MaterialSection[]) => {
+      setSections: (sections: MaterialSection[], fromApi?: boolean) => {
         console.log("🏪 Store.setSections called:", {
           count: sections.length,
+          fromApi: fromApi ?? false,
           withTextures: sections.filter((s) => s.customTexture).length,
           sampleSection: sections[0]
             ? {
@@ -492,7 +505,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
             }
             : null,
         });
-        return set({ sections });
+        return set({ sections, sectionsFromApi: fromApi ?? false });
       },
       updateSection: (id: string, updates: Partial<MaterialSection>) =>
         set((state) => {
