@@ -563,7 +563,28 @@ export function ThreeScene({
   }, [setModelLoading]);
 
   const handleSectionsExtracted = useCallback((extractedSections: MaterialSection[]) => {
-    setSections(extractedSections);
+    // Only set sections if the store doesn't already have sections from the API
+    // The API provides better human-readable names for model parts
+    const currentSections = useConfiguratorStore.getState().sections;
+    if (currentSections.length === 0) {
+      // No API sections, use extracted ones
+      setSections(extractedSections);
+    } else {
+      // API sections exist - merge colors from extracted sections into API sections
+      // This preserves API names while getting actual colors from the model
+      const mergedSections = currentSections.map(apiSection => {
+        const extracted = extractedSections.find(
+          e => e.id === apiSection.id || 
+               e.originalName === apiSection.originalName ||
+               e.id === apiSection.originalName
+        );
+        if (extracted && extracted.color && extracted.color !== '#ffffff') {
+          return { ...apiSection, color: extracted.color };
+        }
+        return apiSection;
+      });
+      setSections(mergedSections);
+    }
   }, [setSections]);
 
   // WebGL Check
