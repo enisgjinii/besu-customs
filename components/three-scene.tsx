@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef, useState, Suspense, useCallback } from "react";
-import { Canvas, useFrame, useThree, createPortal } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, useGLTF, Environment, TransformControls, Center } from "@react-three/drei";
-import { useConfiguratorStore, TextureLayer, MaterialSection } from "@/lib/store";
+import { useEffect, useRef, useState, Suspense, useCallback } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls, useGLTF, Environment, Center } from "@react-three/drei";
+import { useConfiguratorStore, MaterialSection } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
-import { detectConnectionSpeed, getBestModelUrl } from "@/lib/model-loader-optimized";
-import { extractSectionsFromThreeModel, applyMaterialsToThreeModel, extractUVMapFromThreeModel } from "@/lib/three-material-utils";
+import { extractSectionsFromThreeModel } from "@/lib/three-material-utils";
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
-import { Texture3DControls } from "@/components/texture-3d-controls";
 
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
@@ -37,9 +35,13 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
 }
 
 // UV Texture Compositor Component - Handles ALL layer types (patterns, images, text)
+// Renders textures directly onto the model surface (no floating elements)
 function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
-  const CANVAS_SIZE = 2048;
+  const perfConfig = useMobilePerformance();
+  
+  // Use higher resolution for smoother textures
+  const CANVAS_SIZE = perfConfig.isLowEndDevice ? 2048 : 4096;
 
   const [canvas] = useState(() => {
     const c = document.createElement('canvas');
@@ -47,14 +49,29 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     c.height = CANVAS_SIZE;
     return c;
   });
-  const [texture] = useState(() => new THREE.CanvasTexture(canvas));
+  const [texture] = useState(() => {
+    const tex = new THREE.CanvasTexture(canvas);
+    // Enable smooth filtering for better quality
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 16; // Max anisotropic filtering for sharp textures at angles
+    return tex;
+  });
 
   // Track loaded images to avoid reloading
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
   useEffect(() => {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { 
+      alpha: true,
+      willReadFrequently: false 
+    });
     if (!ctx) return;
+
+    // Enable image smoothing for better quality
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Clear canvas with white (neutral for multiply blending with material color)
     ctx.fillStyle = '#ffffff';
@@ -93,13 +110,13 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         }
 
         if (layer.type === 'pattern' && layer.imageUrl) {
-          // Pattern: Draw full canvas
+          // Pattern: Draw full canvas with smooth scaling
           const img = imageCache.current.get(layer.imageUrl);
           if (img && img.complete) {
             ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
           }
         } else if (layer.type === 'image' && layer.imageUrl) {
-          // Image: Draw at UV position with scale
+          // Image: Draw at UV position with scale - smooth rendering
           const img = imageCache.current.get(layer.imageUrl);
           if (img && img.complete) {
             const u = layer.position?.[0] ?? 0.5;
@@ -120,10 +137,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
           }
         } else if (layer.type === 'text' && layer.text) {
-          // Text: Render at UV position
+          // Text: Render at UV position with smooth anti-aliased text
           const u = layer.position?.[0] ?? 0.5;
           const v = layer.position?.[1] ?? 0.5;
-          const fontSize = (layer.fontSize ?? 48) * (CANVAS_SIZE / 512); // Scale font to canvas
+          const fontSize = (layer.fontSize ?? 48) * (CANVAS_SIZE / 512);
           const rotation = layer.rotation?.[2] ?? 0;
 
           const x = u * CANVAS_SIZE;
@@ -131,11 +148,24 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
           ctx.translate(x, y);
           ctx.rotate(rotation);
-          ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+          
+          // Use smooth font rendering
+          ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
           ctx.fillStyle = layer.textColor || '#000000';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
+          
+          // Add subtle shadow for better visibility on fabric
+          ctx.shadowColor = 'rgba(0,0,0,0.08)';
+          ctx.shadowBlur = fontSize * 0.015;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = fontSize * 0.008;
+          
           ctx.fillText(layer.text, 0, 0);
+          
+          // Reset shadow
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
         }
 
         ctx.restore();
@@ -184,7 +214,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       renderAllLayers();
     }
 
-  }, [textureLayers, canvas, texture]);
+  }, [textureLayers, canvas, texture, CANVAS_SIZE]);
 
   // Apply Texture to Material
   useEffect(() => {
@@ -243,14 +273,12 @@ function CameraViewLock() {
   return null;
 }
 
-function Model({ url, onLoad, onError, onSectionsExtracted, customSections, customAutoRotate }: {
+function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRotate }: {
   url: string;
   onLoad?: () => void;
-  onError?: (error: Error) => void;
   onSectionsExtracted?: (sections: MaterialSection[]) => void;
-  onUVMapExtracted?: (uvMap: string | null) => void;
   customSections?: MaterialSection[];
-  customAutoRotate?: boolean; // New prop for local override
+  customAutoRotate?: boolean;
 }) {
   const { scene } = useGLTF(url) as GLTF;
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
@@ -263,10 +291,7 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
   const autoRotate = customAutoRotate !== undefined ? customAutoRotate : storeAutoRotate;
   const sections = customSections || storeSections;
 
-  const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
-
-  const perfConfig = useMobilePerformance();
 
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
   const onLoadRef = useRef(onLoad);
@@ -332,30 +357,15 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
     });
   }, [clonedScene, sections]);
 
-  // Interaction Logic (Raycasting)
-  const { camera, raycaster, gl, controls } = useThree();
+  // Simplified interaction - drag to reposition textures on model surface
+  const { raycaster, gl, controls } = useThree();
+  const { camera } = useThree();
   const selectedLayerRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
-
-  // Initial UV offset to allow dragging from the specific clicked point on the image
   const dragOffsetRef = useRef<{ u: number, v: number }>({ u: 0, v: 0 });
-
-  // State for UI selection context
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-  const [selectionPoint, setSelectionPoint] = useState<THREE.Vector3 | null>(null);
-
-  // Sync ref with state for UI
-  useEffect(() => {
-    if (!selectedLayerId) {
-      selectedLayerRef.current = null;
-    }
-  }, [selectedLayerId]);
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
-      // If clicking on HTML overlay, don't trigger 3D logic
-      if ((e.target as HTMLElement).closest('.texture-context-menu')) return;
-
       if (!clonedScene) return;
 
       const rect = gl.domElement.getBoundingClientRect();
@@ -365,49 +375,32 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
       const intersects = raycaster.intersectObject(clonedScene, true);
 
-      if (intersects.length > 0) {
+      if (intersects.length > 0 && intersects[0].uv) {
         // Find visible draggable layers (excluding patterns)
         const activeLayers = useConfiguratorStore.getState().textureLayers
-          .filter(l => l.visible && l.type !== 'pattern');
+          .filter(l => l.visible && l.type !== 'pattern' && !l.locked);
 
         if (activeLayers.length > 0) {
-          // Select list's last layer (top-most) - Simplified selection logic
-          // Ideally we check if UV matches layer position within bounds, but for now assuming top layer
           const targetLayer = activeLayers[activeLayers.length - 1];
-
           if (targetLayer) {
             selectedLayerRef.current = targetLayer.id;
-            setSelectedLayerId(targetLayer.id);
-            setSelectionPoint(intersects[0].point);
-
             isDraggingRef.current = true;
 
-            if (intersects[0].uv) {
-              const currentU = targetLayer.position?.[0] ?? 0.5;
-              const currentV = targetLayer.position?.[1] ?? 0.5;
-              dragOffsetRef.current = {
-                u: currentU - intersects[0].uv.x,
-                v: currentV + intersects[0].uv.y
-              };
-            } else {
-              dragOffsetRef.current = { u: 0, v: 0 };
-            }
+            const currentU = targetLayer.position?.[0] ?? 0.5;
+            const currentV = targetLayer.position?.[1] ?? 0.5;
+            dragOffsetRef.current = {
+              u: currentU - intersects[0].uv.x,
+              v: currentV + intersects[0].uv.y
+            };
 
             if (controls) (controls as any).enabled = false;
-            // Stop propagation to prevent clearing selection immediately
-            return;
           }
         }
       }
-
-      // If we clicked empty space or model with no layers, clear selection
-      setSelectedLayerId(null);
-      setSelectionPoint(null);
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!isDraggingRef.current || !selectedLayerRef.current) return;
-      if (!clonedScene) return;
+      if (!isDraggingRef.current || !selectedLayerRef.current || !clonedScene) return;
 
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -417,9 +410,6 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
       const intersects = raycaster.intersectObject(clonedScene, true);
 
       if (intersects.length > 0 && intersects[0].uv) {
-        // Update selection point to follow drag for menu position
-        setSelectionPoint(intersects[0].point);
-
         const uv = intersects[0].uv;
         const newU = uv.x + dragOffsetRef.current.u;
         const newV = dragOffsetRef.current.v - uv.y;
@@ -432,7 +422,7 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
 
     const handlePointerUp = () => {
       isDraggingRef.current = false;
-      // Don't clear selectedLayerRef here to keep selection active for menu
+      selectedLayerRef.current = null;
       if (controls) (controls as any).enabled = true;
     };
 
@@ -445,7 +435,7 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
       gl.domElement.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [clonedScene, camera, gl, updateTextureLayer, controls]);
+  }, [clonedScene, camera, gl, updateTextureLayer, controls, raycaster]);
 
   useFrame(() => {
     if (autoRotate && modelRef.current) {
@@ -457,26 +447,11 @@ function Model({ url, onLoad, onError, onSectionsExtracted, customSections, cust
     <group ref={modelRef}>
       {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
 
-      <Center onCentered={(props) => {
-        // Optional centering logic
-      }}>
+      <Center>
         {clonedScene && <primitive object={clonedScene} />}
 
-        {/* All texture layers (patterns, images, text) via UV Map */}
+        {/* All texture layers (patterns, images, text) rendered directly on UV map */}
         {clonedScene && <TextureCompositor scene={clonedScene} />}
-
-        {/* 3D Controls for Selected Layer */}
-        {selectedLayerId && selectionPoint && (
-          <group position={selectionPoint}>
-            <Texture3DControls
-              layerId={selectedLayerId}
-              onClose={() => {
-                setSelectedLayerId(null);
-                selectedLayerRef.current = null;
-              }}
-            />
-          </group>
-        )}
       </Center>
     </group>
   );
@@ -536,16 +511,14 @@ export function ThreeScene({
   customSections?: MaterialSection[];
   customAutoRotate?: boolean;
 }) {
-  const [initError, setInitError] = useState<string | null>(null);
+  const [initError] = useState<string | null>(null);
   const [modelUrl, setModelUrl] = useState<string | null>(null);
 
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const modelLoading = useConfiguratorStore((s) => s.modelLoading);
-  const modelError = useConfiguratorStore((s) => s.modelError);
   const setModelLoading = useConfiguratorStore((s) => s.setModelLoading);
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const setSections = useConfiguratorStore((s) => s.setSections);
-  const setCompleteUVMap = useConfiguratorStore((s) => s.setCompleteUVMap);
   const perfConfig = useMobilePerformance();
 
   useEffect(() => {
@@ -562,18 +535,9 @@ export function ThreeScene({
     setModelLoading(false);
   }, [setModelLoading]);
 
-  const handleModelError = useCallback((error: Error) => {
-    setModelError(error.message);
-    setModelLoading(false);
-  }, [setModelError, setModelLoading]);
-
   const handleSectionsExtracted = useCallback((extractedSections: MaterialSection[]) => {
     setSections(extractedSections);
   }, [setSections]);
-
-  const handleUVMapExtracted = useCallback((uvMap: string | null) => {
-    setCompleteUVMap(uvMap);
-  }, [setCompleteUVMap]);
 
   // WebGL Check
   useEffect(() => {
@@ -609,9 +573,7 @@ export function ThreeScene({
             <Model
               url={modelUrl}
               onLoad={handleModelLoad}
-              onError={handleModelError}
               onSectionsExtracted={handleSectionsExtracted}
-              onUVMapExtracted={handleUVMapExtracted}
               customSections={customSections}
               customAutoRotate={customAutoRotate}
             />

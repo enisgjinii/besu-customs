@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { useConfiguratorStore } from "@/lib/store";
 import { Copy, FlipHorizontal, RotateCw, Trash2, ZoomIn } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
@@ -36,16 +35,19 @@ export function LayerControls({ layerId, compact = false }: LayerControlsProps) 
     };
 
     return (
-        <div className={cn("bg-secondary/20 rounded-lg p-3 space-y-3", compact ? "text-xs" : "text-sm")}>
-            {/* Sliders Grid */}
-            <div className="grid grid-cols-1 gap-4">
+        <div className={cn(
+            "bg-secondary/20 rounded-lg space-y-2",
+            compact ? "p-2 text-xs" : "p-2.5 text-sm"
+        )}>
+            {/* Compact sliders in a row on mobile */}
+            <div className="grid grid-cols-2 gap-2">
                 {/* Size */}
-                <div className="space-y-1.5">
-                    <div className="flex justify-between text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                            <ZoomIn className="w-3.5 h-3.5" />
-                            <span>Size</span>
-                        </div>
+                <div className="space-y-1">
+                    <div className="flex justify-between text-muted-foreground text-[10px]">
+                        <span className="flex items-center gap-1">
+                            <ZoomIn className="w-3 h-3" />
+                            Size
+                        </span>
                         <span>{Math.round(scale * 100)}%</span>
                     </div>
                     <input
@@ -58,17 +60,17 @@ export function LayerControls({ layerId, compact = false }: LayerControlsProps) 
                             const val = parseFloat(e.target.value);
                             updateTextureLayer(layerId, { scale: [val, val, val] });
                         }}
-                        className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                        className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                     />
                 </div>
 
                 {/* Rotation */}
-                <div className="space-y-1.5">
-                    <div className="flex justify-between text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                            <RotateCw className="w-3.5 h-3.5" />
-                            <span>Rotation</span>
-                        </div>
+                <div className="space-y-1">
+                    <div className="flex justify-between text-muted-foreground text-[10px]">
+                        <span className="flex items-center gap-1">
+                            <RotateCw className="w-3 h-3" />
+                            Rotate
+                        </span>
                         <span>{Math.round((rotation * 180) / Math.PI)}°</span>
                     </div>
                     <input
@@ -81,39 +83,39 @@ export function LayerControls({ layerId, compact = false }: LayerControlsProps) 
                             const val = parseFloat(e.target.value);
                             updateTextureLayer(layerId, { rotation: [0, 0, val] });
                         }}
-                        className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                        className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                     />
                 </div>
             </div>
 
-            {/* Actions Row */}
-            <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+            {/* Compact action buttons */}
+            <div className="flex items-center gap-1.5">
                 <Button
                     variant={flipX ? "default" : "outline"}
                     size="sm"
                     onClick={() => updateTextureLayer(layerId, { flipX: !flipX })}
-                    className="flex-1 h-8 text-[10px]"
+                    className="flex-1 h-7 text-[10px] px-2"
                 >
-                    <FlipHorizontal className="w-3.5 h-3.5 mr-1.5" />
+                    <FlipHorizontal className="w-3 h-3 mr-1" />
                     Flip
                 </Button>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={handleDuplicate}
-                    className="flex-1 h-8 text-[10px]"
+                    className="flex-1 h-7 text-[10px] px-2"
                 >
-                    <Copy className="w-3.5 h-3.5 mr-1.5" />
+                    <Copy className="w-3 h-3 mr-1" />
                     Copy
                 </Button>
                 <Button
                     variant="destructive"
                     size="sm"
                     onClick={handleRemove}
-                    className="flex-1 h-8 text-[10px]"
+                    className="h-7 w-7 p-0"
+                    title="Delete"
                 >
-                    <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                    Delete
+                    <Trash2 className="w-3 h-3" />
                 </Button>
             </div>
         </div>
