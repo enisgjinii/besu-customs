@@ -140,8 +140,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           // Text: Render at UV position with smooth anti-aliased text
           const u = layer.position?.[0] ?? 0.5;
           const v = layer.position?.[1] ?? 0.5;
-          const fontSize = (layer.fontSize ?? 48) * (CANVAS_SIZE / 512);
           const rotation = layer.rotation?.[2] ?? 0;
+          
+          // Use scale to control text size (scale[0] * base font size)
+          const scaleMultiplier = layer.scale?.[0] ?? 1;
+          const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
+          const fontSize = baseFontSize * scaleMultiplier;
 
           const x = u * CANVAS_SIZE;
           const y = (1 - v) * CANVAS_SIZE;
@@ -156,10 +160,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           ctx.textBaseline = 'middle';
           
           // Add subtle shadow for better visibility on fabric
-          ctx.shadowColor = 'rgba(0,0,0,0.08)';
-          ctx.shadowBlur = fontSize * 0.015;
+          ctx.shadowColor = 'rgba(0,0,0,0.1)';
+          ctx.shadowBlur = Math.max(2, fontSize * 0.02);
           ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = fontSize * 0.008;
+          ctx.shadowOffsetY = Math.max(1, fontSize * 0.01);
           
           ctx.fillText(layer.text, 0, 0);
           
@@ -423,19 +427,25 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
     const handlePointerUp = () => {
       // Log final position when dropping a layer - useful for capturing coordinates
       if (selectedLayerRef.current) {
-        const layer = useConfiguratorStore.getState().textureLayers.find(
+        const store = useConfiguratorStore.getState();
+        const layer = store.textureLayers.find(
           l => l.id === selectedLayerRef.current
         );
         if (layer) {
-          console.log('📍 LAYER POSITION:', {
-            name: layer.name,
-            type: layer.type,
-            position: layer.position,
-            scale: layer.scale,
-            rotation: layer.rotation,
-            // Copy-paste ready format:
-            preset: `{ position: [${layer.position?.[0]?.toFixed(4)}, ${layer.position?.[1]?.toFixed(4)}, 0], scale: [${layer.scale?.[0]?.toFixed(2)}, ${layer.scale?.[1]?.toFixed(2)}, 1] }`
-          });
+          const modelUrl = store.currentModelUrl;
+          console.log('📍 LAYER POSITION CAPTURED:');
+          console.log('  Layer:', layer.name);
+          console.log('  Model:', modelUrl);
+          console.log('  Position:', layer.position);
+          console.log('  Scale:', layer.scale);
+          console.log('');
+          console.log('📋 COPY THIS TO lib/logo-positioning.ts:');
+          console.log(`  // Model: ${modelUrl?.split('/').pop() || 'unknown'}`);
+          console.log(`  leftChest: {`);
+          console.log(`    position: [${layer.position?.[0]?.toFixed(4)}, ${layer.position?.[1]?.toFixed(4)}, 0],`);
+          console.log(`    scale: [${layer.scale?.[0]?.toFixed(2)}, ${layer.scale?.[1]?.toFixed(2)}, 1],`);
+          console.log(`    rotation: [0, 0, 0],`);
+          console.log(`  },`);
         }
       }
       isDraggingRef.current = false;

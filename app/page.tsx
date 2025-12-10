@@ -39,20 +39,13 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
-      {/* 3D Viewer - Full screen */}
-      <main
-        className="flex-1 relative w-full h-full pb-[350px]"
-        style={{
-          paddingTop: '0px',
-        }}
-      >
+      {/* 3D Viewer - Responsive padding for bottom bar */}
+      <main className="flex-1 relative w-full h-full pb-[280px] md:pb-[350px]">
         <Scene />
-
-
       </main>
 
       {/* Wizard Bottom Bar */}
       <ConfiguratorWizard />
-    </div >
+    </div>
   );
 }

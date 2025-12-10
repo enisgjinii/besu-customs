@@ -2,7 +2,7 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Type } from "lucide-react";
+import { Type, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -42,57 +42,41 @@ export function Step06Text() {
     const textLayers = textureLayers.filter(l => l.type === "text" || l.name.startsWith("Text:"));
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-1">
-                <h2 className="text-base font-semibold">Add Your Text</h2>
-                <p className="text-xs text-muted-foreground">
-                    Type text to add it to your product.
-                </p>
-            </div>
-
+        <div className="space-y-3">
             {/* Compact input row */}
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-1.5 items-center">
                 <input
                     type="color"
                     value={textColor}
                     onChange={(e) => setTextColor(e.target.value)}
-                    className="w-9 h-9 p-0 border rounded cursor-pointer shrink-0"
-                    title="Text Color"
+                    className="w-8 h-8 p-0 border rounded cursor-pointer shrink-0"
                 />
                 <Input
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="Enter text..."
                     onKeyDown={(e) => e.key === "Enter" && handleAddText()}
-                    className="flex-1 h-9 text-sm"
+                    className="flex-1 h-8 text-sm"
                 />
-                <Button onClick={handleAddText} size="sm" className="h-9 px-3">
-                    <Type className="w-4 h-4 mr-1.5" />
-                    Add
+                <Button onClick={handleAddText} size="icon" className="h-8 w-8 shrink-0">
+                    <Plus className="w-4 h-4" />
                 </Button>
             </div>
 
-            {/* Compact text layers list */}
-            <div className="space-y-2">
-                <h3 className="text-xs font-medium text-muted-foreground">Text Layers</h3>
-                {textLayers.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">No text added yet.</p>
-                )}
-                {textLayers.map((layer) => (
-                    <div key={layer.id} className="p-2 rounded-md border bg-card space-y-2">
-                        <div className="flex items-center gap-2">
-                            <div 
-                                className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center font-bold text-xs ring-1 ring-primary/20" 
-                                style={{ color: layer.textColor }}
-                            >
-                                T
+            {/* Text layers list */}
+            {textLayers.length > 0 && (
+                <div className="space-y-1.5">
+                    {textLayers.map((layer) => (
+                        <div key={layer.id} className="p-1.5 rounded border bg-card">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <Type className="w-3 h-3 shrink-0" style={{ color: layer.textColor }} />
+                                <span className="text-xs font-medium truncate">{layer.text || layer.name}</span>
                             </div>
-                            <span className="text-sm font-medium truncate flex-1">{layer.text || layer.name}</span>
+                            <LayerControls layerId={layer.id} compact />
                         </div>
-                        <LayerControls layerId={layer.id} compact />
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

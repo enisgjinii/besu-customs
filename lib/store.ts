@@ -555,13 +555,27 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       textureLayers: [],
       addTextureLayer: (layer: TextureLayer) => {
         // Log when layer is added - useful for capturing preset positions
-        console.log('🎨 LAYER ADDED:', {
+        console.log("🎨 LAYER ADDED:", {
           name: layer.name,
           type: layer.type,
           position: layer.position,
           scale: layer.scale,
           rotation: layer.rotation,
         });
+
+        // Auto-rotate camera to front when adding image/logo layers
+        if (layer.type === "image") {
+          const state = get();
+          // Set view to Front so user sees where logo is placed
+          if (state.setLockedView) {
+            state.setLockedView("Front");
+            // Clear the lock after a moment so user can rotate freely
+            setTimeout(() => {
+              state.setLockedView(null);
+            }, 100);
+          }
+        }
+
         set((state) => ({ textureLayers: [...state.textureLayers, layer] }));
       },
       updateTextureLayer: (id: string, updates: Partial<TextureLayer>) =>
