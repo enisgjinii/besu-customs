@@ -308,6 +308,16 @@
   margin-bottom: 0.75rem;
 }
 
+/* Scrollbar utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Mobile scrollbar styles */
 @media (max-width: 768px) {
   .thin-scrollbar::-webkit-scrollbar {

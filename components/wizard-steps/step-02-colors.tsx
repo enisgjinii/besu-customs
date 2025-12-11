@@ -92,51 +92,59 @@ export function Step02Colors() {
     }
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {/* Section pills - horizontal scroll with touch-friendly sizing */}
-            <ScrollArea className="w-full whitespace-nowrap">
-                <div className="flex gap-2 pb-2">
-                    {sections.map((section) => (
+            <div className="-mx-4">
+                <div className="overflow-x-scroll overflow-y-hidden scrollbar-hide px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="inline-flex gap-2 pb-3">
+                        {sections.map((section) => (
                         <button
                             key={section.id}
                             onClick={() => setActiveSectionId(section.id)}
                             className={cn(
-                                "flex items-center gap-2 px-3 py-2 rounded-full border transition-all whitespace-nowrap flex-shrink-0 text-xs font-medium touch-manipulation min-h-[36px]",
+                                "inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap text-xs font-medium touch-manipulation min-h-[40px]",
                                 activeSectionId === section.id
                                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                     : "bg-card text-muted-foreground border-border hover:bg-muted hover:border-primary/50 active:scale-95"
                             )}
                         >
                             <div
-                                className="w-4 h-4 rounded-full border border-white/30 shadow-inner flex-shrink-0"
+                                className="w-5 h-5 rounded-full border border-white/30 shadow-inner flex-shrink-0"
                                 style={{ backgroundColor: section.color }}
                             />
-                            <span className="truncate max-w-[120px]">{section.name}</span>
+                            <span className="max-w-[140px] truncate">{section.name}</span>
                         </button>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-                <ScrollBar orientation="horizontal" className="h-2" />
-            </ScrollArea>
+            </div>
 
             {/* Color grid - scrollable horizontally with touch-friendly sizing */}
-            <ScrollArea className="w-full">
-                <div className="grid grid-rows-6 grid-flow-col gap-2 pb-2" style={{ gridAutoColumns: 'minmax(32px, 1fr)' }}>
-                    {PRESET_COLORS.map((color) => (
-                        <button
-                            key={color}
-                            onClick={() => handleColorChange(color)}
-                            className={cn(
-                                "w-8 h-8 rounded-full border transition-all touch-manipulation",
-                                activeSection?.color?.toUpperCase() === color.toUpperCase()
-                                    ? "ring-2 ring-primary ring-offset-2 scale-110 z-10" 
-                                    : "hover:scale-105 active:scale-95"
-                            )}
-                            style={{ backgroundColor: color }}
-                        />
-                    ))}
+            <div className="-mx-4">
+                <div className="overflow-x-scroll overflow-y-hidden scrollbar-hide px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="inline-flex flex-col gap-2 pb-3">
+                        {/* Split colors into 6 rows */}
+                        {Array.from({ length: 6 }).map((_, rowIndex) => (
+                            <div key={rowIndex} className="flex gap-2">
+                                {PRESET_COLORS.slice(rowIndex * 8, (rowIndex + 1) * 8).map((color) => (
+                                    <button
+                                        key={color}
+                                        onClick={() => handleColorChange(color)}
+                                        className={cn(
+                                            "w-10 h-10 rounded-full border-2 transition-all touch-manipulation flex-shrink-0",
+                                            activeSection?.color?.toUpperCase() === color.toUpperCase()
+                                                ? "ring-2 ring-primary ring-offset-2 scale-110 border-primary" 
+                                                : "border-border/30 hover:scale-105 active:scale-95 hover:border-primary/50"
+                                        )}
+                                        style={{ backgroundColor: color }}
+                                        aria-label={color}
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <ScrollBar orientation="horizontal" className="h-2" />
-            </ScrollArea>
+            </div>
 
             {/* Inline color picker + actions */}
             <div className="flex items-center gap-2 pt-1 border-t">
