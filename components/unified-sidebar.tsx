@@ -43,6 +43,11 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   const currentStep = useConfiguratorStore((state) => state.currentStep);
   const setStep = useConfiguratorStore((state) => state.setStep);
   const isCollapsed = sidebarOpen === false;
+  
+  // Check if model is selected
+  const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
+  const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
+  const isModelSelected = !!(currentModelUrl || selectedProductId);
 
   // Ensure step is within bounds
   useEffect(() => {
@@ -53,6 +58,10 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
   const CurrentStepComponent = STEPS[currentStep].component;
 
   const handleNext = () => {
+    // Prevent going to next step if on step 0 (first step) without model selected
+    if (currentStep === 0 && !isModelSelected) {
+      return;
+    }
     if (currentStep < STEPS.length - 1) setStep(currentStep + 1);
   };
 
@@ -105,7 +114,13 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               <Button variant="outline" size="icon" className="h-6 w-6" onClick={handleBack} disabled={currentStep === 0}>
                 <ChevronLeft className="w-3 h-3" />
               </Button>
-              <Button variant="outline" size="icon" className="h-6 w-6" onClick={handleNext} disabled={currentStep === STEPS.length - 1}>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-6 w-6" 
+                onClick={handleNext} 
+                disabled={currentStep === STEPS.length - 1 || (currentStep === 0 && !isModelSelected)}
+              >
                 <ChevronRight className="w-3 h-3" />
               </Button>
             </div>
@@ -129,7 +144,7 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               </Button>
               <Button
                 onClick={handleNext}
-                disabled={currentStep === STEPS.length - 1}
+                disabled={currentStep === STEPS.length - 1 || (currentStep === 0 && !isModelSelected)}
                 className="flex-1"
               >
                 {currentStep === STEPS.length - 1 ? "Finish" : "Next Step"}
@@ -141,9 +156,19 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               {STEPS.map((step, idx) => (
                 <div
                   key={step.id}
-                  onClick={() => setStep(idx)}
-                  className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentStep ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/30 hover:bg-primary/50"
-                    }`}
+                  onClick={() => {
+                    // Prevent navigation to other steps if no model selected
+                    if (!isModelSelected && idx !== 0) {
+                      return;
+                    }
+                    setStep(idx);
+                  }}
+                  className={`h-1.5 rounded-full transition-all ${idx === currentStep 
+                    ? "w-6 bg-primary" 
+                    : (!isModelSelected && idx !== 0)
+                    ? "w-1.5 bg-muted-foreground/10 cursor-not-allowed"
+                    : "w-1.5 bg-muted-foreground/30 hover:bg-primary/50 cursor-pointer"
+                  }`}
                   title={step.title}
                 />
               ))}
@@ -159,13 +184,20 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             <div
               key={step.id}
               onClick={() => {
+                // Prevent navigation to other steps if no model selected
+                if (!isModelSelected && idx !== 0) {
+                  return;
+                }
                 setStep(idx);
                 onToggleSidebar?.(true);
               }}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer transition-all border ${idx === currentStep
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-muted text-muted-foreground border-transparent hover:border-primary/50"
-                }`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border ${
+                idx === currentStep
+                  ? "bg-primary text-primary-foreground border-primary cursor-pointer"
+                  : (!isModelSelected && idx !== 0)
+                  ? "bg-muted/30 text-muted-foreground/30 border-transparent cursor-not-allowed"
+                  : "bg-muted text-muted-foreground border-transparent hover:border-primary/50 cursor-pointer"
+              }`}
             >
               {idx + 1}
             </div>

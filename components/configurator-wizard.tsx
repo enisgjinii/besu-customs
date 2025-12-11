@@ -39,6 +39,11 @@ export function ConfiguratorWizard() {
     // Store integration for View Locking
     const lockedView = useConfiguratorStore((s) => s.lockedView);
     const setLockedView = useConfiguratorStore((s) => s.setLockedView);
+    
+    // Check if model is selected
+    const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
+    const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
+    const isModelSelected = !!(currentModelUrl || selectedProductId);
 
     // Responsive check and Mount check
     useEffect(() => {
@@ -50,6 +55,10 @@ export function ConfiguratorWizard() {
     }, []);
 
     const handleNext = () => {
+        // Prevent going to next step if on step 1 without model selected
+        if (currentStep === 1 && !isModelSelected) {
+            return;
+        }
         if (currentStep < STEPS.length) setCurrentStep(c => c + 1);
     };
 
@@ -78,12 +87,20 @@ export function ConfiguratorWizard() {
                     {STEPS.map((s) => (
                         <div
                             key={s.id}
-                            onClick={() => setCurrentStep(s.id)}
+                            onClick={() => {
+                                // Prevent navigation to other steps if no model selected
+                                if (!isModelSelected && s.id !== 1) {
+                                    return;
+                                }
+                                setCurrentStep(s.id);
+                            }}
                             className={cn(
-                                "flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap flex-shrink-0",
+                                "flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0",
                                 currentStep === s.id
                                     ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
-                                    : "text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800"
+                                    : (!isModelSelected && s.id !== 1)
+                                    ? "text-gray-300 dark:text-gray-700 cursor-not-allowed opacity-50"
+                                    : "text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer"
                             )}
                         >
                             <div className={cn(
@@ -104,7 +121,15 @@ export function ConfiguratorWizard() {
                     <Button variant="ghost" size="sm" onClick={handlePrev} disabled={currentStep === 1} className="h-6 w-6 md:h-8 md:w-8 p-0">
                         <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
                     </Button>
-                    <Button size="sm" onClick={handleNext} disabled={currentStep === STEPS.length} className={cn("h-6 text-[10px] px-2 md:h-8 md:text-xs md:px-3", currentStep === STEPS.length && "bg-green-600")}>
+                    <Button 
+                        size="sm" 
+                        onClick={handleNext} 
+                        disabled={currentStep === STEPS.length || (currentStep === 1 && !isModelSelected)} 
+                        className={cn(
+                            "h-6 text-[10px] px-2 md:h-8 md:text-xs md:px-3", 
+                            currentStep === STEPS.length && "bg-green-600"
+                        )}
+                    >
                         Next <ChevronRight className="w-3 h-3 ml-0.5" />
                     </Button>
                 </div>

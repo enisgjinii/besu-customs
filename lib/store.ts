@@ -216,6 +216,7 @@ export interface ConfiguratorState {
   deletePreset: (name: string) => void;
   exportPreset: () => string;
   importPreset: (json: string) => void;
+  resetAllCustomizations: () => void;
 }
 
 // Generate all possible products (for fallback and reference)
