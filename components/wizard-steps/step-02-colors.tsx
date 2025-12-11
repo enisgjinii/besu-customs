@@ -92,98 +92,108 @@ export function Step02Colors() {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4 w-full">
             {/* Section pills - horizontal scroll with touch-friendly sizing */}
-            <div className="-mx-4">
-                <div className="overflow-x-scroll overflow-y-hidden scrollbar-hide px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <div className="inline-flex gap-2 pb-3">
+            <div className="w-full">
+                <div className="overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="inline-flex gap-1.5 md:gap-2 pb-2 pr-4">
                         {sections.map((section) => (
                         <button
                             key={section.id}
                             onClick={() => setActiveSectionId(section.id)}
                             className={cn(
-                                "inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap text-xs font-medium touch-manipulation min-h-[40px]",
+                                "inline-flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 md:py-2.5 rounded-full border transition-all whitespace-nowrap text-[10px] md:text-xs font-medium touch-manipulation min-h-[36px] md:min-h-[44px]",
                                 activeSectionId === section.id
                                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                     : "bg-card text-muted-foreground border-border hover:bg-muted hover:border-primary/50 active:scale-95"
                             )}
                         >
                             <div
-                                className="w-5 h-5 rounded-full border border-white/30 shadow-inner flex-shrink-0"
+                                className="w-4 h-4 md:w-5 md:h-5 rounded-full border border-white/30 shadow-inner flex-shrink-0"
                                 style={{ backgroundColor: section.color }}
                             />
-                            <span className="max-w-[140px] truncate">{section.name}</span>
+                            <span className="max-w-[100px] md:max-w-[140px] truncate">{section.name}</span>
                         </button>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Color grid - scrollable horizontally with touch-friendly sizing */}
-            <div className="-mx-4">
-                <div className="overflow-x-scroll overflow-y-hidden scrollbar-hide px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <div className="inline-flex flex-col gap-2 pb-3">
-                        {/* Split colors into 6 rows */}
-                        {Array.from({ length: 6 }).map((_, rowIndex) => (
-                            <div key={rowIndex} className="flex gap-2">
-                                {PRESET_COLORS.slice(rowIndex * 8, (rowIndex + 1) * 8).map((color) => (
-                                    <button
-                                        key={color}
-                                        onClick={() => handleColorChange(color)}
-                                        className={cn(
-                                            "w-10 h-10 rounded-full border-2 transition-all touch-manipulation flex-shrink-0",
-                                            activeSection?.color?.toUpperCase() === color.toUpperCase()
-                                                ? "ring-2 ring-primary ring-offset-2 scale-110 border-primary" 
-                                                : "border-border/30 hover:scale-105 active:scale-95 hover:border-primary/50"
-                                        )}
-                                        style={{ backgroundColor: color }}
-                                        aria-label={color}
-                                    />
-                                ))}
-                            </div>
-                        ))}
-                    </div>
+            {/* Color grid - auto-sizing responsive grid */}
+            <div className="w-full">
+                <div className="grid grid-cols-6 md:grid-cols-8 gap-2 md:gap-3 auto-rows-fr">
+                    {PRESET_COLORS.map((color) => (
+                        <button
+                            key={color}
+                            onClick={() => handleColorChange(color)}
+                            className={cn(
+                                "aspect-square rounded-full border transition-all touch-manipulation w-full",
+                                activeSection?.color?.toUpperCase() === color.toUpperCase()
+                                    ? "ring-2 ring-primary ring-offset-1 md:ring-offset-2 scale-110 border-primary shadow-lg" 
+                                    : "border-border/30 hover:scale-105 active:scale-95 hover:border-primary/50 hover:shadow-md"
+                            )}
+                            style={{ backgroundColor: color }}
+                            aria-label={color}
+                        />
+                    ))}
                 </div>
             </div>
 
-            {/* Inline color picker + actions */}
-            <div className="flex items-center gap-2 pt-1 border-t">
-                <input
-                    type="color"
-                    value={activeSection?.color || "#ffffff"}
-                    onChange={(e) => handleColorChange(e.target.value)}
-                    className="w-9 h-9 rounded-lg cursor-pointer border border-border p-0.5"
-                />
-                <Input
-                    type="text"
-                    value={activeSection?.color || "#ffffff"}
-                    onChange={(e) => {
-                        const val = e.target.value;
-                        if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-                            handleColorChange(val);
-                        }
-                    }}
-                    className="flex-1 h-9 text-sm font-mono uppercase"
-                    placeholder="#000000"
-                />
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-3 gap-1.5"
-                    onClick={handleApplyToAll}
-                >
-                    <Link2 className="w-3.5 h-3.5" />
-                    <span className="text-xs">All</span>
-                </Button>
-                <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    onClick={() => updateAllSections({ color: "#ffffff" })}
-                    title="Reset all"
-                >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                </Button>
+            {/* Custom color picker + actions - responsive layout */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 pt-3 border-t mt-2">
+                {/* Color picker and hex input row */}
+                <div className="flex items-center gap-2 flex-1">
+                    <div className="relative">
+                        <input
+                            type="color"
+                            value={activeSection?.color || "#ffffff"}
+                            onChange={(e) => handleColorChange(e.target.value)}
+                            className="w-14 h-14 md:w-12 md:h-12 rounded-xl cursor-pointer border-2 border-border shadow-sm hover:border-primary transition-colors"
+                            style={{ padding: '4px' }}
+                        />
+                        <div 
+                            className="absolute inset-0 rounded-xl pointer-events-none border-2 border-white/20"
+                            style={{ margin: '6px' }}
+                        />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Custom Color</label>
+                        <Input
+                            type="text"
+                            value={activeSection?.color || "#ffffff"}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                                    handleColorChange(val);
+                                }
+                            }}
+                            className="h-10 md:h-11 text-sm md:text-base font-mono uppercase font-semibold"
+                            placeholder="#000000"
+                        />
+                    </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="default"
+                        className="flex-1 md:flex-none h-11 px-4 gap-2 font-medium"
+                        onClick={handleApplyToAll}
+                    >
+                        <Link2 className="w-4 h-4" />
+                        <span className="text-xs md:text-sm">Apply to All</span>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-11 w-11 shrink-0"
+                        onClick={() => updateAllSections({ color: "#ffffff" })}
+                        title="Reset all colors to white"
+                    >
+                        <RotateCcw className="w-4 h-4" />
+                    </Button>
+                </div>
             </div>
         </div>
     );
