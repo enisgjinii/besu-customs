@@ -738,6 +738,36 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           console.error("Failed to import preset:", err);
         }
       },
+      // Reset all customizations
+      resetAllCustomizations: () => {
+        const state = get();
+        // Keep the current model but reset all customizations
+        const currentModel = state.currentModelUrl;
+        const currentProductId = state.selectedProductId;
+        
+        // Reset sections to default colors
+        const resetSections = state.sections.map(s => ({
+          ...s,
+          color: '#ffffff',
+          customTexture: undefined,
+          gradient: undefined,
+          trimDesign: undefined,
+        }));
+        
+        set({
+          sections: resetSections,
+          textureLayers: [],
+          globalCustomTexture: null,
+          linkedSections: new Set(),
+          selectedSectionId: null,
+          backgroundColor: '#f0f0f0',
+          backgroundImage: null,
+          backgroundVideo: null,
+          recentColors: [],
+        });
+        
+        console.log('🔄 Reset all customizations');
+      },
       // ensure the store stays valid
     }),
     {

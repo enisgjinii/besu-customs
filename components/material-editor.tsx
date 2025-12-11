@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   List,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,9 @@ export function MaterialEditor() {
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
+  const resetAllCustomizations = useConfiguratorStore(
+    (state) => state.resetAllCustomizations,
+  );
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
 
@@ -108,15 +112,29 @@ export function MaterialEditor() {
             <Palette className="w-5 h-5" />
             {isVolleyballModel ? "Colors" : "Material Sections"}
           </h3>
-          {linkedSections.size > 0 && (
+          <div className="flex items-center gap-2">
+            {linkedSections.size > 0 && (
+              <button
+                onClick={clearSectionLinks}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg hover:bg-accent/50"
+              >
+                <Unlink className="w-4 h-4" />
+                Clear Links
+              </button>
+            )}
             <button
-              onClick={clearSectionLinks}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg hover:bg-accent/50"
+              onClick={() => {
+                if (confirm('Reset all colors, patterns, and customizations? This cannot be undone.')) {
+                  resetAllCustomizations();
+                }
+              }}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg hover:bg-destructive/10"
+              title="Reset all customizations"
             >
-              <Unlink className="w-4 h-4" />
-              Clear Links
+              <RotateCcw className="w-4 h-4" />
+              Reset All
             </button>
-          )}
+          </div>
         </div>
 
         {/* Linked sections info */}
