@@ -342,7 +342,11 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
       if (child instanceof THREE.Mesh && child.material) {
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         materials.forEach(mat => {
-          const section = sections.find(s => s.id === mat.name);
+          const section = sections.find(s => 
+            s.originalName === mat.name ||
+            s.id === mat.name ||
+            mat.name.includes(s.originalName)
+          );
           if (section && mat instanceof THREE.MeshStandardMaterial) {
             if (section.color) {
               mat.color.set(section.color);

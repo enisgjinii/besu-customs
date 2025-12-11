@@ -152,7 +152,7 @@ export function MaterialEditor() {
 
                 {/* Category Sections - Only show if expanded */}
                 {expandedCategories[category] && (
-                  <div className="space-y-3 ml-2 pl-4 border-l-2 border-border/50">
+                  <div className="space-y-3 md:ml-2 md:pl-4 md:border-l-2 border-border/50">
                     {categorySections.map((section) => {
                       const isSelected = selectedSectionId === section.id;
                       const isLinked = linkedSections.has(section.id);
