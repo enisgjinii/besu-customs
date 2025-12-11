@@ -5,8 +5,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronRight, ChevronLeft, Lock } from "lucide-react";
+import { ChevronRight, ChevronLeft, Lock, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Import Steps
 import { Step01Apparel } from "./wizard-steps/step-01-apparel";
@@ -35,10 +45,12 @@ export function ConfiguratorWizard() {
     const [currentStep, setCurrentStep] = useState(1);
     const [isMobile, setIsMobile] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [showResetDialog, setShowResetDialog] = useState(false);
 
     // Store integration for View Locking
     const lockedView = useConfiguratorStore((s) => s.lockedView);
     const setLockedView = useConfiguratorStore((s) => s.setLockedView);
+    const resetAllCustomizations = useConfiguratorStore((s) => s.resetAllCustomizations);
     
     // Check if model is selected
     const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
@@ -203,10 +215,61 @@ export function ConfiguratorWizard() {
                                     {CurrentComponent ? <CurrentComponent /> : <div>Loading...</div>}
                                 </motion.div>
                             </AnimatePresence>
+
+                            {/* Small Reset Icon Button - Static at bottom of each step */}
+                            {isModelSelected && (
+                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                                    <Button
+                                        onClick={() => setShowResetDialog(true)}
+                                        variant="destructive"
+                                        size="icon"
+                                        className="h-10 w-10 rounded-full hover:scale-105 transition-transform"
+                                        title="Reset All Customizations"
+                                    >
+                                        <RotateCcw className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </ScrollArea>
                 </div>
             </div>
+
+            {/* Reset Confirmation Dialog */}
+            <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+                <AlertDialogContent className="max-w-md mx-4">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <RotateCcw className="w-5 h-5 text-destructive" />
+                            Reset All Customizations?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-base">
+                            This will clear all your changes including:
+                            <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                                <li>Colors</li>
+                                <li>Patterns and textures</li>
+                                <li>Logos and images</li>
+                                <li>Text layers</li>
+                            </ul>
+                            <p className="mt-3 font-semibold text-destructive">
+                                This action cannot be undone.
+                            </p>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                resetAllCustomizations();
+                                setShowResetDialog(false);
+                            }}
+                            className="bg-destructive hover:bg-destructive/90"
+                        >
+                            Reset Everything
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

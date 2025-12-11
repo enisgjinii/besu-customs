@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { ConfiguratorHeader } from "@/components/configurator-header";
 import { ConfiguratorWizard } from "@/components/configurator-wizard";
-import { FloatingResetButton } from "@/components/floating-reset-button";
 import { useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -44,9 +43,6 @@ export default function Home() {
       <main className="flex-1 relative w-full h-full pb-[280px] md:pb-[350px]">
         <Scene />
       </main>
-
-      {/* Floating Reset Button */}
-      <FloatingResetButton />
 
       {/* Wizard Bottom Bar */}
       <ConfiguratorWizard />
