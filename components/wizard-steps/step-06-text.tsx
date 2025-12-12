@@ -6,23 +6,39 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Type, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
+// (no extra utils needed)
 
-// Font options
+// 200 Popular Google Fonts
 const FONT_FAMILIES = [
-  { value: "Arial", label: "Arial" },
-  { value: "Helvetica", label: "Helvetica" },
-  { value: "Times New Roman", label: "Times New Roman" },
-  { value: "Georgia", label: "Georgia" },
-  { value: "Verdana", label: "Verdana" },
-  { value: "Courier New", label: "Courier New" },
-  { value: "Impact", label: "Impact" },
-  { value: "Comic Sans MS", label: "Comic Sans" },
-  { value: "Trebuchet MS", label: "Trebuchet" },
-  { value: "Arial Black", label: "Arial Black" },
+  "Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Raleway", "PT Sans",
+  "Roboto Condensed", "Merriweather", "Poppins", "Ubuntu", "Playfair Display", "Roboto Slab", "Noto Sans",
+  "Fira Sans", "Titillium Web", "Work Sans", "Nunito", "PT Serif", "Mukta", "Rubik", "Libre Baskerville",
+  "Oxygen", "Inconsolata", "Quicksand", "Nunito Sans", "Arimo", "Bitter", "Dosis", "Heebo", "Cabin",
+  "Karla", "Crimson Text", "Barlow", "Libre Franklin", "Anton", "Indie Flower", "Hind", "Abel",
+  "Josefin Sans", "Archivo", "Varela Round", "Lobster", "Pacifico", "Abril Fatface", "IBM Plex Sans",
+  "Righteous", "Manrope", "Kanit", "Bebas Neue", "Exo 2", "Nanum Gothic", "Barlow Condensed", "Dancing Script",
+  "Caveat", "Comfortaa", "Zilla Slab", "Yanone Kaffeesatz", "Asap", "Prompt", "Permanent Marker", "Amatic SC",
+  "Shadows Into Light", "DM Sans", "Signika", "Questrial", "Play", "Satisfy", "Catamaran", "Archivo Narrow",
+  "Noticia Text", "Fjalla One", "Patua One", "Hind Siliguri", "Maven Pro", "Acme", "Teko", "Noto Serif",
+  "Russo One", "Assistant", "Arvo", "Bree Serif", "Sarabun", "Passion One", "Alfa Slab One", "Electrolize",
+  "Sacramento", "Great Vibes", "Kalam", "Cinzel", "Tinos", "Poiret One", "ABeeZee", "Courgette",
+  "Special Elite", "Architects Daughter", "Pathway Gothic One", "Sigmar One", "Yellowtail", "Crete Round",
+  "Concert One", "Bangers", "Gloria Hallelujah", "Patrick Hand", "Marck Script", "Fira Mono", "Space Mono",
+  "Audiowide", "Orbitron", "Paytone One", "Francois One", "Press Start 2P", "Fugaz One", "Monoton",
+  "Source Code Pro", "Lora", "Noto Sans JP", "Roboto Mono", "PT Sans Narrow", "Kaushan Script", "Encode Sans",
+  "Rajdhani", "Squada One", "Cookie", "Aleo", "Cardo", "Sanchez", "Vollkorn", "Shrikhand",
+  "Fredoka One", "Hammersmith One", "Cormorant Garamond", "Lexend Deca", "Mulish", "Secular One", "Allura",
+  "EB Garamond", "Spectral", "Neuton", "Aldrich", "Philosopher", "Cinzel Decorative", "Lilita One",
+  "Saira Condensed", "Mate", "Ropa Sans", "Chivo", "Quantico", "BenchNine", "Tajawal",
+  "Overpass", "Adamina", "Rancho", "Black Ops One", "Bungee", "Staatliches", "Economica", "Alegreya",
+  "Gentium Basic", "Amiri", "Gothic A1", "Faustina", "Ultra", "Istok Web", "Cuprum", "Arapey",
+  "Lustria", "Prata", "Cambay", "Eczar", "Marcellus", "Federo", "Enriqueta", "Tenor Sans",
+  "Basic", "Gudea", "Convergence", "Oxygen Mono", "Quattrocento", "Judson", "Vidaloka", "Forum",
+  "Jost", "Red Hat Display", "Sora", "Inter", "Outfit", "Space Grotesk", "Figtree", "Urbanist"
 ];
 
 export function Step06Text() {
@@ -33,9 +49,22 @@ export function Step06Text() {
     const [textInput, setTextInput] = useState("");
     const [textColor, setTextColor] = useState("#000000");
     const [fontSize, setFontSize] = useState(100);
-    const [fontFamily, setFontFamily] = useState("Arial");
+    const [fontFamily, setFontFamily] = useState("Roboto");
     const [textCurvature, setTextCurvature] = useState(0);
     const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+    // Remove font search popover state; using plain Select
+
+    // Load Google Fonts dynamically
+    useEffect(() => {
+        const link = document.getElementById('google-fonts-link') as HTMLLinkElement;
+        if (!link) {
+            const newLink = document.createElement('link');
+            newLink.id = 'google-fonts-link';
+            newLink.rel = 'stylesheet';
+            newLink.href = `https://fonts.googleapis.com/css2?family=${FONT_FAMILIES.map(f => f.replace(/ /g, '+')).join('&family=')}&display=swap`;
+            document.head.appendChild(newLink);
+        }
+    }, []);
 
     const handleAddText = () => {
         if (!textInput.trim()) return;
@@ -142,20 +171,20 @@ export function Step06Text() {
                                 {/* Show controls when selected */}
                                 {selectedTextId === layer.id && (
                                     <div className="mt-2 pt-2 border-t space-y-2">
-                                        {/* Font Family */}
+                                        {/* Font Family - shadcn Select */}
                                         <div className="space-y-1">
                                             <Label className="text-xs">Font</Label>
-                                            <Select 
-                                                value={layer.fontFamily || "Arial"} 
+                                            <Select
+                                                value={layer.fontFamily || "Roboto"}
                                                 onValueChange={(val) => updateTextureLayer(layer.id, { fontFamily: val })}
                                             >
-                                                <SelectTrigger className="h-8 text-sm">
-                                                    <SelectValue />
+                                                <SelectTrigger className="h-8 text-sm" style={{ fontFamily: layer.fontFamily || "Roboto" }}>
+                                                    <SelectValue placeholder="Choose font" />
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="max-h-[300px]">
                                                     {FONT_FAMILIES.map((font) => (
-                                                        <SelectItem key={font.value} value={font.value}>
-                                                            {font.label}
+                                                        <SelectItem key={font} value={font} className="text-foreground" style={{ fontFamily: font }}>
+                                                            {font}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
