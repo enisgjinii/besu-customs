@@ -80,6 +80,7 @@ export function UVTextureEditor() {
   const setFabricCanvas = useConfiguratorStore((s) => s.setFabricCanvas);
   const enable3DTextureInteraction = useConfiguratorStore((s) => s.enable3DTextureInteraction);
   const setEnable3DTextureInteraction = useConfiguratorStore((s) => s.setEnable3DTextureInteraction);
+  const textureLayers = useConfiguratorStore((s) => s.textureLayers);
 
   // Mobile performance configuration
   const perfConfig = useMobilePerformance();
@@ -115,6 +116,7 @@ export function UVTextureEditor() {
   const [textRotation, setTextRotation] = useState(0);
   const [textCurvature, setTextCurvature] = useState(0); // New: text curving up/down
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null); // Track which layer is being edited
+  const [textSection, setTextSection] = useState("chest"); // Target section for text (chest, back, sleeve, etc.)
 
   const isInternalUpdateRef = useRef(false);
   const [pendingAIImage, setPendingAIImage] = useState<{ url: string; timestamp: number } | null>(null);
@@ -245,6 +247,49 @@ export function UVTextureEditor() {
       console.log("🔄 UV texture updated and flipped for 3D (controls HIDDEN)");
     }, debounceTime);
   }, [setGlobalCustomTexture, perfConfig.debounceMs, perfConfig.isMobile, canvasSize]);
+
+  // Listen for texture layer updates from store (e.g., from Step06Text)
+  useEffect(() => {
+    if (!fabricCanvasRef.current || !isLoaded) return;
+    
+    const canvas = fabricCanvasRef.current;
+    const textLayers = textureLayers.filter((l) => l.type === "text");
+    
+    // Update each text layer object in the canvas with new properties
+    textLayers.forEach((textLayer) => {
+      const fabricObjects = canvas.getObjects();
+      const targetObj = fabricObjects.find((obj: any) => obj._uuid === textLayer.id);
+      
+      if (targetObj && targetObj.type === 'i-text') {
+        // Update text properties
+        targetObj.set({
+          text: textLayer.text || "",
+          fill: textLayer.textColor || "#000000",
+          fontSize: textLayer.fontSize || 100,
+          fontFamily: textLayer.fontFamily || "Arial",
+        });
+        
+        // Update curvature if present
+        if (textLayer.rotation && textLayer.rotation[2]) {
+          targetObj.set({
+            angle: (textLayer.rotation[2] * 180) / Math.PI,
+          });
+        }
+        
+        // Update position
+        if (textLayer.position) {
+          targetObj.set({
+            left: textLayer.position[0] * canvas.width!,
+            top: textLayer.position[1] * canvas.height!,
+          });
+        }
+      }
+    });
+    
+    canvas.renderAll();
+    updateTexture();
+    console.log("🔄 Canvas updated from store texture layers");
+  }, [textureLayers, isLoaded, updateTexture]);
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -892,6 +937,87 @@ export function UVTextureEditor() {
     }
   }, [updateTexture]);
 
+  // Apply font changes to selected text in real-time
+  useEffect(() => {
+    if (!hasSelection) return;
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject && activeObject.type === 'i-text') {
+      activeObject.set({
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontStyle: isItalic ? "italic" : "normal",
+      });
+      canvas.renderAll();
+      updateTexture();
+    }
+  }, [hasSelection, fontFamily, fontSize, fontWeight, isItalic, updateTexture]);
+
+  // Apply color and style changes to selected text
+  useEffect(() => {
+    if (!hasSelection) return;
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject && activeObject.type === 'i-text') {
+      const updates: any = {
+        fill: textColor,
+        underline: isUnderline,
+        linethrough: isStrikethrough,
+        textAlign: textAlign,
+      };
+      
+      if (strokeWidth > 0) {
+        updates.stroke = strokeColor;
+        updates.strokeWidth = strokeWidth;
+      } else {
+        updates.stroke = null;
+      }
+      
+      if (backgroundColor) {
+        updates.backgroundColor = backgroundColor;
+      } else {
+        updates.backgroundColor = null;
+      }
+      
+      if (textShadow) {
+        updates.shadow = {
+          color: 'rgba(0,0,0,0.5)',
+          blur: 5,
+          offsetX: 3,
+          offsetY: 3,
+        };
+      } else {
+        updates.shadow = null;
+      }
+      
+      activeObject.set(updates);
+      canvas.renderAll();
+      updateTexture();
+    }
+  }, [hasSelection, textColor, isUnderline, isStrikethrough, textAlign, strokeColor, strokeWidth, backgroundColor, textShadow, updateTexture]);
+
+  // Apply spacing and rotation changes to selected text
+  useEffect(() => {
+    if (!hasSelection) return;
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject && activeObject.type === 'i-text') {
+      const skewAmount = Math.min(Math.max(textCurvature / 20, -0.5), 0.5);
+      activeObject.set({
+        charSpacing: letterSpacing * 10,
+        lineHeight: lineHeight,
+        angle: textRotation,
+        skewY: skewAmount,
+      });
+      canvas.renderAll();
+      updateTexture();
+    }
+  }, [hasSelection, letterSpacing, lineHeight, textRotation, textCurvature, updateTexture]);
+
   // Reset text styling to defaults
   const resetTextStyling = useCallback(() => {
     setFontFamily("Arial");
@@ -1129,6 +1255,41 @@ export function UVTextureEditor() {
                     className="mb-3"
                   />
                 </div>
+
+                {/* Target Section */}
+                <div className="space-y-2">
+                  <Label>Place Text On</Label>
+                  <Select value={textSection} onValueChange={setTextSection}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="chest">Chest (Front)</SelectItem>
+                      <SelectItem value="back">Back</SelectItem>
+                      <SelectItem value="sleeve">Sleeve</SelectItem>
+                      <SelectItem value="bottom">Bottom / Hem</SelectItem>
+                      <SelectItem value="custom">Custom Position</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {textSection === 'custom' ? 'Text will appear where you place it on canvas' : 'Text will be positioned on the ' + textSection}
+                  </p>
+                </div>
+
+                {/* Selected Text Editing Section */}
+                {hasSelection && activeLayerId && (
+                  <>
+                    <div className="border-t border-border/50 pt-4 mt-4">
+                      <h3 className="font-semibold mb-3 flex items-center gap-2 text-primary">
+                        <Type className="w-4 h-4" />
+                        Edit Selected Text
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Change properties below to update the selected text in real-time
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 {/* Font Family */}
                 <div className="space-y-2">
@@ -1385,6 +1546,15 @@ export function UVTextureEditor() {
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
+
+                {/* Real-time Editing Info */}
+                {hasSelection && activeLayerId && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      ✨ <strong>Real-time editing:</strong> All changes above are applied instantly to your selected text!
+                    </p>
+                  </div>
+                )}
 
                 {/* Preview */}
                 {newText && (
