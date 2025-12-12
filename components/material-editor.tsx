@@ -304,13 +304,15 @@ export function MaterialEditor() {
               )}
             </div>
 
-            {/* Trim Design Options - only for non-volleyball models */}
+            {/* Trim Design Options - for jerseys and trim sections */}
             {!isVolleyballModel &&
-              selectedSection.category === "Trim Options DEMO" && (
+              (selectedSection.category === "Trim Options DEMO" ||
+                selectedSection.category === "Jersey" ||
+                selectedSection.category === "Piping/Trim") && (
                 <div className="border-t border-border/50 pt-4">
                   <div className="mb-4">
                     <label className="block text-xs font-medium mb-3">
-                      Trim Design
+                      Trim / Piping Design
                     </label>
                     <select
                       value={selectedSection.trimDesign || "none"}
@@ -334,6 +336,40 @@ export function MaterialEditor() {
                       <option value="wave">Wave Pattern</option>
                     </select>
                   </div>
+
+                  {/* Trim Color - only show if a trim design is selected */}
+                  {selectedSection.trimDesign && selectedSection.trimDesign !== "none" && (
+                    <div className="mt-4">
+                      <label className="block text-xs font-medium mb-3">
+                        Trim Color
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={selectedSection.trimColor || "#000000"}
+                          onChange={(e) =>
+                            updateSection(selectedSection.id, {
+                              trimColor: e.target.value,
+                            })
+                          }
+                          className="w-12 h-12 rounded-lg cursor-pointer border-2 border-border"
+                        />
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={selectedSection.trimColor || "#000000"}
+                            onChange={(e) =>
+                              updateSection(selectedSection.id, {
+                                trimColor: e.target.value,
+                              })
+                            }
+                            className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background font-mono"
+                            placeholder="#000000"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

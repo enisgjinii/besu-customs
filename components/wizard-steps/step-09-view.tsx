@@ -13,6 +13,7 @@ import {
 import { Download, Share2, Video } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
 export function Step09View() {
     const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
@@ -20,6 +21,7 @@ export function Step09View() {
 
     const [format, setFormat] = useState<"png" | "svg" | "pdf" | "jpg">("png");
     const [fileName, setFileName] = useState("my-besu-design");
+    const [deliveryNotes, setDeliveryNotes] = useState("");
     const [isExporting, setIsExporting] = useState(false);
 
     const handleExportImage = async () => {
@@ -169,6 +171,19 @@ export function Step09View() {
                             <SelectItem value="pdf">PDF (Print Layout)</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Delivery Notes (Optional)</Label>
+                    <Textarea
+                        placeholder="Add any special instructions for your team (colors, measurements, materials, special requests, etc.)"
+                        value={deliveryNotes}
+                        onChange={(e) => setDeliveryNotes(e.target.value)}
+                        className="min-h-[100px] resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        These notes will be included with your order for the production team
+                    </p>
                 </div>
 
                 <div className="pt-4 space-y-3">

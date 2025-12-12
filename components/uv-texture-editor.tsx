@@ -113,6 +113,8 @@ export function UVTextureEditor() {
   const [textShadow, setTextShadow] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState("");
   const [textRotation, setTextRotation] = useState(0);
+  const [textCurvature, setTextCurvature] = useState(0); // New: text curving up/down
+  const [activeLayerId, setActiveLayerId] = useState<string | null>(null); // Track which layer is being edited
 
   const isInternalUpdateRef = useRef(false);
   const [pendingAIImage, setPendingAIImage] = useState<{ url: string; timestamp: number } | null>(null);
@@ -511,16 +513,23 @@ export function UVTextureEditor() {
       }
 
       // Handle selection changes
-      canvas.on("selection:created", () => {
+      canvas.on("selection:created", (e: any) => {
         setHasSelection(true);
+        if (e.selected && e.selected[0]) {
+          setActiveLayerId((e.selected[0] as any)._uuid || null);
+        }
         updateTexture(); // Update texture to show controls
       });
-      canvas.on("selection:updated", () => {
+      canvas.on("selection:updated", (e: any) => {
         setHasSelection(true);
+        if (e.selected && e.selected[0]) {
+          setActiveLayerId((e.selected[0] as any)._uuid || null);
+        }
         updateTexture(); // Update texture to show controls
       });
       canvas.on("selection:cleared", () => {
         setHasSelection(false);
+        setActiveLayerId(null);
         updateTexture(); // Update texture to hide controls
       });
 
@@ -640,7 +649,7 @@ export function UVTextureEditor() {
 
         img.set({
           left: canvas.width! / 2 - (img.width! * scale) / 2,
-          top: canvas.height! / 2 - (img.height! * scale) / 2,
+          top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
           scaleX: scale,
           scaleY: scale,
         });
@@ -806,7 +815,7 @@ export function UVTextureEditor() {
 
     const textOptions: any = {
       left: canvas.width! / 2 - 200,
-      top: canvas.height! / 2 - 100,
+      top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
       fontSize: fontSize,
       fill: textColor,
       fontFamily: fontFamily,
@@ -844,6 +853,13 @@ export function UVTextureEditor() {
 
     const text = new IText(newText, textOptions);
 
+    // Apply text curvature using skew effect (simulates curving)
+    if (textCurvature !== 0) {
+      text.set({
+        skewY: Math.min(Math.max(textCurvature / 20, -0.5), 0.5), // Limit skew range
+      });
+    }
+
     // Apply custom 4-corner controls to the new text object
     if (customControlsRef.current) {
       text.controls = customControlsRef.current.controls;
@@ -861,7 +877,7 @@ export function UVTextureEditor() {
     canvas.renderAll();
     setNewText("");
     updateTexture();
-  }, [newText, fontSize, textColor, fontFamily, fontWeight, isItalic, isUnderline, isStrikethrough, textAlign, strokeColor, strokeWidth, letterSpacing, lineHeight, textShadow, backgroundColor, textRotation, updateTexture]);
+  }, [newText, fontSize, textColor, fontFamily, fontWeight, isItalic, isUnderline, isStrikethrough, textAlign, strokeColor, strokeWidth, letterSpacing, lineHeight, textShadow, backgroundColor, textRotation, textCurvature, updateTexture]);
 
   // Function to update selected text properties
   const updateSelectedText = useCallback((property: string, value: any) => {
@@ -912,7 +928,7 @@ export function UVTextureEditor() {
 
         img.set({
           left: canvas.width! / 2 - (img.width! * scale) / 2,
-          top: canvas.height! / 2 - (img.height! * scale) / 2,
+          top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
           scaleX: scale,
           scaleY: scale,
         });
@@ -1045,6 +1061,29 @@ export function UVTextureEditor() {
 
   return (
     <div className="space-y-4">
+      {/* Active Layer Indicator */}
+      {activeLayerId && (
+        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <span className="text-sm font-medium text-primary">Item Selected & Ready to Edit</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (fabricCanvasRef.current) {
+                fabricCanvasRef.current.discardActiveObject();
+                fabricCanvasRef.current.renderAll();
+              }
+            }}
+            className="h-7 text-xs"
+          >
+            Deselect
+          </Button>
+        </div>
+      )}
+
       {/* Tabs for different tools */}
       <Tabs defaultValue="patterns" className="w-full">
         <TabsList className="w-full grid grid-cols-4">
@@ -1322,6 +1361,20 @@ export function UVTextureEditor() {
                   </div>
                 </div>
 
+                {/* Text Curvature */}
+                <div className="space-y-2">
+                  <Label>Curve Text: {textCurvature > 0 ? '↑' : textCurvature < 0 ? '↓' : '-'} {Math.abs(textCurvature)}</Label>
+                  <Slider
+                    value={[textCurvature]}
+                    onValueChange={(v) => setTextCurvature(v[0])}
+                    min={-100}
+                    max={100}
+                    step={5}
+                    className="flex-1"
+                  />
+                  <p className="text-xs text-muted-foreground">Curve text up (positive) or down (negative)</p>
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex gap-2 pt-2">
                   <Button onClick={handleAddText} className="flex-1" disabled={!isLoaded || !newText.trim()}>
@@ -1352,7 +1405,7 @@ export function UVTextureEditor() {
                         lineHeight: lineHeight,
                         textShadow: textShadow ? "2px 2px 4px rgba(0,0,0,0.5)" : "none",
                         WebkitTextStroke: strokeWidth > 0 ? `${strokeWidth}px ${strokeColor}` : undefined,
-                        transform: `rotate(${textRotation}deg)`,
+                        transform: `rotate(${textRotation}deg) skewY(${Math.min(Math.max(textCurvature / 20, -0.5), 0.5)}rad)`,
                       }}
                     >
                       {newText}

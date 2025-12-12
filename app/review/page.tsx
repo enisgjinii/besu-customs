@@ -40,7 +40,7 @@ export default function ReviewPage() {
         <Scene />
       </main>
 
-      <aside className="w-full md:w-80 h-64 md:h-full border-t-2 md:border-t-0 md:border-l-2 border-primary bg-card overflow-y-auto">
+      <aside className="w-full md:w-[500px] h-64 md:h-full border-t-2 md:border-t-0 md:border-l-2 border-primary bg-card overflow-y-auto">
         <div className="p-4 border-b-2 border-primary">
           <h2 className="text-lg font-bold text-foreground">Review Demo</h2>
           <p className="text-xs text-muted-foreground mt-1">

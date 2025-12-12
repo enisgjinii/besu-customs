@@ -62,6 +62,7 @@ export interface MaterialSection {
   wireframe: boolean;
   customTexture?: string; // base64 data URL
   trimDesign?: string; // For trim line designs
+  trimColor?: string; // Color for trim lines
   combinedOriginalNames?: string[]; // For combined sections like stoppers
   combinedMaterialIds?: string[]; // Material UUIDs for combined sections
   gradient?: {

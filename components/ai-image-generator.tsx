@@ -193,46 +193,13 @@ export function AIImageGenerator() {
         />
       </div>
 
-      {/* User API Mode Toggle */}
-      <div className="flex items-center justify-between p-2 border rounded-lg bg-card">
-        <div className="flex items-center gap-2">
-          <Key className="w-4 h-4" />
-          <Label htmlFor="user-api-mode" className="text-xs font-medium">
-            Use My API Key
-          </Label>
+      {/* API Mode - System only */}
+      <div className="text-[10px] p-2 rounded-md bg-primary/10 border border-primary/20 text-primary">
+        <div className="flex items-center gap-1 mb-1">
+          <Sparkles className="w-3 h-3" />
+          <span className="font-medium">Using System API</span>
         </div>
-        <Switch
-          id="user-api-mode"
-          checked={userApiMode}
-          onCheckedChange={setUserApiMode}
-          className="data-[state=checked]:bg-primary"
-        />
       </div>
-
-      {/* User API Key Input */}
-      {userApiMode && (
-        <div className="space-y-2">
-          <Label
-            htmlFor="user-api-key"
-            className="flex items-center gap-2 text-xs"
-          >
-            <Key className="w-3 h-3" />
-            Enter your Runware API key...
-          </Label>
-          <Input
-            id="user-api-key"
-            type="password"
-            placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx"
-            value={userApiKey}
-            onChange={(e) => setUserApiKey(e.target.value)}
-            disabled={loading}
-            className="text-xs"
-          />
-          <p className="text-[10px] text-muted-foreground">
-            Your API key will be used for image generation (3 uses per day)
-          </p>
-        </div>
-      )}
 
       {/* Usage Information */}
       {usage && (
