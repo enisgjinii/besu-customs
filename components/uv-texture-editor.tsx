@@ -255,40 +255,85 @@ export function UVTextureEditor() {
     const canvas = fabricCanvasRef.current;
     const textLayers = textureLayers.filter((l) => l.type === "text");
     
-    // Update each text layer object in the canvas with new properties
-    textLayers.forEach((textLayer) => {
-      const fabricObjects = canvas.getObjects();
-      const targetObj = fabricObjects.find((obj: any) => obj._uuid === textLayer.id);
+    const updateCanvasFromStore = async () => {
+      const { IText } = await import("fabric");
       
-      if (targetObj && targetObj.type === 'i-text') {
-        // Update text properties
-        targetObj.set({
-          text: textLayer.text || "",
-          fill: textLayer.textColor || "#000000",
-          fontSize: textLayer.fontSize || 100,
-          fontFamily: textLayer.fontFamily || "Arial",
-        });
+      textLayers.forEach((textLayer) => {
+        const fabricObjects = canvas.getObjects();
+        let targetObj = fabricObjects.find((obj: any) => obj._uuid === textLayer.id);
         
-        // Update curvature if present
-        if (textLayer.rotation && textLayer.rotation[2]) {
+        if (targetObj && targetObj.type === 'i-text') {
+          // UPDATE existing text object
           targetObj.set({
-            angle: (textLayer.rotation[2] * 180) / Math.PI,
+            text: textLayer.text || "",
+            fill: textLayer.textColor || "#000000",
+            fontSize: textLayer.fontSize || 100,
+            fontFamily: textLayer.fontFamily || "Arial",
           });
+          
+          // Update rotation (curvature)
+          if (textLayer.rotation && textLayer.rotation[2]) {
+            targetObj.set({
+              angle: (textLayer.rotation[2] * 180) / Math.PI,
+            });
+          }
+          
+          // Update position
+          if (textLayer.position) {
+            targetObj.set({
+              left: textLayer.position[0] * canvas.width!,
+              top: textLayer.position[1] * canvas.height!,
+            });
+          }
+          
+          console.log(`✏️ Updated text layer: ${textLayer.text}`);
+        } else if (!targetObj && textLayer.visible !== false) {
+          // CREATE new text object if it doesn't exist and is visible
+          const textOptions: any = {
+            left: (textLayer.position?.[0] || 0.5) * canvas.width!,
+            top: (textLayer.position?.[1] || 0.35) * canvas.height!, // Default to chest area
+            fontSize: textLayer.fontSize || 100,
+            fill: textLayer.textColor || "#000000",
+            fontFamily: textLayer.fontFamily || "Arial",
+            text: textLayer.text || "",
+            editable: true,
+          };
+          
+          const text = new IText(textLayer.text || "", textOptions);
+          text._uuid = textLayer.id;
+          
+          // Apply custom controls if available
+          if (customControlsRef.current) {
+            text.controls = customControlsRef.current.controls;
+            text.set({
+              cornerSize: customControlsRef.current.cornerSize,
+              borderColor: customControlsRef.current.borderColor,
+              borderDashArray: customControlsRef.current.borderDashArray,
+              borderScaleFactor: customControlsRef.current.borderScaleFactor,
+              padding: customControlsRef.current.padding,
+            });
+          }
+          
+          canvas.add(text);
+          console.log(`✨ Created new text layer: ${textLayer.text}`);
         }
-        
-        // Update position
-        if (textLayer.position) {
-          targetObj.set({
-            left: textLayer.position[0] * canvas.width!,
-            top: textLayer.position[1] * canvas.height!,
-          });
+      });
+      
+      // Remove text objects that are no longer in store
+      const storeLayerIds = new Set(textLayers.map(l => l.id));
+      canvas.getObjects('i-text').forEach((obj: any) => {
+        if (!storeLayerIds.has(obj._uuid)) {
+          canvas.remove(obj);
+          console.log("🗑️ Removed text layer no longer in store");
         }
-      }
-    });
+      });
+      
+      canvas.renderAll();
+      updateTexture();
+    };
     
-    canvas.renderAll();
-    updateTexture();
-    console.log("🔄 Canvas updated from store texture layers");
+    updateCanvasFromStore();
+    console.log("🔄 Canvas synced with store texture layers");
   }, [textureLayers, isLoaded, updateTexture]);
 
   // Initialize Fabric.js canvas

@@ -86,6 +86,7 @@ export interface TextureLayer {
   text?: string;
   textColor?: string;
   fontSize?: number;
+  fontFamily?: string;
   imageUrl?: string;
   // 3D Transform properties for Decals
   position?: [number, number, number];

@@ -52,6 +52,7 @@ export function Step06Text() {
             text: textInput,
             textColor: textColor,
             fontSize: fontSize,
+            fontFamily: fontFamily,
             position: [0.5, 0.35, 0] as [number, number, number], // Higher position (chest area)
             rotation: [0, 0, textCurvature] as [number, number, number], // Use rotation Z for curvature
             scale: [1, 1, 1] as [number, number, number],
@@ -70,7 +71,7 @@ export function Step06Text() {
         <div className="space-y-4">
             {/* Quick Add Section */}
             <div className="space-y-2">
-                <Label className="text-sm font-semibold">Quick Add Text</Label>
+                <Label className="text-sm font-semibold">Add Text</Label>
                 <div className="flex gap-2 items-end">
                     <div className="flex-1 space-y-1">
                         <Input
@@ -90,61 +91,6 @@ export function Step06Text() {
                     <Button onClick={handleAddText} size="icon" className="h-9 w-9 shrink-0">
                         <Plus className="w-4 h-4" />
                     </Button>
-                </div>
-            </div>
-
-            {/* Text Properties (for new or selected text) */}
-            <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
-                <Label className="text-sm font-semibold">Text Properties</Label>
-                
-                {/* Font Family */}
-                <div className="space-y-1">
-                    <Label className="text-xs">Font</Label>
-                    <Select value={fontFamily} onValueChange={setFontFamily}>
-                        <SelectTrigger className="h-8 text-sm">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {FONT_FAMILIES.map((font) => (
-                                <SelectItem key={font.value} value={font.value}>
-                                    {font.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* Font Size */}
-                <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                        <Label className="text-xs">Size: {fontSize}px</Label>
-                    </div>
-                    <Slider
-                        value={[fontSize]}
-                        onValueChange={(v) => setFontSize(v[0])}
-                        min={20}
-                        max={300}
-                        step={5}
-                        className="w-full"
-                    />
-                </div>
-
-                {/* Text Curvature */}
-                <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                        <Label className="text-xs">
-                            Curve: {textCurvature > 0 ? '↑' : textCurvature < 0 ? '↓' : '-'} {Math.abs(textCurvature)}°
-                        </Label>
-                    </div>
-                    <Slider
-                        value={[textCurvature]}
-                        onValueChange={(v) => setTextCurvature(v[0])}
-                        min={-45}
-                        max={45}
-                        step={2}
-                        className="w-full"
-                    />
-                    <p className="text-xs text-muted-foreground">Curve up (+) or down (-)</p>
                 </div>
             </div>
 
@@ -196,6 +142,27 @@ export function Step06Text() {
                                 {/* Show controls when selected */}
                                 {selectedTextId === layer.id && (
                                     <div className="mt-2 pt-2 border-t space-y-2">
+                                        {/* Font Family */}
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Font</Label>
+                                            <Select 
+                                                value={layer.fontFamily || "Arial"} 
+                                                onValueChange={(val) => updateTextureLayer(layer.id, { fontFamily: val })}
+                                            >
+                                                <SelectTrigger className="h-8 text-sm">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {FONT_FAMILIES.map((font) => (
+                                                        <SelectItem key={font.value} value={font.value}>
+                                                            {font.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        
+                                        {/* Color and Size */}
                                         <div className="flex gap-2">
                                             <input
                                                 type="color"
@@ -214,6 +181,26 @@ export function Step06Text() {
                                             <span className="text-xs text-muted-foreground w-10 text-right pt-1">
                                                 {layer.fontSize}px
                                             </span>
+                                        </div>
+                                        
+                                        {/* Text Curvature */}
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">
+                                                Curve: {layer.rotation?.[2] ? Math.round((layer.rotation[2] * 180) / Math.PI) : 0}°
+                                            </Label>
+                                            <Slider
+                                                value={[layer.rotation?.[2] ? (layer.rotation[2] * 180) / Math.PI : 0]}
+                                                onValueChange={(v) => {
+                                                    const radians = (v[0] * Math.PI) / 180;
+                                                    updateTextureLayer(layer.id, { 
+                                                        rotation: [0, 0, radians] as [number, number, number]
+                                                    });
+                                                }}
+                                                min={-45}
+                                                max={45}
+                                                step={2}
+                                                className="flex-1"
+                                            />
                                         </div>
                                     </div>
                                 )}

@@ -54,15 +54,6 @@ export function ConnectionIndicator() {
     );
   }
   
-  // Only show indicator on slow connections
-  if (speed !== 'slow') {
-    return null;
-  }
-  
-  return (
-    <div className="fixed bottom-4 right-4 z-50 bg-orange-500/90 backdrop-blur-sm text-white px-3 py-2 rounded-lg shadow-lg border border-orange-400/20 flex items-center gap-2 text-sm">
-      <Signal className="w-4 h-4" />
-      <span>Slow Connection - Loading optimized models</span>
-    </div>
-  );
+  // Slow connection indicator removed
+  return null;
 }

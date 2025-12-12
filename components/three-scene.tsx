@@ -146,6 +146,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           const scaleMultiplier = layer.scale?.[0] ?? 1;
           const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
           const fontSize = baseFontSize * scaleMultiplier;
+          
+          // Get font family from layer or default to Arial
+          const fontFamily = layer.fontFamily || 'Arial';
 
           const x = u * CANVAS_SIZE;
           const y = (1 - v) * CANVAS_SIZE;
@@ -153,8 +156,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           ctx.translate(x, y);
           ctx.rotate(rotation);
           
-          // Use smooth font rendering
-          ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
+          // Use smooth font rendering with dynamic font family
+          ctx.font = `bold ${fontSize}px ${fontFamily}, Arial, sans-serif`;
           ctx.fillStyle = layer.textColor || '#000000';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
