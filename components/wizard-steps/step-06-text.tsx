@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Type, Plus, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
 import { TextureLayerSelector } from "@/components/texture-layer-selector";
+import { debounce } from "@/lib/mobile-performance-utils";
 // (no extra utils needed)
 
 // 200 Popular Google Fonts
@@ -54,6 +55,14 @@ export function Step06Text() {
     const [textCurvature, setTextCurvature] = useState(0);
     const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
     // Remove font search popover state; using plain Select
+
+    // Debounced update for better mobile performance
+    const debouncedUpdate = useCallback(
+        debounce((id: string, updates: any) => {
+            updateTextureLayer(id, updates);
+        }, 150),
+        [updateTextureLayer]
+    );
 
     // Load Google Fonts dynamically
     useEffect(() => {

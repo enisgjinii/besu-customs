@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { TextureLayerSelector } from "@/components/texture-layer-selector";
+import { compressImageForMobile, isMobile } from "@/lib/mobile-performance-utils";
 
 export function Step08AIImages() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
@@ -88,7 +89,13 @@ export function Step08AIImages() {
             toast.info("Processing image (removing background)...");
 
             try {
-                const processedUrl = await processImageWithTransparency(data.url);
+                let processedUrl = await processImageWithTransparency(data.url);
+                
+                // Compress images on mobile for better performance
+                if (isMobile()) {
+                    toast.info("Optimizing AI image for mobile...");
+                    processedUrl = await compressImageForMobile(processedUrl, 1024, 0.85);
+                }
 
                 addTextureLayer({
                     id: uuidv4(),

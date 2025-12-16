@@ -40,8 +40,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const perfConfig = useMobilePerformance();
   
-  // Use higher resolution for smoother textures
-  const CANVAS_SIZE = perfConfig.isLowEndDevice ? 2048 : 4096;
+  // Use optimal canvas size based on device performance
+  const CANVAS_SIZE = perfConfig.uvCanvasSize;
 
   const [canvas] = useState(() => {
     const c = document.createElement('canvas');
@@ -69,9 +69,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     });
     if (!ctx) return;
 
-    // Enable image smoothing for better quality
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    // Adjust image smoothing based on performance mode
+    ctx.imageSmoothingEnabled = !perfConfig.isLowEndDevice;
+    ctx.imageSmoothingQuality = perfConfig.isLowEndDevice ? 'low' : 'high';
 
     // Clear canvas with white (neutral for multiply blending with material color)
     ctx.fillStyle = '#ffffff';

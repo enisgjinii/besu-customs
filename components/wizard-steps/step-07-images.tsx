@@ -7,17 +7,25 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
 import { TextureLayerSelector } from "@/components/texture-layer-selector";
+import { compressImageForMobile, isMobile } from "@/lib/mobile-performance-utils";
 
 export function Step07Images() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
     const textureLayers = useConfiguratorStore((state) => state.textureLayers);
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (event) => {
-                const result = event.target?.result as string;
+            reader.onload = async (event) => {
+                let result = event.target?.result as string;
+                
+                // Compress images on mobile for better performance
+                if (isMobile()) {
+                    toast.info("Optimizing image for mobile...");
+                    result = await compressImageForMobile(result, 1024, 0.85);
+                }
+                
                 addTextureLayer({
                     id: uuidv4(),
                     name: file.name,
