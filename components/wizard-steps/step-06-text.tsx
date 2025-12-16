@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
+import { TextureLayerSelector } from "@/components/texture-layer-selector";
 // (no extra utils needed)
 
 // 200 Popular Google Fonts
@@ -98,6 +99,9 @@ export function Step06Text() {
 
     return (
         <div className="space-y-4">
+            {/* Texture Layer Selector - Shows what's selected */}
+            {textureLayers.length > 0 && <TextureLayerSelector />}
+
             {/* Quick Add Section */}
             <div className="space-y-2">
                 <Label className="text-sm font-semibold">Add Text</Label>
@@ -230,6 +234,55 @@ export function Step06Text() {
                                                 step={2}
                                                 className="flex-1"
                                             />
+                                        </div>
+
+                                        {/* Position Control */}
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Position on Jersey</Label>
+                                            <div className="grid grid-cols-3 gap-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant={layer.position?.[1] === 0.15 ? "default" : "outline"}
+                                                    onClick={() => updateTextureLayer(layer.id, { position: [0.5, 0.15, 0] as [number, number, number] })}
+                                                    className="text-xs h-7"
+                                                >
+                                                    Top
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant={layer.position?.[1] === 0.35 ? "default" : "outline"}
+                                                    onClick={() => updateTextureLayer(layer.id, { position: [0.5, 0.35, 0] as [number, number, number] })}
+                                                    className="text-xs h-7"
+                                                >
+                                                    Chest
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant={layer.position?.[1] === 0.55 ? "default" : "outline"}
+                                                    onClick={() => updateTextureLayer(layer.id, { position: [0.5, 0.55, 0] as [number, number, number] })}
+                                                    className="text-xs h-7"
+                                                >
+                                                    Stomach
+                                                </Button>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-1 mt-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant={layer.position?.[0] === 0.25 ? "default" : "outline"}
+                                                    onClick={() => updateTextureLayer(layer.id, { position: [0.25, layer.position?.[1] || 0.35, 0] as [number, number, number] })}
+                                                    className="text-xs h-7"
+                                                >
+                                                    Left
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant={layer.position?.[0] === 0.75 ? "default" : "outline"}
+                                                    onClick={() => updateTextureLayer(layer.id, { position: [0.75, layer.position?.[1] || 0.35, 0] as [number, number, number] })}
+                                                    className="text-xs h-7"
+                                                >
+                                                    Right
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

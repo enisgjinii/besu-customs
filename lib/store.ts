@@ -148,12 +148,14 @@ export interface ConfiguratorState {
 
   // Texture layers management
   textureLayers: TextureLayer[];
+  selectedTextureLayerId: string | null;
   addTextureLayer: (layer: TextureLayer) => void;
   updateTextureLayer: (id: string, updates: Partial<TextureLayer>) => void;
   removeTextureLayer: (id: string) => void;
   duplicateTextureLayer: (id: string) => void;
   reorderTextureLayers: (layers: TextureLayer[]) => void;
   clearTextureLayers: () => void;
+  setSelectedTextureLayerId: (id: string | null) => void;
 
   // Scene controls
   showGrid: boolean;
@@ -219,6 +221,10 @@ export interface ConfiguratorState {
   exportPreset: () => string;
   importPreset: (json: string) => void;
   resetAllCustomizations: () => void;
+
+  // Delivery notes for orders
+  deliveryNotes: string;
+  setDeliveryNotes: (notes: string) => void;
 }
 
 // Generate all possible products (for fallback and reference)
@@ -569,6 +575,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
 
       // Texture layers management
       textureLayers: [],
+      selectedTextureLayerId: null,
       addTextureLayer: (layer: TextureLayer) => {
         // Log when layer is added - useful for capturing preset positions
         console.log("🎨 LAYER ADDED:", {
@@ -592,7 +599,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           }
         }
 
-        set((state) => ({ textureLayers: [...state.textureLayers, layer] }));
+        set((state) => ({ textureLayers: [...state.textureLayers, layer], selectedTextureLayerId: layer.id }));
       },
       updateTextureLayer: (id: string, updates: Partial<TextureLayer>) =>
         set((state) => ({
@@ -603,6 +610,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       removeTextureLayer: (id: string) =>
         set((state) => ({
           textureLayers: state.textureLayers.filter((layer) => layer.id !== id),
+          selectedTextureLayerId: state.selectedTextureLayerId === id ? null : state.selectedTextureLayerId,
         })),
       duplicateTextureLayer: (id: string) =>
         set((state) => {
@@ -631,7 +639,8 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         }),
       reorderTextureLayers: (layers: TextureLayer[]) =>
         set({ textureLayers: layers }),
-      clearTextureLayers: () => set({ textureLayers: [] }),
+      clearTextureLayers: () => set({ textureLayers: [], selectedTextureLayerId: null }),
+      setSelectedTextureLayerId: (id: string | null) => set({ selectedTextureLayerId: id }),
 
       // Scene controls
       showGrid: false,
@@ -767,10 +776,16 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           backgroundImage: null,
           backgroundVideo: null,
           recentColors: [],
+          deliveryNotes: '',
         });
         
         console.log('🔄 Reset all customizations');
       },
+
+      // Delivery notes
+      deliveryNotes: '',
+      setDeliveryNotes: (notes: string) => set({ deliveryNotes: notes }),
+
       // ensure the store stays valid
     }),
     {
@@ -783,6 +798,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         sections: state.sections,
         selectedProductId: state.selectedProductId,
         currentModelUrl: state.currentModelUrl,
+        deliveryNotes: state.deliveryNotes,
       }),
     }
   )

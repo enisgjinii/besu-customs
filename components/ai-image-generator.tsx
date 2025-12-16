@@ -38,8 +38,6 @@ export function AIImageGenerator() {
     used: number;
     remaining: number;
   } | null>(null);
-  const [userApiMode, setUserApiMode] = useState(false);
-  const [userApiKey, setUserApiKey] = useState("");
 
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
@@ -50,20 +48,11 @@ export function AIImageGenerator() {
       return;
     }
 
-    if (userApiMode && !userApiKey.trim()) {
-      toast.error("Please enter your API key");
-      return;
-    }
-
     setLoading(true);
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
-
-      if (userApiMode && userApiKey.trim()) {
-        headers["x-user-api-key"] = userApiKey.trim();
-      }
 
       const response = await fetch("/api/generate-image", {
         method: "POST",
@@ -216,7 +205,7 @@ export function AIImageGenerator() {
               <Sparkles className="w-3 h-3" />
             )}
             <span className="font-medium">
-              {userApiMode ? "Your API Usage" : "System API Usage"}
+              System API Usage
             </span>
           </div>
           <div>
@@ -224,7 +213,7 @@ export function AIImageGenerator() {
           </div>
           {usage.remaining === 0 && (
             <div className="text-[10px] text-destructive mt-1">
-              Limit reached! Switch to system API or wait until tomorrow.
+              Daily limit reached. Please try again tomorrow.
             </div>
           )}
         </div>
@@ -234,9 +223,7 @@ export function AIImageGenerator() {
         onClick={handleGenerate}
         disabled={
           loading ||
-          !prompt.trim() ||
-          (userApiMode && !userApiKey.trim()) ||
-          (usage?.remaining === 0 && userApiMode)
+          !prompt.trim()
         }
         className="w-full text-xs h-8"
         data-tour="ai-generate"

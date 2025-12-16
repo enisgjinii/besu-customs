@@ -300,7 +300,7 @@ export function UVTextureEditor() {
           };
           
           const text = new IText(textLayer.text || "", textOptions);
-          text._uuid = textLayer.id;
+          (text as any)._uuid = textLayer.id;
           
           // Apply custom controls if available
           if (customControlsRef.current) {

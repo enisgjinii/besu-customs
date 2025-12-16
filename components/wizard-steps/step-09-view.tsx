@@ -18,10 +18,11 @@ import { Textarea } from "@/components/ui/textarea";
 export function Step09View() {
     const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
     const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
+    const deliveryNotes = useConfiguratorStore((state) => state.deliveryNotes);
+    const setDeliveryNotes = useConfiguratorStore((state) => state.setDeliveryNotes);
 
     const [format, setFormat] = useState<"png" | "svg" | "pdf" | "jpg">("png");
     const [fileName, setFileName] = useState("my-besu-design");
-    const [deliveryNotes, setDeliveryNotes] = useState("");
     const [isExporting, setIsExporting] = useState(false);
 
     const handleExportImage = async () => {

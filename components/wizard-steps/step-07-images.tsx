@@ -6,6 +6,7 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
+import { TextureLayerSelector } from "@/components/texture-layer-selector";
 
 export function Step07Images() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
@@ -27,7 +28,7 @@ export function Step07Images() {
                     blendMode: "normal",
                     order: textureLayers.length,
                     imageUrl: result,
-                    position: [0.5, 0.5, 0],
+                    position: [0.5, 0.35, 0], // Chest position
                     rotation: [0, 0, 0],
                     scale: [0.3, 0.3, 1],
                 });
@@ -42,6 +43,9 @@ export function Step07Images() {
 
     return (
         <div className="space-y-3">
+            {/* Texture Layer Selector - Shows what's selected */}
+            {textureLayers.length > 0 && <TextureLayerSelector />}
+
             {/* Compact upload button */}
             <Button variant="outline" className="w-full h-10 relative" asChild>
                 <label className="cursor-pointer flex items-center justify-center gap-2">

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { TextureLayerSelector } from "@/components/texture-layer-selector";
 
 export function Step08AIImages() {
     const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
@@ -99,7 +100,7 @@ export function Step08AIImages() {
                     blendMode: "normal",
                     order: textureLayers.length,
                     imageUrl: processedUrl,
-                    position: [0, 0, 0.1], // Center
+                    position: [0.5, 0.35, 0], // Chest area (center X, upper Y)
                     rotation: [0, 0, 0],
                     scale: [1, 1, 1],
                     flipX: false,
@@ -119,6 +120,9 @@ export function Step08AIImages() {
 
     return (
         <div className="space-y-6">
+            {/* Texture Layer Selector - Shows what's selected */}
+            {textureLayers.length > 0 && <TextureLayerSelector />}
+
             <div className="space-y-2">
                 <h2 className="text-lg font-semibold">Generate with AI</h2>
                 <p className="text-sm text-muted-foreground">
