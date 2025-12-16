@@ -243,17 +243,19 @@ export function ConfiguratorWizard() {
                             <RotateCcw className="w-5 h-5 text-destructive" />
                             Reset All Customizations?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="text-base">
-                            This will clear all your changes including:
-                            <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                                <li>Colors</li>
-                                <li>Patterns and textures</li>
-                                <li>Logos and images</li>
-                                <li>Text layers</li>
-                            </ul>
-                            <p className="mt-3 font-semibold text-destructive">
-                                This action cannot be undone.
-                            </p>
+                        <AlertDialogDescription asChild>
+                            <div className="text-base space-y-3">
+                                <p>This will clear all your changes including:</p>
+                                <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                                    <li>Colors</li>
+                                    <li>Patterns and textures</li>
+                                    <li>Logos and images</li>
+                                    <li>Text layers</li>
+                                </ul>
+                                <p className="font-semibold text-destructive">
+                                    This action cannot be undone.
+                                </p>
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
