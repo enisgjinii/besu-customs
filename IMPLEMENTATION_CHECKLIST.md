@@ -364,9 +364,9 @@ npm run verify-optimization
 
 **Optimization Status:** ⬜ Not Started | ⬜ In Progress | ⬜ Complete
 
-**Deployed By:** ******\_\_\_******  
-**Date:** ******\_\_\_******  
-**Production URL:** ******\_\_\_******
+**Deployed By:** **\*\***\_\_\_**\*\***  
+**Date:** **\*\***\_\_\_**\*\***  
+**Production URL:** **\*\***\_\_\_**\*\***
 
 ---
 

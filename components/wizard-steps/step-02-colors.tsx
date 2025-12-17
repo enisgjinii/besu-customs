@@ -141,34 +141,45 @@ export function Step02Colors() {
 
   return (
     <div className="space-y-3 md:space-y-4 w-full">
-      {/* Section pills - horizontal scroll with touch-friendly sizing */}
+      {/* Section pills - horizontal scroll with enhanced mobile touch support */}
       <div className="w-full">
-        <div
-          className="overflow-x-auto overflow-y-hidden scrollbar-hide"
-          style={{ WebkitOverflowScrolling: "touch" }}
-        >
-          <div className="inline-flex gap-1.5 md:gap-2 pb-2 pr-4">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSectionId(section.id)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 md:py-2.5 rounded-full border transition-all whitespace-nowrap text-[10px] md:text-xs font-medium touch-manipulation min-h-[36px] md:min-h-[44px]",
-                  activeSectionId === section.id
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                    : "bg-card text-muted-foreground border-border hover:bg-muted hover:border-primary/50 active:scale-95",
-                )}
-              >
-                <div
-                  className="w-4 h-4 md:w-5 md:h-5 rounded-full border border-white/30 shadow-inner flex-shrink-0"
-                  style={{ backgroundColor: section.color }}
-                />
-                <span className="max-w-[100px] md:max-w-[140px] truncate">
-                  {section.name}
-                </span>
-              </button>
-            ))}
+        <div className="relative">
+          <div
+            className="overflow-x-auto overflow-y-hidden scrollbar-hide mobile-horizontal-scroll"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              touchAction: "pan-x",
+              scrollBehavior: "smooth",
+            }}
+          >
+            <div className="inline-flex gap-2 md:gap-2 pb-3 pr-6 pl-1">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSectionId(section.id)}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-4 md:px-4 py-3 md:py-2.5 rounded-2xl md:rounded-full border-2 transition-all whitespace-nowrap text-sm md:text-xs font-semibold touch-manipulation min-h-[52px] md:min-h-[44px] flex-shrink-0",
+                    activeSectionId === section.id
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105 md:scale-100"
+                      : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50 active:scale-95 shadow-sm",
+                  )}
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <div
+                    className="w-6 h-6 md:w-5 md:h-5 rounded-full border-2 border-white/40 shadow-sm flex-shrink-0"
+                    style={{ backgroundColor: section.color }}
+                  />
+                  <span className="max-w-[120px] md:max-w-[140px] truncate">
+                    {section.name}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Scroll indicators for mobile */}
+          <div className="md:hidden absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none" />
+          <div className="md:hidden absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background via-background/60 to-transparent pointer-events-none" />
         </div>
       </div>
 

@@ -133,6 +133,75 @@ export function MaterialEditor() {
           </div>
         )}
 
+        {/* Mobile horizontal parts selector */}
+        <div className="md:hidden mb-5">
+          <div className="mb-3">
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              Select Part to Color
+            </h4>
+          </div>
+
+          <div className="relative">
+            <div
+              className="overflow-x-auto overflow-y-hidden scrollbar-hide mobile-horizontal-scroll"
+              style={{
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-x",
+                scrollBehavior: "smooth",
+              }}
+            >
+              <div className="inline-flex gap-2 pb-3 pr-6 pl-1">
+                {sections.map((section) => {
+                  const isSelected = selectedSectionId === section.id;
+                  const isLinked = linkedSections.has(section.id);
+                  const badge = getSectionBadge(section);
+
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => {
+                        setSelectedSection(section.id);
+                        setHighlightedSection(section.id);
+                      }}
+                      onMouseEnter={() => setHighlightedSection(section.id)}
+                      onMouseLeave={() => setHighlightedSection(null)}
+                      className={`inline-flex items-center gap-2 px-4 py-3 rounded-2xl border-2 transition-all whitespace-nowrap text-sm font-semibold touch-manipulation min-h-[52px] flex-shrink-0 ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105"
+                          : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50 active:scale-95 shadow-sm"
+                      } ${isLinked ? "ring-2 ring-blue-500/50" : ""}`}
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full border-2 border-white/40 shadow-sm flex-shrink-0"
+                        style={{ backgroundColor: section.color }}
+                      />
+                      <div className="flex flex-col items-start">
+                        <span className="max-w-[100px] truncate leading-tight">
+                          {section.name}
+                        </span>
+                        {badge && (
+                          <span className="text-xs opacity-75 font-medium">
+                            {badge.text}
+                          </span>
+                        )}
+                      </div>
+                      {isLinked && (
+                        <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Scroll indicators */}
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background via-background/60 to-transparent pointer-events-none" />
+          </div>
+        </div>
+
         {/* Mobile-friendly hint */}
         <div className="md:hidden mb-5 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
           <div className="flex items-start gap-3">
@@ -142,8 +211,8 @@ export function MaterialEditor() {
                 Quick Tip
               </p>
               <p className="text-sm text-blue-600 dark:text-blue-400">
-                Tap any section below to select it, then use "Choose Color" to
-                change its color. Link sections together to change multiple
+                Swipe left/right above to select parts, then use "Choose Color"
+                to change colors. Link sections together to change multiple
                 parts at once.
               </p>
             </div>

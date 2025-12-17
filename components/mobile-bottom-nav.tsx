@@ -287,7 +287,10 @@ export function MobileBottomNav() {
         {/* Content */}
         <div
           className="overflow-y-auto thin-scrollbar overscroll-contain"
-          style={{ height: "calc(100% - 60px)" }}
+          style={{
+            height: "calc(100% - 60px)",
+            touchAction: "pan-y",
+          }}
         >
           {activeTab === "materials" && (
             <div className="p-5 space-y-5 pb-6">
