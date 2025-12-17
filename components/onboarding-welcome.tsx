@@ -354,7 +354,10 @@ export function OnboardingWelcome() {
             </div>
 
             <div className="space-y-3">
-              <Button onClick={handleStartTour} className="w-full font-medium min-h-[52px] md:min-h-[44px] text-base md:text-sm">
+              <Button
+                onClick={handleStartTour}
+                className="w-full font-medium min-h-[52px] md:min-h-[44px] text-base md:text-sm"
+              >
                 Start Tour
               </Button>
 

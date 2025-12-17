@@ -1,5 +1,13 @@
-export type LogLevel = 'info' | 'warn' | 'error' | 'debug' | 'critical';
-export type LogCategory = 'api' | 'auth' | 'database' | 'ui' | 'network' | 'performance' | 'security' | 'system';
+export type LogLevel = "info" | "warn" | "error" | "debug" | "critical";
+export type LogCategory =
+  | "api"
+  | "auth"
+  | "database"
+  | "ui"
+  | "network"
+  | "performance"
+  | "security"
+  | "system";
 
 export interface GeoLocation {
   country?: string;
@@ -53,14 +61,14 @@ function vercelLog(level: LogLevel, data: any) {
 
   // Vercel automatically captures and indexes console logs
   switch (level) {
-    case 'critical':
-    case 'error':
+    case "critical":
+    case "error":
       console.error(JSON.stringify(logData));
       break;
-    case 'warn':
+    case "warn":
       console.warn(JSON.stringify(logData));
       break;
-    case 'debug':
+    case "debug":
       console.debug(JSON.stringify(logData));
       break;
     default:
@@ -82,20 +90,26 @@ class ErrorLogger {
   }
 
   private parseUserAgent(userAgent: string) {
-    const browser = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[0] || 'Unknown';
-    const os = userAgent.match(/(Windows|Mac|Linux|Android|iOS)[\s\w.]*/)?.[0] || 'Unknown';
-    const device = /Mobile|Tablet|iPad|iPhone|Android/.test(userAgent) ? 'Mobile' : 'Desktop';
-    
+    const browser =
+      userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[0] ||
+      "Unknown";
+    const os =
+      userAgent.match(/(Windows|Mac|Linux|Android|iOS)[\s\w.]*/)?.[0] ||
+      "Unknown";
+    const device = /Mobile|Tablet|iPad|iPhone|Android/.test(userAgent)
+      ? "Mobile"
+      : "Desktop";
+
     return { browser, os, device };
   }
 
   private getClientInfo(): ClientInfo {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return {
-        userAgent: 'server',
-        browser: 'server',
-        os: 'server',
-        device: 'server',
+        userAgent: "server",
+        browser: "server",
+        os: "server",
+        device: "server",
       };
     }
 
@@ -109,7 +123,7 @@ class ErrorLogger {
       device,
       screenResolution: `${window.screen.width}x${window.screen.height}`,
       language: window.navigator.language,
-      referrer: document.referrer || 'direct',
+      referrer: document.referrer || "direct",
     };
   }
 
@@ -126,11 +140,11 @@ class ErrorLogger {
       userId?: string;
       isClientVisible?: boolean;
       clientMessage?: string;
-    } = {}
+    } = {},
   ) {
     const {
-      level = 'info',
-      category = 'system',
+      level = "info",
+      category = "system",
       error,
       componentStack,
       statusCode,
@@ -148,7 +162,7 @@ class ErrorLogger {
       message,
       stack: error?.stack,
       timestamp: new Date().toISOString(),
-      url: typeof window !== 'undefined' ? window.location.href : 'server',
+      url: typeof window !== "undefined" ? window.location.href : "server",
       method,
       statusCode,
       componentStack,
@@ -166,11 +180,11 @@ class ErrorLogger {
       errorLog.geoLocation = geoData.location;
       errorLog.clientInfo.ip = geoData.ip;
     } catch (err) {
-      console.warn('Failed to fetch geolocation:', err);
+      console.warn("Failed to fetch geolocation:", err);
     }
 
     this.logs.unshift(errorLog);
-    
+
     if (this.logs.length > this.maxLogs) {
       this.logs = this.logs.slice(0, this.maxLogs);
     }
@@ -192,17 +206,18 @@ class ErrorLogger {
       category: log.category,
       message: log.message,
       timestamp: log.timestamp,
-      
+
       // Location & IP
       ip: log.clientInfo.ip,
       country: log.geoLocation?.country,
       region: log.geoLocation?.region,
       city: log.geoLocation?.city,
       timezone: log.geoLocation?.timezone,
-      coordinates: log.geoLocation?.latitude && log.geoLocation?.longitude 
-        ? `${log.geoLocation.latitude},${log.geoLocation.longitude}` 
-        : undefined,
-      
+      coordinates:
+        log.geoLocation?.latitude && log.geoLocation?.longitude
+          ? `${log.geoLocation.latitude},${log.geoLocation.longitude}`
+          : undefined,
+
       // Client info
       browser: log.clientInfo.browser,
       os: log.clientInfo.os,
@@ -211,27 +226,27 @@ class ErrorLogger {
       screenResolution: log.clientInfo.screenResolution,
       language: log.clientInfo.language,
       referrer: log.clientInfo.referrer,
-      
+
       // Request info
       url: log.url,
       method: log.method,
       statusCode: log.statusCode,
-      
+
       // User tracking
-      userId: log.userId || 'anonymous',
+      userId: log.userId || "anonymous",
       sessionId: log.sessionId,
-      
+
       // Error details
       stack: log.stack,
       componentStack: log.componentStack,
-      
+
       // Additional context
       additionalData: log.additionalData,
-      
+
       // Client visibility
       isClientVisible: log.isClientVisible,
       clientMessage: log.clientMessage,
-      
+
       // Metadata
       logId: log.id,
     };
@@ -240,46 +255,61 @@ class ErrorLogger {
     vercelLog(log.level, structuredLog);
 
     // Pretty console output for local development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       const colors = {
-        info: '\x1b[36m',
-        warn: '\x1b[33m',
-        error: '\x1b[31m',
-        debug: '\x1b[35m',
-        critical: '\x1b[41m',
+        info: "\x1b[36m",
+        warn: "\x1b[33m",
+        error: "\x1b[31m",
+        debug: "\x1b[35m",
+        critical: "\x1b[41m",
       };
-      const reset = '\x1b[0m';
+      const reset = "\x1b[0m";
       const color = colors[log.level] || reset;
 
-      console.group(`${color}[${log.level.toUpperCase()}] ${log.category}${reset} - ${log.message}`);
-      console.log('📍 Location:', log.geoLocation?.city, log.geoLocation?.country);
-      console.log('🌐 IP:', log.clientInfo.ip);
-      console.log('💻 Client:', log.clientInfo.browser, log.clientInfo.os, log.clientInfo.device);
-      console.log('🔗 URL:', log.url);
-      console.log('👤 User ID:', log.userId || 'Anonymous');
-      console.log('🆔 Session:', log.sessionId);
-      
-      if (log.method) console.log('📡 Method:', log.method);
-      if (log.statusCode) console.log('📊 Status:', log.statusCode);
-      if (log.stack) console.log('📚 Stack:', log.stack);
-      if (log.additionalData) console.log('📦 Data:', log.additionalData);
-      if (log.isClientVisible) console.log('👁️ Client Visible:', log.clientMessage);
-      
+      console.group(
+        `${color}[${log.level.toUpperCase()}] ${log.category}${reset} - ${log.message}`,
+      );
+      console.log(
+        "📍 Location:",
+        log.geoLocation?.city,
+        log.geoLocation?.country,
+      );
+      console.log("🌐 IP:", log.clientInfo.ip);
+      console.log(
+        "💻 Client:",
+        log.clientInfo.browser,
+        log.clientInfo.os,
+        log.clientInfo.device,
+      );
+      console.log("🔗 URL:", log.url);
+      console.log("👤 User ID:", log.userId || "Anonymous");
+      console.log("🆔 Session:", log.sessionId);
+
+      if (log.method) console.log("📡 Method:", log.method);
+      if (log.statusCode) console.log("📊 Status:", log.statusCode);
+      if (log.stack) console.log("📚 Stack:", log.stack);
+      if (log.additionalData) console.log("📦 Data:", log.additionalData);
+      if (log.isClientVisible)
+        console.log("👁️ Client Visible:", log.clientMessage);
+
       console.groupEnd();
     }
   }
 
-  private async fetchGeoLocation(): Promise<{ ip?: string; location?: GeoLocation }> {
+  private async fetchGeoLocation(): Promise<{
+    ip?: string;
+    location?: GeoLocation;
+  }> {
     try {
       // Try to get IP and location from backend
-      const response = await fetch('/api/logs/geo');
+      const response = await fetch("/api/logs/geo");
       if (response.ok) {
         return await response.json();
       }
     } catch (err) {
       // Fallback: try public IP service
       try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipResponse = await fetch("https://api.ipify.org?format=json");
         const { ip } = await ipResponse.json();
         return { ip };
       } catch (fallbackErr) {
@@ -293,51 +323,59 @@ class ErrorLogger {
     // Only send to backend API in production (Vercel)
     if (process.env.VERCEL_ENV) {
       try {
-        await fetch('/api/logs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(errorLog),
         });
       } catch (err) {
-        console.error('Failed to send log to backend:', err);
+        console.error("Failed to send log to backend:", err);
       }
     }
   }
 
   // Quick logging methods
   info(message: string, data?: Record<string, any>) {
-    return this.log(message, { level: 'info', additionalData: data });
+    return this.log(message, { level: "info", additionalData: data });
   }
 
   warn(message: string, data?: Record<string, any>) {
-    return this.log(message, { level: 'warn', additionalData: data });
+    return this.log(message, { level: "warn", additionalData: data });
   }
 
   error(message: string, error?: Error, data?: Record<string, any>) {
-    return this.log(message, { level: 'error', error, additionalData: data });
+    return this.log(message, { level: "error", error, additionalData: data });
   }
 
   critical(message: string, error?: Error, data?: Record<string, any>) {
-    return this.log(message, { level: 'critical', error, additionalData: data });
+    return this.log(message, {
+      level: "critical",
+      error,
+      additionalData: data,
+    });
   }
 
   debug(message: string, data?: Record<string, any>) {
-    return this.log(message, { level: 'debug', additionalData: data });
+    return this.log(message, { level: "debug", additionalData: data });
   }
 
-  getLogs(filters?: { level?: LogLevel; category?: LogCategory; userId?: string }): ErrorLog[] {
+  getLogs(filters?: {
+    level?: LogLevel;
+    category?: LogCategory;
+    userId?: string;
+  }): ErrorLog[] {
     let filtered = [...this.logs];
-    
+
     if (filters?.level) {
-      filtered = filtered.filter(log => log.level === filters.level);
+      filtered = filtered.filter((log) => log.level === filters.level);
     }
     if (filters?.category) {
-      filtered = filtered.filter(log => log.category === filters.category);
+      filtered = filtered.filter((log) => log.category === filters.category);
     }
     if (filters?.userId) {
-      filtered = filtered.filter(log => log.userId === filters.userId);
+      filtered = filtered.filter((log) => log.userId === filters.userId);
     }
-    
+
     return filtered;
   }
 

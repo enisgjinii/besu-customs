@@ -8,7 +8,11 @@ import { formatDistanceToNow } from "date-fns";
 import { Package, Clock } from "lucide-react";
 
 export function RecentModelsActivity() {
-  const { data: models, isLoading, error } = useQuery({
+  const {
+    data: models,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["recent-models"],
     queryFn: async () => {
       const all = await ModelsService.getAllModels();
@@ -40,7 +44,9 @@ export function RecentModelsActivity() {
         )}
 
         {error && (
-          <p className="text-sm text-destructive">Failed to load recent models.</p>
+          <p className="text-sm text-destructive">
+            Failed to load recent models.
+          </p>
         )}
 
         {!isLoading && !error && models && models.length === 0 && (
@@ -68,7 +74,10 @@ export function RecentModelsActivity() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{model.name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={model.is_active ? "default" : "secondary"} className="text-xs">
+                    <Badge
+                      variant={model.is_active ? "default" : "secondary"}
+                      className="text-xs"
+                    >
                       {model.is_active ? "Active" : "Inactive"}
                     </Badge>
                     {model.is_featured && (
@@ -79,7 +88,9 @@ export function RecentModelsActivity() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {formatDistanceToNow(new Date(model.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(model.created_at), {
+                      addSuffix: true,
+                    })}
                   </p>
                 </div>
               </div>

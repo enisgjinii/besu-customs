@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { FileQuestion, Home, ArrowLeft } from 'lucide-react';
+import Link from "next/link";
+import { FileQuestion, Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
@@ -16,13 +16,14 @@ export default function NotFound() {
         <h1 className="text-6xl font-bold text-gray-900 dark:text-white mb-4">
           404
         </h1>
-        
+
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
           Page Not Found
         </h2>
-        
+
         <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-          Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
+          Sorry, we couldn't find the page you're looking for. It might have
+          been moved or deleted.
         </p>
 
         <div className="flex gap-4 justify-center">
@@ -33,7 +34,7 @@ export default function NotFound() {
             <Home className="w-4 h-4" />
             Go Home
           </Link>
-          
+
           <button
             onClick={() => window.history.back()}
             className="flex items-center gap-2 px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors font-medium shadow-sm hover:shadow-md"

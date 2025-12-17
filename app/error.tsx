@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
-import { errorLogger } from '@/lib/error-logger';
+import { useEffect } from "react";
+import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
+import { errorLogger } from "@/lib/error-logger";
 
 export default function Error({
   error,
@@ -13,9 +13,9 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log error with full context to Vercel
-    errorLogger.log('Application error caught by error boundary', {
-      level: 'error',
-      category: 'ui',
+    errorLogger.log("Application error caught by error boundary", {
+      level: "error",
+      category: "ui",
       error,
       additionalData: {
         digest: error.digest,
@@ -23,7 +23,7 @@ export default function Error({
         errorMessage: error.message,
       },
       isClientVisible: true,
-      clientMessage: 'An error occurred. Our team has been notified.',
+      clientMessage: "An error occurred. Our team has been notified.",
     });
   }, [error]);
 
@@ -52,7 +52,7 @@ export default function Error({
             </p>
           </div>
           <p className="text-sm font-mono text-red-600 dark:text-red-400 ml-6">
-            {error.message || 'An unexpected error occurred'}
+            {error.message || "An unexpected error occurred"}
           </p>
           {error.digest && (
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
@@ -82,7 +82,7 @@ export default function Error({
             Try Again
           </button>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => (window.location.href = "/")}
             className="flex items-center gap-2 px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors font-medium shadow-sm hover:shadow-md"
           >
             <Home className="w-4 h-4" />

@@ -3,28 +3,33 @@
 ## Pre-Deployment Checklist
 
 ### 1. Generate LOD Models ⚠️ REQUIRED
+
 ```bash
 npm run generate-lod
 ```
 
 **Expected output:**
+
 - Creates `-low.glb` files (70-85% smaller)
 - Creates `-medium.glb` files (40-60% smaller)
 - Shows compression statistics
 - Takes 5-15 minutes
 
 **Verify:**
+
 ```bash
 ls public/models/*-low.glb | wc -l
 # Should show number of models
 ```
 
 ### 2. Verify Installation
+
 ```bash
 npm run verify-optimization
 ```
 
 **Should show:**
+
 - ✅ LOD Models Generated
 - ✅ Service Worker File
 - ✅ Progressive Loader
@@ -38,11 +43,13 @@ npm run verify-optimization
 ### 3. Test Locally
 
 **Start dev server:**
+
 ```bash
 npm run dev
 ```
 
 **Test Slow 3G:**
+
 1. Open http://localhost:3000
 2. Open Chrome DevTools (F12)
 3. Network tab → Throttling → "Slow 3G"
@@ -50,34 +57,40 @@ npm run dev
 5. Should load in 3-8 seconds ✅
 
 **Test Caching:**
+
 1. Load a model (first time)
 2. Reload page (Cmd/Ctrl + R)
 3. Load same model
 4. Should load instantly (<100ms) ✅
 
 **Test Offline:**
+
 1. Load a model
 2. DevTools → Network → Offline
 3. Reload page
 4. Model should still load ✅
 
 ### 4. Build for Production
+
 ```bash
 npm run build
 ```
 
 **Check for errors:**
+
 - No TypeScript errors
 - No build warnings
 - Service Worker compiled
 - All routes generated
 
 ### 5. Test Production Build
+
 ```bash
 npm start
 ```
 
 **Test again:**
+
 - Slow 3G loading
 - Caching working
 - Offline mode working
@@ -103,6 +116,7 @@ vercel --prod
 ```
 
 Or push to GitHub (if auto-deploy enabled):
+
 ```bash
 git add .
 git commit -m "Add mobile and 3G optimizations"
@@ -125,21 +139,25 @@ git push origin main
 Test each connection type:
 
 **2G (250 Kbps):**
+
 - [ ] Loads low quality in 5-10s
 - [ ] Shows "slow connection" indicator
 - [ ] Upgrades to medium in background
 
 **3G (750 Kbps):**
+
 - [ ] Loads low quality in 3-5s
 - [ ] Shows "slow connection" indicator
 - [ ] Upgrades to medium in 8-12s
 
 **4G (4 Mbps):**
+
 - [ ] Loads medium quality in 1-3s
 - [ ] No connection indicator
 - [ ] May upgrade to high quality
 
 **WiFi (50 Mbps):**
+
 - [ ] Loads high quality in 0.5-2s
 - [ ] No connection indicator
 - [ ] Instant loading
@@ -147,6 +165,7 @@ Test each connection type:
 ### Feature Tests
 
 **Progressive Loading:**
+
 - [ ] Shows "Detecting Connection..."
 - [ ] Shows "Loading Preview..."
 - [ ] Shows progress bar with percentage
@@ -154,18 +173,21 @@ Test each connection type:
 - [ ] Quality upgrades seamlessly
 
 **Caching:**
+
 - [ ] First load downloads from network
 - [ ] Second load uses cache (instant)
 - [ ] Cache persists after page reload
 - [ ] Cache persists after browser restart
 
 **Offline Mode:**
+
 - [ ] Shows "Offline Mode" indicator
 - [ ] Cached models load instantly
 - [ ] Uncached models show error
 - [ ] Reconnects automatically when online
 
 **Connection Indicator:**
+
 - [ ] Shows on slow connections (2G/3G)
 - [ ] Hidden on fast connections (4G/WiFi)
 - [ ] Shows offline indicator when disconnected
@@ -174,6 +196,7 @@ Test each connection type:
 ### Device Tests
 
 **Low-end Mobile (2GB RAM):**
+
 - [ ] Loads low quality models
 - [ ] 512px textures
 - [ ] 30 FPS target
@@ -181,6 +204,7 @@ Test each connection type:
 - [ ] Smooth performance
 
 **Mid-range Mobile (4GB RAM):**
+
 - [ ] Loads medium quality models
 - [ ] 1024px textures
 - [ ] 60 FPS target
@@ -188,6 +212,7 @@ Test each connection type:
 - [ ] Smooth performance
 
 **High-end Mobile (8GB+ RAM):**
+
 - [ ] Loads high quality models
 - [ ] 2048px textures
 - [ ] 60 FPS target
@@ -195,6 +220,7 @@ Test each connection type:
 - [ ] Smooth performance
 
 **Desktop:**
+
 - [ ] Loads high quality models
 - [ ] 4096px textures
 - [ ] 60 FPS target
@@ -206,24 +232,28 @@ Test each connection type:
 ### Metrics to Track
 
 **Load Performance:**
+
 - [ ] Average load time by connection type
 - [ ] P50, P90, P95 load times
 - [ ] Time to first render
 - [ ] Time to interactive
 
 **Cache Performance:**
+
 - [ ] Cache hit rate (target: >80%)
 - [ ] Cache size per user
 - [ ] Cache eviction rate
 - [ ] Service Worker registration rate
 
 **Quality Distribution:**
+
 - [ ] % users on low quality
 - [ ] % users on medium quality
 - [ ] % users on high quality
 - [ ] Quality upgrade success rate
 
 **Bandwidth:**
+
 - [ ] Total MB transferred
 - [ ] MB saved vs. original
 - [ ] Average file size per load
@@ -232,6 +262,7 @@ Test each connection type:
 ### Analytics Events
 
 Set up tracking for:
+
 - [ ] `model_load` - Track load time and quality
 - [ ] `model_upgrade` - Track quality upgrades
 - [ ] `cache_hit` - Track cache usage
@@ -333,49 +364,56 @@ npm run verify-optimization
 
 **Optimization Status:** ⬜ Not Started | ⬜ In Progress | ⬜ Complete
 
-**Deployed By:** _______________  
-**Date:** _______________  
-**Production URL:** _______________
+**Deployed By:** ******\_\_\_******  
+**Date:** ******\_\_\_******  
+**Production URL:** ******\_\_\_******
 
 ---
 
 ## Quick Reference
 
 **Generate LOD models:**
+
 ```bash
 npm run generate-lod
 ```
 
 **Verify setup:**
+
 ```bash
 npm run verify-optimization
 ```
 
 **Test locally:**
+
 ```bash
 npm run dev
 # Then: DevTools → Network → Slow 3G
 ```
 
 **Deploy:**
+
 ```bash
 npm run build
 vercel --prod
 ```
 
 **Check Service Worker:**
+
 ```javascript
-navigator.serviceWorker.getRegistrations().then(console.log)
+navigator.serviceWorker.getRegistrations().then(console.log);
 ```
 
 **Check cache:**
+
 ```javascript
-caches.keys().then(console.log)
+caches.keys().then(console.log);
 ```
 
 **Clear cache:**
+
 ```javascript
-ServiceWorkerManager.getInstance().clearCache()
+ServiceWorkerManager.getInstance().clearCache();
 ```
 
 ---

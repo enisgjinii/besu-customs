@@ -41,11 +41,14 @@ const STEPS = [
   { id: 9, title: "9. View", component: Step09View },
 ];
 
-export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarProps) {
+export function UnifiedSidebar({
+  sidebarOpen,
+  onToggleSidebar,
+}: UnifiedSidebarProps) {
   const currentStep = useConfiguratorStore((state) => state.currentStep);
   const setStep = useConfiguratorStore((state) => state.setStep);
   const isCollapsed = sidebarOpen === false;
-  
+
   // Check if model is selected
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
@@ -88,7 +91,9 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             </div>
             <div>
               <h1 className="font-bold text-sm leading-tight">Besu Customs</h1>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Configurator</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                Configurator
+              </p>
             </div>
           </div>
         )}
@@ -99,7 +104,9 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
             onClick={() => onToggleSidebar?.(!sidebarOpen)}
             className="h-8 w-8 rounded-md bg-background/80 hover:bg-accent border border-border/50 flex items-center justify-center transition-colors"
           >
-            <PanelLeftClose className={`w-4 h-4 transition-transform ${isCollapsed ? "rotate-180" : ""}`} />
+            <PanelLeftClose
+              className={`w-4 h-4 transition-transform ${isCollapsed ? "rotate-180" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -113,15 +120,24 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               Step {currentStep + 1} of {STEPS.length}
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" className="h-6 w-6" onClick={handleBack} disabled={currentStep === 0}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-6 w-6"
+                onClick={handleBack}
+                disabled={currentStep === 0}
+              >
                 <ChevronLeft className="w-3 h-3" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="h-6 w-6" 
-                onClick={handleNext} 
-                disabled={currentStep === STEPS.length - 1 || (currentStep === 0 && !isModelSelected)}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-6 w-6"
+                onClick={handleNext}
+                disabled={
+                  currentStep === STEPS.length - 1 ||
+                  (currentStep === 0 && !isModelSelected)
+                }
               >
                 <ChevronRight className="w-3 h-3" />
               </Button>
@@ -146,7 +162,10 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               </Button>
               <Button
                 onClick={handleNext}
-                disabled={currentStep === STEPS.length - 1 || (currentStep === 0 && !isModelSelected)}
+                disabled={
+                  currentStep === STEPS.length - 1 ||
+                  (currentStep === 0 && !isModelSelected)
+                }
                 className="flex-1"
               >
                 {currentStep === STEPS.length - 1 ? "Finish" : "Next Step"}
@@ -165,11 +184,12 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
                     }
                     setStep(idx);
                   }}
-                  className={`h-1.5 rounded-full transition-all ${idx === currentStep 
-                    ? "w-6 bg-primary" 
-                    : (!isModelSelected && idx !== 0)
-                    ? "w-1.5 bg-muted-foreground/10 cursor-not-allowed"
-                    : "w-1.5 bg-muted-foreground/30 hover:bg-primary/50 cursor-pointer"
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === currentStep
+                      ? "w-6 bg-primary"
+                      : !isModelSelected && idx !== 0
+                        ? "w-1.5 bg-muted-foreground/10 cursor-not-allowed"
+                        : "w-1.5 bg-muted-foreground/30 hover:bg-primary/50 cursor-pointer"
                   }`}
                   title={step.title}
                 />
@@ -196,9 +216,9 @@ export function UnifiedSidebar({ sidebarOpen, onToggleSidebar }: UnifiedSidebarP
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border ${
                 idx === currentStep
                   ? "bg-primary text-primary-foreground border-primary cursor-pointer"
-                  : (!isModelSelected && idx !== 0)
-                  ? "bg-muted/30 text-muted-foreground/30 border-transparent cursor-not-allowed"
-                  : "bg-muted text-muted-foreground border-transparent hover:border-primary/50 cursor-pointer"
+                  : !isModelSelected && idx !== 0
+                    ? "bg-muted/30 text-muted-foreground/30 border-transparent cursor-not-allowed"
+                    : "bg-muted text-muted-foreground border-transparent hover:border-primary/50 cursor-pointer"
               }`}
             >
               {idx + 1}

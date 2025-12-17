@@ -57,7 +57,10 @@ interface SidebarContentProps {
   onNavigate?: () => void;
 }
 
-export function SidebarContent({ collapsed = false, onNavigate }: SidebarContentProps) {
+export function SidebarContent({
+  collapsed = false,
+  onNavigate,
+}: SidebarContentProps) {
   const pathname = usePathname();
 
   return (

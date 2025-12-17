@@ -71,38 +71,47 @@ export function PlacementGuide({
   }, [position, size, containerRef]);
 
   // Handle drag start
-  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (isPinned) return;
-    e.stopPropagation();
-    onSelect();
-    setIsDragging(true);
-    
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    dragStartRef.current = {
-      x: clientX,
-      y: clientY,
-      posX: position.x,
-      posY: position.y,
-    };
-  }, [isPinned, onSelect, position]);
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      if (isPinned) return;
+      e.stopPropagation();
+      onSelect();
+      setIsDragging(true);
+
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      dragStartRef.current = {
+        x: clientX,
+        y: clientY,
+        posX: position.x,
+        posY: position.y,
+      };
+    },
+    [isPinned, onSelect, position],
+  );
 
   // Handle drag move
   useEffect(() => {
     if (!isDragging || !containerRef.current) return;
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
       const rect = containerRef.current!.getBoundingClientRect();
       const deltaX = ((clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((clientY - dragStartRef.current.y) / rect.height) * 100;
-      
-      const newX = Math.max(0, Math.min(100 - size.width, dragStartRef.current.posX + deltaX));
-      const newY = Math.max(0, Math.min(100 - size.height, dragStartRef.current.posY + deltaY));
-      
+
+      const newX = Math.max(
+        0,
+        Math.min(100 - size.width, dragStartRef.current.posX + deltaX),
+      );
+      const newY = Math.max(
+        0,
+        Math.min(100 - size.height, dragStartRef.current.posY + deltaY),
+      );
+
       onPositionChange({ x: newX, y: newY });
     };
 
@@ -110,51 +119,60 @@ export function PlacementGuide({
       setIsDragging(false);
     };
 
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchmove', handleMove);
-    window.addEventListener('touchend', handleEnd);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
 
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [isDragging, containerRef, size, onPositionChange]);
 
   // Handle resize
-  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    setIsResizing(true);
-    
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    resizeStartRef.current = {
-      x: clientX,
-      y: clientY,
-      width: size.width,
-      height: size.height,
-    };
-  }, [size]);
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.stopPropagation();
+      setIsResizing(true);
+
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      resizeStartRef.current = {
+        x: clientX,
+        y: clientY,
+        width: size.width,
+        height: size.height,
+      };
+    },
+    [size],
+  );
 
   useEffect(() => {
     if (!isResizing || !containerRef.current) return;
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
       const rect = containerRef.current!.getBoundingClientRect();
       const deltaX = ((clientX - resizeStartRef.current.x) / rect.width) * 100;
       const deltaY = ((clientY - resizeStartRef.current.y) / rect.height) * 100;
-      
+
       // Maintain aspect ratio
       const delta = Math.max(deltaX, deltaY);
-      const newWidth = Math.max(5, Math.min(100 - position.x, resizeStartRef.current.width + delta));
-      const newHeight = Math.max(5, Math.min(100 - position.y, resizeStartRef.current.height + delta));
-      
+      const newWidth = Math.max(
+        5,
+        Math.min(100 - position.x, resizeStartRef.current.width + delta),
+      );
+      const newHeight = Math.max(
+        5,
+        Math.min(100 - position.y, resizeStartRef.current.height + delta),
+      );
+
       onSizeChange({ width: newWidth, height: newHeight });
     };
 
@@ -162,57 +180,62 @@ export function PlacementGuide({
       setIsResizing(false);
     };
 
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchmove', handleMove);
-    window.addEventListener('touchend', handleEnd);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
 
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [isResizing, containerRef, position, onSizeChange]);
 
   // Handle rotation
-  const handleRotateStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    setIsRotating(true);
-    
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    if (!elementRef.current) return;
-    const rect = elementRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    const startAngle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
-    
-    rotateStartRef.current = {
-      angle: rotation,
-      startAngle,
-    };
-  }, [rotation]);
+  const handleRotateStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.stopPropagation();
+      setIsRotating(true);
+
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      if (!elementRef.current) return;
+      const rect = elementRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const startAngle =
+        Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+
+      rotateStartRef.current = {
+        angle: rotation,
+        startAngle,
+      };
+    },
+    [rotation],
+  );
 
   useEffect(() => {
     if (!isRotating || !elementRef.current) return;
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
       const rect = elementRef.current!.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      
-      const currentAngle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+
+      const currentAngle =
+        Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
       const deltaAngle = currentAngle - rotateStartRef.current.startAngle;
-      
+
       let newRotation = (rotateStartRef.current.angle + deltaAngle) % 360;
       if (newRotation < 0) newRotation += 360;
-      
+
       onRotationChange(newRotation);
     };
 
@@ -220,16 +243,16 @@ export function PlacementGuide({
       setIsRotating(false);
     };
 
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchmove', handleMove);
-    window.addEventListener('touchend', handleEnd);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
 
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [isRotating, onRotationChange]);
 
@@ -238,17 +261,14 @@ export function PlacementGuide({
   return (
     <div
       ref={elementRef}
-      className={cn(
-        "absolute cursor-move",
-        isSelected && "z-10"
-      )}
+      className={cn("absolute cursor-move", isSelected && "z-10")}
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
         width: `${size.width}%`,
         height: `${size.height}%`,
         transform: `rotate(${rotation}deg)`,
-        transformOrigin: 'center center',
+        transformOrigin: "center center",
       }}
       onMouseDown={handleDragStart}
       onTouchStart={handleDragStart}
@@ -258,18 +278,16 @@ export function PlacementGuide({
       }}
     >
       {/* Content */}
-      <div className="w-full h-full">
-        {children}
-      </div>
+      <div className="w-full h-full">{children}</div>
 
       {/* Selection border */}
       {isSelected && (
         <>
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              border: '2px dashed #3b82f6',
-              borderRadius: '4px',
+              border: "2px dashed #3b82f6",
+              borderRadius: "4px",
             }}
           />
 
@@ -294,7 +312,7 @@ export function PlacementGuide({
           <button
             className={cn(
               "control-handle absolute flex items-center justify-center bg-white rounded-full shadow-lg border-2 hover:bg-gray-50 transition-colors",
-              isPinned ? "border-blue-500 bg-blue-50" : "border-gray-400"
+              isPinned ? "border-blue-500 bg-blue-50" : "border-gray-400",
             )}
             style={{
               width: `${controlSize}px`,
@@ -309,7 +327,10 @@ export function PlacementGuide({
             }}
             title={isPinned ? "Unpin" : "Pin"}
           >
-            <Pin size={iconSize} className={isPinned ? "text-blue-500" : "text-gray-600"} />
+            <Pin
+              size={iconSize}
+              className={isPinned ? "text-blue-500" : "text-gray-600"}
+            />
           </button>
 
           {/* Bottom-left: Delete */}

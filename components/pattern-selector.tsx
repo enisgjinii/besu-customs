@@ -9,7 +9,7 @@ import {
   PATTERN_CATEGORIES,
   getPatternsByCategory,
   type Pattern,
-  type PatternCategory
+  type PatternCategory,
 } from "@/lib/patterns";
 import { getSchoolLogoPosition } from "@/lib/logo-positioning";
 import { Check, Sparkles } from "lucide-react";
@@ -21,91 +21,103 @@ interface PatternSelectorProps {
   lockedCategory?: PatternCategory;
 }
 
-export function PatternSelector({ onPatternSelect, className, lockedCategory }: PatternSelectorProps) {
+export function PatternSelector({
+  onPatternSelect,
+  className,
+  lockedCategory,
+}: PatternSelectorProps) {
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<PatternCategory>(lockedCategory || "school-logos");
+  const [activeCategory, setActiveCategory] = useState<PatternCategory>(
+    lockedCategory || "school-logos",
+  );
 
   const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
 
-  const applyPatternToCanvas = useCallback(async (pattern: Pattern) => {
-    const isSchoolLogo = pattern.category === 'school-logos';
-    
-    if (isSchoolLogo) {
-      // Get smart position based on current model type
-      const logoPreset = getSchoolLogoPosition(currentModelUrl);
-      
-      // School logos: Add as image layer at detected chest position
-      const LOGO_LAYER_ID = `school-logo-${pattern.id}`;
-      const existing = textureLayers.find(l => l.id === LOGO_LAYER_ID);
-      
-      if (existing) {
-        // Already added, just make sure it's visible
-        useConfiguratorStore.getState().updateTextureLayer(LOGO_LAYER_ID, {
-          visible: true,
-        });
-      } else {
-        // Add new school logo at smart chest position
-        addTextureLayer({
-          id: LOGO_LAYER_ID,
-          name: pattern.name,
-          type: 'image',
-          visible: true,
-          locked: false,
-          opacity: 1,
-          blendMode: 'normal',
-          order: textureLayers.length + 1,
-          imageUrl: pattern.thumbnail,
-          position: logoPreset.position,
-          rotation: logoPreset.rotation,
-          scale: logoPreset.scale,
-        });
-        
-        console.log('🏫 SCHOOL LOGO ADDED with smart positioning:', {
-          name: pattern.name,
-          modelUrl: currentModelUrl,
-          position: logoPreset.position,
-          scale: logoPreset.scale,
-        });
-      }
-    } else {
-      // Regular patterns: Full coverage as before
-      const PATTERN_LAYER_ID = "main-pattern-layer";
-      const existing = textureLayers.find(l => l.id === PATTERN_LAYER_ID);
+  const applyPatternToCanvas = useCallback(
+    async (pattern: Pattern) => {
+      const isSchoolLogo = pattern.category === "school-logos";
 
-      if (existing) {
-        useConfiguratorStore.getState().updateTextureLayer(PATTERN_LAYER_ID, {
-          name: pattern.name,
-          imageUrl: pattern.thumbnail,
-          position: [0.5, 0.5, 0],
-          scale: [1, 1, 1],
-          rotation: [0, 0, 0]
-        });
-      } else {
-        addTextureLayer({
-          id: PATTERN_LAYER_ID,
-          name: pattern.name,
-          type: 'pattern',
-          visible: true,
-          locked: false,
-          opacity: 0.9,
-          blendMode: 'multiply',
-          order: -1,
-          imageUrl: pattern.thumbnail,
-          position: [0.5, 0.5, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        });
-      }
-    }
-  }, [addTextureLayer, textureLayers]);
+      if (isSchoolLogo) {
+        // Get smart position based on current model type
+        const logoPreset = getSchoolLogoPosition(currentModelUrl);
 
-  const handlePatternClick = useCallback((pattern: Pattern) => {
-    setSelectedPattern(pattern.id);
-    applyPatternToCanvas(pattern);
-    onPatternSelect?.(pattern);
-  }, [applyPatternToCanvas, onPatternSelect]);
+        // School logos: Add as image layer at detected chest position
+        const LOGO_LAYER_ID = `school-logo-${pattern.id}`;
+        const existing = textureLayers.find((l) => l.id === LOGO_LAYER_ID);
+
+        if (existing) {
+          // Already added, just make sure it's visible
+          useConfiguratorStore.getState().updateTextureLayer(LOGO_LAYER_ID, {
+            visible: true,
+          });
+        } else {
+          // Add new school logo at smart chest position
+          addTextureLayer({
+            id: LOGO_LAYER_ID,
+            name: pattern.name,
+            type: "image",
+            visible: true,
+            locked: false,
+            opacity: 1,
+            blendMode: "normal",
+            order: textureLayers.length + 1,
+            imageUrl: pattern.thumbnail,
+            position: logoPreset.position,
+            rotation: logoPreset.rotation,
+            scale: logoPreset.scale,
+          });
+
+          console.log("🏫 SCHOOL LOGO ADDED with smart positioning:", {
+            name: pattern.name,
+            modelUrl: currentModelUrl,
+            position: logoPreset.position,
+            scale: logoPreset.scale,
+          });
+        }
+      } else {
+        // Regular patterns: Full coverage as before
+        const PATTERN_LAYER_ID = "main-pattern-layer";
+        const existing = textureLayers.find((l) => l.id === PATTERN_LAYER_ID);
+
+        if (existing) {
+          useConfiguratorStore.getState().updateTextureLayer(PATTERN_LAYER_ID, {
+            name: pattern.name,
+            imageUrl: pattern.thumbnail,
+            position: [0.5, 0.5, 0],
+            scale: [1, 1, 1],
+            rotation: [0, 0, 0],
+          });
+        } else {
+          addTextureLayer({
+            id: PATTERN_LAYER_ID,
+            name: pattern.name,
+            type: "pattern",
+            visible: true,
+            locked: false,
+            opacity: 0.9,
+            blendMode: "multiply",
+            order: -1,
+            imageUrl: pattern.thumbnail,
+            position: [0.5, 0.5, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+          });
+        }
+      }
+    },
+    [addTextureLayer, textureLayers],
+  );
+
+  const handlePatternClick = useCallback(
+    (pattern: Pattern) => {
+      setSelectedPattern(pattern.id);
+      applyPatternToCanvas(pattern);
+      onPatternSelect?.(pattern);
+    },
+    [applyPatternToCanvas, onPatternSelect],
+  );
 
   const currentPatterns = getPatternsByCategory(activeCategory);
 
@@ -133,8 +145,16 @@ export function PatternSelector({ onPatternSelect, className, lockedCategory }: 
 
           <ScrollArea className="h-full pr-1 -mr-1">
             {PATTERN_CATEGORIES.map((category) => (
-              <TabsContent key={category.id} value={category.id} className="mt-0">
-                <CategoryGrid categoryId={category.id} selectedPattern={selectedPattern} onSelect={handlePatternClick} />
+              <TabsContent
+                key={category.id}
+                value={category.id}
+                className="mt-0"
+              >
+                <CategoryGrid
+                  categoryId={category.id}
+                  selectedPattern={selectedPattern}
+                  onSelect={handlePatternClick}
+                />
               </TabsContent>
             ))}
           </ScrollArea>
@@ -143,7 +163,11 @@ export function PatternSelector({ onPatternSelect, className, lockedCategory }: 
 
       {!showTabs && (
         <ScrollArea className="h-full pr-1 -mr-1">
-          <CategoryGrid categoryId={activeCategory} selectedPattern={selectedPattern} onSelect={handlePatternClick} />
+          <CategoryGrid
+            categoryId={activeCategory}
+            selectedPattern={selectedPattern}
+            onSelect={handlePatternClick}
+          />
         </ScrollArea>
       )}
     </Card>
@@ -151,7 +175,15 @@ export function PatternSelector({ onPatternSelect, className, lockedCategory }: 
 }
 
 // Compact grid for patterns/logos
-function CategoryGrid({ categoryId, selectedPattern, onSelect }: { categoryId: string, selectedPattern: string | null, onSelect: (p: Pattern) => void }) {
+function CategoryGrid({
+  categoryId,
+  selectedPattern,
+  onSelect,
+}: {
+  categoryId: string;
+  selectedPattern: string | null;
+  onSelect: (p: Pattern) => void;
+}) {
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
     <div className="grid grid-cols-4 gap-1 pb-1">
@@ -163,7 +195,7 @@ function CategoryGrid({ categoryId, selectedPattern, onSelect }: { categoryId: s
             "rounded overflow-hidden border transition-all",
             selectedPattern === pattern.id
               ? "border-primary ring-1 ring-primary"
-              : "border-border/50 hover:border-primary/50"
+              : "border-border/50 hover:border-primary/50",
           )}
         >
           <div className="aspect-square w-full relative bg-muted/10">

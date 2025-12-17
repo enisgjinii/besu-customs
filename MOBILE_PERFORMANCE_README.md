@@ -20,15 +20,15 @@ npm run build && npm start
 ✅ **Instant repeat loads** with aggressive caching  
 ✅ **Progressive loading** - see preview fast, quality upgrades automatically  
 ✅ **Works offline** after first load  
-✅ **Smart quality** - adapts to connection speed and device  
+✅ **Smart quality** - adapts to connection speed and device
 
 ## Performance Results
 
-| Connection | Before | After | Improvement |
-|------------|--------|-------|-------------|
-| 2G | 120s | 8s | **93% faster** ⚡ |
-| 3G | 40s | 3s | **92% faster** ⚡ |
-| 4G | 8s | 1s | **87% faster** ⚡ |
+| Connection | Before | After | Improvement       |
+| ---------- | ------ | ----- | ----------------- |
+| 2G         | 120s   | 8s    | **93% faster** ⚡ |
+| 3G         | 40s    | 3s    | **92% faster** ⚡ |
+| 4G         | 8s     | 1s    | **87% faster** ⚡ |
 
 ## How It Works
 
@@ -45,18 +45,21 @@ User on 3G → Detects slow connection → Loads 0.8MB preview in 3s
 ## Testing
 
 **Test on Slow 3G:**
+
 1. Open Chrome DevTools (F12)
 2. Network tab → Throttling → "Slow 3G"
 3. Load a model
 4. Watch it load in 3-8 seconds! 🎉
 
 **Test Caching:**
+
 1. Load a model (first time)
 2. Reload page
 3. Load same model
 4. Should load instantly (<100ms) from cache
 
 **Test Offline:**
+
 1. Load a model (caches it)
 2. DevTools → Network → Offline
 3. Reload page
@@ -79,6 +82,7 @@ public/models/
 ## What Was Added
 
 ### New Features
+
 - 🔄 Progressive loading (low → medium → high quality)
 - 💾 Service Worker caching (instant repeat loads)
 - 📡 Connection detection (2G/3G/4G/WiFi)
@@ -87,6 +91,7 @@ public/models/
 - 📱 Mobile optimizations
 
 ### New Files
+
 - `lib/model-loader-optimized.ts` - Progressive loading
 - `lib/service-worker-manager.ts` - Cache management
 - `public/sw.js` - Service worker
@@ -94,6 +99,7 @@ public/models/
 - `components/connection-indicator.tsx` - Connection status
 
 ### Modified Files
+
 - `components/babylon-scene.tsx` - Uses progressive loader
 - `next.config.mjs` - Caching headers
 - `app/layout.tsx` - Service worker init
@@ -102,6 +108,7 @@ public/models/
 ## Troubleshooting
 
 ### Models still slow?
+
 ```bash
 # Make sure LOD models exist
 ls public/models/*-low.glb
@@ -111,6 +118,7 @@ npm run generate-lod
 ```
 
 ### Service Worker not working?
+
 ```bash
 # Check in DevTools
 # Application → Service Workers
@@ -118,6 +126,7 @@ npm run generate-lod
 ```
 
 ### Want to force a quality?
+
 ```typescript
 // In babylon-scene.tsx
 forceQuality: 'low', // 'low' | 'medium' | 'high' | 'auto'
@@ -141,6 +150,7 @@ npm run dev                   # Development server
 ## Monitoring
 
 Track these metrics in production:
+
 - Load time by connection type
 - Cache hit rate (target: >80%)
 - Quality distribution
@@ -149,6 +159,7 @@ Track these metrics in production:
 ## Success Metrics
 
 After deploying:
+
 - ✅ 3G users load models in 3-8 seconds
 - ✅ Repeat visitors load instantly
 - ✅ 70-85% bandwidth savings

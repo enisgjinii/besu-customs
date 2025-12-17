@@ -37,11 +37,13 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
     };
   }
 
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  ) || window.innerWidth < 768;
+  const isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    ) || window.innerWidth < 768;
 
-  const isTablet = /iPad|Android/i.test(navigator.userAgent) && window.innerWidth >= 768;
+  const isTablet =
+    /iPad|Android/i.test(navigator.userAgent) && window.innerWidth >= 768;
 
   // Check for low-end device indicators
   const deviceMemory = (navigator as any).deviceMemory || 4; // GB
@@ -54,13 +56,22 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
   let gpuTier = "high";
   try {
     const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     if (gl) {
-      const debugInfo = (gl as WebGLRenderingContext).getExtension("WEBGL_debug_renderer_info");
+      const debugInfo = (gl as WebGLRenderingContext).getExtension(
+        "WEBGL_debug_renderer_info",
+      );
       if (debugInfo) {
-        const renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        const renderer = (gl as WebGLRenderingContext).getParameter(
+          debugInfo.UNMASKED_RENDERER_WEBGL,
+        );
         // Check for known low-end GPUs
-        if (/Mali-4|Mali-T|Adreno 3|Adreno 4|PowerVR SGX|Intel HD Graphics [2-4]/i.test(renderer)) {
+        if (
+          /Mali-4|Mali-T|Adreno 3|Adreno 4|PowerVR SGX|Intel HD Graphics [2-4]/i.test(
+            renderer,
+          )
+        ) {
           gpuTier = "low";
         } else if (/Mali-G5|Adreno 5|Intel UHD/i.test(renderer)) {
           gpuTier = "medium";
@@ -79,9 +90,7 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
     isSlowConnection;
 
   const isMediumDevice =
-    deviceMemory <= 4 ||
-    hardwareConcurrency <= 4 ||
-    gpuTier === "medium";
+    deviceMemory <= 4 || hardwareConcurrency <= 4 || gpuTier === "medium";
 
   // Calculate optimal pixel ratio - allow higher ratios for better quality on capable devices
   const basePixelRatio = Math.min(window.devicePixelRatio || 1, 3); // Allow up to 3x for retina displays
@@ -165,7 +174,9 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
 }
 
 export function useMobilePerformance(): MobilePerformanceConfig {
-  const [config, setConfig] = useState<MobilePerformanceConfig>(() => detectDeviceCapabilities());
+  const [config, setConfig] = useState<MobilePerformanceConfig>(() =>
+    detectDeviceCapabilities(),
+  );
 
   useEffect(() => {
     // Re-detect on resize (handles orientation changes)
@@ -213,7 +224,7 @@ export function useDebounce<T>(value: T, delay: number): T {
 // Utility to throttle function calls
 export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
-  delay: number
+  delay: number,
 ): T {
   const lastCall = useMemo(() => ({ time: 0 }), []);
 

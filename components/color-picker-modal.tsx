@@ -33,11 +33,26 @@ const TEAM_COLORS = [
 ];
 
 const BASIC_COLORS = [
-  "#FF0000", "#FF4500", "#FFA500", "#FFD700",
-  "#FFFF00", "#ADFF2F", "#00FF00", "#008000",
-  "#00FFFF", "#008080", "#0000FF", "#000080",
-  "#800080", "#FF00FF", "#FF69B4", "#FFC0CB",
-  "#A52A2A", "#800000", "#808080", "#000000",
+  "#FF0000",
+  "#FF4500",
+  "#FFA500",
+  "#FFD700",
+  "#FFFF00",
+  "#ADFF2F",
+  "#00FF00",
+  "#008000",
+  "#00FFFF",
+  "#008080",
+  "#0000FF",
+  "#000080",
+  "#800080",
+  "#FF00FF",
+  "#FF69B4",
+  "#FFC0CB",
+  "#A52A2A",
+  "#800000",
+  "#808080",
+  "#000000",
 ];
 
 export function ColorPickerModal({
@@ -84,11 +99,14 @@ export function ColorPickerModal({
     return;
   }, [isOpen, isMobile]);
 
-  const handleColorSelect = useCallback((color: string) => {
-    setTempColor(color);
-    onColorChange(color);
-    onAddRecentColor?.(color);
-  }, [onColorChange, onAddRecentColor]);
+  const handleColorSelect = useCallback(
+    (color: string) => {
+      setTempColor(color);
+      onColorChange(color);
+      onAddRecentColor?.(color);
+    },
+    [onColorChange, onAddRecentColor],
+  );
 
   const handleApplyColor = useCallback(() => {
     onColorChange(tempColor);
@@ -102,18 +120,29 @@ export function ColorPickerModal({
   if (isMobile) {
     return createPortal(
       <div className="fixed left-0 right-0 bottom-0 z-50">
-        <div className="mx-4 mb-safe bg-card rounded-t-2xl shadow-xl max-h-[50vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div>
+        {/* Backdrop for better focus */}
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+          onClick={onClose}
+        />
+
+        <div className="relative mx-2 mb-safe bg-card rounded-t-3xl shadow-2xl max-h-[80vh] overflow-hidden">
+          {/* Drag Handle */}
+          <div className="w-full py-3 cursor-grab active:cursor-grabbing">
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto" />
+          </div>
+
+          {/* Header - Enhanced */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border/30 bg-gradient-to-b from-background/50 to-transparent">
+            <div className="flex items-center gap-3">
               {activeSection === "custom" ? (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setActiveSection("main")}
-                  className="h-9 px-2"
+                  className="h-11 px-3 rounded-xl"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  <ChevronLeft className="w-5 h-5 mr-2" />
                   Back
                 </Button>
               ) : (
@@ -121,190 +150,229 @@ export function ColorPickerModal({
                   variant="ghost"
                   size="sm"
                   onClick={onClose}
-                  className="h-9 px-2"
+                  className="h-11 px-3 rounded-xl"
                 >
                   Cancel
                 </Button>
               )}
             </div>
-            <h2 className="font-semibold text-sm">{title}</h2>
+            <h2 className="font-bold text-lg tracking-tight">{title}</h2>
             <div>
               <Button
                 size="sm"
                 onClick={handleApplyColor}
                 disabled={disabled}
-                className="h-9"
+                className="h-11 px-4 rounded-xl font-semibold"
               >
                 Done
               </Button>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-4">
-            {activeSection === "main" ? (
-              <div className="space-y-4">
-                {/* Current Color Preview */}
-                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
-                  <div
-                    className="w-16 h-16 rounded-xl border-2 border-border shadow-sm flex-shrink-0"
-                    style={{ backgroundColor: tempColor }}
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground mb-1">Selected Color</p>
-                    <p className="font-mono text-lg font-medium">{tempColor.toUpperCase()}</p>
+          {/* Content - Enhanced scrolling */}
+          <div
+            className="overflow-y-auto thin-scrollbar"
+            style={{ maxHeight: "calc(80vh - 120px)" }}
+          >
+            <div className="p-5 pb-8">
+              {activeSection === "main" ? (
+                <div className="space-y-6">
+                  {/* Current Color Preview - Enhanced */}
+                  <div className="flex items-center gap-5 p-5 bg-gradient-to-r from-muted/30 to-muted/10 rounded-2xl border border-border/30">
+                    <div
+                      className="w-20 h-20 rounded-2xl border-3 border-border shadow-lg flex-shrink-0"
+                      style={{ backgroundColor: tempColor }}
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground mb-2 font-medium">
+                        Selected Color
+                      </p>
+                      <p className="font-mono text-xl font-bold tracking-wider">
+                        {tempColor.toUpperCase()}
+                      </p>
+                    </div>
+                    {tempColor !== currentColor && (
+                      <div className="flex items-center gap-2 text-primary bg-primary/10 px-3 py-2 rounded-xl">
+                        <Check className="w-5 h-5" />
+                        <span className="text-sm font-semibold">Changed</span>
+                      </div>
+                    )}
                   </div>
-                  {tempColor !== currentColor && (
-                    <div className="flex items-center gap-1 text-primary">
-                      <Check className="w-4 h-4" />
-                      <span className="text-xs">Changed</span>
+
+                  {/* Recent Colors - Enhanced */}
+                  {recentColors.length > 0 && (
+                    <div>
+                      <h3 className="section-header-mobile mb-4 text-base">
+                        Recent Colors
+                      </h3>
+                      <div className="grid grid-cols-6 gap-3">
+                        {recentColors.slice(0, 12).map((color) => (
+                          <button
+                            key={color}
+                            onClick={() => handleColorSelect(color)}
+                            disabled={disabled}
+                            className={`aspect-square rounded-2xl border-3 transition-all duration-200 min-h-[56px] ${
+                              tempColor.toLowerCase() === color.toLowerCase()
+                                ? "border-primary shadow-lg shadow-primary/30 scale-105"
+                                : "border-border/50 hover:border-primary/50 active:scale-95"
+                            }`}
+                            style={{ backgroundColor: color }}
+                            aria-label={`Select color ${color}`}
+                          >
+                            {tempColor.toLowerCase() ===
+                              color.toLowerCase() && (
+                              <Check className="w-6 h-6 text-white drop-shadow-lg mx-auto" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
-                </div>
 
-                {/* Recent Colors */}
-                {recentColors.length > 0 && (
+                  {/* Team Colors - Enhanced */}
                   <div>
-                    <h3 className="section-header-mobile mb-3">Recent Colors</h3>
-                    <div className="color-grid-mobile">
-                      {recentColors.slice(0, 8).map((color) => (
+                    <h3 className="section-header-mobile mb-4 text-base">
+                      Team Colors
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                      {TEAM_COLORS.map(({ name, color }) => (
                         <button
                           key={color}
                           onClick={() => handleColorSelect(color)}
                           disabled={disabled}
-                          className={`color-swatch-mobile ${tempColor.toLowerCase() === color.toLowerCase() ? "selected" : ""
-                            }`}
-                          style={{ backgroundColor: color }}
-                          aria-label={`Select color ${color}`}
+                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 min-h-[68px] ${
+                            tempColor.toLowerCase() === color.toLowerCase()
+                              ? "border-primary bg-primary/8 shadow-md"
+                              : "border-border/50 active:border-primary/50 active:bg-secondary/30 hover:bg-secondary/20"
+                          }`}
                         >
+                          <div
+                            className="w-12 h-12 rounded-xl border-2 border-border/30 shadow-sm flex-shrink-0"
+                            style={{ backgroundColor: color }}
+                          />
+                          <span className="text-base font-semibold flex-1 text-left">
+                            {name}
+                          </span>
                           {tempColor.toLowerCase() === color.toLowerCase() && (
-                            <Check className="w-5 h-5 text-white drop-shadow-md mx-auto" />
+                            <Check className="w-6 h-6 text-primary flex-shrink-0" />
                           )}
                         </button>
                       ))}
                     </div>
                   </div>
-                )}
 
-                {/* Team Colors */}
-                <div>
-                  <h3 className="section-header-mobile mb-3">Team Colors</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {TEAM_COLORS.map(({ name, color }) => (
-                      <button
-                        key={color}
-                        onClick={() => handleColorSelect(color)}
-                        disabled={disabled}
-                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${tempColor.toLowerCase() === color.toLowerCase()
-                            ? "border-primary bg-primary/5"
-                            : "border-border active:border-primary/50 active:bg-secondary/50"
+                  {/* Basic Colors - Enhanced */}
+                  <div>
+                    <h3 className="section-header-mobile mb-4 text-base">
+                      Basic Colors
+                    </h3>
+                    <div className="grid grid-cols-5 gap-3">
+                      {BASIC_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => handleColorSelect(color)}
+                          disabled={disabled}
+                          className={`aspect-square rounded-2xl border-3 transition-all duration-200 min-h-[60px] ${
+                            tempColor.toLowerCase() === color.toLowerCase()
+                              ? "border-primary shadow-lg shadow-primary/30 scale-105"
+                              : "border-border/50 hover:border-primary/50 active:scale-95"
                           }`}
-                      >
-                        <div
-                          className="w-10 h-10 rounded-lg border border-border/50 shadow-sm flex-shrink-0"
                           style={{ backgroundColor: color }}
-                        />
-                        <span className="text-sm font-medium">{name}</span>
-                      </button>
-                    ))}
+                          aria-label={`Select color ${color}`}
+                        >
+                          {tempColor.toLowerCase() === color.toLowerCase() && (
+                            <Check
+                              className={`w-6 h-6 mx-auto drop-shadow-lg ${
+                                color === "#FFFFFF" ||
+                                color === "#FFD700" ||
+                                color === "#FFFF00"
+                                  ? "text-gray-800"
+                                  : "text-white"
+                              }`}
+                            />
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Basic Colors */}
-                <div>
-                  <h3 className="section-header-mobile mb-3">Basic Colors</h3>
-                  <div className="color-grid-mobile grid-cols-5">
-                    {BASIC_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => handleColorSelect(color)}
-                        disabled={disabled}
-                        className={`color-swatch-mobile ${tempColor.toLowerCase() === color.toLowerCase() ? "selected" : ""
-                          }`}
-                        style={{ backgroundColor: color }}
-                        aria-label={`Select color ${color}`}
-                      >
-                        {tempColor.toLowerCase() === color.toLowerCase() && (
-                          <Check className={`w-5 h-5 mx-auto drop-shadow-md ${color === "#FFFFFF" || color === "#FFD700" || color === "#FFFF00"
-                              ? "text-gray-800"
-                              : "text-white"
-                            }`} />
-                        )}
-                      </button>
-                    ))}
+                  {/* Custom Color Button - Enhanced */}
+                  <Button
+                    variant="outline"
+                    className="w-full h-16 text-base font-semibold rounded-2xl border-2 border-dashed border-border/50 hover:border-primary/50 transition-all duration-200"
+                    onClick={() => setActiveSection("custom")}
+                  >
+                    <Palette className="w-6 h-6 mr-3" />
+                    <span>Create Custom Color</span>
+                  </Button>
+                </div>
+              ) : (
+                /* Custom Color Section - Enhanced */
+                <div className="space-y-6">
+                  {/* Large Color Preview - Enhanced */}
+                  <div className="flex flex-col items-center gap-5 p-6 bg-gradient-to-b from-muted/20 to-transparent rounded-2xl">
+                    <div
+                      className="w-40 h-40 rounded-3xl border-4 border-border shadow-2xl"
+                      style={{ backgroundColor: tempColor }}
+                    />
+                    <p className="font-mono text-2xl font-bold tracking-wider">
+                      {tempColor.toUpperCase()}
+                    </p>
                   </div>
-                </div>
 
-                {/* Custom Color Button */}
-                <Button
-                  variant="outline"
-                  className="w-full btn-mobile"
-                  onClick={() => setActiveSection("custom")}
-                >
-                  <Palette className="w-5 h-5" />
-                  <span>Custom Color</span>
-                </Button>
-              </div>
-            ) : (
-              /* Custom Color Section */
-              <div className="space-y-4">
-                {/* Large Color Preview */}
-                <div className="flex flex-col items-center gap-4">
-                  <div
-                    className="w-32 h-32 rounded-2xl border-4 border-border shadow-lg"
-                    style={{ backgroundColor: tempColor }}
-                  />
-                  <p className="font-mono text-xl font-medium">{tempColor.toUpperCase()}</p>
-                </div>
+                  {/* Color Picker - Enhanced */}
+                  <div className="space-y-4">
+                    <label className="section-header-mobile block text-base">
+                      Pick a Color
+                    </label>
+                    <input
+                      type="color"
+                      value={tempColor}
+                      onChange={(e) => setTempColor(e.target.value)}
+                      disabled={disabled}
+                      className="w-full h-24 rounded-2xl border-3 border-border cursor-pointer shadow-md"
+                    />
+                  </div>
 
-                {/* Color Picker */}
-                <div className="space-y-4">
-                  <label className="section-header-mobile block">Pick a Color</label>
-                  <input
-                    type="color"
-                    value={tempColor}
-                    onChange={(e) => setTempColor(e.target.value)}
+                  {/* Hex Input - Enhanced */}
+                  <div className="space-y-3">
+                    <label className="section-header-mobile block text-base">
+                      Hex Code
+                    </label>
+                    <input
+                      type="text"
+                      value={tempColor}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                          setTempColor(val);
+                        }
+                      }}
+                      disabled={disabled}
+                      className="w-full h-16 px-5 text-xl font-mono rounded-2xl border-2 border-border bg-background focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
+                      placeholder="#000000"
+                    />
+                  </div>
+
+                  {/* Apply Button - Enhanced */}
+                  <Button
+                    className="w-full h-16 text-base font-semibold rounded-2xl shadow-lg"
+                    onClick={handleApplyColor}
                     disabled={disabled}
-                    className="w-full h-20 rounded-xl border-2 border-border cursor-pointer"
-                  />
+                  >
+                    <Check className="w-6 h-6 mr-3" />
+                    <span>Apply This Color</span>
+                  </Button>
                 </div>
+              )}
 
-                {/* Hex Input */}
-                <div className="space-y-2">
-                  <label className="section-header-mobile block">Hex Code</label>
-                  <input
-                    type="text"
-                    value={tempColor}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-                        setTempColor(val);
-                      }
-                    }}
-                    disabled={disabled}
-                    className="w-full h-14 px-4 text-lg font-mono rounded-xl border-2 border-border bg-background"
-                    placeholder="#000000"
-                  />
-                </div>
-
-                {/* Apply Button */}
-                <Button
-                  className="w-full btn-mobile"
-                  onClick={handleApplyColor}
-                  disabled={disabled}
-                >
-                  <Check className="w-5 h-5" />
-                  <span>Apply Color</span>
-                </Button>
-              </div>
-            )}
-
-            {footer && <div className="mt-4">{footer}</div>}
+              {footer && <div className="mt-6">{footer}</div>}
+            </div>
           </div>
         </div>
       </div>,
       // portal target: body
-      document.body
+      document.body,
     );
   }
 
@@ -351,10 +419,11 @@ export function ColorPickerModal({
                   key={color}
                   onClick={() => handleColorSelect(color)}
                   disabled={disabled}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${currentColor.toLowerCase() === color.toLowerCase()
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                    currentColor.toLowerCase() === color.toLowerCase()
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50 hover:bg-secondary/50"
-                    } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <div
                     className="w-8 h-8 rounded-md border border-border/50 shadow-sm flex-shrink-0"
@@ -376,10 +445,11 @@ export function ColorPickerModal({
                     key={color}
                     onClick={() => handleColorSelect(color)}
                     disabled={disabled}
-                    className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${currentColor.toLowerCase() === color.toLowerCase()
+                    className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${
+                      currentColor.toLowerCase() === color.toLowerCase()
                         ? "ring-2 ring-primary"
                         : ""
-                      } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
+                    } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
                     style={{ backgroundColor: color }}
                     title={color}
                   />
@@ -397,10 +467,11 @@ export function ColorPickerModal({
                   key={color}
                   onClick={() => handleColorSelect(color)}
                   disabled={disabled}
-                  className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${currentColor.toLowerCase() === color.toLowerCase()
+                  className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${
+                    currentColor.toLowerCase() === color.toLowerCase()
                       ? "ring-2 ring-primary"
                       : ""
-                    } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
+                  } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
                   style={{ backgroundColor: color }}
                   title={color}
                 />
@@ -451,6 +522,6 @@ export function ColorPickerModal({
       </div>
     </div>,
     // portal target: body
-    document.body
+    document.body,
   );
 }

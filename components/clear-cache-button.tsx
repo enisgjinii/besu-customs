@@ -1,21 +1,27 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Trash2, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Trash2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ClearCacheButtonProps {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
+  size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   showIcon?: boolean;
 }
 
-export function ClearCacheButton({ 
-  variant = 'outline', 
-  size = 'default',
-  className = '',
-  showIcon = true 
+export function ClearCacheButton({
+  variant = "outline",
+  size = "default",
+  className = "",
+  showIcon = true,
 }: ClearCacheButtonProps) {
   const [clearing, setClearing] = useState(false);
 
@@ -24,17 +30,19 @@ export function ClearCacheButton({
 
     try {
       // Use the centralized cache clearing system
-      const { forceClearCache } = await import('@/lib/auto-cache-clear');
+      const { forceClearCache } = await import("@/lib/auto-cache-clear");
       await forceClearCache();
 
       // Show success message
-      alert('Cache cleared successfully! The page will now reload.');
+      alert("Cache cleared successfully! The page will now reload.");
 
       // Reload the page
       window.location.reload();
     } catch (error) {
-      console.error('Failed to clear cache:', error);
-      alert('Failed to clear cache. Please try manually clearing your browser cache.');
+      console.error("Failed to clear cache:", error);
+      alert(
+        "Failed to clear cache. Please try manually clearing your browser cache.",
+      );
       setClearing(false);
     }
   };

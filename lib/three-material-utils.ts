@@ -12,16 +12,16 @@ import type { MaterialSection } from "./store";
 function parseMaterialName(name: string): string {
   // Common specific overrides
   const overrides: Record<string, string> = {
-    "fabric_front": "Front Body",
-    "fabric_back": "Back Body",
-    "fabric_sleeve_l": "Left Sleeve",
-    "fabric_sleeve_r": "Right Sleeve",
-    "collar_1": "Collar",
-    "trim_neck": "Neck Trim",
+    fabric_front: "Front Body",
+    fabric_back: "Back Body",
+    fabric_sleeve_l: "Left Sleeve",
+    fabric_sleeve_r: "Right Sleeve",
+    collar_1: "Collar",
+    trim_neck: "Neck Trim",
     "fabric 1": "Main Body",
-    "fabric_1": "Main Body",
+    fabric_1: "Main Body",
     "fabic 1": "Main Body",
-    "material": "Base",
+    material: "Base",
   };
 
   const lowerName = name.toLowerCase();
@@ -45,7 +45,9 @@ function parseMaterialName(name: string): string {
     .replace(/([a-zA-Z])(\d)/g, "$1 $2");
 
   // Filter out redundant technical terms
-  displayName = displayName.replace(/\b(lambert|phong|standard|pbr|blinn)\b/gi, "").trim();
+  displayName = displayName
+    .replace(/\b(lambert|phong|standard|pbr|blinn)\b/gi, "")
+    .trim();
 
   // Capitalize first letter of each word
   displayName = displayName
@@ -67,7 +69,7 @@ function parseMaterialName(name: string): string {
 // Extract material sections from a Three.js scene
 export function extractSectionsFromThreeModel(
   scene: THREE.Object3D,
-  modelUrl: string
+  modelUrl: string,
 ): MaterialSection[] {
   const sections: MaterialSection[] = [];
   const processedMaterials = new Set<string>();
@@ -114,7 +116,7 @@ export function extractSectionsFromThreeModel(
   });
 
   console.log(
-    `📋 Extracted ${sections.length} material sections from Three.js model`
+    `📋 Extracted ${sections.length} material sections from Three.js model`,
   );
   return sections;
 }
@@ -122,7 +124,7 @@ export function extractSectionsFromThreeModel(
 // Apply material sections to a Three.js scene
 export function applyMaterialsToThreeModel(
   scene: THREE.Object3D,
-  sections: MaterialSection[]
+  sections: MaterialSection[],
 ): void {
   if (sections.length === 0) return;
 
@@ -137,7 +139,7 @@ export function applyMaterialsToThreeModel(
           (s) =>
             s.originalName === material.name ||
             s.id === material.name ||
-            material.name.includes(s.originalName)
+            material.name.includes(s.originalName),
         );
 
         if (!section) return;
@@ -160,7 +162,11 @@ export function applyMaterialsToThreeModel(
 
         if (targetMaterial instanceof THREE.MeshStandardMaterial) {
           // Apply color
-          if (section.color && !section.customTexture && !section.gradient?.enabled) {
+          if (
+            section.color &&
+            !section.customTexture &&
+            !section.gradient?.enabled
+          ) {
             targetMaterial.color = new THREE.Color(section.color);
             targetMaterial.map = null;
           }
@@ -178,7 +184,9 @@ export function applyMaterialsToThreeModel(
               // Add subtle emissive to maintain color vibrancy
               const baseColor = new THREE.Color(section.color);
               if (baseColor.getHex() !== 0xffffff) {
-                targetMaterial.emissive = baseColor.clone().multiplyScalar(0.12);
+                targetMaterial.emissive = baseColor
+                  .clone()
+                  .multiplyScalar(0.12);
               }
             } else {
               targetMaterial.color = new THREE.Color(0xffffff);
@@ -186,7 +194,11 @@ export function applyMaterialsToThreeModel(
           }
 
           // Apply gradient
-          if (section.gradient?.enabled && !section.customTexture && section.gradient.type) {
+          if (
+            section.gradient?.enabled &&
+            !section.customTexture &&
+            section.gradient.type
+          ) {
             const gradientTexture = createGradientTexture({
               enabled: section.gradient.enabled,
               type: section.gradient.type,
@@ -242,7 +254,7 @@ function createGradientTexture(gradient: {
       0,
       size / 2,
       size / 2,
-      size / 2
+      size / 2,
     );
   } else {
     const angle = ((gradient.angle || 90) * Math.PI) / 180;
@@ -258,7 +270,10 @@ function createGradientTexture(gradient: {
     gradient.colors.map((_, i) => i / (gradient.colors.length - 1));
 
   gradient.colors.forEach((color, i) => {
-    gradientObj.addColorStop(stops[i] || i / (gradient.colors.length - 1), color);
+    gradientObj.addColorStop(
+      stops[i] || i / (gradient.colors.length - 1),
+      color,
+    );
   });
 
   ctx.fillStyle = gradientObj;
@@ -273,7 +288,7 @@ function createGradientTexture(gradient: {
 export function extractUVMapFromThreeModel(
   scene: THREE.Object3D,
   width: number = 2048,
-  height: number = 2048
+  height: number = 2048,
 ): string | null {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -309,15 +324,15 @@ export function extractUVMapFromThreeModel(
 
           const uvA = new THREE.Vector2(
             uvAttribute.getX(a),
-            uvAttribute.getY(a)
+            uvAttribute.getY(a),
           );
           const uvB = new THREE.Vector2(
             uvAttribute.getX(b),
-            uvAttribute.getY(b)
+            uvAttribute.getY(b),
           );
           const uvC = new THREE.Vector2(
             uvAttribute.getX(c),
-            uvAttribute.getY(c)
+            uvAttribute.getY(c),
           );
 
           ctx.beginPath();
@@ -332,15 +347,15 @@ export function extractUVMapFromThreeModel(
         for (let i = 0; i < uvAttribute.count; i += 3) {
           const uvA = new THREE.Vector2(
             uvAttribute.getX(i),
-            uvAttribute.getY(i)
+            uvAttribute.getY(i),
           );
           const uvB = new THREE.Vector2(
             uvAttribute.getX(i + 1),
-            uvAttribute.getY(i + 1)
+            uvAttribute.getY(i + 1),
           );
           const uvC = new THREE.Vector2(
             uvAttribute.getX(i + 2),
-            uvAttribute.getY(i + 2)
+            uvAttribute.getY(i + 2),
           );
 
           ctx.beginPath();
@@ -365,7 +380,7 @@ export function extractUVMapFromThreeModel(
 // Create scaled texture from URL
 export async function createScaledTextureFromUrl(
   url: string,
-  maxSize: number = 2048
+  maxSize: number = 2048,
 ): Promise<THREE.Texture> {
   return new Promise((resolve, reject) => {
     const loader = new THREE.TextureLoader();
@@ -378,7 +393,7 @@ export async function createScaledTextureFromUrl(
         resolve(texture);
       },
       undefined,
-      reject
+      reject,
     );
   });
 }

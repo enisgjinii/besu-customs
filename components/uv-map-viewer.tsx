@@ -49,8 +49,10 @@ export function UVMapViewer({
   const [baseImage, setBaseImage] = useState<HTMLImageElement | null>(null);
   const [textElements, setTextElements] = useState<TextElement[]>([]);
   const [imageElements, setImageElements] = useState<ImageElement[]>([]);
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(
+    null,
+  );
+
   // Text controls
   const [newText, setNewText] = useState("");
   const [textColor, setTextColor] = useState("#000000");
@@ -207,16 +209,22 @@ export function UVMapViewer({
     if (!canvasRef.current) return;
     // Export flipped horizontally and vertically for Babylon
     const canvas = canvasRef.current;
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
+    const tempCtx = tempCanvas.getContext("2d");
     if (tempCtx) {
       tempCtx.save();
       tempCtx.scale(-1, -1);
-      tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
+      tempCtx.drawImage(
+        canvas,
+        -canvas.width,
+        -canvas.height,
+        canvas.width,
+        canvas.height,
+      );
       tempCtx.restore();
-      const dataUrl = tempCanvas.toDataURL('image/png');
+      const dataUrl = tempCanvas.toDataURL("image/png");
       onApply?.(dataUrl);
       onClose();
     }
@@ -232,16 +240,22 @@ export function UVMapViewer({
 
     // Export flipped horizontally and vertically for Babylon
     const canvas = canvasRef.current;
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
+    const tempCtx = tempCanvas.getContext("2d");
     if (tempCtx) {
       tempCtx.save();
       tempCtx.scale(-1, -1);
-      tempCtx.drawImage(canvas, -canvas.width, -canvas.height, canvas.width, canvas.height);
+      tempCtx.drawImage(
+        canvas,
+        -canvas.width,
+        -canvas.height,
+        canvas.width,
+        canvas.height,
+      );
       tempCtx.restore();
-      link.href = tempCanvas.toDataURL('image/png');
+      link.href = tempCanvas.toDataURL("image/png");
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
@@ -358,7 +372,11 @@ export function UVMapViewer({
             Click on elements to select them
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleDownload} variant="outline" className="gap-2">
+            <Button
+              onClick={handleDownload}
+              variant="outline"
+              className="gap-2"
+            >
               <Download className="h-4 w-4" />
               Download
             </Button>

@@ -114,7 +114,9 @@ export function LoginForm({ defaultView = "signin" }: LoginFormProps) {
               {defaultView === "signin" ? "Sign In" : "Create Account"}
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              {defaultView === "signin" ? "Access your admin dashboard" : "Set up your admin access"}
+              {defaultView === "signin"
+                ? "Access your admin dashboard"
+                : "Set up your admin access"}
             </CardDescription>
           </div>
         </CardHeader>
@@ -161,7 +163,10 @@ export function LoginForm({ defaultView = "signin" }: LoginFormProps) {
                     </Label>
                     <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
                       <DialogTrigger asChild>
-                        <Button variant="link" className="px-0 font-normal text-xs h-auto text-muted-foreground">
+                        <Button
+                          variant="link"
+                          className="px-0 font-normal text-xs h-auto text-muted-foreground"
+                        >
                           Forgot password?
                         </Button>
                       </DialogTrigger>
@@ -169,10 +174,14 @@ export function LoginForm({ defaultView = "signin" }: LoginFormProps) {
                         <DialogHeader>
                           <DialogTitle>Reset Password</DialogTitle>
                           <DialogDescription>
-                            Enter your email address and we'll send you a link to reset your password.
+                            Enter your email address and we'll send you a link
+                            to reset your password.
                           </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleResetPassword} className="space-y-4 mt-2">
+                        <form
+                          onSubmit={handleResetPassword}
+                          className="space-y-4 mt-2"
+                        >
                           <div className="space-y-2">
                             <Label htmlFor="reset-email">Email Address</Label>
                             <Input
@@ -184,7 +193,11 @@ export function LoginForm({ defaultView = "signin" }: LoginFormProps) {
                               required
                             />
                           </div>
-                          <Button type="submit" className="w-full" disabled={loading}>
+                          <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={loading}
+                          >
                             {loading ? "Sending..." : "Send Reset Link"}
                           </Button>
                         </form>

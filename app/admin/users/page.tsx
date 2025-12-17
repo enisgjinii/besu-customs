@@ -105,9 +105,9 @@ function UsersPage() {
                           <AvatarFallback>
                             {user.full_name
                               ? user.full_name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
                               : user.email.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>

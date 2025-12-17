@@ -28,8 +28,11 @@ import dynamic from "next/dynamic";
 
 // Lazy load heavy components
 const MaterialEditor = dynamic(
-  () => import("./material-editor").then((mod) => ({ default: mod.MaterialEditor })),
-  { 
+  () =>
+    import("./material-editor").then((mod) => ({
+      default: mod.MaterialEditor,
+    })),
+  {
     ssr: false,
     loading: () => (
       <div className="space-y-3 p-4">
@@ -37,21 +40,24 @@ const MaterialEditor = dynamic(
         <div className="h-24 bg-muted rounded-lg mobile-skeleton" />
         <div className="h-16 bg-muted rounded-lg mobile-skeleton" />
       </div>
-    )
-  }
+    ),
+  },
 );
 
 const UVTextureEditor = dynamic(
-  () => import("./uv-texture-editor").then((mod) => ({ default: mod.UVTextureEditor })),
-  { 
+  () =>
+    import("./uv-texture-editor").then((mod) => ({
+      default: mod.UVTextureEditor,
+    })),
+  {
     ssr: false,
     loading: () => (
       <div className="space-y-3 p-4">
         <div className="h-8 bg-muted rounded-lg mobile-skeleton" />
         <div className="aspect-square bg-muted rounded-lg mobile-skeleton" />
       </div>
-    )
-  }
+    ),
+  },
 );
 
 type TabType = "materials" | "texture" | "export" | null;
@@ -72,8 +78,8 @@ const NavButton = memo(function NavButton({
     <button
       onClick={onClick}
       className={`mobile-nav-item transition-all duration-200 ${
-        isActive 
-          ? "active bg-primary text-primary-foreground shadow-md" 
+        isActive
+          ? "active bg-primary text-primary-foreground shadow-md"
           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       }`}
       aria-label={label}
@@ -96,31 +102,44 @@ export function MobileBottomNav() {
 
   // Store selectors
   const products = useConfiguratorStore((state) => state.products);
-  const selectedProductId = useConfiguratorStore((state) => state.selectedProductId);
-  const setSelectedProduct = useConfiguratorStore((state) => state.setSelectedProduct);
+  const selectedProductId = useConfiguratorStore(
+    (state) => state.selectedProductId,
+  );
+  const setSelectedProduct = useConfiguratorStore(
+    (state) => state.setSelectedProduct,
+  );
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
   const autoRotate = useConfiguratorStore((state) => state.autoRotate);
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
-  const cameraControlsRef = useConfiguratorStore((state) => state.cameraControlsRef);
-  const setMobilePanelOpen = useConfiguratorStore((state) => state.setMobilePanelOpen);
-  const setMobilePanelHeight = useConfiguratorStore((state) => state.setMobilePanelHeight);
+  const cameraControlsRef = useConfiguratorStore(
+    (state) => state.cameraControlsRef,
+  );
+  const setMobilePanelOpen = useConfiguratorStore(
+    (state) => state.setMobilePanelOpen,
+  );
+  const setMobilePanelHeight = useConfiguratorStore(
+    (state) => state.setMobilePanelHeight,
+  );
 
   // Handle tab click
-  const handleTabClick = useCallback((tab: TabType) => {
-    if (activeTab === tab && isExpanded) {
-      setIsExpanded(false);
-      setMobilePanelOpen(false);
-      setMobilePanelHeight(0);
-      setTimeout(() => setActiveTab(null), 300);
-    } else {
-      setActiveTab(tab);
-      setIsExpanded(true);
-      setPanelHeight(60);
-      setMobilePanelOpen(true);
-      setMobilePanelHeight(60);
-    }
-  }, [activeTab, isExpanded, setMobilePanelOpen, setMobilePanelHeight]);
+  const handleTabClick = useCallback(
+    (tab: TabType) => {
+      if (activeTab === tab && isExpanded) {
+        setIsExpanded(false);
+        setMobilePanelOpen(false);
+        setMobilePanelHeight(0);
+        setTimeout(() => setActiveTab(null), 300);
+      } else {
+        setActiveTab(tab);
+        setIsExpanded(true);
+        setPanelHeight(60);
+        setMobilePanelOpen(true);
+        setMobilePanelHeight(60);
+      }
+    },
+    [activeTab, isExpanded, setMobilePanelOpen, setMobilePanelHeight],
+  );
 
   // Close panel
   const closePanel = useCallback(() => {
@@ -131,27 +150,36 @@ export function MobileBottomNav() {
   }, [setMobilePanelOpen, setMobilePanelHeight]);
 
   // Handle drag to resize panel
-  const handleDragStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    dragStartY.current = clientY;
-    dragStartHeight.current = panelHeight;
-  }, [panelHeight]);
+  const handleDragStart = useCallback(
+    (e: React.TouchEvent | React.MouseEvent) => {
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+      dragStartY.current = clientY;
+      dragStartHeight.current = panelHeight;
+    },
+    [panelHeight],
+  );
 
-  const handleDrag = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-    if (dragStartY.current === 0) return;
-    
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const deltaY = dragStartY.current - clientY;
-    const deltaPercent = (deltaY / window.innerHeight) * 100;
-    const newHeight = Math.min(85, Math.max(30, dragStartHeight.current + deltaPercent));
-    
-    setPanelHeight(newHeight);
-    setMobilePanelHeight(newHeight);
-  }, [setMobilePanelHeight]);
+  const handleDrag = useCallback(
+    (e: React.TouchEvent | React.MouseEvent) => {
+      if (dragStartY.current === 0) return;
+
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartY.current - clientY;
+      const deltaPercent = (deltaY / window.innerHeight) * 100;
+      const newHeight = Math.min(
+        85,
+        Math.max(30, dragStartHeight.current + deltaPercent),
+      );
+
+      setPanelHeight(newHeight);
+      setMobilePanelHeight(newHeight);
+    },
+    [setMobilePanelHeight],
+  );
 
   const handleDragEnd = useCallback(() => {
     dragStartY.current = 0;
-    
+
     // Snap to close if dragged down enough
     if (panelHeight < 35) {
       closePanel();
@@ -178,7 +206,9 @@ export function MobileBottomNav() {
 
   // Reset camera handler
   const handleResetCamera = useCallback(() => {
-    const controls = cameraControlsRef as { reset?: (enableTransition: boolean) => void } | null;
+    const controls = cameraControlsRef as {
+      reset?: (enableTransition: boolean) => void;
+    } | null;
     if (controls?.reset) {
       controls.reset(true);
     }
@@ -187,24 +217,28 @@ export function MobileBottomNav() {
   // Get tab title
   const getTabTitle = useCallback((tab: TabType) => {
     switch (tab) {
-      case "materials": return "Materials & Colors";
-      case "texture": return "Texture Editor";
-      case "export": return "Export & Controls";
-      default: return "";
+      case "materials":
+        return "Choose Colors";
+      case "texture":
+        return "Texture Editor";
+      case "export":
+        return "Export & Controls";
+      default:
+        return "";
     }
   }, []);
 
   return (
     <div
       className="md:hidden fixed bottom-0 left-0 right-0 z-50"
-      style={{ transform: 'translateZ(0)' }}
+      style={{ transform: "translateZ(0)" }}
     >
       {/* Backdrop - Enhanced */}
       {isExpanded && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 backdrop-blur-md z-40 mobile-backdrop"
           onClick={closePanel}
-          style={{ transform: 'translateZ(0)' }}
+          style={{ transform: "translateZ(0)" }}
         />
       )}
 
@@ -212,16 +246,18 @@ export function MobileBottomNav() {
       <div
         ref={panelRef}
         className={`fixed left-0 right-0 bottom-0 bg-card/98 backdrop-blur-xl border-t border-border/50 rounded-t-3xl z-50 mobile-sheet shadow-2xl ${
-          isExpanded ? "mobile-panel-enter" : "mobile-panel-exit pointer-events-none"
+          isExpanded
+            ? "mobile-panel-enter"
+            : "mobile-panel-exit pointer-events-none"
         }`}
-        style={{ 
-          height: isExpanded ? `${panelHeight}vh` : '0',
-          maxHeight: '85vh',
-          transform: 'translateZ(0)',
+        style={{
+          height: isExpanded ? `${panelHeight}vh` : "0",
+          maxHeight: "85vh",
+          transform: "translateZ(0)",
         }}
       >
         {/* Drag Handle - Enhanced */}
-        <div 
+        <div
           className="w-full py-3 cursor-grab active:cursor-grabbing touch-none bg-gradient-to-b from-background/5 to-transparent"
           onTouchStart={handleDragStart}
           onTouchMove={handleDrag}
@@ -235,7 +271,9 @@ export function MobileBottomNav() {
 
         {/* Header - Enhanced */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border/30 bg-gradient-to-b from-background/50 to-transparent sticky top-0 z-10">
-          <h3 className="font-bold text-lg tracking-tight">{getTabTitle(activeTab)}</h3>
+          <h3 className="font-bold text-lg tracking-tight">
+            {getTabTitle(activeTab)}
+          </h3>
           <Button
             variant="ghost"
             size="sm"
@@ -247,7 +285,10 @@ export function MobileBottomNav() {
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto thin-scrollbar overscroll-contain" style={{ height: 'calc(100% - 60px)' }}>
+        <div
+          className="overflow-y-auto thin-scrollbar overscroll-contain"
+          style={{ height: "calc(100% - 60px)" }}
+        >
           {activeTab === "materials" && (
             <div className="p-5 space-y-5 pb-6">
               {/* Model Selector */}
@@ -264,7 +305,11 @@ export function MobileBottomNav() {
                   </SelectTrigger>
                   <SelectContent>
                     {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id} className="py-3">
+                      <SelectItem
+                        key={product.id}
+                        value={product.id}
+                        className="py-3"
+                      >
                         {product.title}
                       </SelectItem>
                     ))}
@@ -304,8 +349,14 @@ export function MobileBottomNav() {
                     className="btn-mobile h-14 justify-start text-base rounded-xl"
                     onClick={() => setAutoRotate(!autoRotate)}
                   >
-                    {autoRotate ? <Pause className="w-5 h-5 flex-shrink-0" /> : <Play className="w-5 h-5 flex-shrink-0" />}
-                    <span className="flex-1 text-left">{autoRotate ? "Stop" : "Rotate"}</span>
+                    {autoRotate ? (
+                      <Pause className="w-5 h-5 flex-shrink-0" />
+                    ) : (
+                      <Play className="w-5 h-5 flex-shrink-0" />
+                    )}
+                    <span className="flex-1 text-left">
+                      {autoRotate ? "Stop" : "Rotate"}
+                    </span>
                   </Button>
                   <Button
                     variant={showGrid ? "default" : "outline"}
@@ -313,7 +364,9 @@ export function MobileBottomNav() {
                     onClick={toggleGrid}
                   >
                     <Grid3x3 className="w-5 h-5 flex-shrink-0" />
-                    <span className="flex-1 text-left">{showGrid ? "Hide" : "Show"} Grid</span>
+                    <span className="flex-1 text-left">
+                      {showGrid ? "Hide" : "Show"} Grid
+                    </span>
                   </Button>
                   <Button
                     variant="outline"
@@ -344,7 +397,9 @@ export function MobileBottomNav() {
                     disabled={isRecording}
                   >
                     <Film className="w-5 h-5 flex-shrink-0" />
-                    <span className="flex-1 text-left">{isRecording ? "Recording..." : "Record Video"}</span>
+                    <span className="flex-1 text-left">
+                      {isRecording ? "Recording..." : "Record Video"}
+                    </span>
                   </Button>
                 </div>
               </div>
@@ -353,7 +408,8 @@ export function MobileBottomNav() {
               <div className="flex items-start gap-3 p-4 bg-primary/8 rounded-2xl border border-primary/20">
                 <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  For advanced export options like 4K images and model files, use the desktop version.
+                  For advanced export options like 4K images and model files,
+                  use the desktop version.
                 </p>
               </div>
             </div>
@@ -362,13 +418,13 @@ export function MobileBottomNav() {
       </div>
 
       {/* Bottom Navigation Bar - Enhanced */}
-      <div 
+      <div
         className="bg-card/98 backdrop-blur-xl border-t border-border/50 px-2 py-2 flex items-center justify-around shadow-2xl pb-safe relative z-50"
-        style={{ transform: 'translateZ(0)' }}
+        style={{ transform: "translateZ(0)" }}
       >
         <NavButton
           icon={Palette}
-          label="Materials"
+          label="Colors"
           isActive={activeTab === "materials"}
           onClick={() => handleTabClick("materials")}
         />

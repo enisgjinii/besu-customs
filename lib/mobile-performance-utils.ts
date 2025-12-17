@@ -5,43 +5,43 @@
 
 // Detect device capabilities
 export const isMobile = () => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
+    navigator.userAgent,
   );
 };
 
 export const isLowEndDevice = () => {
-  if (typeof window === 'undefined') return false;
-  
+  if (typeof window === "undefined") return false;
+
   // Check for low RAM (< 4GB)
   const memory = (navigator as any).deviceMemory;
   if (memory && memory < 4) return true;
-  
+
   // Check for slow CPU
   const cores = navigator.hardwareConcurrency || 1;
   if (cores < 4) return true;
-  
+
   return false;
 };
 
 export const getOptimalCanvasSize = () => {
-  if (typeof window === 'undefined') return 2048;
-  
+  if (typeof window === "undefined") return 2048;
+
   const mobile = isMobile();
   const lowEnd = isLowEndDevice();
-  
+
   if (lowEnd) return 1024; // Low-end devices: 1024x1024
   if (mobile) return 1536; // Mid-range mobile: 1536x1536
   return 2048; // Desktop: 2048x2048
 };
 
 export const getOptimalImageQuality = () => {
-  if (typeof window === 'undefined') return 1.0;
-  
+  if (typeof window === "undefined") return 1.0;
+
   const mobile = isMobile();
   const lowEnd = isLowEndDevice();
-  
+
   if (lowEnd) return 0.7; // 70% quality
   if (mobile) return 0.85; // 85% quality
   return 1.0; // 100% quality
@@ -50,16 +50,16 @@ export const getOptimalImageQuality = () => {
 // Debounce helper for frequent updates
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null;
-  
+
   return function executedFunction(...args: Parameters<T>) {
     const later = () => {
       timeout = null;
       func(...args);
     };
-    
+
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
@@ -69,15 +69,15 @@ export function debounce<T extends (...args: any[]) => any>(
 export const compressImageForMobile = async (
   dataUrl: string,
   maxWidth: number = 1024,
-  quality: number = 0.85
+  quality: number = 0.85,
 ): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       let width = img.width;
       let height = img.height;
-      
+
       // Scale down if needed
       if (width > maxWidth || height > maxWidth) {
         if (width > height) {
@@ -88,28 +88,28 @@ export const compressImageForMobile = async (
           height = maxWidth;
         }
       }
-      
+
       canvas.width = width;
       canvas.height = height;
-      
-      const ctx = canvas.getContext('2d', {
+
+      const ctx = canvas.getContext("2d", {
         alpha: true,
         willReadFrequently: false,
       });
-      
+
       if (!ctx) {
         resolve(dataUrl);
         return;
       }
-      
+
       // Use better image smoothing
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      
+      ctx.imageSmoothingQuality = "high";
+
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/png', quality));
+      resolve(canvas.toDataURL("image/png", quality));
     };
-    
+
     img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
   });
@@ -118,10 +118,10 @@ export const compressImageForMobile = async (
 // Throttle helper for scroll/resize events
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
-  
+
   return function executedFunction(...args: Parameters<T>) {
     if (!inThrottle) {
       func(...args);
@@ -136,13 +136,13 @@ export class MobileImageCache {
   private cache: Map<string, HTMLImageElement>;
   private maxSize: number;
   private accessOrder: string[];
-  
+
   constructor(maxSize: number = 20) {
     this.cache = new Map();
     this.maxSize = maxSize;
     this.accessOrder = [];
   }
-  
+
   get(url: string): HTMLImageElement | undefined {
     const img = this.cache.get(url);
     if (img) {
@@ -152,7 +152,7 @@ export class MobileImageCache {
     }
     return img;
   }
-  
+
   set(url: string, img: HTMLImageElement): void {
     // Remove oldest if at capacity
     if (this.cache.size >= this.maxSize && !this.cache.has(url)) {
@@ -161,17 +161,17 @@ export class MobileImageCache {
         this.cache.delete(oldest);
       }
     }
-    
+
     this.cache.set(url, img);
     this.accessOrder = this.accessOrder.filter((u) => u !== url);
     this.accessOrder.push(url);
   }
-  
+
   clear(): void {
     this.cache.clear();
     this.accessOrder = [];
   }
-  
+
   has(url: string): boolean {
     return this.cache.has(url);
   }
@@ -179,20 +179,20 @@ export class MobileImageCache {
 
 // Optimize font loading for mobile
 export const preloadFonts = (fonts: string[]) => {
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === "undefined") return;
+
   // Limit fonts on mobile to reduce memory
   const mobile = isMobile();
   const fontsToLoad = mobile ? fonts.slice(0, 10) : fonts;
-  
+
   fontsToLoad.forEach((font) => {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'font';
-    link.crossOrigin = 'anonymous';
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "font";
+    link.crossOrigin = "anonymous";
     link.href = `https://fonts.googleapis.com/css2?family=${font.replace(
       / /g,
-      '+'
+      "+",
     )}&display=swap`;
     document.head.appendChild(link);
   });
@@ -202,7 +202,7 @@ export const preloadFonts = (fonts: string[]) => {
 export const getCanvasContextSettings = () => {
   const mobile = isMobile();
   const lowEnd = isLowEndDevice();
-  
+
   return {
     alpha: true,
     desynchronized: !lowEnd, // Disable on low-end for stability
@@ -215,27 +215,27 @@ export const getCanvasContextSettings = () => {
 export class TextureUpdateBatcher {
   private updates: Map<string, () => void>;
   private rafId: number | null = null;
-  
+
   constructor() {
     this.updates = new Map();
   }
-  
+
   schedule(key: string, updateFn: () => void): void {
     this.updates.set(key, updateFn);
-    
+
     if (this.rafId === null) {
       this.rafId = requestAnimationFrame(() => {
         this.flush();
       });
     }
   }
-  
+
   flush(): void {
     this.updates.forEach((fn) => fn());
     this.updates.clear();
     this.rafId = null;
   }
-  
+
   cancel(): void {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
@@ -247,7 +247,7 @@ export class TextureUpdateBatcher {
 
 // Performance monitoring
 export const measurePerformance = (label: string, fn: () => void) => {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     const start = performance.now();
     fn();
     const end = performance.now();

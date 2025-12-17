@@ -1,16 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
-  output: 'standalone',
+  output: "standalone",
   images: {
     unoptimized: true,
   },
   turbopack: {},
   outputFileTracingExcludes: {
-    '*': [
-      'node_modules/@swc/core-linux-x64-gnu',
-      'node_modules/@swc/core-linux-x64-musl',
-      'node_modules/@esbuild/linux-x64',
+    "*": [
+      "node_modules/@swc/core-linux-x64-gnu",
+      "node_modules/@swc/core-linux-x64-musl",
+      "node_modules/@esbuild/linux-x64",
     ],
   },
   webpack: (config, { isServer }) => {
@@ -22,17 +22,17 @@ const nextConfig = {
         filename: "static/models/[hash][ext][query]",
       },
     });
-    
+
     // Exclude Three.js from server bundle (client-only)
     if (isServer) {
-      config.externals = [...(config.externals || []), 'three'];
+      config.externals = [...(config.externals || []), "three"];
     }
-    
+
     return config;
   },
   // Enable compression for static assets
   compress: true,
-  
+
   // Add headers for better caching and compression
   async headers() {
     return [

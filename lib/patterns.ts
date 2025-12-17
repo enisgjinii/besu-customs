@@ -20,7 +20,11 @@ export type PatternCategory =
   | "school-logos" // Renamed from college
   | "league";
 
-export const PATTERN_CATEGORIES: { id: PatternCategory; name: string; icon: string }[] = [
+export const PATTERN_CATEGORIES: {
+  id: PatternCategory;
+  name: string;
+  icon: string;
+}[] = [
   { id: "school-logos", name: "School Logos", icon: "School" }, // Renamed
   { id: "league", name: "League", icon: "Trophy" },
   { id: "abstract", name: "Abstract", icon: "Abstract" },
@@ -312,12 +316,12 @@ const camoPatterns: Pattern[] = [
         <rect fill="#4B5563" width="100" height="100"/>
         <g>
           ${Array.from({ length: 50 }, () => {
-      const x = Math.floor(Math.random() * 10) * 10;
-      const y = Math.floor(Math.random() * 10) * 10;
-      const colors = ['#1F2937', '#6B7280', '#374151'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      return `<rect fill="${color}" x="${x}" y="${y}" width="10" height="10"/>`;
-    }).join('')}
+            const x = Math.floor(Math.random() * 10) * 10;
+            const y = Math.floor(Math.random() * 10) * 10;
+            const colors = ["#1F2937", "#6B7280", "#374151"];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            return `<rect fill="${color}" x="${x}" y="${y}" width="10" height="10"/>`;
+          }).join("")}
         </g>
       </svg>
     `),
@@ -573,8 +577,8 @@ const sportsPatterns: Pattern[] = [
       <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <rect fill="#3B82F6" width="100" height="100"/>
         <g fill="none" stroke="#1E40AF" stroke-width="1.5">
-          ${Array.from({ length: 10 }, (_, i) => `<line x1="0" y1="${i * 10}" x2="100" y2="${i * 10}"/>`).join('')}
-          ${Array.from({ length: 10 }, (_, i) => `<line x1="${i * 10}" y1="0" x2="${i * 10}" y2="100"/>`).join('')}
+          ${Array.from({ length: 10 }, (_, i) => `<line x1="0" y1="${i * 10}" x2="100" y2="${i * 10}"/>`).join("")}
+          ${Array.from({ length: 10 }, (_, i) => `<line x1="${i * 10}" y1="0" x2="${i * 10}" y2="100"/>`).join("")}
         </g>
       </svg>
     `),
@@ -740,11 +744,11 @@ const geometricPatterns: Pattern[] = [
       <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <rect fill="#3B82F6" width="100" height="100"/>
         ${Array.from({ length: 25 }, (_, i) => {
-      const x = (i % 5) * 20;
-      const y = Math.floor(i / 5) * 20;
-      const color = i % 2 === 0 ? '#1E3A8A' : '#60A5FA';
-      return `<rect fill="${color}" x="${x}" y="${y}" width="20" height="20"/>`;
-    }).join('')}
+          const x = (i % 5) * 20;
+          const y = Math.floor(i / 5) * 20;
+          const color = i % 2 === 0 ? "#1E3A8A" : "#60A5FA";
+          return `<rect fill="${color}" x="${x}" y="${y}" width="20" height="20"/>`;
+        }).join("")}
       </svg>
     `),
   },
@@ -834,14 +838,16 @@ const collegePatterns: Pattern[] = [
     name: "AIR BASE K 8 CENTER FOR INTERNATIONAL EDUCATION",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/AIR_BASE_K_8_CENTER_FOR_INTERNATIONAL_EDUCATION_api.png",
+    thumbnail:
+      "/school_logos_advanced/AIR_BASE_K_8_CENTER_FOR_INTERNATIONAL_EDUCATION_api.png",
   },
   {
     id: "college-alonzo-and-tracy-mourning-senior-high-biscayne-bay",
     name: "ALONZO AND TRACY MOURNING SENIOR HIGH BISCAYNE BAY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/ALONZO_AND_TRACY_MOURNING_SENIOR_HIGH_BISCAYNE_BAY_api.png",
+    thumbnail:
+      "/school_logos_advanced/ALONZO_AND_TRACY_MOURNING_SENIOR_HIGH_BISCAYNE_BAY_api.png",
   },
   {
     id: "college-amelia-earhart-es",
@@ -855,7 +861,8 @@ const collegePatterns: Pattern[] = [
     name: "AMERICAN ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/AMERICAN_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/AMERICAN_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-american-shs",
@@ -876,7 +883,8 @@ const collegePatterns: Pattern[] = [
     name: "ANDREA CASTILLO PREPARATORY ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/ANDREA_CASTILLO_PREPARATORY_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/ANDREA_CASTILLO_PREPARATORY_ACADEMY_api.png",
   },
   {
     id: "college-arch-creek-elementary-school",
@@ -897,7 +905,8 @@ const collegePatterns: Pattern[] = [
     name: "ARTHUR AND POLLY MAYS CONSERVATORY OF THE ARTS",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/ARTHUR_AND_POLLY_MAYS_CONSERVATORY_OF_THE_ARTS_api.png",
+    thumbnail:
+      "/school_logos_advanced/ARTHUR_AND_POLLY_MAYS_CONSERVATORY_OF_THE_ARTS_api.png",
   },
   {
     id: "college-arvida-ms",
@@ -981,7 +990,8 @@ const collegePatterns: Pattern[] = [
     name: "BIOTECH   RICHMOND HEIGHTS 9 12 SHS",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/BIOTECH___RICHMOND_HEIGHTS_9_12_SHS_api.png",
+    thumbnail:
+      "/school_logos_advanced/BIOTECH___RICHMOND_HEIGHTS_9_12_SHS_api.png",
   },
   {
     id: "college-biscayne-beach-es",
@@ -1107,28 +1117,32 @@ const collegePatterns: Pattern[] = [
     name: "CARRIE P  MEEK WESTVIEW K 8 CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/CARRIE_P__MEEK_WESTVIEW_K_8_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/CARRIE_P__MEEK_WESTVIEW_K_8_CENTER_api.png",
   },
   {
     id: "college-center-for-international-ed-a-cambridge-academy",
     name: "CENTER FOR INTERNATIONAL ED  A CAMBRIDGE ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/CENTER_FOR_INTERNATIONAL_ED__A_CAMBRIDGE_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/CENTER_FOR_INTERNATIONAL_ED__A_CAMBRIDGE_ACADEMY_api.png",
   },
   {
     id: "college-chapman-partnership-early-childhood-center-north",
     name: "CHAPMAN PARTNERSHIP EARLY CHILDHOOD CENTER NORTH",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/CHAPMAN_PARTNERSHIP_EARLY_CHILDHOOD_CENTER_NORTH_api.png",
+    thumbnail:
+      "/school_logos_advanced/CHAPMAN_PARTNERSHIP_EARLY_CHILDHOOD_CENTER_NORTH_api.png",
   },
   {
     id: "college-chapman-partnership-early-childhood-center-south",
     name: "CHAPMAN PARTNERSHIP EARLY CHILDHOOD CENTER SOUTH",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/CHAPMAN_PARTNERSHIP_EARLY_CHILDHOOD_CENTER_SOUTH_api.png",
+    thumbnail:
+      "/school_logos_advanced/CHAPMAN_PARTNERSHIP_EARLY_CHILDHOOD_CENTER_SOUTH_api.png",
   },
   {
     id: "college-charles-david-wyche-jr-es",
@@ -1205,14 +1219,16 @@ const collegePatterns: Pattern[] = [
     name: "CORAL GABLES ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/CORAL_GABLES_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/CORAL_GABLES_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-coral-gables-preparatory-academy",
     name: "CORAL GABLES PREPARATORY ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/CORAL_GABLES_PREPARATORY_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/CORAL_GABLES_PREPARATORY_ACADEMY_api.png",
   },
   {
     id: "college-coral-gables-shs",
@@ -1359,7 +1375,8 @@ const collegePatterns: Pattern[] = [
     name: "DR  FREDERICA S  WILSON   SKYWAY ES",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/DR__FREDERICA_S__WILSON___SKYWAY_ES_api.png",
+    thumbnail:
+      "/school_logos_advanced/DR__FREDERICA_S__WILSON___SKYWAY_ES_api.png",
   },
   {
     id: "college-dr-gilbert-l-porter-es",
@@ -1373,14 +1390,16 @@ const collegePatterns: Pattern[] = [
     name: "DR  HENRY E  PERRINE ACADEMY OF THE ARTS",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/DR__HENRY_E__PERRINE_ACADEMY_OF_THE_ARTS_api.png",
+    thumbnail:
+      "/school_logos_advanced/DR__HENRY_E__PERRINE_ACADEMY_OF_THE_ARTS_api.png",
   },
   {
     id: "college-dr-henry-w-mack-west-little-river-k-8-center",
     name: "DR  HENRY W  MACK WEST LITTLE RIVER K 8 CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/DR__HENRY_W__MACK_WEST_LITTLE_RIVER_K_8_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/DR__HENRY_W__MACK_WEST_LITTLE_RIVER_K_8_CENTER_api.png",
   },
   {
     id: "college-dr-manuel-c-barreiro-es",
@@ -1394,14 +1413,16 @@ const collegePatterns: Pattern[] = [
     name: "DR  MARVIN DUNN ACADEMY FOR COMMUNITY EDUCATION",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/DR__MARVIN_DUNN_ACADEMY_FOR_COMMUNITY_EDUCATION_api.png",
+    thumbnail:
+      "/school_logos_advanced/DR__MARVIN_DUNN_ACADEMY_FOR_COMMUNITY_EDUCATION_api.png",
   },
   {
     id: "college-dr-robert-b-ingram-elementary-school",
     name: "DR  ROBERT B  INGRAM ELEMENTARY SCHOOL",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/DR__ROBERT_B__INGRAM_ELEMENTARY_SCHOOL_api.png",
+    thumbnail:
+      "/school_logos_advanced/DR__ROBERT_B__INGRAM_ELEMENTARY_SCHOOL_api.png",
   },
   {
     id: "college-dr-rolando-espinosa-k-8-center",
@@ -1415,7 +1436,8 @@ const collegePatterns: Pattern[] = [
     name: "DR  TONI BILBAO PREPARATORY ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/DR__TONI_BILBAO_PREPARATORY_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/DR__TONI_BILBAO_PREPARATORY_ACADEMY_api.png",
   },
   {
     id: "college-dr-william-a-chapman-es",
@@ -1457,7 +1479,8 @@ const collegePatterns: Pattern[] = [
     name: "EDUCATIONAL ALTERNATIVE OUTREACH PROGRAM",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/EDUCATIONAL_ALTERNATIVE_OUTREACH_PROGRAM_api.png",
+    thumbnail:
+      "/school_logos_advanced/EDUCATIONAL_ALTERNATIVE_OUTREACH_PROGRAM_api.png",
   },
   {
     id: "college-emerson-es",
@@ -1590,14 +1613,16 @@ const collegePatterns: Pattern[] = [
     name: "GATEWAY ENVIRONMENTAL K 8 LEARNING CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/GATEWAY_ENVIRONMENTAL_K_8_LEARNING_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/GATEWAY_ENVIRONMENTAL_K_8_LEARNING_CENTER_api.png",
   },
   {
     id: "college-george-t-baker-aviation-technical-college",
     name: "GEORGE T  BAKER AVIATION TECHNICAL COLLEGE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/GEORGE_T__BAKER_AVIATION_TECHNICAL_COLLEGE_api.png",
+    thumbnail:
+      "/school_logos_advanced/GEORGE_T__BAKER_AVIATION_TECHNICAL_COLLEGE_api.png",
   },
   {
     id: "college-george-washington-carver-es",
@@ -1618,14 +1643,16 @@ const collegePatterns: Pattern[] = [
     name: "GEORGIA JONES AYERS MIDDLE SCHOOL",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/GEORGIA_JONES_AYERS_MIDDLE_SCHOOL_api.png",
+    thumbnail:
+      "/school_logos_advanced/GEORGIA_JONES_AYERS_MIDDLE_SCHOOL_api.png",
   },
   {
     id: "college-gertrude-k-edelman-sabal-palm-es",
     name: "GERTRUDE K  EDELMAN SABAL PALM ES",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/GERTRUDE_K__EDELMAN_SABAL_PALM_ES_api.png",
+    thumbnail:
+      "/school_logos_advanced/GERTRUDE_K__EDELMAN_SABAL_PALM_ES_api.png",
   },
   {
     id: "college-glades-ms",
@@ -1737,7 +1764,8 @@ const collegePatterns: Pattern[] = [
     name: "HIALEAH ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/HIALEAH_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/HIALEAH_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-hialeah-es",
@@ -1772,7 +1800,8 @@ const collegePatterns: Pattern[] = [
     name: "HIALEAH MIAMI LAKES ADULT AND CONTINUING EDUCATION",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/HIALEAH_MIAMI_LAKES_ADULT_AND_CONTINUING_EDUCATION_api.png",
+    thumbnail:
+      "/school_logos_advanced/HIALEAH_MIAMI_LAKES_ADULT_AND_CONTINUING_EDUCATION_api.png",
   },
   {
     id: "college-hialeah-miami-lakes-shs",
@@ -1863,7 +1892,8 @@ const collegePatterns: Pattern[] = [
     name: "INTERNATIONAL STUDIES PREPARATORY ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/INTERNATIONAL_STUDIES_PREPARATORY_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/INTERNATIONAL_STUDIES_PREPARATORY_ACADEMY_api.png",
   },
   {
     id: "college-ipreparatory-academy",
@@ -1884,14 +1914,16 @@ const collegePatterns: Pattern[] = [
     name: "IRVING   BEATRICE PESKOE K 8 CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/IRVING___BEATRICE_PESKOE_K_8_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/IRVING___BEATRICE_PESKOE_K_8_CENTER_api.png",
   },
   {
     id: "college-itech-thomas-a-edison-ed-ctr-",
     name: "ITECH   THOMAS A  EDISON ED  CTR ",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/ITECH___THOMAS_A__EDISON_ED__CTR__api.png",
+    thumbnail:
+      "/school_logos_advanced/ITECH___THOMAS_A__EDISON_ED__CTR__api.png",
   },
   {
     id: "college-jack-d-gordon-es",
@@ -1905,7 +1937,8 @@ const collegePatterns: Pattern[] = [
     name: "JAMES H  BRIGHT J W  JOHNSON ELEMENTARY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/JAMES_H__BRIGHT_J_W__JOHNSON_ELEMENTARY_api.png",
+    thumbnail:
+      "/school_logos_advanced/JAMES_H__BRIGHT_J_W__JOHNSON_ELEMENTARY_api.png",
   },
   {
     id: "college-jane-s-roberts-k-8-center",
@@ -1947,7 +1980,8 @@ const collegePatterns: Pattern[] = [
     name: "JOHNNIE M PARRIS COLONIAL DRIVE ES",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/JOHNNIE_M_PARRIS_COLONIAL_DRIVE_ES_api.png",
+    thumbnail:
+      "/school_logos_advanced/JOHNNIE_M_PARRIS_COLONIAL_DRIVE_ES_api.png",
   },
   {
     id: "college-john-a-ferguson-shs",
@@ -2129,7 +2163,8 @@ const collegePatterns: Pattern[] = [
     name: "LAW ENFORCEMENT OFFICERS MEMORIAL HIGH SCHOOL",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/LAW_ENFORCEMENT_OFFICERS_MEMORIAL_HIGH_SCHOOL_api.png",
+    thumbnail:
+      "/school_logos_advanced/LAW_ENFORCEMENT_OFFICERS_MEMORIAL_HIGH_SCHOOL_api.png",
   },
   {
     id: "college-leewood-k-8-center",
@@ -2178,7 +2213,8 @@ const collegePatterns: Pattern[] = [
     name: "LINDSEY HOPKINS TECHNICAL COLLEGE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/LINDSEY_HOPKINS_TECHNICAL_COLLEGE_api.png",
+    thumbnail:
+      "/school_logos_advanced/LINDSEY_HOPKINS_TECHNICAL_COLLEGE_api.png",
   },
   {
     id: "college-lorah-park-es",
@@ -2199,7 +2235,8 @@ const collegePatterns: Pattern[] = [
     name: "MADIE IVES K 8 PREPARATORY ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MADIE_IVES_K_8_PREPARATORY_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/MADIE_IVES_K_8_PREPARATORY_ACADEMY_api.png",
   },
   {
     id: "college-madison-ms",
@@ -2227,7 +2264,8 @@ const collegePatterns: Pattern[] = [
     name: "MARITIME   SCIENCE TECHNOLOGY ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MARITIME___SCIENCE_TECHNOLOGY_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/MARITIME___SCIENCE_TECHNOLOGY_ACADEMY_api.png",
   },
   {
     id: "college-marjory-stoneman-douglas-es",
@@ -2262,7 +2300,8 @@ const collegePatterns: Pattern[] = [
     name: "MEDICAL ACADEMY FOR SCIENCE AND TECHNOLOGY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MEDICAL_ACADEMY_FOR_SCIENCE_AND_TECHNOLOGY_api.png",
+    thumbnail:
+      "/school_logos_advanced/MEDICAL_ACADEMY_FOR_SCIENCE_AND_TECHNOLOGY_api.png",
   },
   {
     id: "college-melrose-es",
@@ -2283,14 +2322,16 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI ARTS STUDIO 6 12 AT ZELDA GLAZER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_ARTS_STUDIO_6_12_AT_ZELDA_GLAZER_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_ARTS_STUDIO_6_12_AT_ZELDA_GLAZER_api.png",
   },
   {
     id: "college-miami-beach-adult-and-continuing-education-center",
     name: "MIAMI BEACH ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_BEACH_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_BEACH_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-miami-beach-fienberg-fisher-k-8",
@@ -2339,7 +2380,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI CORAL PARK ADULT AND CONTINUING EDUCATION CE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_CORAL_PARK_ADULT_AND_CONTINUING_EDUCATION_CE_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_CORAL_PARK_ADULT_AND_CONTINUING_EDUCATION_CE_api.png",
   },
   {
     id: "college-miami-coral-park-shs",
@@ -2388,7 +2430,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI JACKSON ADULT AND CONTINUING EDUCATION CENTE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_JACKSON_ADULT_AND_CONTINUING_EDUCATION_CENTE_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_JACKSON_ADULT_AND_CONTINUING_EDUCATION_CENTE_api.png",
   },
   {
     id: "college-miami-jackson-shs",
@@ -2416,7 +2459,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI LAKES ED  CTR  AND TECHNICAL COLLEGE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_LAKES_ED__CTR__AND_TECHNICAL_COLLEGE_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_LAKES_ED__CTR__AND_TECHNICAL_COLLEGE_api.png",
   },
   {
     id: "college-miami-lakes-k-8-center",
@@ -2437,7 +2481,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI MACARTHUR EDUCATIONAL CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_MACARTHUR_EDUCATIONAL_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_MACARTHUR_EDUCATIONAL_CENTER_api.png",
   },
   {
     id: "college-miami-norland-shs",
@@ -2458,7 +2503,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI PALMETTO ADULT AND CONTINUING EDUCATION CENT",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_PALMETTO_ADULT_AND_CONTINUING_EDUCATION_CENT_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_PALMETTO_ADULT_AND_CONTINUING_EDUCATION_CENT_api.png",
   },
   {
     id: "college-miami-palmetto-shs",
@@ -2472,7 +2518,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI SENIOR ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_SENIOR_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_SENIOR_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-miami-senior-hs",
@@ -2500,7 +2547,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI SPRINGS ADULT AND CONTINUING EDUCATION CENTE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_SPRINGS_ADULT_AND_CONTINUING_EDUCATION_CENTE_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_SPRINGS_ADULT_AND_CONTINUING_EDUCATION_CENTE_api.png",
   },
   {
     id: "college-miami-springs-es",
@@ -2528,7 +2576,8 @@ const collegePatterns: Pattern[] = [
     name: "MIAMI SUNSET ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/MIAMI_SUNSET_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/MIAMI_SUNSET_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-miami-sunset-shs",
@@ -2577,7 +2626,8 @@ const collegePatterns: Pattern[] = [
     name: "NEVA KING COOPER EDUCATIONAL CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/NEVA_KING_COOPER_EDUCATIONAL_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/NEVA_KING_COOPER_EDUCATIONAL_CENTER_api.png",
   },
   {
     id: "college-new-world-school-of-the-arts",
@@ -2605,7 +2655,8 @@ const collegePatterns: Pattern[] = [
     name: "NORMAN S  EDELCUP SUNNY ISLES BEACH K 8",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/NORMAN_S__EDELCUP_SUNNY_ISLES_BEACH_K_8_api.png",
+    thumbnail:
+      "/school_logos_advanced/NORMAN_S__EDELCUP_SUNNY_ISLES_BEACH_K_8_api.png",
   },
   {
     id: "college-norma-butler-bossard-es",
@@ -2654,7 +2705,8 @@ const collegePatterns: Pattern[] = [
     name: "NORTH MIAMI ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/NORTH_MIAMI_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/NORTH_MIAMI_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-north-miami-beach-shs",
@@ -2703,7 +2755,8 @@ const collegePatterns: Pattern[] = [
     name: "N  DADE CTR  FOR MODERN LANG  ES",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/N__DADE_CTR__FOR_MODERN_LANG__ES_api.png",
+    thumbnail:
+      "/school_logos_advanced/N__DADE_CTR__FOR_MODERN_LANG__ES_api.png",
   },
   {
     id: "college-oak-grove-es",
@@ -2927,7 +2980,8 @@ const collegePatterns: Pattern[] = [
     name: "ROBERT MORGAN ED  CTR  AND TECHNICAL COLLEGE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/ROBERT_MORGAN_ED__CTR__AND_TECHNICAL_COLLEGE_api.png",
+    thumbnail:
+      "/school_logos_advanced/ROBERT_MORGAN_ED__CTR__AND_TECHNICAL_COLLEGE_api.png",
   },
   {
     id: "college-robert-morgan-shs",
@@ -2941,7 +2995,8 @@ const collegePatterns: Pattern[] = [
     name: "ROBERT RENICK EDUCATIONAL CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/ROBERT_RENICK_EDUCATIONAL_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/ROBERT_RENICK_EDUCATIONAL_CENTER_api.png",
   },
   {
     id: "college-robert-russa-moton-es",
@@ -2997,14 +3052,16 @@ const collegePatterns: Pattern[] = [
     name: "RUTH K BROAD BAY HARBOR K 8 CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/RUTH_K_BROAD_BAY_HARBOR_K_8_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/RUTH_K_BROAD_BAY_HARBOR_K_8_CENTER_api.png",
   },
   {
     id: "college-ruth-owens-kruse-ed-center-brucie-ball-ed-ctr",
     name: "RUTH OWENS KRUSE ED  CENTER   BRUCIE BALL ED  CTR",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/RUTH_OWENS_KRUSE_ED__CENTER___BRUCIE_BALL_ED__CTR_api.png",
+    thumbnail:
+      "/school_logos_advanced/RUTH_OWENS_KRUSE_ED__CENTER___BRUCIE_BALL_ED__CTR_api.png",
   },
   {
     id: "college-santa-clara-es",
@@ -3018,35 +3075,40 @@ const collegePatterns: Pattern[] = [
     name: "SCHOOL FOR ADVANCED STUDIES HOMESTEAD",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES_HOMESTEAD_api.png",
+    thumbnail:
+      "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES_HOMESTEAD_api.png",
   },
   {
     id: "college-school-for-advanced-studies-north",
     name: "SCHOOL FOR ADVANCED STUDIES   NORTH",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___NORTH_api.png",
+    thumbnail:
+      "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___NORTH_api.png",
   },
   {
     id: "college-school-for-advanced-studies-south",
     name: "SCHOOL FOR ADVANCED STUDIES   SOUTH",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___SOUTH_api.png",
+    thumbnail:
+      "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___SOUTH_api.png",
   },
   {
     id: "college-school-for-advanced-studies-west",
     name: "SCHOOL FOR ADVANCED STUDIES   WEST",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___WEST_api.png",
+    thumbnail:
+      "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___WEST_api.png",
   },
   {
     id: "college-school-for-advanced-studies-wolfson",
     name: "SCHOOL FOR ADVANCED STUDIES   WOLFSON",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___WOLFSON_api.png",
+    thumbnail:
+      "/school_logos_advanced/SCHOOL_FOR_ADVANCED_STUDIES___WOLFSON_api.png",
   },
   {
     id: "college-scott-lake-es",
@@ -3109,7 +3171,8 @@ const collegePatterns: Pattern[] = [
     name: "SOUTHWEST ADULT AND CONTINUING EDUCATION CENTER",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/SOUTHWEST_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
+    thumbnail:
+      "/school_logos_advanced/SOUTHWEST_ADULT_AND_CONTINUING_EDUCATION_CENTER_api.png",
   },
   {
     id: "college-southwest-miami-shs",
@@ -3130,7 +3193,8 @@ const collegePatterns: Pattern[] = [
     name: "SOUTH DADE MIDDLE SCHOOL   GRADES 4 8",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/SOUTH_DADE_MIDDLE_SCHOOL___GRADES_4_8_api.png",
+    thumbnail:
+      "/school_logos_advanced/SOUTH_DADE_MIDDLE_SCHOOL___GRADES_4_8_api.png",
   },
   {
     id: "college-south-dade-shs",
@@ -3235,28 +3299,32 @@ const collegePatterns: Pattern[] = [
     name: "TERRA ENVIRONMENTAL RESEARCH INSTITUTE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/TERRA_ENVIRONMENTAL_RESEARCH_INSTITUTE_api.png",
+    thumbnail:
+      "/school_logos_advanced/TERRA_ENVIRONMENTAL_RESEARCH_INSTITUTE_api.png",
   },
   {
     id: "college-thena-c-crowder-early-childhood-diagnostic-sp-ed",
     name: "THENA C  CROWDER EARLY CHILDHOOD DIAGNOSTIC SP ED",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/THENA_C__CROWDER_EARLY_CHILDHOOD_DIAGNOSTIC_SP_ED_api.png",
+    thumbnail:
+      "/school_logos_advanced/THENA_C__CROWDER_EARLY_CHILDHOOD_DIAGNOSTIC_SP_ED_api.png",
   },
   {
     id: "college-thomas-jefferson-biscayne-gardens-k-8-academy",
     name: "THOMAS JEFFERSON BISCAYNE GARDENS K 8 ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/THOMAS_JEFFERSON_BISCAYNE_GARDENS_K_8_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/THOMAS_JEFFERSON_BISCAYNE_GARDENS_K_8_ACADEMY_api.png",
   },
   {
     id: "college-title-i-migrant-education-program",
     name: "TITLE I MIGRANT EDUCATION PROGRAM",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/TITLE_I_MIGRANT_EDUCATION_PROGRAM_api.png",
+    thumbnail:
+      "/school_logos_advanced/TITLE_I_MIGRANT_EDUCATION_PROGRAM_api.png",
   },
   {
     id: "college-toussaint-louverture-es",
@@ -3312,7 +3380,8 @@ const collegePatterns: Pattern[] = [
     name: "VIRGINIA A BOONE HIGHLAND OAKS ES",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/VIRGINIA_A_BOONE_HIGHLAND_OAKS_ES_api.png",
+    thumbnail:
+      "/school_logos_advanced/VIRGINIA_A_BOONE_HIGHLAND_OAKS_ES_api.png",
   },
   {
     id: "college-wesley-matthews-es",
@@ -3368,14 +3437,16 @@ const collegePatterns: Pattern[] = [
     name: "WILLIAM H TURNER ADULT AND CONTINUING EDUCATION CE",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/WILLIAM_H_TURNER_ADULT_AND_CONTINUING_EDUCATION_CE_api.png",
+    thumbnail:
+      "/school_logos_advanced/WILLIAM_H_TURNER_ADULT_AND_CONTINUING_EDUCATION_CE_api.png",
   },
   {
     id: "college-william-h-turner-technical-arts-high-school",
     name: "WILLIAM H  TURNER TECHNICAL ARTS HIGH SCHOOL",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/WILLIAM_H__TURNER_TECHNICAL_ARTS_HIGH_SCHOOL_api.png",
+    thumbnail:
+      "/school_logos_advanced/WILLIAM_H__TURNER_TECHNICAL_ARTS_HIGH_SCHOOL_api.png",
   },
   {
     id: "college-william-lehman-es",
@@ -3410,14 +3481,16 @@ const collegePatterns: Pattern[] = [
     name: "YOUNG MEN S PREPARATORY ACADEMY  6 12 ",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/YOUNG_MEN_S_PREPARATORY_ACADEMY__6_12__api.png",
+    thumbnail:
+      "/school_logos_advanced/YOUNG_MEN_S_PREPARATORY_ACADEMY__6_12__api.png",
   },
   {
     id: "college-young-women-s-preparatory-academy",
     name: "YOUNG WOMEN S PREPARATORY ACADEMY",
     category: "school-logos",
     description: "Official School Logo",
-    thumbnail: "/school_logos_advanced/YOUNG_WOMEN_S_PREPARATORY_ACADEMY_api.png",
+    thumbnail:
+      "/school_logos_advanced/YOUNG_WOMEN_S_PREPARATORY_ACADEMY_api.png",
   },
   {
     id: "college-zora-neale-hurston-es",
@@ -3427,7 +3500,6 @@ const collegePatterns: Pattern[] = [
     thumbnail: "/school_logos_advanced/ZORA_NEALE_HURSTON_ES_api.png",
   },
 ];
-
 
 // League patterns - modern professional styles
 const leaguePatterns: Pattern[] = [
@@ -3462,11 +3534,11 @@ const leaguePatterns: Pattern[] = [
           </radialGradient>
         </defs>
         ${Array.from({ length: 100 }, (_, i) => {
-      const cy = Math.random() * 100;
-      const cx = Math.random() * 100;
-      const r = Math.random() * 3;
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#4F46E5" opacity="${Math.random()}"/>`
-    }).join('')}
+          const cy = Math.random() * 100;
+          const cx = Math.random() * 100;
+          const r = Math.random() * 3;
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#4F46E5" opacity="${Math.random()}"/>`;
+        }).join("")}
       </svg>
     `),
   },
@@ -3538,9 +3610,8 @@ const abstractPatternsUpdated: Pattern[] = [
             <path d="M40 40 Q50 30 60 40 T80 40" stroke="#000000" stroke-width="2" fill="none"/>
           </svg>
         `),
-  }
+  },
 ];
-
 
 // Combine all patterns
 export const ALL_PATTERNS: Pattern[] = [

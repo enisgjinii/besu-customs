@@ -7,13 +7,17 @@ The 3D configurator now uses a UV map-based approach for adding text and images 
 ## How It Works
 
 ### 1. UV Map Extraction
+
 When a 3D model is loaded, the system automatically:
+
 - Extracts UV coordinates from all meshes
 - Generates a 2D wireframe representation (2048x2048)
 - Stores it in the global state
 
 ### 2. UV Map Editor
+
 The UV Map Editor (`components/uv-map-viewer.tsx`) provides:
+
 - **Canvas-based editing**: Add text and images directly on the UV map
 - **Text controls**: Font size, color, and positioning
 - **Image upload**: Add logos, graphics, or photos
@@ -21,7 +25,9 @@ The UV Map Editor (`components/uv-map-viewer.tsx`) provides:
 - **Live preview**: See changes in real-time on the canvas
 
 ### 3. Applying to Model
+
 When you click "Apply to Model":
+
 - The edited UV map canvas is converted to a PNG texture
 - Applied as `globalCustomTexture` to all model materials
 - Rendered on the 3D model using existing UV coordinates
@@ -45,16 +51,19 @@ When you click "Apply to Model":
 ## Files Changed
 
 ### Created
+
 - `components/uv-texture-editor.tsx` - Main UV editor wrapper
 - `UV_MAP_SYSTEM.md` - This documentation
 
 ### Modified
+
 - `components/uv-map-viewer.tsx` - Enhanced with editing capabilities
 - `components/babylon-scene.tsx` - Added UV extraction on model load
 - `components/unified-sidebar.tsx` - Replaced old decal UI with UV editor
 - `lib/store.ts` - Removed 3D decal state, kept UV map state
 
 ### Removed
+
 - 3D decal placement logic (click-to-place on model surface)
 - Decal preview indicator
 - `BabylonDecals` component rendering

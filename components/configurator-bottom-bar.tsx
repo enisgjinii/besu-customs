@@ -1,7 +1,19 @@
 "use client";
 
 import { useConfiguratorStore } from "@/lib/store";
-import { ChevronLeft, ChevronRight, Menu, X, Layers, RotateCcw, Type, Image, Palette, Sparkles, Shirt } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  X,
+  Layers,
+  RotateCcw,
+  Type,
+  Image,
+  Palette,
+  Sparkles,
+  Shirt,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -46,7 +58,9 @@ export function ConfiguratorBottomBar() {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
   const clearTextureLayers = useConfiguratorStore((s) => s.clearTextureLayers);
-  const setGlobalCustomTexture = useConfiguratorStore((s) => s.setGlobalCustomTexture); // For full texture coverage
+  const setGlobalCustomTexture = useConfiguratorStore(
+    (s) => s.setGlobalCustomTexture,
+  ); // For full texture coverage
   const products = useConfiguratorStore((s) => s.products);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
   const setSelectedProduct = useConfiguratorStore((s) => s.setSelectedProduct);
@@ -64,22 +78,25 @@ export function ConfiguratorBottomBar() {
     if (!textInput.trim()) return;
 
     // Create a high-quality canvas for readable text
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 512;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (ctx) {
       // Transparent background
       ctx.clearRect(0, 0, 1024, 512);
 
       // Draw text in contrasting color
-      ctx.fillStyle = currentSection?.color && currentSection.color !== '#ffffff' ? '#ffffff' : '#000000';
-      ctx.font = 'bold 180px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle =
+        currentSection?.color && currentSection.color !== "#ffffff"
+          ? "#ffffff"
+          : "#000000";
+      ctx.font = "bold 180px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(textInput, 512, 256);
 
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL("image/png");
 
       // Use UV coordinates for position (0-1)
       // Default to center of texture map
@@ -122,7 +139,7 @@ export function ConfiguratorBottomBar() {
                 title: m.name,
                 modelUrl: m.file_path,
                 category: m.category,
-              }))
+              })),
             );
           }
         }
@@ -168,13 +185,13 @@ export function ConfiguratorBottomBar() {
       };
       reader.readAsDataURL(file);
     },
-    [addTextureLayer, textureLayers.length]
+    [addTextureLayer, textureLayers.length],
   );
 
   const selectedColorName = currentSection
     ? COLOR_PALETTE.find(
-      (c) => c.hex.toLowerCase() === currentSection.color?.toLowerCase()
-    )?.name || "Custom"
+        (c) => c.hex.toLowerCase() === currentSection.color?.toLowerCase(),
+      )?.name || "Custom"
     : "";
 
   if (!mounted) {
@@ -196,7 +213,10 @@ export function ConfiguratorBottomBar() {
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">
             Select a product to start
           </p>
-          <Select value={selectedProductId || ""} onValueChange={setSelectedProduct}>
+          <Select
+            value={selectedProductId || ""}
+            onValueChange={setSelectedProduct}
+          >
             <SelectTrigger className="w-full h-12 text-base">
               <SelectValue placeholder="Choose your apparel..." />
             </SelectTrigger>
@@ -229,10 +249,11 @@ export function ConfiguratorBottomBar() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveMode(mode.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${activeMode === mode.id
-                ? "bg-black dark:bg-white text-white dark:text-black"
-                : "bg-white border border-gray-200 dark:border-gray-700 text-gray-600 hover:border-black"
-                }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                activeMode === mode.id
+                  ? "bg-black dark:bg-white text-white dark:text-black"
+                  : "bg-white border border-gray-200 dark:border-gray-700 text-gray-600 hover:border-black"
+              }`}
             >
               <Icon className="w-3.5 h-3.5" />
               {mode.label}
@@ -256,17 +277,20 @@ export function ConfiguratorBottomBar() {
           animate={{ height: "auto", opacity: 1 }}
           className="flex items-center justify-center gap-1 px-4 py-2 border-b border-black/5"
         >
-          <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">Lock View:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+            Lock View:
+          </span>
           {VIEW_ANGLES.map((view) => (
             <motion.button
               key={view}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setLockedView(lockedView === view ? null : view)}
-              className={`w-6 h-6 rounded text-xs font-medium ${lockedView === view
-                ? "bg-black dark:bg-white text-white dark:text-black"
-                : "bg-white border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
-                }`}
+              className={`w-6 h-6 rounded text-xs font-medium ${
+                lockedView === view
+                  ? "bg-black dark:bg-white text-white dark:text-black"
+                  : "bg-white border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
+              }`}
             >
               {view[0]}
             </motion.button>
@@ -285,7 +309,8 @@ export function ConfiguratorBottomBar() {
             <>
               <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                {textureLayers.length} layer{textureLayers.length !== 1 ? 's' : ''}
+                {textureLayers.length} layer
+                {textureLayers.length !== 1 ? "s" : ""}
               </span>
               <button
                 onClick={() => {
@@ -352,18 +377,21 @@ export function ConfiguratorBottomBar() {
                     whileHover={{ scale: 1.15 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleColorSelect(c.hex)}
-                    className={`w-8 h-8 rounded-full border-2 ${currentSection?.color?.toLowerCase() ===
+                    className={`w-8 h-8 rounded-full border-2 ${
+                      currentSection?.color?.toLowerCase() ===
                       c.hex.toLowerCase()
-                      ? "border-black ring-2 ring-black/20"
-                      : "border-gray-200 dark:border-gray-700"
-                      }`}
+                        ? "border-black ring-2 ring-black/20"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
                     style={{ backgroundColor: c.hex }}
                     title={c.name}
                   />
                 ))}
               </div>
               <div className="flex items-center justify-center gap-4 mt-3">
-                <span className="text-xs text-gray-500 dark:text-gray-400">{selectedColorName}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {selectedColorName}
+                </span>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -446,43 +474,57 @@ export function ConfiguratorBottomBar() {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     // Generate distinct placeholder patterns for now
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 512; canvas.height = 512;
-                    const ctx = canvas.getContext('2d');
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 512;
+                    canvas.height = 512;
+                    const ctx = canvas.getContext("2d");
                     if (ctx) {
-                      ctx.fillStyle = '#ffffff';
+                      ctx.fillStyle = "#ffffff";
                       ctx.fillRect(0, 0, 512, 512);
-                      ctx.fillStyle = '#000000';
+                      ctx.fillStyle = "#000000";
                       ctx.globalAlpha = 0.2;
 
-                      if (p === 'Stripes') {
-                        for (let i = 0; i < 512; i += 40) ctx.fillRect(i, 0, 20, 512);
-                      } else if (p === 'Geometric') {
+                      if (p === "Stripes") {
+                        for (let i = 0; i < 512; i += 40)
+                          ctx.fillRect(i, 0, 20, 512);
+                      } else if (p === "Geometric") {
                         for (let i = 0; i < 512; i += 40) {
                           for (let j = 0; j < 512; j += 40) {
                             if ((i + j) % 80 === 0) ctx.fillRect(i, j, 20, 20);
                           }
                         }
-                      } else if (p === 'Camo') {
+                      } else if (p === "Camo") {
                         // Simple noise/blobs
                         for (let i = 0; i < 20; i++) {
                           ctx.beginPath();
-                          ctx.arc(Math.random() * 512, Math.random() * 512, 50, 0, Math.PI * 2);
+                          ctx.arc(
+                            Math.random() * 512,
+                            Math.random() * 512,
+                            50,
+                            0,
+                            Math.PI * 2,
+                          );
                           ctx.fill();
                         }
                       } else {
                         // Default noise
-                        for (let i = 0; i < 100; i++) ctx.fillRect(Math.random() * 512, Math.random() * 512, 40, 40);
+                        for (let i = 0; i < 100; i++)
+                          ctx.fillRect(
+                            Math.random() * 512,
+                            Math.random() * 512,
+                            40,
+                            40,
+                          );
                       }
 
                       addTextureLayer({
                         id: `pattern-${Date.now()}`,
                         name: p,
-                        type: 'image', // Treat pattern as image layer for now
+                        type: "image", // Treat pattern as image layer for now
                         visible: true,
                         locked: false,
                         opacity: 0.5,
-                        blendMode: 'multiply',
+                        blendMode: "multiply",
                         order: 0, // Bottom
                         imageUrl: canvas.toDataURL(),
                         position: [0.5, 0.5, 0],
@@ -513,7 +555,9 @@ export function ConfiguratorBottomBar() {
           >
             <div className="text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                {lockedView ? `Add text to ${lockedView}:` : "Lock a view above"}
+                {lockedView
+                  ? `Add text to ${lockedView}:`
+                  : "Lock a view above"}
               </p>
               <input
                 type="text"

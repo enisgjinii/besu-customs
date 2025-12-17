@@ -8,12 +8,14 @@
 The Next.js development server (`npm run dev`) may have issues serving static files with spaces in their names, even when properly URL-encoded.
 
 **Error:**
+
 ```
 Unable to load from /models/Track%20and%20field%20top%20tank%20top.glb
 LoadFileError: Error status: 0
 ```
 
 **Why This Happens:**
+
 - Next.js dev server uses different static file handling than production
 - URL encoding may not work consistently in development
 - This is a known limitation of the dev server
@@ -72,12 +74,14 @@ Failed to execute 'put' on 'Cache': Cache.put() encountered a network error
 ```
 
 **Why:**
+
 - Service Workers can't cache HEAD or POST requests
 - Some Next.js dev server requests use these methods
 - HMR (Hot Module Replacement) uses POST requests
 
 **Solution:**
 These errors are harmless in development and won't occur in production. The Service Worker now:
+
 - Only caches GET requests
 - Ignores cache errors gracefully
 - Works correctly in production
@@ -85,11 +89,13 @@ These errors are harmless in development and won't occur in production. The Serv
 ## Testing Recommendations
 
 ### For Development
+
 1. Use production mode: `npm run build && npm start`
 2. Or rename files to avoid spaces
 3. Service Worker will work correctly
 
 ### For Production
+
 1. Deploy to Vercel or your hosting platform
 2. All optimizations will work as expected
 3. Service Worker will cache correctly
@@ -110,18 +116,21 @@ curl -I "http://localhost:3000/models/Track%20and%20field%20top%20tank%20top.glb
 ## Summary
 
 **Development Mode (`npm run dev`):**
+
 - ⚠️ May have issues with spaces in filenames
 - ⚠️ Service Worker cache errors (harmless)
 - ✅ HMR and fast refresh work
 - ✅ Good for UI development
 
 **Production Mode (`npm run build && npm start`):**
+
 - ✅ Handles spaces in filenames correctly
 - ✅ Service Worker works perfectly
 - ✅ All optimizations active
 - ✅ Recommended for testing mobile optimizations
 
 **Recommendation:**
+
 - Develop UI in dev mode
 - Test performance in production mode
 - Deploy to production for final testing

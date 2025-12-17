@@ -9,13 +9,13 @@ import Image from "next/image";
 export function TextureLayerSelector() {
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
   const selectedTextureLayerId = useConfiguratorStore(
-    (state) => state.selectedTextureLayerId
+    (state) => state.selectedTextureLayerId,
   );
   const setSelectedTextureLayerId = useConfiguratorStore(
-    (state) => state.setSelectedTextureLayerId
+    (state) => state.setSelectedTextureLayerId,
   );
   const removeTextureLayer = useConfiguratorStore(
-    (state) => state.removeTextureLayer
+    (state) => state.removeTextureLayer,
   );
 
   if (textureLayers.length === 0) return null;
@@ -64,7 +64,8 @@ export function TextureLayerSelector() {
         </div>
         {selectedTextureLayerId && (
           <div className="text-[10px] text-amber-700 dark:text-amber-300 mt-2">
-            💡 Selected: {textureLayers.find((l) => l.id === selectedTextureLayerId)?.name}
+            💡 Selected:{" "}
+            {textureLayers.find((l) => l.id === selectedTextureLayerId)?.name}
           </div>
         )}
       </div>

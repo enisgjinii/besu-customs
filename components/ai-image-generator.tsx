@@ -83,22 +83,32 @@ export function AIImageGenerator() {
         const latestImage = data.images[0].imageURL;
         const storageData = {
           url: latestImage,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
-        localStorage.setItem('latest_generated_ai_image', JSON.stringify(storageData));
+        localStorage.setItem(
+          "latest_generated_ai_image",
+          JSON.stringify(storageData),
+        );
 
         // Dispatch event for other components to pick up
-        console.log("🎨 AI Image Generator: Dispatching generated-image-available event", storageData);
-        window.dispatchEvent(new CustomEvent('generated-image-available', {
-          detail: storageData
-        }));
+        console.log(
+          "🎨 AI Image Generator: Dispatching generated-image-available event",
+          storageData,
+        );
+        window.dispatchEvent(
+          new CustomEvent("generated-image-available", {
+            detail: storageData,
+          }),
+        );
 
         // Also directly apply to UV map if we're in the UV editor context
         // This ensures the image appears immediately in the UV canvas
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('generated-image-available', {
-            detail: storageData
-          }));
+          window.dispatchEvent(
+            new CustomEvent("generated-image-available", {
+              detail: storageData,
+            }),
+          );
         }, 100);
 
         toast.success("Image generated and added to UV map!");
@@ -193,10 +203,11 @@ export function AIImageGenerator() {
       {/* Usage Information */}
       {usage && (
         <div
-          className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
+          className={`text-[10px] p-2 rounded-md ${
+            usage.remaining === 0
               ? "text-destructive bg-destructive/10 border border-destructive/20"
               : "text-muted-foreground bg-secondary/20"
-            }`}
+          }`}
         >
           <div className="flex items-center gap-1 mb-1">
             {usage.remaining === 0 ? (
@@ -204,9 +215,7 @@ export function AIImageGenerator() {
             ) : (
               <Sparkles className="w-3 h-3" />
             )}
-            <span className="font-medium">
-              System API Usage
-            </span>
+            <span className="font-medium">System API Usage</span>
           </div>
           <div>
             {usage.used}/{usage.limit} calls used ({usage.remaining} remaining)
@@ -221,10 +230,7 @@ export function AIImageGenerator() {
 
       <Button
         onClick={handleGenerate}
-        disabled={
-          loading ||
-          !prompt.trim()
-        }
+        disabled={loading || !prompt.trim()}
         className="w-full text-xs h-8"
         data-tour="ai-generate"
         size="sm"

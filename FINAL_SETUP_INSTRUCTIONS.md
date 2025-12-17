@@ -20,12 +20,14 @@ npm run clear-cache
 ### Step 3: Clear Browser Cache
 
 **Option A: Use the cache clearer page**
+
 1. Start dev server: `npm run dev`
 2. Visit: http://localhost:3000/clear-cache.html
 3. Click "Clear All Caches"
 4. Close the tab
 
 **Option B: Manual clearing**
+
 1. Open DevTools (F12)
 2. Application → Storage → Clear site data
 3. Application → Service Workers → Unregister all
@@ -50,6 +52,7 @@ npm run dev
 **Cause**: Dev server not restarted after migration
 
 **Solution**:
+
 ```bash
 # Stop server (Ctrl+C)
 npm run clear-cache
@@ -59,11 +62,13 @@ npm run dev
 ### Issue: Models still not loading
 
 **Check 1: Verify files exist**
+
 ```bash
 ls public/models/*.glb | head -5
 ```
 
 **Check 2: Test static file serving**
+
 ```bash
 # Start dev server first, then:
 curl -I http://localhost:3000/LOGO-gg.png
@@ -71,6 +76,7 @@ curl -I http://localhost:3000/LOGO-gg.png
 ```
 
 **Check 3: Clear browser cache**
+
 - Hard refresh: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
 - Or use the cache clearer: http://localhost:3000/clear-cache.html
 
@@ -108,12 +114,14 @@ After restarting, verify:
 ## 🎯 Expected Behavior
 
 **Loading a model should:**
+
 1. Show "Detecting Connection..." (brief)
 2. Show "Loading Preview..." with progress bar
 3. Display the 3D model
 4. Allow interaction (rotate, zoom, pan)
 
 **Performance:**
+
 - First load: 1-5 seconds (depending on connection)
 - Cached load: <100ms (instant)
 - Smooth 60 FPS rotation
@@ -121,6 +129,7 @@ After restarting, verify:
 ## 📊 Success Indicators
 
 ✅ **Console logs should show:**
+
 ```
 📦 Loading high quality model: /models/backpack.glb
 ✅ Model loaded successfully
@@ -129,11 +138,13 @@ After restarting, verify:
 ```
 
 ✅ **Network tab should show:**
+
 - Model file loaded (200 OK)
 - File size: ~3-4 MB for original quality
 - Or ~600 KB for low quality on slow connections
 
 ✅ **Performance:**
+
 - Smooth rotation
 - No lag or stuttering
 - Memory usage: 80-120 MB
@@ -178,15 +189,19 @@ npm list three @react-three/fiber @react-three/drei
 ## 📝 Common Mistakes
 
 ❌ **Forgot to restart dev server**
+
 - Solution: Stop (Ctrl+C) and restart (`npm run dev`)
 
 ❌ **Didn't clear browser cache**
+
 - Solution: Visit http://localhost:3000/clear-cache.html
 
 ❌ **Old service worker still active**
+
 - Solution: DevTools → Application → Service Workers → Unregister
 
 ❌ **Using old Babylon.js imports**
+
 - Solution: All files now use Three.js (check completed)
 
 ## 🎉 Success!
@@ -194,6 +209,7 @@ npm list three @react-three/fiber @react-three/drei
 Once you see the model loading and can interact with it, the migration is complete!
 
 **You should see:**
+
 - ✅ Faster loading times
 - ✅ Smoother performance
 - ✅ Smaller bundle size
@@ -202,12 +218,14 @@ Once you see the model loading and can interact with it, the migration is comple
 ---
 
 **Need Help?**
+
 1. Check console for errors (F12)
 2. Check Network tab for failed requests
 3. Verify dev server is running
 4. Try the nuclear option above
 
 **Still stuck?**
+
 - Check `START_HERE.md` for overview
 - Check `THREEJS_MIGRATION_GUIDE.md` for details
 - Verify all files are saved and server restarted

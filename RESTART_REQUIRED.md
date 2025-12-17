@@ -22,6 +22,7 @@ npm run dev
 ## Why This Happens
 
 Next.js dev server caches file routes and module resolution. After migrating from Babylon.js to Three.js:
+
 - Module imports changed
 - Component files changed
 - The server needs to rebuild its internal cache
@@ -41,24 +42,29 @@ curl -I http://localhost:3000/models/Backpack.glb
 ## Complete Restart Steps
 
 ### Step 1: Stop Server
+
 In the terminal running `npm run dev`, press **Ctrl+C**
 
 ### Step 2: Clear Everything
+
 ```bash
 npm run clear-cache
 ```
 
 ### Step 3: Restart
+
 ```bash
 npm run dev
 ```
 
 ### Step 4: Clear Browser
+
 1. Visit: http://localhost:3000/clear-cache.html
 2. Click "Clear All Caches"
 3. Close tab
 
 ### Step 5: Test
+
 1. Open: http://localhost:3000
 2. Select a model (e.g., "Backpack")
 3. Should load successfully!
@@ -66,6 +72,7 @@ npm run dev
 ## If Still Not Working
 
 ### Nuclear Option:
+
 ```bash
 # Stop server (Ctrl+C)
 
@@ -79,6 +86,7 @@ npm run dev
 ```
 
 ### Check Port:
+
 ```bash
 # Make sure nothing else is on port 3000
 lsof -ti:3000
@@ -93,6 +101,7 @@ npm run dev
 ## Expected Output
 
 After restart, you should see:
+
 ```
 ▲ Next.js 16.0.3
 - Local:        http://localhost:3000
@@ -111,6 +120,7 @@ npm run verify-setup
 ```
 
 Should show:
+
 ```
 ✅ Dev Server: Running on port 3000
 🎉 All checks passed!

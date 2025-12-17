@@ -9,7 +9,11 @@ import { formatDistanceToNow } from "date-fns";
 import { Users, Clock } from "lucide-react";
 
 export function RecentUsersActivity() {
-  const { data: users, isLoading, error } = useQuery({
+  const {
+    data: users,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["recent-users"],
     queryFn: async () => {
       const all = await UsersService.getAllUsers();
@@ -41,7 +45,9 @@ export function RecentUsersActivity() {
         )}
 
         {error && (
-          <p className="text-sm text-destructive">Failed to load recent users.</p>
+          <p className="text-sm text-destructive">
+            Failed to load recent users.
+          </p>
         )}
 
         {!isLoading && !error && users && users.length === 0 && (
@@ -70,7 +76,9 @@ export function RecentUsersActivity() {
                   <p className="font-medium text-sm truncate">
                     {user.full_name || "Unknown User"}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user.email}
+                  </p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="outline" className="text-xs capitalize">
                       {user.role}

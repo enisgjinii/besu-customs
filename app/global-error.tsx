@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { errorLogger } from '@/lib/error-logger';
+import { useEffect } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { errorLogger } from "@/lib/error-logger";
 
 export default function GlobalError({
   error,
@@ -13,9 +13,9 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     // Log critical error with full context to Vercel
-    errorLogger.log('Critical global error caught', {
-      level: 'critical',
-      category: 'system',
+    errorLogger.log("Critical global error caught", {
+      level: "critical",
+      category: "system",
       error,
       additionalData: {
         digest: error.digest,
@@ -24,7 +24,7 @@ export default function GlobalError({
         isFatal: true,
       },
       isClientVisible: true,
-      clientMessage: 'A critical error occurred. Please refresh the page.',
+      clientMessage: "A critical error occurred. Please refresh the page.",
     });
   }, [error]);
 
@@ -49,7 +49,7 @@ export default function GlobalError({
 
             <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
               <p className="text-sm font-mono text-red-700">
-                {error.message || 'An unexpected critical error occurred'}
+                {error.message || "An unexpected critical error occurred"}
               </p>
               {error.digest && (
                 <p className="text-xs text-gray-500 mt-2">

@@ -4,79 +4,79 @@
  * Clear all caches - Service Worker, Browser, Next.js
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
-console.log('🧹 Clearing All Caches...\n');
+console.log("🧹 Clearing All Caches...\n");
 
 // 1. Clear Next.js cache
-console.log('1️⃣  Clearing Next.js cache...');
-const nextDir = path.join(__dirname, '../.next');
+console.log("1️⃣  Clearing Next.js cache...");
+const nextDir = path.join(__dirname, "../.next");
 if (fs.existsSync(nextDir)) {
   try {
     fs.rmSync(nextDir, { recursive: true, force: true });
-    console.log('   ✅ .next directory removed');
+    console.log("   ✅ .next directory removed");
   } catch (error) {
-    console.log('   ⚠️  Could not remove .next:', error.message);
+    console.log("   ⚠️  Could not remove .next:", error.message);
   }
 } else {
-  console.log('   ℹ️  .next directory not found');
+  console.log("   ℹ️  .next directory not found");
 }
 
 // 2. Clear Turbopack cache
-console.log('\n2️⃣  Clearing Turbopack cache...');
-const turbopackDir = path.join(__dirname, '../.turbo');
+console.log("\n2️⃣  Clearing Turbopack cache...");
+const turbopackDir = path.join(__dirname, "../.turbo");
 if (fs.existsSync(turbopackDir)) {
   try {
     fs.rmSync(turbopackDir, { recursive: true, force: true });
-    console.log('   ✅ .turbo directory removed');
+    console.log("   ✅ .turbo directory removed");
   } catch (error) {
-    console.log('   ⚠️  Could not remove .turbo:', error.message);
+    console.log("   ⚠️  Could not remove .turbo:", error.message);
   }
 } else {
-  console.log('   ℹ️  .turbo directory not found');
+  console.log("   ℹ️  .turbo directory not found");
 }
 
 // 3. Clear node_modules/.cache
-console.log('\n3️⃣  Clearing node_modules cache...');
-const nodeModulesCache = path.join(__dirname, '../node_modules/.cache');
+console.log("\n3️⃣  Clearing node_modules cache...");
+const nodeModulesCache = path.join(__dirname, "../node_modules/.cache");
 if (fs.existsSync(nodeModulesCache)) {
   try {
     fs.rmSync(nodeModulesCache, { recursive: true, force: true });
-    console.log('   ✅ node_modules/.cache removed');
+    console.log("   ✅ node_modules/.cache removed");
   } catch (error) {
-    console.log('   ⚠️  Could not remove cache:', error.message);
+    console.log("   ⚠️  Could not remove cache:", error.message);
   }
 } else {
-  console.log('   ℹ️  node_modules/.cache not found');
+  console.log("   ℹ️  node_modules/.cache not found");
 }
 
 // 4. Instructions for browser cache
-console.log('\n4️⃣  Browser Cache (Manual Steps):');
-console.log('   📱 Chrome/Edge:');
-console.log('      1. Open DevTools (F12)');
-console.log('      2. Application → Storage → Clear site data');
-console.log('      3. Or: Settings → Privacy → Clear browsing data');
-console.log('');
-console.log('   🦊 Firefox:');
-console.log('      1. Settings → Privacy & Security');
-console.log('      2. Cookies and Site Data → Clear Data');
-console.log('');
-console.log('   🧭 Safari:');
-console.log('      1. Develop → Empty Caches');
-console.log('      2. Or: Preferences → Privacy → Manage Website Data');
+console.log("\n4️⃣  Browser Cache (Manual Steps):");
+console.log("   📱 Chrome/Edge:");
+console.log("      1. Open DevTools (F12)");
+console.log("      2. Application → Storage → Clear site data");
+console.log("      3. Or: Settings → Privacy → Clear browsing data");
+console.log("");
+console.log("   🦊 Firefox:");
+console.log("      1. Settings → Privacy & Security");
+console.log("      2. Cookies and Site Data → Clear Data");
+console.log("");
+console.log("   🧭 Safari:");
+console.log("      1. Develop → Empty Caches");
+console.log("      2. Or: Preferences → Privacy → Manage Website Data");
 
 // 5. Service Worker instructions
-console.log('\n5️⃣  Service Worker Cache (Manual Steps):');
-console.log('   1. Open DevTools (F12)');
-console.log('   2. Application → Service Workers');
+console.log("\n5️⃣  Service Worker Cache (Manual Steps):");
+console.log("   1. Open DevTools (F12)");
+console.log("   2. Application → Service Workers");
 console.log('   3. Click "Unregister" for all workers');
-console.log('   4. Application → Cache Storage');
-console.log('   5. Right-click each cache → Delete');
+console.log("   4. Application → Cache Storage");
+console.log("   5. Right-click each cache → Delete");
 
 // 6. Create a client-side cache clear page
-console.log('\n6️⃣  Creating cache clear utility page...');
+console.log("\n6️⃣  Creating cache clear utility page...");
 const clearCacheHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -285,16 +285,16 @@ const clearCacheHtml = `<!DOCTYPE html>
 </body>
 </html>`;
 
-const publicDir = path.join(__dirname, '../public');
-fs.writeFileSync(path.join(publicDir, 'clear-cache.html'), clearCacheHtml);
-console.log('   ✅ Created public/clear-cache.html');
-console.log('   🌐 Visit: http://localhost:3000/clear-cache.html');
+const publicDir = path.join(__dirname, "../public");
+fs.writeFileSync(path.join(publicDir, "clear-cache.html"), clearCacheHtml);
+console.log("   ✅ Created public/clear-cache.html");
+console.log("   🌐 Visit: http://localhost:3000/clear-cache.html");
 
-console.log('\n' + '='.repeat(60));
-console.log('✅ Cache Clearing Complete!');
-console.log('='.repeat(60));
-console.log('\n📝 Next Steps:');
-console.log('1. Visit http://localhost:3000/clear-cache.html');
+console.log("\n" + "=".repeat(60));
+console.log("✅ Cache Clearing Complete!");
+console.log("=".repeat(60));
+console.log("\n📝 Next Steps:");
+console.log("1. Visit http://localhost:3000/clear-cache.html");
 console.log('2. Click "Clear All Caches"');
-console.log('3. Reload your app');
-console.log('');
+console.log("3. Reload your app");
+console.log("");

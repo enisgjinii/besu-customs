@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { errorLogger } from '@/lib/error-logger';
+import { useCallback, useState } from "react";
+import { errorLogger } from "@/lib/error-logger";
 
 export interface ErrorState {
   error: Error | null;
@@ -17,13 +17,13 @@ export function useErrorHandler() {
       error,
       hasError: true,
     });
-    errorLogger.log('Error handled by useErrorHandler', {
-      level: 'error',
-      category: 'ui',
+    errorLogger.log("Error handled by useErrorHandler", {
+      level: "error",
+      category: "ui",
       error,
       componentStack,
       isClientVisible: true,
-      clientMessage: 'An error occurred. Please try again.',
+      clientMessage: "An error occurred. Please try again.",
     });
   }, []);
 
@@ -51,16 +51,16 @@ export function useErrorHandler() {
 // Async error handler wrapper
 export function withErrorHandler<T extends (...args: any[]) => Promise<any>>(
   fn: T,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ): T {
   return (async (...args: Parameters<T>) => {
     try {
       return await fn(...args);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      errorLogger.log('Error in withErrorHandler', {
-        level: 'error',
-        category: 'system',
+      errorLogger.log("Error in withErrorHandler", {
+        level: "error",
+        category: "system",
         error: err,
       });
       if (onError) {

@@ -26,13 +26,20 @@ const Scene = dynamic(
 );
 
 export default function Home() {
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
   const sections = useConfiguratorStore((state) => state.sections);
-  const setSelectedSection = useConfiguratorStore((state) => state.setSelectedSection);
+  const setSelectedSection = useConfiguratorStore(
+    (state) => state.setSelectedSection,
+  );
 
   // Auto-select first section when sections are loaded
   useEffect(() => {
-    if (sections.length > 0 && !useConfiguratorStore.getState().selectedSectionId) {
+    if (
+      sections.length > 0 &&
+      !useConfiguratorStore.getState().selectedSectionId
+    ) {
       setSelectedSection(sections[0].id);
     }
   }, [sections, setSelectedSection]);

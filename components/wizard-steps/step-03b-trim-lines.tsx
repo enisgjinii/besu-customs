@@ -50,18 +50,20 @@ export function Step03bTrimLines() {
     // Find sections that match the trim location
     const sectionsToUpdate = sections.filter((s) => {
       const sectionName = s.name.toLowerCase();
-      return sectionName.includes(trimLocation) ||
+      return (
+        sectionName.includes(trimLocation) ||
         (trimLocation === "collar" && sectionName.includes("collar")) ||
         (trimLocation === "sleeves" && sectionName.includes("sleeve")) ||
         (trimLocation === "armholes" && sectionName.includes("arm")) ||
         (trimLocation === "waist" && sectionName.includes("waist")) ||
         (trimLocation === "bottom" && sectionName.includes("bottom")) ||
-        (trimLocation === "placket" && sectionName.includes("placket"));
+        (trimLocation === "placket" && sectionName.includes("placket"))
+      );
     });
 
     if (sectionsToUpdate.length === 0) {
       toast.error(
-        `No sections found matching "${trimLocation}". Apply to specific section instead.`
+        `No sections found matching "${trimLocation}". Apply to specific section instead.`,
       );
       return;
     }
@@ -73,9 +75,7 @@ export function Step03bTrimLines() {
       });
     });
 
-    toast.success(
-      `Trim applied to ${sectionsToUpdate.length} section(s)`
-    );
+    toast.success(`Trim applied to ${sectionsToUpdate.length} section(s)`);
   };
 
   // Show which sections have trims

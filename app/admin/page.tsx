@@ -27,7 +27,9 @@ function AdminDashboard() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.user_metadata?.full_name || "Admin"}</p>
+            <p className="text-muted-foreground">
+              Welcome back, {user?.user_metadata?.full_name || "Admin"}
+            </p>
           </div>
           <Button
             variant="outline"
@@ -35,13 +37,15 @@ function AdminDashboard() {
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
             Refresh Data
           </Button>
         </div>
-        
+
         <DashboardOverview refreshSignal={refreshSignal} />
-        
+
         <QuickActions />
 
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">

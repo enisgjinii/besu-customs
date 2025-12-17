@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClearCacheButton } from '@/components/clear-cache-button';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, Trash2, Database, HardDrive, Info } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ClearCacheButton } from "@/components/clear-cache-button";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Trash2, Database, HardDrive, Info } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function SystemUtilitiesPage() {
   const [cacheInfo, setCacheInfo] = useState<{
@@ -20,11 +26,11 @@ export default function SystemUtilitiesPage() {
 
   useEffect(() => {
     if (!mounted) return;
-    
+
     async function getCacheInfo() {
       try {
         let cacheCount = 0;
-        if ('caches' in window) {
+        if ("caches" in window) {
           const cacheNames = await caches.keys();
           cacheCount = cacheNames.length;
         }
@@ -51,7 +57,7 @@ export default function SystemUtilitiesPage() {
           sessionStorageSize,
         });
       } catch (error) {
-        console.error('Failed to get cache info:', error);
+        console.error("Failed to get cache info:", error);
       }
     }
 
@@ -59,18 +65,20 @@ export default function SystemUtilitiesPage() {
   }, [mounted]);
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">System Utilities</h1>
-        <p className="text-muted-foreground">Manage cache, storage, and system settings</p>
+        <p className="text-muted-foreground">
+          Manage cache, storage, and system settings
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -94,17 +102,21 @@ export default function SystemUtilitiesPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">LocalStorage:</span>
-                  <span className="font-medium">{formatBytes(cacheInfo.localStorageSize)}</span>
+                  <span className="font-medium">
+                    {formatBytes(cacheInfo.localStorageSize)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">SessionStorage:</span>
-                  <span className="font-medium">{formatBytes(cacheInfo.sessionStorageSize)}</span>
+                  <span className="font-medium">
+                    {formatBytes(cacheInfo.sessionStorageSize)}
+                  </span>
                 </div>
               </div>
             )}
 
             <div className="pt-4 border-t">
-              <ClearCacheButton 
+              <ClearCacheButton
                 variant="destructive"
                 className="w-full"
                 showIcon={true}
@@ -123,16 +135,16 @@ export default function SystemUtilitiesPage() {
               <Info className="w-5 h-5" />
               System Information
             </CardTitle>
-            <CardDescription>
-              Browser and device capabilities
-            </CardDescription>
+            <CardDescription>Browser and device capabilities</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {mounted ? (
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Browser:</span>
-                  <span className="font-medium">{navigator.userAgent.split(' ').pop()}</span>
+                  <span className="font-medium">
+                    {navigator.userAgent.split(" ").pop()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Platform:</span>
@@ -144,23 +156,29 @@ export default function SystemUtilitiesPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Online:</span>
-                  <span className="font-medium">{navigator.onLine ? '✅ Yes' : '❌ No'}</span>
+                  <span className="font-medium">
+                    {navigator.onLine ? "✅ Yes" : "❌ No"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Screen:</span>
-                  <span className="font-medium">{window.screen.width}x{window.screen.height}</span>
+                  <span className="font-medium">
+                    {window.screen.width}x{window.screen.height}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">WebGL:</span>
                   <span className="font-medium">
                     {(() => {
                       try {
-                        const canvas = document.createElement('canvas');
-                        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                        const canvas = document.createElement("canvas");
+                        const gl =
+                          canvas.getContext("webgl2") ||
+                          canvas.getContext("webgl");
                         canvas.remove();
-                        return gl ? '✅ Supported' : '❌ Not Supported';
+                        return gl ? "✅ Supported" : "❌ Not Supported";
                       } catch {
-                        return '❌ Error';
+                        return "❌ Error";
                       }
                     })()}
                   </span>
@@ -181,9 +199,7 @@ export default function SystemUtilitiesPage() {
               <RefreshCw className="w-5 h-5" />
               Quick Actions
             </CardTitle>
-            <CardDescription>
-              Common troubleshooting actions
-            </CardDescription>
+            <CardDescription>Common troubleshooting actions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
@@ -196,7 +212,7 @@ export default function SystemUtilitiesPage() {
             </Button>
             <Button
               onClick={() => {
-                if (confirm('This will reload the page. Continue?')) {
+                if (confirm("This will reload the page. Continue?")) {
                   window.location.href = window.location.pathname;
                 }
               }}
@@ -208,7 +224,7 @@ export default function SystemUtilitiesPage() {
             </Button>
             <Button
               onClick={() => {
-                window.open('https://get.webgl.org/', '_blank');
+                window.open("https://get.webgl.org/", "_blank");
               }}
               variant="outline"
               className="w-full justify-start"
@@ -223,16 +239,15 @@ export default function SystemUtilitiesPage() {
         <Card>
           <CardHeader>
             <CardTitle>Troubleshooting Tips</CardTitle>
-            <CardDescription>
-              Common issues and solutions
-            </CardDescription>
+            <CardDescription>Common issues and solutions</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm">
               <div>
                 <h4 className="font-medium mb-1">Blank Screen</h4>
                 <p className="text-muted-foreground">
-                  Try clearing cache and refreshing. Check if WebGL is supported.
+                  Try clearing cache and refreshing. Check if WebGL is
+                  supported.
                 </p>
               </div>
               <div>

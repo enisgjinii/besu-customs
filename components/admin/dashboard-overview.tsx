@@ -4,7 +4,14 @@ import { UsersService } from "@/lib/users-service";
 import { ModelsService } from "@/lib/models-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/admin/stats-card";
-import { Package, Users, Activity, Layers, TrendingUp, Database } from "lucide-react";
+import {
+  Package,
+  Users,
+  Activity,
+  Layers,
+  TrendingUp,
+  Database,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -38,7 +45,9 @@ export function DashboardOverview({ refreshSignal }: DashboardOverviewProps) {
     : 0;
 
   const newUserRate = userStats
-    ? Math.round((userStats.newSignups / Math.max(userStats.totalUsers, 1)) * 100)
+    ? Math.round(
+        (userStats.newSignups / Math.max(userStats.totalUsers, 1)) * 100,
+      )
     : 0;
 
   return (
@@ -63,7 +72,13 @@ export function DashboardOverview({ refreshSignal }: DashboardOverviewProps) {
         <StatsCard
           title="Total Models"
           value={modelStats?.total.toString() || "-"}
-          changeType={activeRate > 70 ? "positive" : activeRate > 50 ? "neutral" : "negative"}
+          changeType={
+            activeRate > 70
+              ? "positive"
+              : activeRate > 50
+                ? "neutral"
+                : "negative"
+          }
           change={`${activeRate}% active rate`}
           icon={Package}
           loading={modelsLoading}
@@ -94,25 +109,33 @@ export function DashboardOverview({ refreshSignal }: DashboardOverviewProps) {
                 ))}
               </div>
             )}
-            {!modelsLoading && modelStats && Object.keys(modelStats.categories).length === 0 && (
-              <div className="text-sm text-muted-foreground">No categories available.</div>
-            )}
-            {!modelsLoading && modelStats && Object.keys(modelStats.categories).length > 0 && (
-              <ul className="space-y-2">
-                {Object.entries(modelStats.categories)
-                  .sort(([, a], [, b]) => b - a)
-                  .slice(0, 6)
-                  .map(([cat, count]) => (
-                    <li
-                      key={cat}
-                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                    >
-                      <span className="truncate font-medium" title={cat}>{cat}</span>
-                      <span className="text-muted-foreground">{count}</span>
-                    </li>
-                  ))}
-              </ul>
-            )}
+            {!modelsLoading &&
+              modelStats &&
+              Object.keys(modelStats.categories).length === 0 && (
+                <div className="text-sm text-muted-foreground">
+                  No categories available.
+                </div>
+              )}
+            {!modelsLoading &&
+              modelStats &&
+              Object.keys(modelStats.categories).length > 0 && (
+                <ul className="space-y-2">
+                  {Object.entries(modelStats.categories)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 6)
+                    .map(([cat, count]) => (
+                      <li
+                        key={cat}
+                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="truncate font-medium" title={cat}>
+                          {cat}
+                        </span>
+                        <span className="text-muted-foreground">{count}</span>
+                      </li>
+                    ))}
+                </ul>
+              )}
           </CardContent>
         </Card>
 
@@ -127,18 +150,26 @@ export function DashboardOverview({ refreshSignal }: DashboardOverviewProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Database</span>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">Operational</span>
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                  Operational
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Storage</span>
                 <span className="text-sm font-medium">Active</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Auth Service</span>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">Healthy</span>
+                <span className="text-sm text-muted-foreground">
+                  Auth Service
+                </span>
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                  Healthy
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">API Response</span>
+                <span className="text-sm text-muted-foreground">
+                  API Response
+                </span>
                 <span className="text-sm font-medium">&lt;100ms</span>
               </div>
             </div>
@@ -160,15 +191,32 @@ export function DashboardOverview({ refreshSignal }: DashboardOverviewProps) {
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    You have <span className="font-semibold text-foreground">{userStats?.totalUsers || 0}</span> registered users,
-                    with <span className="font-semibold text-foreground">{userStats?.activeUsers || 0}</span> recently active.
+                    You have{" "}
+                    <span className="font-semibold text-foreground">
+                      {userStats?.totalUsers || 0}
+                    </span>{" "}
+                    registered users, with{" "}
+                    <span className="font-semibold text-foreground">
+                      {userStats?.activeUsers || 0}
+                    </span>{" "}
+                    recently active.
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Your library contains <span className="font-semibold text-foreground">{modelStats?.total || 0}</span> models,
-                    with <span className="font-semibold text-foreground">{modelStats?.featured || 0}</span> featured items.
+                    Your library contains{" "}
+                    <span className="font-semibold text-foreground">
+                      {modelStats?.total || 0}
+                    </span>{" "}
+                    models, with{" "}
+                    <span className="font-semibold text-foreground">
+                      {modelStats?.featured || 0}
+                    </span>{" "}
+                    featured items.
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Model activation rate: <span className="font-semibold text-foreground">{activeRate}%</span>
+                    Model activation rate:{" "}
+                    <span className="font-semibold text-foreground">
+                      {activeRate}%
+                    </span>
                   </p>
                 </>
               )}

@@ -5,9 +5,11 @@ Comprehensive error handling implementation for the 3D Product Configurator.
 ## Components
 
 ### 1. Error Boundary (`components/error-boundary.tsx`)
+
 React class component that catches JavaScript errors anywhere in the child component tree.
 
 **Features:**
+
 - Catches rendering errors
 - Logs errors with stack traces
 - Provides fallback UI
@@ -15,40 +17,48 @@ React class component that catches JavaScript errors anywhere in the child compo
 - Development mode stack traces
 
 **Usage:**
+
 ```tsx
-import { ErrorBoundary } from '@/components/error-boundary';
+import { ErrorBoundary } from "@/components/error-boundary";
 
 <ErrorBoundary>
   <YourComponent />
-</ErrorBoundary>
+</ErrorBoundary>;
 ```
 
 ### 2. Next.js Error Pages
 
 #### `app/error.tsx`
+
 Handles errors in route segments. Automatically wraps route segments in an error boundary.
 
 #### `app/global-error.tsx`
+
 Catches errors in the root layout. Handles critical application errors.
 
 #### `app/not-found.tsx`
+
 Custom 404 page for missing routes.
 
 #### `app/loading.tsx`
+
 Loading state shown during page transitions and data fetching.
 
 ### 3. Error Logger (`lib/error-logger.ts`)
+
 Centralized error logging system.
 
 **Features:**
+
 - Stores error logs in memory
 - Captures error context (timestamp, URL, user agent)
 - Console logging in development
 - Ready for integration with error tracking services (Sentry, LogRocket, etc.)
 
 **Usage:**
+
 ```tsx
-import { errorLogger } from '@/lib/error-logger';
+import { errorLogger } from "@/lib/error-logger";
 
 try {
   // Your code
@@ -58,11 +68,13 @@ try {
 ```
 
 ### 4. Error Handler Hook (`hooks/use-error-handler.ts`)
+
 React hook for managing error state in components.
 
 **Usage:**
+
 ```tsx
-import { useErrorHandler } from '@/hooks/use-error-handler';
+import { useErrorHandler } from "@/hooks/use-error-handler";
 
 function MyComponent() {
   const { error, hasError, handleError, clearError } = useErrorHandler();
@@ -84,8 +96,9 @@ function MyComponent() {
 ```
 
 **Async Wrapper:**
+
 ```tsx
-import { withErrorHandler } from '@/hooks/use-error-handler';
+import { withErrorHandler } from "@/hooks/use-error-handler";
 
 const safeFetch = withErrorHandler(
   async (url: string) => {
@@ -93,8 +106,8 @@ const safeFetch = withErrorHandler(
     return response.json();
   },
   (error) => {
-    console.error('Fetch failed:', error);
-  }
+    console.error("Fetch failed:", error);
+  },
 );
 ```
 
@@ -110,11 +123,13 @@ const safeFetch = withErrorHandler(
 To integrate with services like Sentry:
 
 1. Install the service SDK:
+
 ```bash
 npm install @sentry/nextjs
 ```
 
 2. Update `lib/error-logger.ts`:
+
 ```typescript
 import * as Sentry from '@sentry/nextjs';
 
@@ -140,31 +155,29 @@ private async sendToErrorService(errorLog: ErrorLog) {
 Create a test component to trigger errors:
 
 ```tsx
-'use client';
+"use client";
 
 export function ErrorTest() {
   const [shouldError, setShouldError] = useState(false);
 
   if (shouldError) {
-    throw new Error('Test error!');
+    throw new Error("Test error!");
   }
 
-  return (
-    <button onClick={() => setShouldError(true)}>
-      Trigger Error
-    </button>
-  );
+  return <button onClick={() => setShouldError(true)}>Trigger Error</button>;
 }
 ```
 
 ## Environment-Specific Behavior
 
 ### Development
+
 - Full stack traces visible
 - Console logging enabled
 - Detailed error information
 
 ### Production
+
 - User-friendly error messages
 - Errors sent to tracking service
 - Minimal technical details exposed

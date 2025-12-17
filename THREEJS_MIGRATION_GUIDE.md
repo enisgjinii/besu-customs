@@ -7,6 +7,7 @@ Your 3D configurator has been successfully migrated from **Babylon.js** to **Thr
 ## ✅ What Was Migrated
 
 ### Core Features
+
 - ✅ 3D model loading (GLB/GLTF)
 - ✅ Progressive loading (low → medium → high quality)
 - ✅ Mobile optimizations
@@ -22,6 +23,7 @@ Your 3D configurator has been successfully migrated from **Babylon.js** to **Thr
 - ✅ Performance modes (low-end device detection)
 
 ### Mobile Optimizations
+
 - ✅ Adaptive quality based on connection speed
 - ✅ Hardware scaling
 - ✅ Texture size optimization
@@ -56,36 +58,40 @@ package.json                   # Added clear-cache script
 
 ## 🎯 Key Differences: Babylon.js vs Three.js
 
-| Feature | Babylon.js | Three.js |
-|---------|-----------|----------|
-| **Rendering** | Built-in engine | React Three Fiber (R3F) |
-| **Camera** | ArcRotateCamera | OrbitControls + PerspectiveCamera |
-| **Lighting** | HemisphericLight + DirectionalLight | AmbientLight + DirectionalLight |
-| **Model Loading** | SceneLoader.ImportMesh | GLTFLoader |
-| **Materials** | StandardMaterial | MeshStandardMaterial |
-| **Scene Management** | Manual | Declarative (React) |
-| **Performance** | Manual optimization | Automatic + manual |
+| Feature              | Babylon.js                          | Three.js                          |
+| -------------------- | ----------------------------------- | --------------------------------- |
+| **Rendering**        | Built-in engine                     | React Three Fiber (R3F)           |
+| **Camera**           | ArcRotateCamera                     | OrbitControls + PerspectiveCamera |
+| **Lighting**         | HemisphericLight + DirectionalLight | AmbientLight + DirectionalLight   |
+| **Model Loading**    | SceneLoader.ImportMesh              | GLTFLoader                        |
+| **Materials**        | StandardMaterial                    | MeshStandardMaterial              |
+| **Scene Management** | Manual                              | Declarative (React)               |
+| **Performance**      | Manual optimization                 | Automatic + manual                |
 
 ## 🚀 Benefits of Three.js
 
 ### 1. **React Integration**
+
 - Declarative component-based approach
 - Better state management
 - Easier to maintain and extend
 
 ### 2. **Ecosystem**
+
 - Larger community
 - More examples and resources
 - Better documentation
 - More third-party tools
 
 ### 3. **Performance**
+
 - Automatic frustum culling
 - Better memory management
 - Optimized render loop
 - Built-in LOD support
 
 ### 4. **Developer Experience**
+
 - Hot module replacement works better
 - Easier debugging
 - Better TypeScript support
@@ -94,16 +100,19 @@ package.json                   # Added clear-cache script
 ## 📊 Performance Comparison
 
 ### Bundle Size
+
 - **Babylon.js**: ~2.5 MB (minified)
 - **Three.js + R3F**: ~600 KB (minified)
 - **Savings**: ~75% smaller bundle
 
 ### Load Time (3G)
+
 - **Before**: 8-12 seconds
 - **After**: 3-5 seconds
 - **Improvement**: ~60% faster
 
 ### Memory Usage
+
 - **Babylon.js**: ~150-200 MB
 - **Three.js**: ~80-120 MB
 - **Savings**: ~40% less memory
@@ -133,7 +142,7 @@ const Scene = dynamic(
     import("@/components/babylon-scene").then((mod) => ({
       default: mod.BabylonScene,
     })),
-  { ssr: false }
+  { ssr: false },
 );
 ```
 
@@ -240,6 +249,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 ### Models Not Loading
 
 1. **Clear cache**:
+
    ```bash
    npm run clear-cache
    # Or visit: http://localhost:3000/clear-cache.html
@@ -258,9 +268,10 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 ### Performance Issues
 
 1. **Check device tier**:
+
    ```typescript
    const perfConfig = useMobilePerformance();
-   console.log('Device:', perfConfig);
+   console.log("Device:", perfConfig);
    ```
 
 2. **Disable shadows** on low-end devices (automatic)
@@ -269,8 +280,12 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 4. **Disable environment map**:
    ```typescript
-   {/* Remove or comment out */}
-   {/* <Environment preset="studio" /> */}
+   {
+     /* Remove or comment out */
+   }
+   {
+     /* <Environment preset="studio" /> */
+   }
    ```
 
 ### Materials Not Applying
@@ -278,30 +293,37 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 1. **Check section names** match mesh names
 
 2. **Verify material format**:
+
    ```typescript
-   console.log('Sections:', sections);
-   console.log('Mesh names:', scene.children.map(c => c.name));
+   console.log("Sections:", sections);
+   console.log(
+     "Mesh names:",
+     scene.children.map((c) => c.name),
+   );
    ```
 
 3. **Check texture loading**:
    ```typescript
-   texture.onLoad = () => console.log('Texture loaded');
-   texture.onError = (e) => console.error('Texture error:', e);
+   texture.onLoad = () => console.log("Texture loaded");
+   texture.onError = (e) => console.error("Texture error:", e);
    ```
 
 ## 📚 Resources
 
 ### Three.js
+
 - [Three.js Docs](https://threejs.org/docs/)
 - [Three.js Examples](https://threejs.org/examples/)
 - [Three.js Journey](https://threejs-journey.com/)
 
 ### React Three Fiber
+
 - [R3F Docs](https://docs.pmnd.rs/react-three-fiber/)
 - [R3F Examples](https://docs.pmnd.rs/react-three-fiber/getting-started/examples)
 - [Drei Helpers](https://github.com/pmndrs/drei)
 
 ### Performance
+
 - [Three.js Performance Tips](https://discoverthreejs.com/tips-and-tricks/)
 - [R3F Performance](https://docs.pmnd.rs/react-three-fiber/advanced/pitfalls)
 
@@ -325,6 +347,7 @@ Before deploying:
 ## 🎉 Migration Complete!
 
 Your 3D configurator is now running on Three.js with:
+
 - ✅ All features preserved
 - ✅ Better performance
 - ✅ Smaller bundle size
@@ -336,11 +359,13 @@ Your 3D configurator is now running on Three.js with:
 If you need to rollback:
 
 1. **Revert app/page.tsx**:
+
    ```bash
    git checkout HEAD -- app/page.tsx
    ```
 
 2. **Or manually change**:
+
    ```typescript
    // Change ThreeScene back to BabylonScene
    import("@/components/babylon-scene").then(...)
@@ -355,6 +380,7 @@ If you need to rollback:
 ## 📞 Support
 
 If you encounter issues:
+
 1. Check this guide
 2. Check console errors
 3. Test in production mode

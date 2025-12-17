@@ -44,8 +44,12 @@ export function ControlsPanel() {
   const [textureSubTab, setTextureSubTab] = useState<"uv" | "ai">("uv");
   const showGrid = useConfiguratorStore((state) => state.showGrid);
   const toggleGrid = useConfiguratorStore((state) => state.toggleGrid);
-  const showBoundingBox = useConfiguratorStore((state) => state.showBoundingBox);
-  const toggleBoundingBox = useConfiguratorStore((state) => state.toggleBoundingBox);
+  const showBoundingBox = useConfiguratorStore(
+    (state) => state.showBoundingBox,
+  );
+  const toggleBoundingBox = useConfiguratorStore(
+    (state) => state.toggleBoundingBox,
+  );
   const exportPreset = useConfiguratorStore((state) => state.exportPreset);
   const importPreset = useConfiguratorStore((state) => state.importPreset);
   const currentModelUrl = useConfiguratorStore(
@@ -257,13 +261,22 @@ export function ControlsPanel() {
         )}
         {activeTab === "texture" && (
           <div className="p-4">
-            <Tabs value={textureSubTab} onValueChange={(v) => setTextureSubTab(v as "uv" | "ai") }>
+            <Tabs
+              value={textureSubTab}
+              onValueChange={(v) => setTextureSubTab(v as "uv" | "ai")}
+            >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="uv" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="uv"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Image className="w-4 h-4" />
                   <span>UV</span>
                 </TabsTrigger>
-                <TabsTrigger value="ai" className="flex flex-col items-center gap-1 text-xs py-3">
+                <TabsTrigger
+                  value="ai"
+                  className="flex flex-col items-center gap-1 text-xs py-3"
+                >
                   <Bot className="w-4 h-4" />
                   <span>AI Gen</span>
                 </TabsTrigger>
@@ -288,12 +301,12 @@ export function ControlsPanel() {
               onValueChange={(value) =>
                 setExportSubTab(
                   value as
-                  | "camera"
-                  | "scene"
-                  | "ai"
-                  | "images"
-                  | "video"
-                  | "model",
+                    | "camera"
+                    | "scene"
+                    | "ai"
+                    | "images"
+                    | "video"
+                    | "model",
                 )
               }
             >
@@ -377,7 +390,9 @@ export function ControlsPanel() {
                     className="w-full justify-start bg-transparent"
                   >
                     <Box className="w-4 h-4 mr-2" />
-                    {showBoundingBox ? "Hide Bounding Box" : "Show Bounding Box"}
+                    {showBoundingBox
+                      ? "Hide Bounding Box"
+                      : "Show Bounding Box"}
                   </Button>
                   <Button
                     variant="outline"

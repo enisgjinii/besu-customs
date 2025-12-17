@@ -1,14 +1,17 @@
 # Babylon.js Playground-Style Decal System
 
 ## Overview
+
 Enhanced the decal system to match the functionality and user experience of the Babylon.js playground example (#1BAPRM#73), with improved material rendering, placement controls, and visual feedback.
 
 ## Key Improvements
 
 ### 1. Enhanced Material Rendering ✅
+
 **File**: `components/babylon-decals.tsx`
 
 Improved decal materials with playground-quality rendering:
+
 - Added `useAlphaFromDiffuseTexture` for proper transparency
 - Set emissive color to full brightness (`Color3(1, 1, 1)`)
 - Added emissive texture for better visibility
@@ -19,7 +22,9 @@ Improved decal materials with playground-quality rendering:
 **Result**: Decals now render with crisp, clear alpha blending similar to the playground.
 
 ### 2. Pre-Placement Controls ✅
-**Files**: 
+
+**Files**:
+
 - `components/decal-editor.tsx` - UI controls
 - `lib/store.ts` - State management
 - `components/babylon-scene.tsx` - Integration
@@ -27,51 +32,60 @@ Improved decal materials with playground-quality rendering:
 Added intuitive controls for customizing decals before placement:
 
 #### Rotation Control
+
 - Range slider: 0° to 360°
 - Real-time degree display
 - Smooth adjustment with visual feedback
 - Stored in radians for Babylon.js compatibility
 
 #### Size Control
+
 - Range slider: 0.1x to 2.0x
 - Step increments of 0.1x
 - Default: 0.5x (medium size)
 - Applied to all three axes uniformly
 
-**User Flow**: 
+**User Flow**:
+
 1. Create text or upload image
 2. Adjust rotation and size with sliders
 3. Click on 3D model to place with chosen settings
 
 ### 3. Post-Placement Transform Controls ✅
+
 **File**: `components/decal-transform-controls.tsx`
 
 Enhanced the transform controls with precision sliders:
 
 #### Precision Rotation Slider
+
 - Fine-tune rotation from 0° to 360°
 - Step: 0.01 radians (~0.57°)
 - Real-time degree display
 - Smooth continuous adjustment
 
 #### Precision Size Slider
+
 - Fine-tune size from 0.1x to 3.0x
 - Step: 0.05x
 - Uniform scaling across X and Y axes
 - Real-time size display
 
 **Existing Features Retained**:
+
 - Quick rotate buttons (±15°)
 - Quick scale buttons (±10%)
 - Duplicate, delete, deselect
 - Keyboard shortcuts (Delete, Cmd+D, Esc)
 
 ### 4. Visual Placement Preview ✅
+
 **File**: `components/decal-preview-indicator.tsx`
 
 Added real-time visual feedback during placement:
 
 #### Preview Circle
+
 - Cyan translucent disc showing decal size
 - Follows mouse cursor on model surface
 - Aligns with surface normal (perpendicular to surface)
@@ -79,12 +93,14 @@ Added real-time visual feedback during placement:
 - Positioned slightly above surface to prevent z-fighting
 
 #### Rotation Indicator
+
 - Orange line showing rotation direction
 - Extends from center to edge of preview circle
 - Updates angle in real-time as slider changes
 - Helps visualize final orientation before placement
 
 **Behavior**:
+
 - Only visible when decal texture is ready for placement
 - Hides when not hovering over model
 - Non-interactive (doesn't interfere with clicks)
@@ -93,6 +109,7 @@ Added real-time visual feedback during placement:
 ## State Management
 
 ### New Store Properties
+
 ```typescript
 decalPlacementAngle: number;  // Angle in radians (0 to 2π)
 decalPlacementSize: number;   // Size multiplier (0.1 to 2.0)
@@ -101,18 +118,21 @@ setDecalPlacementSize: (size: number) => void;
 ```
 
 ### Default Values
+
 - Angle: 0 radians (0°)
 - Size: 0.5 (50% of default)
 
 ## User Experience Enhancements
 
 ### Before Placement
+
 1. **Visual Feedback**: See exactly where and how decal will appear
 2. **Size Preview**: Circle scales in real-time with slider
 3. **Rotation Preview**: Orange line shows orientation
 4. **Hover Indication**: Preview only shows when hovering valid surface
 
 ### After Placement
+
 1. **Quick Adjustments**: Buttons for rapid changes
 2. **Precise Control**: Sliders for fine-tuning
 3. **Keyboard Shortcuts**: Power user efficiency
@@ -121,6 +141,7 @@ setDecalPlacementSize: (size: number) => void;
 ## Technical Details
 
 ### Material Properties
+
 ```typescript
 decalMaterial.diffuseTexture.hasAlpha = true;
 decalMaterial.useAlphaFromDiffuseTexture = true;
@@ -133,6 +154,7 @@ decalMaterial.disableLighting = false;
 ```
 
 ### Preview Mesh Setup
+
 ```typescript
 // Disc geometry
 radius: decalPlacementSize * 0.5
@@ -146,6 +168,7 @@ backFaceCulling: false
 ```
 
 ### Surface Alignment
+
 - Uses `pickInfo.getNormal(true)` for accurate surface normal
 - Rotates preview mesh to align with normal
 - Applies user rotation on top of surface alignment
@@ -153,17 +176,17 @@ backFaceCulling: false
 
 ## Comparison with Babylon Playground
 
-| Feature | Playground | Your System | Status |
-|---------|-----------|-------------|--------|
-| Click to place | ✅ | ✅ | ✅ Implemented |
-| Alpha blending | ✅ | ✅ | ✅ Enhanced |
-| Size control | ✅ | ✅ | ✅ Pre & Post |
-| Rotation control | ✅ | ✅ | ✅ Pre & Post |
-| Multiple decals | ✅ | ✅ | ✅ Implemented |
-| Visual preview | ✅ | ✅ | ✅ Added |
-| Transform controls | ⚠️ Basic | ✅ | ✅ Enhanced |
-| Text decals | ❌ | ✅ | ✅ Your addition |
-| Image upload | ❌ | ✅ | ✅ Your addition |
+| Feature            | Playground | Your System | Status           |
+| ------------------ | ---------- | ----------- | ---------------- |
+| Click to place     | ✅         | ✅          | ✅ Implemented   |
+| Alpha blending     | ✅         | ✅          | ✅ Enhanced      |
+| Size control       | ✅         | ✅          | ✅ Pre & Post    |
+| Rotation control   | ✅         | ✅          | ✅ Pre & Post    |
+| Multiple decals    | ✅         | ✅          | ✅ Implemented   |
+| Visual preview     | ✅         | ✅          | ✅ Added         |
+| Transform controls | ⚠️ Basic   | ✅          | ✅ Enhanced      |
+| Text decals        | ❌         | ✅          | ✅ Your addition |
+| Image upload       | ❌         | ✅          | ✅ Your addition |
 
 ## Files Modified
 
@@ -217,8 +240,8 @@ backFaceCulling: false
 
 ```typescript
 // Access placement settings
-const angle = useConfiguratorStore(s => s.decalPlacementAngle);
-const size = useConfiguratorStore(s => s.decalPlacementSize);
+const angle = useConfiguratorStore((s) => s.decalPlacementAngle);
+const size = useConfiguratorStore((s) => s.decalPlacementSize);
 
 // Update settings
 setDecalPlacementAngle(Math.PI / 4); // 45 degrees
@@ -244,6 +267,7 @@ setDecalPlacementSize(0.8); // 80% size
 ## Conclusion
 
 Your decal system now matches and exceeds the Babylon.js playground functionality with:
+
 - ✅ Professional material rendering
 - ✅ Intuitive pre-placement controls
 - ✅ Visual placement feedback

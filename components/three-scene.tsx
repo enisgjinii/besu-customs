@@ -39,12 +39,12 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
 function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const perfConfig = useMobilePerformance();
-  
+
   // Use optimal canvas size based on device performance
   const CANVAS_SIZE = perfConfig.uvCanvasSize;
 
   const [canvas] = useState(() => {
-    const c = document.createElement('canvas');
+    const c = document.createElement("canvas");
     c.width = CANVAS_SIZE;
     c.height = CANVAS_SIZE;
     return c;
@@ -63,23 +63,23 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
   useEffect(() => {
-    const ctx = canvas.getContext('2d', { 
+    const ctx = canvas.getContext("2d", {
       alpha: true,
-      willReadFrequently: false 
+      willReadFrequently: false,
     });
     if (!ctx) return;
 
     // Adjust image smoothing based on performance mode
     ctx.imageSmoothingEnabled = !perfConfig.isLowEndDevice;
-    ctx.imageSmoothingQuality = perfConfig.isLowEndDevice ? 'low' : 'high';
+    ctx.imageSmoothingQuality = perfConfig.isLowEndDevice ? "low" : "high";
 
     // Clear canvas with white (neutral for multiply blending with material color)
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     // Get visible layers sorted by order
     const visibleLayers = textureLayers
-      .filter(l => l.visible)
+      .filter((l) => l.visible)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     if (visibleLayers.length === 0) {
@@ -93,29 +93,38 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     const renderAllLayers = () => {
       // Clear and re-render all layers in order
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-      visibleLayers.forEach(layer => {
+      visibleLayers.forEach((layer) => {
         ctx.save();
 
         // Set opacity and blend mode
         ctx.globalAlpha = layer.opacity ?? 1;
         switch (layer.blendMode) {
-          case 'multiply': ctx.globalCompositeOperation = 'multiply'; break;
-          case 'screen': ctx.globalCompositeOperation = 'screen'; break;
-          case 'overlay': ctx.globalCompositeOperation = 'overlay'; break;
-          case 'add': ctx.globalCompositeOperation = 'lighter'; break;
-          default: ctx.globalCompositeOperation = 'source-over';
+          case "multiply":
+            ctx.globalCompositeOperation = "multiply";
+            break;
+          case "screen":
+            ctx.globalCompositeOperation = "screen";
+            break;
+          case "overlay":
+            ctx.globalCompositeOperation = "overlay";
+            break;
+          case "add":
+            ctx.globalCompositeOperation = "lighter";
+            break;
+          default:
+            ctx.globalCompositeOperation = "source-over";
         }
 
-        if (layer.type === 'pattern' && layer.imageUrl) {
+        if (layer.type === "pattern" && layer.imageUrl) {
           // Pattern: Draw full canvas with smooth scaling
           const img = imageCache.current.get(layer.imageUrl);
           if (img && img.complete) {
             ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
           }
-        } else if (layer.type === 'image' && layer.imageUrl) {
+        } else if (layer.type === "image" && layer.imageUrl) {
           // Image: Draw at UV position with scale - smooth rendering
           const img = imageCache.current.get(layer.imageUrl);
           if (img && img.complete) {
@@ -134,44 +143,50 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             ctx.translate(x, y);
             ctx.rotate(rotation);
             if (layer.flipX) ctx.scale(-1, 1);
-            ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+            ctx.drawImage(
+              img,
+              -imgWidth / 2,
+              -imgHeight / 2,
+              imgWidth,
+              imgHeight,
+            );
           }
-        } else if (layer.type === 'text' && layer.text) {
+        } else if (layer.type === "text" && layer.text) {
           // Text: Render at UV position with smooth anti-aliased text
           const u = layer.position?.[0] ?? 0.5;
           const v = layer.position?.[1] ?? 0.5;
           const rotation = layer.rotation?.[2] ?? 0;
-          
+
           // Use scale to control text size (scale[0] * base font size)
           const scaleMultiplier = layer.scale?.[0] ?? 1;
           const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
           const fontSize = baseFontSize * scaleMultiplier;
-          
+
           // Get font family from layer or default to Arial
-          const fontFamily = layer.fontFamily || 'Arial';
+          const fontFamily = layer.fontFamily || "Arial";
 
           const x = u * CANVAS_SIZE;
           const y = (1 - v) * CANVAS_SIZE;
 
           ctx.translate(x, y);
           ctx.rotate(rotation);
-          
+
           // Use smooth font rendering with dynamic font family
           ctx.font = `bold ${fontSize}px ${fontFamily}, Arial, sans-serif`;
-          ctx.fillStyle = layer.textColor || '#000000';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          
+          ctx.fillStyle = layer.textColor || "#000000";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
           // Add subtle shadow for better visibility on fabric
-          ctx.shadowColor = 'rgba(0,0,0,0.1)';
+          ctx.shadowColor = "rgba(0,0,0,0.1)";
           ctx.shadowBlur = Math.max(2, fontSize * 0.02);
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = Math.max(1, fontSize * 0.01);
-          
+
           ctx.fillText(layer.text, 0, 0);
-          
+
           // Reset shadow
-          ctx.shadowColor = 'transparent';
+          ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
         }
 
@@ -182,7 +197,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     };
 
     // Load all images first
-    visibleLayers.forEach(layer => {
+    visibleLayers.forEach((layer) => {
       const url = layer.imageUrl;
       if (!url) return;
 
@@ -193,7 +208,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
       pendingImages++;
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.onload = () => {
         imageCache.current.set(url, img);
         processedImages++;
@@ -220,7 +235,6 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     if (pendingImages === 0 || processedImages >= pendingImages) {
       renderAllLayers();
     }
-
   }, [textureLayers, canvas, texture, CANVAS_SIZE]);
 
   // Apply Texture to Material
@@ -229,7 +243,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture.flipY = false;
     texture.colorSpace = THREE.SRGBColorSpace;
 
-    const hasLayers = textureLayers.some(l => l.visible);
+    const hasLayers = textureLayers.some((l) => l.visible);
 
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
@@ -247,13 +261,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   return null;
 }
 
-
 // CameraViewLock - Handles locked camera views
 
-
 // ...
-
-
 
 // Camera View Lock Component
 function CameraViewLock() {
@@ -262,15 +272,31 @@ function CameraViewLock() {
 
   useEffect(() => {
     if (lockedView && controls) {
-      if (typeof (controls as any).setAzimuthalAngle === 'function') {
+      if (typeof (controls as any).setAzimuthalAngle === "function") {
         const c = controls as any;
         switch (lockedView) {
-          case 'Front': c.setAzimuthalAngle(0); c.setPolarAngle(Math.PI / 2); break;
-          case 'Back': c.setAzimuthalAngle(Math.PI); c.setPolarAngle(Math.PI / 2); break;
-          case 'Left': c.setAzimuthalAngle(-Math.PI / 2); c.setPolarAngle(Math.PI / 2); break;
-          case 'Right': c.setAzimuthalAngle(Math.PI / 2); c.setPolarAngle(Math.PI / 2); break;
-          case 'Top': c.setPolarAngle(0); break;
-          case 'Bottom': c.setPolarAngle(Math.PI); break;
+          case "Front":
+            c.setAzimuthalAngle(0);
+            c.setPolarAngle(Math.PI / 2);
+            break;
+          case "Back":
+            c.setAzimuthalAngle(Math.PI);
+            c.setPolarAngle(Math.PI / 2);
+            break;
+          case "Left":
+            c.setAzimuthalAngle(-Math.PI / 2);
+            c.setPolarAngle(Math.PI / 2);
+            break;
+          case "Right":
+            c.setAzimuthalAngle(Math.PI / 2);
+            c.setPolarAngle(Math.PI / 2);
+            break;
+          case "Top":
+            c.setPolarAngle(0);
+            break;
+          case "Bottom":
+            c.setPolarAngle(Math.PI);
+            break;
         }
         c.update();
       }
@@ -280,7 +306,13 @@ function CameraViewLock() {
   return null;
 }
 
-function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRotate }: {
+function Model({
+  url,
+  onLoad,
+  onSectionsExtracted,
+  customSections,
+  customAutoRotate,
+}: {
   url: string;
   onLoad?: () => void;
   onSectionsExtracted?: (sections: MaterialSection[]) => void;
@@ -295,7 +327,8 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
   const storeSections = useConfiguratorStore((s) => s.sections);
 
   // Use custom props if provided, otherwise fallback to store
-  const autoRotate = customAutoRotate !== undefined ? customAutoRotate : storeAutoRotate;
+  const autoRotate =
+    customAutoRotate !== undefined ? customAutoRotate : storeAutoRotate;
   const sections = customSections || storeSections;
 
   const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
@@ -329,7 +362,7 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
             m.castShadow = true;
             m.receiveShadow = true;
             // Ensure unique materials for unique colors? clone materials?
-            // GLTF loader usually shares materials. Cloning scene clones materials? 
+            // GLTF loader usually shares materials. Cloning scene clones materials?
             // Typically yes if strict, but let's ensure.
           }
         });
@@ -337,26 +370,28 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
     }
   }, [scene, url]);
 
-
   // Sync Colors - Base Layer
   useEffect(() => {
     if (!clonedScene || sections.length === 0) return;
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
-        const materials = Array.isArray(child.material) ? child.material : [child.material];
-        materials.forEach(mat => {
-          const section = sections.find(s => 
-            s.originalName === mat.name ||
-            s.id === mat.name ||
-            mat.name.includes(s.originalName)
+        const materials = Array.isArray(child.material)
+          ? child.material
+          : [child.material];
+        materials.forEach((mat) => {
+          const section = sections.find(
+            (s) =>
+              s.originalName === mat.name ||
+              s.id === mat.name ||
+              mat.name.includes(s.originalName),
           );
           if (section && mat instanceof THREE.MeshStandardMaterial) {
             if (section.color) {
               mat.color.set(section.color);
             }
-            // Remove map if we are using Decals, unless it's a specific pattern map? 
+            // Remove map if we are using Decals, unless it's a specific pattern map?
             // For now, assume Decals replace the need for baked map for Images/Logos.
-            // If we have "Patterns", we might set map here. 
+            // If we have "Patterns", we might set map here.
             // But to fix "Color Over Image", we relying on Decals.
             // mat.map = null; // Removed as patterns will use mat.map
             mat.transparent = false;
@@ -373,7 +408,7 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
   const { camera } = useThree();
   const selectedLayerRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
-  const dragOffsetRef = useRef<{ u: number, v: number }>({ u: 0, v: 0 });
+  const dragOffsetRef = useRef<{ u: number; v: number }>({ u: 0, v: 0 });
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
@@ -388,8 +423,11 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
 
       if (intersects.length > 0 && intersects[0].uv) {
         // Find visible draggable layers (excluding patterns)
-        const activeLayers = useConfiguratorStore.getState().textureLayers
-          .filter(l => l.visible && l.type !== 'pattern' && !l.locked);
+        const activeLayers = useConfiguratorStore
+          .getState()
+          .textureLayers.filter(
+            (l) => l.visible && l.type !== "pattern" && !l.locked,
+          );
 
         if (activeLayers.length > 0) {
           const targetLayer = activeLayers[activeLayers.length - 1];
@@ -401,7 +439,7 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
             const currentV = targetLayer.position?.[1] ?? 0.5;
             dragOffsetRef.current = {
               u: currentU - intersects[0].uv.x,
-              v: currentV + intersects[0].uv.y
+              v: currentV + intersects[0].uv.y,
             };
 
             if (controls) (controls as any).enabled = false;
@@ -411,7 +449,8 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!isDraggingRef.current || !selectedLayerRef.current || !clonedScene) return;
+      if (!isDraggingRef.current || !selectedLayerRef.current || !clonedScene)
+        return;
 
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -426,7 +465,7 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
         const newV = dragOffsetRef.current.v - uv.y;
 
         updateTextureLayer(selectedLayerRef.current, {
-          position: [newU, newV, 0]
+          position: [newU, newV, 0],
         });
       }
     };
@@ -436,21 +475,25 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
       if (selectedLayerRef.current) {
         const store = useConfiguratorStore.getState();
         const layer = store.textureLayers.find(
-          l => l.id === selectedLayerRef.current
+          (l) => l.id === selectedLayerRef.current,
         );
         if (layer) {
           const modelUrl = store.currentModelUrl;
-          console.log('📍 LAYER POSITION CAPTURED:');
-          console.log('  Layer:', layer.name);
-          console.log('  Model:', modelUrl);
-          console.log('  Position:', layer.position);
-          console.log('  Scale:', layer.scale);
-          console.log('');
-          console.log('📋 COPY THIS TO lib/logo-positioning.ts:');
-          console.log(`  // Model: ${modelUrl?.split('/').pop() || 'unknown'}`);
+          console.log("📍 LAYER POSITION CAPTURED:");
+          console.log("  Layer:", layer.name);
+          console.log("  Model:", modelUrl);
+          console.log("  Position:", layer.position);
+          console.log("  Scale:", layer.scale);
+          console.log("");
+          console.log("📋 COPY THIS TO lib/logo-positioning.ts:");
+          console.log(`  // Model: ${modelUrl?.split("/").pop() || "unknown"}`);
           console.log(`  leftChest: {`);
-          console.log(`    position: [${layer.position?.[0]?.toFixed(4)}, ${layer.position?.[1]?.toFixed(4)}, 0],`);
-          console.log(`    scale: [${layer.scale?.[0]?.toFixed(2)}, ${layer.scale?.[1]?.toFixed(2)}, 1],`);
+          console.log(
+            `    position: [${layer.position?.[0]?.toFixed(4)}, ${layer.position?.[1]?.toFixed(4)}, 0],`,
+          );
+          console.log(
+            `    scale: [${layer.scale?.[0]?.toFixed(2)}, ${layer.scale?.[1]?.toFixed(2)}, 1],`,
+          );
           console.log(`    rotation: [0, 0, 0],`);
           console.log(`  },`);
         }
@@ -460,14 +503,14 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
       if (controls) (controls as any).enabled = true;
     };
 
-    gl.domElement.addEventListener('pointerdown', handlePointerDown);
-    gl.domElement.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+    gl.domElement.addEventListener("pointerdown", handlePointerDown);
+    gl.domElement.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
 
     return () => {
-      gl.domElement.removeEventListener('pointerdown', handlePointerDown);
-      gl.domElement.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
+      gl.domElement.removeEventListener("pointerdown", handlePointerDown);
+      gl.domElement.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
     };
   }, [clonedScene, camera, gl, updateTextureLayer, controls, raycaster]);
 
@@ -479,7 +522,9 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
 
   return (
     <group ref={modelRef}>
-      {showBoundingBox && modelRef.current && <BoundingBoxHelper object={modelRef.current} />}
+      {showBoundingBox && modelRef.current && (
+        <BoundingBoxHelper object={modelRef.current} />
+      )}
 
       <Center>
         {clonedScene && <primitive object={clonedScene} />}
@@ -491,9 +536,7 @@ function Model({ url, onLoad, onSectionsExtracted, customSections, customAutoRot
   );
 }
 
-
 // ... rest of SceneSetup, CameraControlsHandler, ThreeScene ...
-
 
 // Scene setup component
 function SceneSetup() {
@@ -521,7 +564,9 @@ function SceneSetup() {
 // Camera controls handler
 function CameraControlsHandler() {
   const { camera, controls } = useThree();
-  const setCameraControlsRef = useConfiguratorStore((s) => s.setCameraControlsRef);
+  const setCameraControlsRef = useConfiguratorStore(
+    (s) => s.setCameraControlsRef,
+  );
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
 
   useEffect(() => {
@@ -540,7 +585,7 @@ function CameraControlsHandler() {
 // Main Three.js Scene Component
 export function ThreeScene({
   customSections,
-  customAutoRotate
+  customAutoRotate,
 }: {
   customSections?: MaterialSection[];
   customAutoRotate?: boolean;
@@ -569,62 +614,77 @@ export function ThreeScene({
     setModelLoading(false);
   }, [setModelLoading]);
 
-  const handleSectionsExtracted = useCallback((extractedSections: MaterialSection[]) => {
-    // Check if sections already came from API (better human-readable names)
-    const state = useConfiguratorStore.getState();
-    const { sections: currentSections, sectionsFromApi, sectionsLoading } = state;
-    
-    // If API is still loading, wait a bit and retry
-    if (sectionsLoading) {
-      console.log("⏳ Waiting for API sections to load...");
-      setTimeout(() => {
-        const newState = useConfiguratorStore.getState();
-        if (newState.sectionsFromApi && newState.sections.length > 0) {
-          // API sections loaded - merge colors
-          console.log("🔄 Merging extracted colors into API sections (after wait)");
-          const mergedSections = newState.sections.map(apiSection => {
-            const extracted = extractedSections.find(
-              e => e.id === apiSection.id || 
-                   e.originalName === apiSection.originalName ||
-                   e.id === apiSection.originalName
+  const handleSectionsExtracted = useCallback(
+    (extractedSections: MaterialSection[]) => {
+      // Check if sections already came from API (better human-readable names)
+      const state = useConfiguratorStore.getState();
+      const {
+        sections: currentSections,
+        sectionsFromApi,
+        sectionsLoading,
+      } = state;
+
+      // If API is still loading, wait a bit and retry
+      if (sectionsLoading) {
+        console.log("⏳ Waiting for API sections to load...");
+        setTimeout(() => {
+          const newState = useConfiguratorStore.getState();
+          if (newState.sectionsFromApi && newState.sections.length > 0) {
+            // API sections loaded - merge colors
+            console.log(
+              "🔄 Merging extracted colors into API sections (after wait)",
             );
-            if (extracted && extracted.color && extracted.color !== '#ffffff') {
-              return { ...apiSection, color: extracted.color };
-            }
-            return apiSection;
-          });
-          setSections(mergedSections, true);
-        } else {
-          // API didn't return sections, use extracted
-          console.log("📋 Using extracted sections (API returned nothing)");
-          setSections(extractedSections, false);
-        }
-      }, 500); // Wait 500ms for API
-      return;
-    }
-    
-    if (sectionsFromApi && currentSections.length > 0) {
-      // API sections exist - merge colors from extracted sections into API sections
-      // This preserves API names while getting actual colors from the model
-      console.log("🔄 Merging extracted colors into API sections");
-      const mergedSections = currentSections.map(apiSection => {
-        const extracted = extractedSections.find(
-          e => e.id === apiSection.id || 
-               e.originalName === apiSection.originalName ||
-               e.id === apiSection.originalName
-        );
-        if (extracted && extracted.color && extracted.color !== '#ffffff') {
-          return { ...apiSection, color: extracted.color };
-        }
-        return apiSection;
-      });
-      setSections(mergedSections, true); // Keep the fromApi flag
-    } else {
-      // No API sections yet, use extracted ones
-      console.log("📋 Using extracted sections (no API sections available)");
-      setSections(extractedSections, false);
-    }
-  }, [setSections]);
+            const mergedSections = newState.sections.map((apiSection) => {
+              const extracted = extractedSections.find(
+                (e) =>
+                  e.id === apiSection.id ||
+                  e.originalName === apiSection.originalName ||
+                  e.id === apiSection.originalName,
+              );
+              if (
+                extracted &&
+                extracted.color &&
+                extracted.color !== "#ffffff"
+              ) {
+                return { ...apiSection, color: extracted.color };
+              }
+              return apiSection;
+            });
+            setSections(mergedSections, true);
+          } else {
+            // API didn't return sections, use extracted
+            console.log("📋 Using extracted sections (API returned nothing)");
+            setSections(extractedSections, false);
+          }
+        }, 500); // Wait 500ms for API
+        return;
+      }
+
+      if (sectionsFromApi && currentSections.length > 0) {
+        // API sections exist - merge colors from extracted sections into API sections
+        // This preserves API names while getting actual colors from the model
+        console.log("🔄 Merging extracted colors into API sections");
+        const mergedSections = currentSections.map((apiSection) => {
+          const extracted = extractedSections.find(
+            (e) =>
+              e.id === apiSection.id ||
+              e.originalName === apiSection.originalName ||
+              e.id === apiSection.originalName,
+          );
+          if (extracted && extracted.color && extracted.color !== "#ffffff") {
+            return { ...apiSection, color: extracted.color };
+          }
+          return apiSection;
+        });
+        setSections(mergedSections, true); // Keep the fromApi flag
+      } else {
+        // No API sections yet, use extracted ones
+        console.log("📋 Using extracted sections (no API sections available)");
+        setSections(extractedSections, false);
+      }
+    },
+    [setSections],
+  );
 
   // WebGL Check
   useEffect(() => {
@@ -641,7 +701,9 @@ export function ThreeScene({
         gl={{
           antialias: perfConfig.antialias,
           alpha: true,
-          powerPreference: perfConfig.isLowEndDevice ? "low-power" : "high-performance",
+          powerPreference: perfConfig.isLowEndDevice
+            ? "low-power"
+            : "high-performance",
           preserveDrawingBuffer: true,
         }}
         style={{ touchAction: "none" }}
@@ -652,7 +714,12 @@ export function ThreeScene({
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 10, 5]} intensity={1.2} />
 
-        <OrbitControls makeDefault enableDamping dampingFactor={0.05} enableRotate={!useConfiguratorStore.getState().lockedView} />
+        <OrbitControls
+          makeDefault
+          enableDamping
+          dampingFactor={0.05}
+          enableRotate={!useConfiguratorStore.getState().lockedView}
+        />
         <CameraViewLock />
 
         {modelUrl && (
@@ -683,11 +750,23 @@ export function ThreeScene({
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none pb-[320px]">
           <div className="text-center px-8">
             <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              <svg
+                className="w-10 h-10 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-black dark:text-white mb-2">Select a Product</h2>
+            <h2 className="text-xl font-semibold text-black dark:text-white mb-2">
+              Select a Product
+            </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
               Use the bottom bar to start customizing.
             </p>

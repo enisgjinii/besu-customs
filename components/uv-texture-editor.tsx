@@ -32,7 +32,13 @@ import { Card } from "@/components/ui/card";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import { PatternSelector } from "@/components/pattern-selector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -78,8 +84,12 @@ export function UVTextureEditor() {
   const selectedSectionId = useConfiguratorStore((s) => s.selectedSectionId);
   const updateSection = useConfiguratorStore((s) => s.updateSection);
   const setFabricCanvas = useConfiguratorStore((s) => s.setFabricCanvas);
-  const enable3DTextureInteraction = useConfiguratorStore((s) => s.enable3DTextureInteraction);
-  const setEnable3DTextureInteraction = useConfiguratorStore((s) => s.setEnable3DTextureInteraction);
+  const enable3DTextureInteraction = useConfiguratorStore(
+    (s) => s.enable3DTextureInteraction,
+  );
+  const setEnable3DTextureInteraction = useConfiguratorStore(
+    (s) => s.setEnable3DTextureInteraction,
+  );
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
 
   // Mobile performance configuration
@@ -106,7 +116,9 @@ export function UVTextureEditor() {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
-  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">(
+    "center",
+  );
   const [strokeColor, setStrokeColor] = useState("#ffffff");
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [letterSpacing, setLetterSpacing] = useState(0);
@@ -119,21 +131,26 @@ export function UVTextureEditor() {
   const [textSection, setTextSection] = useState("chest"); // Target section for text (chest, back, sleeve, etc.)
 
   const isInternalUpdateRef = useRef(false);
-  const [pendingAIImage, setPendingAIImage] = useState<{ url: string; timestamp: number } | null>(null);
+  const [pendingAIImage, setPendingAIImage] = useState<{
+    url: string;
+    timestamp: number;
+  } | null>(null);
 
   // School Logos state
-  const [schoolLogos, setSchoolLogos] = useState<{ name: string, path: string }[]>([]);
+  const [schoolLogos, setSchoolLogos] = useState<
+    { name: string; path: string }[]
+  >([]);
   const [logoSearch, setLogoSearch] = useState("");
   const [logosLoaded, setLogosLoaded] = useState(false);
 
   useEffect(() => {
-    fetch('/school-logos.json')
-      .then(res => res.json())
-      .then(data => {
+    fetch("/school-logos.json")
+      .then((res) => res.json())
+      .then((data) => {
         setSchoolLogos(data);
         setLogosLoaded(true);
       })
-      .catch(err => console.error("Failed to load logos:", err));
+      .catch((err) => console.error("Failed to load logos:", err));
   }, []);
 
   const handleAddLogo = async (logoPath: string) => {
@@ -195,11 +212,13 @@ export function UVTextureEditor() {
 
     updateTimerRef.current = setTimeout(() => {
       // Create a temporary canvas for the flipped export
-      const tempCanvas = document.createElement('canvas');
-      const exportSize = perfConfig.isMobile ? Math.min(canvasSize, 2048) : canvasSize;
+      const tempCanvas = document.createElement("canvas");
+      const exportSize = perfConfig.isMobile
+        ? Math.min(canvasSize, 2048)
+        : canvasSize;
       tempCanvas.width = exportSize;
       tempCanvas.height = exportSize;
-      const tempCtx = tempCanvas.getContext('2d');
+      const tempCtx = tempCanvas.getContext("2d");
       if (!tempCtx) return;
 
       // Set flag to prevent update loops when we modify selection
@@ -214,7 +233,7 @@ export function UVTextureEditor() {
 
       // Temporarily replace UV wireframe with white background for clean export
       canvas.backgroundImage = null;
-      canvas.backgroundColor = 'white';
+      canvas.backgroundColor = "white";
 
       // Force a render to make sure the canvas state is ready for export (without controls)
       canvas.renderAll();
@@ -223,12 +242,18 @@ export function UVTextureEditor() {
       if (canvas.width !== exportSize) {
         tempCtx.drawImage(canvas.getElement(), 0, 0, exportSize, exportSize);
       } else {
-        tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width!, canvas.height!);
+        tempCtx.drawImage(
+          canvas.getElement(),
+          0,
+          0,
+          canvas.width!,
+          canvas.height!,
+        );
       }
 
       // Use lower quality on mobile
       const quality = perfConfig.isMobile ? 0.8 : 1;
-      const dataUrl = tempCanvas.toDataURL('image/png', quality);
+      const dataUrl = tempCanvas.toDataURL("image/png", quality);
 
       // Restore UV wireframe background for editing view
       canvas.backgroundImage = originalBg;
@@ -246,23 +271,30 @@ export function UVTextureEditor() {
       setGlobalCustomTexture(dataUrl);
       console.log("🔄 UV texture updated and flipped for 3D (controls HIDDEN)");
     }, debounceTime);
-  }, [setGlobalCustomTexture, perfConfig.debounceMs, perfConfig.isMobile, canvasSize]);
+  }, [
+    setGlobalCustomTexture,
+    perfConfig.debounceMs,
+    perfConfig.isMobile,
+    canvasSize,
+  ]);
 
   // Listen for texture layer updates from store (e.g., from Step06Text)
   useEffect(() => {
     if (!fabricCanvasRef.current || !isLoaded) return;
-    
+
     const canvas = fabricCanvasRef.current;
     const textLayers = textureLayers.filter((l) => l.type === "text");
-    
+
     const updateCanvasFromStore = async () => {
       const { IText } = await import("fabric");
-      
+
       textLayers.forEach((textLayer) => {
         const fabricObjects = canvas.getObjects();
-        let targetObj = fabricObjects.find((obj: any) => obj._uuid === textLayer.id);
-        
-        if (targetObj && targetObj.type === 'i-text') {
+        let targetObj = fabricObjects.find(
+          (obj: any) => obj._uuid === textLayer.id,
+        );
+
+        if (targetObj && targetObj.type === "i-text") {
           // UPDATE existing text object
           targetObj.set({
             text: textLayer.text || "",
@@ -270,14 +302,14 @@ export function UVTextureEditor() {
             fontSize: textLayer.fontSize || 100,
             fontFamily: textLayer.fontFamily || "Arial",
           });
-          
+
           // Update rotation (curvature)
           if (textLayer.rotation && textLayer.rotation[2]) {
             targetObj.set({
               angle: (textLayer.rotation[2] * 180) / Math.PI,
             });
           }
-          
+
           // Update position
           if (textLayer.position) {
             targetObj.set({
@@ -285,7 +317,7 @@ export function UVTextureEditor() {
               top: textLayer.position[1] * canvas.height!,
             });
           }
-          
+
           console.log(`✏️ Updated text layer: ${textLayer.text}`);
         } else if (!targetObj && textLayer.visible !== false) {
           // CREATE new text object if it doesn't exist and is visible
@@ -298,10 +330,10 @@ export function UVTextureEditor() {
             text: textLayer.text || "",
             editable: true,
           };
-          
+
           const text = new IText(textLayer.text || "", textOptions);
           (text as any)._uuid = textLayer.id;
-          
+
           // Apply custom controls if available
           if (customControlsRef.current) {
             text.controls = customControlsRef.current.controls;
@@ -313,25 +345,25 @@ export function UVTextureEditor() {
               padding: customControlsRef.current.padding,
             });
           }
-          
+
           canvas.add(text);
           console.log(`✨ Created new text layer: ${textLayer.text}`);
         }
       });
-      
+
       // Remove text objects that are no longer in store
-      const storeLayerIds = new Set(textLayers.map(l => l.id));
-      canvas.getObjects('i-text').forEach((obj: any) => {
+      const storeLayerIds = new Set(textLayers.map((l) => l.id));
+      canvas.getObjects("i-text").forEach((obj: any) => {
         if (!storeLayerIds.has(obj._uuid)) {
           canvas.remove(obj);
           console.log("🗑️ Removed text layer no longer in store");
         }
       });
-      
+
       canvas.renderAll();
       updateTexture();
     };
-    
+
     updateCanvasFromStore();
     console.log("🔄 Canvas synced with store texture layers");
   }, [textureLayers, isLoaded, updateTexture]);
@@ -348,7 +380,7 @@ export function UVTextureEditor() {
 
     // Clear any existing canvas elements first
     const container = canvasContainerRef.current;
-    const existingCanvas = container.querySelector('#fabric-canvas');
+    const existingCanvas = container.querySelector("#fabric-canvas");
     if (existingCanvas) {
       console.log("🧹 Removing existing canvas element");
       existingCanvas.remove();
@@ -359,7 +391,10 @@ export function UVTextureEditor() {
 
     const loadFabric = async () => {
       if (!mounted || fabricCanvasRef.current) return;
-      console.log("🎨 Initializing Fabric.js canvas with UV map:", completeUVMap);
+      console.log(
+        "🎨 Initializing Fabric.js canvas with UV map:",
+        completeUVMap,
+      );
 
       // Dynamic import to avoid SSR issues
       const { Canvas, FabricImage } = await import("fabric");
@@ -387,16 +422,23 @@ export function UVTextureEditor() {
       });
 
       // Set CSS dimensions for display
-      canvas.setDimensions({
-        width: displaySize,
-        height: displaySize
-      }, {
-        cssOnly: true
-      });
+      canvas.setDimensions(
+        {
+          width: displaySize,
+          height: displaySize,
+        },
+        {
+          cssOnly: true,
+        },
+      );
 
       fabricCanvasRef.current = canvas;
       setFabricCanvas(canvas);
-      console.log(`✅ Fabric canvas initialized at ${canvasSize}x${canvasSize}, displayed at`, displaySize, "px");
+      console.log(
+        `✅ Fabric canvas initialized at ${canvasSize}x${canvasSize}, displayed at`,
+        displaySize,
+        "px",
+      );
 
       // Configure custom 4-corner controls with Lucide React icons
       const fabric = await import("fabric");
@@ -408,7 +450,9 @@ export function UVTextureEditor() {
       const scaledCornerSize = Math.round(baseCornerSize * scaleFactor);
       const iconLineWidth = Math.max(2, Math.round(2 * scaleFactor));
 
-      console.log(`📐 Control scale factor: ${scaleFactor.toFixed(2)}, corner size: ${scaledCornerSize}px`);
+      console.log(
+        `📐 Control scale factor: ${scaleFactor.toFixed(2)}, corner size: ${scaledCornerSize}px`,
+      );
 
       // Create SVG strings for Lucide icons (using actual Lucide SVG markup)
       const createLucideSvg = (pathD: string, color: string) => {
@@ -417,17 +461,20 @@ export function UVTextureEditor() {
 
       // Lucide icon paths (exact paths from lucide-react)
       const lucideIconPaths = {
-        rotate: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+        rotate:
+          '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
         pin: '<line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76c0 .73-.4 1.4-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>',
-        trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
-        resize: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>',
+        trash:
+          '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+        resize:
+          '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>',
       };
 
       const iconColors = {
-        rotate: '#3b82f6',
-        pin: '#6b7280',
-        trash: '#ef4444',
-        resize: '#3b82f6',
+        rotate: "#3b82f6",
+        pin: "#6b7280",
+        trash: "#ef4444",
+        resize: "#3b82f6",
       };
 
       // Create Image objects for each icon
@@ -436,28 +483,37 @@ export function UVTextureEditor() {
         const color = iconColors[key as keyof typeof iconColors];
         const svgString = createLucideSvg(pathD, color);
         const img = new Image();
-        img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
+        img.src = "data:image/svg+xml;base64," + btoa(svgString);
         iconImages[key] = img;
       });
 
       // Render function using pre-rendered Lucide icon images
-      const renderIconControl = (iconKey: 'rotate' | 'pin' | 'trash' | 'resize', borderColor: string) => {
-        return (ctx: CanvasRenderingContext2D, left: number, top: number, styleOverride: any, fabricObject: any) => {
+      const renderIconControl = (
+        iconKey: "rotate" | "pin" | "trash" | "resize",
+        borderColor: string,
+      ) => {
+        return (
+          ctx: CanvasRenderingContext2D,
+          left: number,
+          top: number,
+          styleOverride: any,
+          fabricObject: any,
+        ) => {
           const size = scaledCornerSize;
           ctx.save();
           ctx.translate(left, top);
 
           // White circle background with subtle shadow
-          ctx.shadowColor = 'rgba(0,0,0,0.2)';
+          ctx.shadowColor = "rgba(0,0,0,0.2)";
           ctx.shadowBlur = size * 0.15;
           ctx.shadowOffsetY = size * 0.05;
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = "#ffffff";
           ctx.beginPath();
           ctx.arc(0, 0, size / 2, 0, 2 * Math.PI);
           ctx.fill();
 
           // Border
-          ctx.shadowColor = 'transparent';
+          ctx.shadowColor = "transparent";
           ctx.strokeStyle = borderColor;
           ctx.lineWidth = iconLineWidth;
           ctx.beginPath();
@@ -468,7 +524,13 @@ export function UVTextureEditor() {
           const img = iconImages[iconKey];
           if (img && img.complete) {
             const iconSize = size * 0.55;
-            ctx.drawImage(img, -iconSize / 2, -iconSize / 2, iconSize, iconSize);
+            ctx.drawImage(
+              img,
+              -iconSize / 2,
+              -iconSize / 2,
+              iconSize,
+              iconSize,
+            );
           }
 
           ctx.restore();
@@ -498,8 +560,8 @@ export function UVTextureEditor() {
           lockScalingY: newState,
           lockRotation: newState,
           // Visual feedback
-          borderColor: newState ? '#ef4444' : '#3b82f6',
-          cornerColor: newState ? '#ef4444' : '#3b82f6',
+          borderColor: newState ? "#ef4444" : "#3b82f6",
+          cornerColor: newState ? "#ef4444" : "#3b82f6",
         });
 
         target.canvas.requestRenderAll();
@@ -511,38 +573,38 @@ export function UVTextureEditor() {
         tl: new Control({
           x: -0.5,
           y: -0.5,
-          cursorStyle: 'grab',
+          cursorStyle: "grab",
           actionHandler: controlsUtils.rotationWithSnapping,
-          actionName: 'rotate',
-          render: renderIconControl('rotate', '#3b82f6'),
+          actionName: "rotate",
+          render: renderIconControl("rotate", "#3b82f6"),
           sizeX: scaledCornerSize,
           sizeY: scaledCornerSize,
         }),
         tr: new Control({
           x: 0.5,
           y: -0.5,
-          cursorStyle: 'pointer',
+          cursorStyle: "pointer",
           mouseUpHandler: pinHandler, // Use pin handler
-          render: renderIconControl('pin', '#6b7280'),
+          render: renderIconControl("pin", "#6b7280"),
           sizeX: scaledCornerSize,
           sizeY: scaledCornerSize,
         }),
         bl: new Control({
           x: -0.5,
           y: 0.5,
-          cursorStyle: 'pointer',
+          cursorStyle: "pointer",
           mouseUpHandler: deleteHandler,
-          render: renderIconControl('trash', '#ef4444'),
+          render: renderIconControl("trash", "#ef4444"),
           sizeX: scaledCornerSize,
           sizeY: scaledCornerSize,
         }),
         br: new Control({
           x: 0.5,
           y: 0.5,
-          cursorStyle: 'nwse-resize',
+          cursorStyle: "nwse-resize",
           actionHandler: controlsUtils.scalingEqually,
-          actionName: 'scale',
-          render: renderIconControl('resize', '#3b82f6'),
+          actionName: "scale",
+          render: renderIconControl("resize", "#3b82f6"),
           sizeX: scaledCornerSize,
           sizeY: scaledCornerSize,
         }),
@@ -552,11 +614,14 @@ export function UVTextureEditor() {
       const controlSettings = {
         controls: customControls,
         cornerSize: scaledCornerSize,
-        cornerColor: '#3b82f6',
-        cornerStrokeColor: '#ffffff',
+        cornerColor: "#3b82f6",
+        cornerStrokeColor: "#ffffff",
         transparentCorners: false,
-        borderColor: '#3b82f6',
-        borderDashArray: [Math.round(8 * scaleFactor), Math.round(6 * scaleFactor)],
+        borderColor: "#3b82f6",
+        borderDashArray: [
+          Math.round(8 * scaleFactor),
+          Math.round(6 * scaleFactor),
+        ],
         borderScaleFactor: Math.max(2, scaleFactor),
         padding: Math.round(15 * scaleFactor),
       };
@@ -569,7 +634,10 @@ export function UVTextureEditor() {
         if (fabric.FabricObject && fabric.FabricObject.prototype) {
           fabric.FabricObject.prototype.controls = customControls;
         }
-        if (fabric.InteractiveFabricObject && fabric.InteractiveFabricObject.prototype) {
+        if (
+          fabric.InteractiveFabricObject &&
+          fabric.InteractiveFabricObject.prototype
+        ) {
           fabric.InteractiveFabricObject.prototype.controls = customControls;
         }
       } catch (e) {
@@ -583,7 +651,7 @@ export function UVTextureEditor() {
 
         const scale = Math.min(
           canvas.width! / img.width!,
-          canvas.height! / img.height!
+          canvas.height! / img.height!,
         );
 
         img.set({
@@ -625,7 +693,11 @@ export function UVTextureEditor() {
 
       // Apply custom 4-corner controls to any newly added object
       canvas.on("object:added", (e: any) => {
-        if (e.target && e.target.selectable !== false && customControlsRef.current) {
+        if (
+          e.target &&
+          e.target.selectable !== false &&
+          customControlsRef.current
+        ) {
           e.target.controls = customControlsRef.current.controls;
           e.target.set({
             cornerSize: customControlsRef.current.cornerSize,
@@ -669,7 +741,8 @@ export function UVTextureEditor() {
         clearTimeout(updateTimerRef.current);
       }
       if (canvasContainerRef.current) {
-        const canvasEl = canvasContainerRef.current.querySelector('#fabric-canvas');
+        const canvasEl =
+          canvasContainerRef.current.querySelector("#fabric-canvas");
         if (canvasEl) {
           canvasEl.remove();
         }
@@ -684,8 +757,14 @@ export function UVTextureEditor() {
 
   // Listen for AI generated images
   useEffect(() => {
-    const handleGeneratedImage = async (data: { url: string; timestamp: number }) => {
-      console.log("🎨 UV Editor: Received generated-image-available event", data);
+    const handleGeneratedImage = async (data: {
+      url: string;
+      timestamp: number;
+    }) => {
+      console.log(
+        "🎨 UV Editor: Received generated-image-available event",
+        data,
+      );
 
       // Check if image is fresh (within last 30 mins)
       const THIRTY_MINS = 30 * 60 * 1000;
@@ -703,7 +782,10 @@ export function UVTextureEditor() {
       await applyAIImageToCanvas(data);
     };
 
-    const applyAIImageToCanvas = async (data: { url: string; timestamp: number }) => {
+    const applyAIImageToCanvas = async (data: {
+      url: string;
+      timestamp: number;
+    }) => {
       console.log("🤖 Applying AI generated image to canvas:", data.url);
 
       const { FabricImage } = await import("fabric");
@@ -717,103 +799,113 @@ export function UVTextureEditor() {
         const blob = await resp.blob();
         blobUrl = URL.createObjectURL(blob);
       } catch (fetchErr) {
-        console.warn("Could not fetch AI image as blob, will try original URL:", fetchErr);
+        console.warn(
+          "Could not fetch AI image as blob, will try original URL:",
+          fetchErr,
+        );
       }
 
-      FabricImage.fromURL(blobUrl || data.url).then((img) => {
-        console.log("✅ AI Image loaded, adding to canvas");
-        // Hide UV wireframe temporarily so the generated image is clearly visible
-        try {
-          originalBgRef.current = canvas.backgroundImage;
-          canvas.backgroundImage = null;
-          canvas.backgroundColor = '#ffffff';
-        } catch (e) {
-          console.warn('Could not hide UV background', e);
-        }
-        // Calculate scale to make image larger but fit within canvas
-        const maxSize = canvas.width! * 0.5; // 50% of canvas width
-        const scale = Math.min(
-          maxSize / img.width!,
-          maxSize / img.height!
-        );
-
-        img.set({
-          left: canvas.width! / 2 - (img.width! * scale) / 2,
-          top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
-          scaleX: scale,
-          scaleY: scale,
-        });
-
-        // Apply custom 4-corner controls to the new image object
-        if (customControlsRef.current) {
-          img.controls = customControlsRef.current.controls;
-          img.set({
-            cornerSize: customControlsRef.current.cornerSize,
-            borderColor: customControlsRef.current.borderColor,
-            borderDashArray: customControlsRef.current.borderDashArray,
-            borderScaleFactor: customControlsRef.current.borderScaleFactor,
-            padding: customControlsRef.current.padding,
-          });
-        }
-
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
-
-        // If a material section is selected, export the canvas (flipped)
-        // and apply directly to that section instead of setting a global texture.
-        if (selectedSectionId) {
+      FabricImage.fromURL(blobUrl || data.url)
+        .then((img) => {
+          console.log("✅ AI Image loaded, adding to canvas");
+          // Hide UV wireframe temporarily so the generated image is clearly visible
           try {
-            const tempCanvas = document.createElement('canvas');
-            const exportSize = Math.min(canvas.width!, 2048);
-            tempCanvas.width = exportSize;
-            tempCanvas.height = exportSize;
-            const tempCtx = tempCanvas.getContext('2d');
-            if (tempCtx) {
-              // Draw the Fabric canvas element directly without transformation
-              tempCtx.drawImage(canvas.getElement(), 0, 0, tempCanvas.width, tempCanvas.height);
-              const dataUrl = tempCanvas.toDataURL('image/png', 1);
-              // Apply directly to selected material section
-              updateSection(selectedSectionId, { customTexture: dataUrl });
-              toast.success('AI image applied to selected section');
+            originalBgRef.current = canvas.backgroundImage;
+            canvas.backgroundImage = null;
+            canvas.backgroundColor = "#ffffff";
+          } catch (e) {
+            console.warn("Could not hide UV background", e);
+          }
+          // Calculate scale to make image larger but fit within canvas
+          const maxSize = canvas.width! * 0.5; // 50% of canvas width
+          const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+
+          img.set({
+            left: canvas.width! / 2 - (img.width! * scale) / 2,
+            top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
+            scaleX: scale,
+            scaleY: scale,
+          });
+
+          // Apply custom 4-corner controls to the new image object
+          if (customControlsRef.current) {
+            img.controls = customControlsRef.current.controls;
+            img.set({
+              cornerSize: customControlsRef.current.cornerSize,
+              borderColor: customControlsRef.current.borderColor,
+              borderDashArray: customControlsRef.current.borderDashArray,
+              borderScaleFactor: customControlsRef.current.borderScaleFactor,
+              padding: customControlsRef.current.padding,
+            });
+          }
+
+          canvas.add(img);
+          canvas.setActiveObject(img);
+          canvas.renderAll();
+
+          // If a material section is selected, export the canvas (flipped)
+          // and apply directly to that section instead of setting a global texture.
+          if (selectedSectionId) {
+            try {
+              const tempCanvas = document.createElement("canvas");
+              const exportSize = Math.min(canvas.width!, 2048);
+              tempCanvas.width = exportSize;
+              tempCanvas.height = exportSize;
+              const tempCtx = tempCanvas.getContext("2d");
+              if (tempCtx) {
+                // Draw the Fabric canvas element directly without transformation
+                tempCtx.drawImage(
+                  canvas.getElement(),
+                  0,
+                  0,
+                  tempCanvas.width,
+                  tempCanvas.height,
+                );
+                const dataUrl = tempCanvas.toDataURL("image/png", 1);
+                // Apply directly to selected material section
+                updateSection(selectedSectionId, { customTexture: dataUrl });
+                toast.success("AI image applied to selected section");
+              }
+            } catch (e) {
+              console.error("Failed to export/apply AI image to section", e);
+              toast.error("Failed to apply AI image to section");
+            }
+          } else {
+            // No section selected: keep image on UV canvas for manual placement
+            updateTexture();
+            toast.success("AI Image added to UV canvas!");
+          }
+
+          // Restore UV background if we hid it earlier
+          try {
+            if (originalBgRef.current && canvas) {
+              canvas.backgroundImage = originalBgRef.current;
+              canvas.renderAll();
+              originalBgRef.current = null;
             }
           } catch (e) {
-            console.error('Failed to export/apply AI image to section', e);
-            toast.error('Failed to apply AI image to section');
+            console.warn("Could not restore UV background after AI apply", e);
           }
-        } else {
-          // No section selected: keep image on UV canvas for manual placement
-          updateTexture();
-          toast.success("AI Image added to UV canvas!");
-        }
 
-        // Restore UV background if we hid it earlier
-        try {
-          if (originalBgRef.current && canvas) {
-            canvas.backgroundImage = originalBgRef.current;
-            canvas.renderAll();
-            originalBgRef.current = null;
+          // Clean up blob URL
+          try {
+            if (blobUrl) URL.revokeObjectURL(blobUrl);
+          } catch (e) {
+            /* ignore */
           }
-        } catch (e) {
-          console.warn('Could not restore UV background after AI apply', e);
-        }
-
-        // Clean up blob URL
-        try {
-          if (blobUrl) URL.revokeObjectURL(blobUrl);
-        } catch (e) {
-          /* ignore */
-        }
-      }).catch(err => {
-        console.error("❌ Failed to load AI image:", err);
-        toast.error("Failed to add AI image to canvas");
-        try { if (blobUrl) URL.revokeObjectURL(blobUrl); } catch (e) { }
-      });
+        })
+        .catch((err) => {
+          console.error("❌ Failed to load AI image:", err);
+          toast.error("Failed to add AI image to canvas");
+          try {
+            if (blobUrl) URL.revokeObjectURL(blobUrl);
+          } catch (e) {}
+        });
     };
 
     // Check localStorage on mount
     try {
-      const stored = localStorage.getItem('latest_generated_ai_image');
+      const stored = localStorage.getItem("latest_generated_ai_image");
       if (stored) {
         const data = JSON.parse(stored);
         handleGeneratedImage(data);
@@ -830,10 +922,10 @@ export function UVTextureEditor() {
       }
     };
 
-    window.addEventListener('generated-image-available', eventHandler);
+    window.addEventListener("generated-image-available", eventHandler);
 
     return () => {
-      window.removeEventListener('generated-image-available', eventHandler);
+      window.removeEventListener("generated-image-available", eventHandler);
     };
   }, [updateTexture]);
 
@@ -854,44 +946,50 @@ export function UVTextureEditor() {
           const blob = await resp.blob();
           pendingBlobUrl = URL.createObjectURL(blob);
         } catch (err) {
-          console.warn('Could not fetch pending AI image as blob', err);
+          console.warn("Could not fetch pending AI image as blob", err);
         }
 
-        FabricImage.fromURL(pendingBlobUrl || data.url).then((img) => {
-          const maxSize = canvas.width! * 0.5;
-          const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+        FabricImage.fromURL(pendingBlobUrl || data.url)
+          .then((img) => {
+            const maxSize = canvas.width! * 0.5;
+            const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
 
-          img.set({
-            left: canvas.width! / 2 - (img.width! * scale) / 2,
-            top: canvas.height! / 2 - (img.height! * scale) / 2,
-            scaleX: scale,
-            scaleY: scale,
-          });
-
-          if (customControlsRef.current) {
-            img.controls = customControlsRef.current.controls;
             img.set({
-              cornerSize: customControlsRef.current.cornerSize,
-              borderColor: customControlsRef.current.borderColor,
-              borderDashArray: customControlsRef.current.borderDashArray,
-              borderScaleFactor: customControlsRef.current.borderScaleFactor,
-              padding: customControlsRef.current.padding,
+              left: canvas.width! / 2 - (img.width! * scale) / 2,
+              top: canvas.height! / 2 - (img.height! * scale) / 2,
+              scaleX: scale,
+              scaleY: scale,
             });
-          }
 
-          canvas.add(img);
-          canvas.setActiveObject(img);
-          canvas.renderAll();
-          updateTexture();
+            if (customControlsRef.current) {
+              img.controls = customControlsRef.current.controls;
+              img.set({
+                cornerSize: customControlsRef.current.cornerSize,
+                borderColor: customControlsRef.current.borderColor,
+                borderDashArray: customControlsRef.current.borderDashArray,
+                borderScaleFactor: customControlsRef.current.borderScaleFactor,
+                padding: customControlsRef.current.padding,
+              });
+            }
 
-          toast.success("AI Image added to UV canvas!");
-          setPendingAIImage(null);
-          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) { }
-        }).catch(err => {
-          console.error("Failed to load pending AI image:", err);
-          setPendingAIImage(null);
-          try { if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl); } catch (e) { }
-        });
+            canvas.add(img);
+            canvas.setActiveObject(img);
+            canvas.renderAll();
+            updateTexture();
+
+            toast.success("AI Image added to UV canvas!");
+            setPendingAIImage(null);
+            try {
+              if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl);
+            } catch (e) {}
+          })
+          .catch((err) => {
+            console.error("Failed to load pending AI image:", err);
+            setPendingAIImage(null);
+            try {
+              if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl);
+            } catch (e) {}
+          });
       };
       applyPendingImage();
     }
@@ -934,7 +1032,7 @@ export function UVTextureEditor() {
     // Add shadow if enabled
     if (textShadow) {
       textOptions.shadow = {
-        color: 'rgba(0,0,0,0.5)',
+        color: "rgba(0,0,0,0.5)",
         blur: 5,
         offsetX: 3,
         offsetY: 3,
@@ -967,20 +1065,42 @@ export function UVTextureEditor() {
     canvas.renderAll();
     setNewText("");
     updateTexture();
-  }, [newText, fontSize, textColor, fontFamily, fontWeight, isItalic, isUnderline, isStrikethrough, textAlign, strokeColor, strokeWidth, letterSpacing, lineHeight, textShadow, backgroundColor, textRotation, textCurvature, updateTexture]);
+  }, [
+    newText,
+    fontSize,
+    textColor,
+    fontFamily,
+    fontWeight,
+    isItalic,
+    isUnderline,
+    isStrikethrough,
+    textAlign,
+    strokeColor,
+    strokeWidth,
+    letterSpacing,
+    lineHeight,
+    textShadow,
+    backgroundColor,
+    textRotation,
+    textCurvature,
+    updateTexture,
+  ]);
 
   // Function to update selected text properties
-  const updateSelectedText = useCallback((property: string, value: any) => {
-    if (!fabricCanvasRef.current) return;
-    const canvas = fabricCanvasRef.current;
-    const activeObject = canvas.getActiveObject();
+  const updateSelectedText = useCallback(
+    (property: string, value: any) => {
+      if (!fabricCanvasRef.current) return;
+      const canvas = fabricCanvasRef.current;
+      const activeObject = canvas.getActiveObject();
 
-    if (activeObject && activeObject.type === 'i-text') {
-      activeObject.set(property, value);
-      canvas.renderAll();
-      updateTexture();
-    }
-  }, [updateTexture]);
+      if (activeObject && activeObject.type === "i-text") {
+        activeObject.set(property, value);
+        canvas.renderAll();
+        updateTexture();
+      }
+    },
+    [updateTexture],
+  );
 
   // Apply font changes to selected text in real-time
   useEffect(() => {
@@ -988,7 +1108,7 @@ export function UVTextureEditor() {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
     const activeObject = canvas.getActiveObject();
-    if (activeObject && activeObject.type === 'i-text') {
+    if (activeObject && activeObject.type === "i-text") {
       activeObject.set({
         fontFamily: fontFamily,
         fontSize: fontSize,
@@ -1006,30 +1126,30 @@ export function UVTextureEditor() {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
     const activeObject = canvas.getActiveObject();
-    if (activeObject && activeObject.type === 'i-text') {
+    if (activeObject && activeObject.type === "i-text") {
       const updates: any = {
         fill: textColor,
         underline: isUnderline,
         linethrough: isStrikethrough,
         textAlign: textAlign,
       };
-      
+
       if (strokeWidth > 0) {
         updates.stroke = strokeColor;
         updates.strokeWidth = strokeWidth;
       } else {
         updates.stroke = null;
       }
-      
+
       if (backgroundColor) {
         updates.backgroundColor = backgroundColor;
       } else {
         updates.backgroundColor = null;
       }
-      
+
       if (textShadow) {
         updates.shadow = {
-          color: 'rgba(0,0,0,0.5)',
+          color: "rgba(0,0,0,0.5)",
           blur: 5,
           offsetX: 3,
           offsetY: 3,
@@ -1037,12 +1157,23 @@ export function UVTextureEditor() {
       } else {
         updates.shadow = null;
       }
-      
+
       activeObject.set(updates);
       canvas.renderAll();
       updateTexture();
     }
-  }, [hasSelection, textColor, isUnderline, isStrikethrough, textAlign, strokeColor, strokeWidth, backgroundColor, textShadow, updateTexture]);
+  }, [
+    hasSelection,
+    textColor,
+    isUnderline,
+    isStrikethrough,
+    textAlign,
+    strokeColor,
+    strokeWidth,
+    backgroundColor,
+    textShadow,
+    updateTexture,
+  ]);
 
   // Apply spacing and rotation changes to selected text
   useEffect(() => {
@@ -1050,7 +1181,7 @@ export function UVTextureEditor() {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
     const activeObject = canvas.getActiveObject();
-    if (activeObject && activeObject.type === 'i-text') {
+    if (activeObject && activeObject.type === "i-text") {
       const skewAmount = Math.min(Math.max(textCurvature / 20, -0.5), 0.5);
       activeObject.set({
         charSpacing: letterSpacing * 10,
@@ -1061,7 +1192,14 @@ export function UVTextureEditor() {
       canvas.renderAll();
       updateTexture();
     }
-  }, [hasSelection, letterSpacing, lineHeight, textRotation, textCurvature, updateTexture]);
+  }, [
+    hasSelection,
+    letterSpacing,
+    lineHeight,
+    textRotation,
+    textCurvature,
+    updateTexture,
+  ]);
 
   // Reset text styling to defaults
   const resetTextStyling = useCallback(() => {
@@ -1080,53 +1218,53 @@ export function UVTextureEditor() {
     setTextRotation(0);
   }, []);
 
-  const handleAddImage = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !fabricCanvasRef.current) return;
+  const handleAddImage = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !fabricCanvasRef.current) return;
 
-    const { FabricImage } = await import("fabric");
-    const canvas = fabricCanvasRef.current;
+      const { FabricImage } = await import("fabric");
+      const canvas = fabricCanvasRef.current;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      FabricImage.fromURL(event.target?.result as string).then((img) => {
-        // Calculate scale to make image larger but fit within canvas
-        const maxSize = canvas.width! * 0.4; // 40% of canvas width
-        const scale = Math.min(
-          maxSize / img.width!,
-          maxSize / img.height!
-        );
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        FabricImage.fromURL(event.target?.result as string).then((img) => {
+          // Calculate scale to make image larger but fit within canvas
+          const maxSize = canvas.width! * 0.4; // 40% of canvas width
+          const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
 
-        img.set({
-          left: canvas.width! / 2 - (img.width! * scale) / 2,
-          top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
-          scaleX: scale,
-          scaleY: scale,
-        });
-
-        // Apply custom 4-corner controls to the new image object
-        if (customControlsRef.current) {
-          img.controls = customControlsRef.current.controls;
           img.set({
-            cornerSize: customControlsRef.current.cornerSize,
-            borderColor: customControlsRef.current.borderColor,
-            borderDashArray: customControlsRef.current.borderDashArray,
-            borderScaleFactor: customControlsRef.current.borderScaleFactor,
-            padding: customControlsRef.current.padding,
+            left: canvas.width! / 2 - (img.width! * scale) / 2,
+            top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
+            scaleX: scale,
+            scaleY: scale,
           });
-        }
 
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
-        updateTexture();
-      });
-    };
-    reader.readAsDataURL(file);
+          // Apply custom 4-corner controls to the new image object
+          if (customControlsRef.current) {
+            img.controls = customControlsRef.current.controls;
+            img.set({
+              cornerSize: customControlsRef.current.cornerSize,
+              borderColor: customControlsRef.current.borderColor,
+              borderDashArray: customControlsRef.current.borderDashArray,
+              borderScaleFactor: customControlsRef.current.borderScaleFactor,
+              padding: customControlsRef.current.padding,
+            });
+          }
 
-    // Reset input
-    e.target.value = "";
-  }, [updateTexture]);
+          canvas.add(img);
+          canvas.setActiveObject(img);
+          canvas.renderAll();
+          updateTexture();
+        });
+      };
+      reader.readAsDataURL(file);
+
+      // Reset input
+      e.target.value = "";
+    },
+    [updateTexture],
+  );
 
   const handleDelete = useCallback(() => {
     if (!fabricCanvasRef.current) return;
@@ -1172,15 +1310,15 @@ export function UVTextureEditor() {
     canvas.renderAll();
 
     // Export flipped version for correct 3D texture orientation
-    const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement("canvas");
     tempCanvas.width = canvas.width!;
     tempCanvas.height = canvas.height!;
-    const tempCtx = tempCanvas.getContext('2d')!;
+    const tempCtx = tempCanvas.getContext("2d")!;
 
     // Draw the Fabric canvas content directly without transformation
     tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width!, canvas.height!);
 
-    const dataUrl = tempCanvas.toDataURL('image/png', 1);
+    const dataUrl = tempCanvas.toDataURL("image/png", 1);
 
     // Restore UV wireframe for editing view
     canvas.backgroundImage = originalBg;
@@ -1212,7 +1350,7 @@ export function UVTextureEditor() {
         originalBgRef.current = null;
       }
     } catch (e) {
-      console.warn('Could not restore UV background on clear', e);
+      console.warn("Could not restore UV background on clear", e);
     }
   }, [updateTexture]);
 
@@ -1237,7 +1375,9 @@ export function UVTextureEditor() {
         <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            <span className="text-sm font-medium text-primary">Item Selected & Ready to Edit</span>
+            <span className="text-sm font-medium text-primary">
+              Item Selected & Ready to Edit
+            </span>
           </div>
           <Button
             variant="ghost"
@@ -1317,7 +1457,9 @@ export function UVTextureEditor() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    {textSection === 'custom' ? 'Text will appear where you place it on canvas' : 'Text will be positioned on the ' + textSection}
+                    {textSection === "custom"
+                      ? "Text will appear where you place it on canvas"
+                      : "Text will be positioned on the " + textSection}
                   </p>
                 </div>
 
@@ -1330,7 +1472,8 @@ export function UVTextureEditor() {
                         Edit Selected Text
                       </h3>
                       <p className="text-xs text-muted-foreground mb-3">
-                        Change properties below to update the selected text in real-time
+                        Change properties below to update the selected text in
+                        real-time
                       </p>
                     </div>
                   </>
@@ -1516,7 +1659,9 @@ export function UVTextureEditor() {
                         step={1}
                       />
                     </div>
-                    <span className="text-xs text-muted-foreground w-8">{strokeWidth}px</span>
+                    <span className="text-xs text-muted-foreground w-8">
+                      {strokeWidth}px
+                    </span>
                   </div>
                 </div>
 
@@ -1569,7 +1714,11 @@ export function UVTextureEditor() {
 
                 {/* Text Curvature */}
                 <div className="space-y-2">
-                  <Label>Curve Text: {textCurvature > 0 ? '↑' : textCurvature < 0 ? '↓' : '-'} {Math.abs(textCurvature)}</Label>
+                  <Label>
+                    Curve Text:{" "}
+                    {textCurvature > 0 ? "↑" : textCurvature < 0 ? "↓" : "-"}{" "}
+                    {Math.abs(textCurvature)}
+                  </Label>
                   <Slider
                     value={[textCurvature]}
                     onValueChange={(v) => setTextCurvature(v[0])}
@@ -1578,16 +1727,26 @@ export function UVTextureEditor() {
                     step={5}
                     className="flex-1"
                   />
-                  <p className="text-xs text-muted-foreground">Curve text up (positive) or down (negative)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Curve text up (positive) or down (negative)
+                  </p>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 pt-2">
-                  <Button onClick={handleAddText} className="flex-1" disabled={!isLoaded || !newText.trim()}>
+                  <Button
+                    onClick={handleAddText}
+                    className="flex-1"
+                    disabled={!isLoaded || !newText.trim()}
+                  >
                     <Type className="h-4 w-4 mr-2" />
                     Add Text
                   </Button>
-                  <Button variant="outline" onClick={resetTextStyling} size="icon">
+                  <Button
+                    variant="outline"
+                    onClick={resetTextStyling}
+                    size="icon"
+                  >
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
@@ -1596,7 +1755,8 @@ export function UVTextureEditor() {
                 {hasSelection && activeLayerId && (
                   <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <p className="text-xs text-blue-700 dark:text-blue-300">
-                      ✨ <strong>Real-time editing:</strong> All changes above are applied instantly to your selected text!
+                      ✨ <strong>Real-time editing:</strong> All changes above
+                      are applied instantly to your selected text!
                     </p>
                   </div>
                 )}
@@ -1604,7 +1764,9 @@ export function UVTextureEditor() {
                 {/* Preview */}
                 {newText && (
                   <div className="mt-3 p-3 border rounded-lg bg-muted/50">
-                    <Label className="text-xs text-muted-foreground mb-2 block">Preview</Label>
+                    <Label className="text-xs text-muted-foreground mb-2 block">
+                      Preview
+                    </Label>
                     <div
                       className="text-center p-2 rounded overflow-hidden"
                       style={{
@@ -1612,14 +1774,21 @@ export function UVTextureEditor() {
                         fontSize: Math.min(fontSize, 48),
                         fontWeight: fontWeight as any,
                         fontStyle: isItalic ? "italic" : "normal",
-                        textDecoration: `${isUnderline ? "underline" : ""} ${isStrikethrough ? "line-through" : ""}`.trim() || "none",
+                        textDecoration:
+                          `${isUnderline ? "underline" : ""} ${isStrikethrough ? "line-through" : ""}`.trim() ||
+                          "none",
                         color: textColor,
                         backgroundColor: backgroundColor || "transparent",
                         textAlign: textAlign,
                         letterSpacing: `${letterSpacing}px`,
                         lineHeight: lineHeight,
-                        textShadow: textShadow ? "2px 2px 4px rgba(0,0,0,0.5)" : "none",
-                        WebkitTextStroke: strokeWidth > 0 ? `${strokeWidth}px ${strokeColor}` : undefined,
+                        textShadow: textShadow
+                          ? "2px 2px 4px rgba(0,0,0,0.5)"
+                          : "none",
+                        WebkitTextStroke:
+                          strokeWidth > 0
+                            ? `${strokeWidth}px ${strokeColor}`
+                            : undefined,
                         transform: `rotate(${textRotation}deg) skewY(${Math.min(Math.max(textCurvature / 20, -0.5), 0.5)}rad)`,
                       }}
                     >
@@ -1654,8 +1823,6 @@ export function UVTextureEditor() {
           </Card>
         </TabsContent>
 
-
-
         {/* AI Gen Tab */}
         <TabsContent value="ai" className="mt-4">
           <Card className="p-4">
@@ -1673,19 +1840,11 @@ export function UVTextureEditor() {
         <Card className="p-4 space-y-2">
           <h3 className="font-semibold mb-3">Selected Object</h3>
           <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={handleDuplicate}
-              variant="outline"
-              size="sm"
-            >
+            <Button onClick={handleDuplicate} variant="outline" size="sm">
               <Copy className="h-4 w-4 mr-2" />
               Duplicate
             </Button>
-            <Button
-              onClick={handleDelete}
-              variant="destructive"
-              size="sm"
-            >
+            <Button onClick={handleDelete} variant="destructive" size="sm">
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </Button>
@@ -1696,11 +1855,21 @@ export function UVTextureEditor() {
       {/* Action Buttons */}
       <Card className="p-4 space-y-3">
         <div className="flex gap-2">
-          <Button onClick={handleDownload} variant="outline" className="flex-1" size="sm">
+          <Button
+            onClick={handleDownload}
+            variant="outline"
+            className="flex-1"
+            size="sm"
+          >
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
-          <Button onClick={handleClear} variant="outline" className="flex-1" size="sm">
+          <Button
+            onClick={handleClear}
+            variant="outline"
+            className="flex-1"
+            size="sm"
+          >
             <Trash2 className="h-4 w-4 mr-2" />
             Clear All
           </Button>
@@ -1736,7 +1905,8 @@ export function UVTextureEditor() {
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          🎨 Drag, resize, rotate objects • Double-click text to edit • Real-time 3D preview
+          🎨 Drag, resize, rotate objects • Double-click text to edit •
+          Real-time 3D preview
         </p>
       </Card>
     </div>

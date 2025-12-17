@@ -376,17 +376,18 @@ export function AIImageGenerator() {
                 {generatedImages.map((img) => (
                   <div
                     key={img.id}
-                    className={`relative group cursor-pointer border-2 rounded-md overflow-hidden transition-all ${selectedImage === img.id
-                      ? "border-primary ring-2 ring-primary"
-                      : "border-transparent"
-                      }`}
+                    className={`relative group cursor-pointer border-2 rounded-md overflow-hidden transition-all ${
+                      selectedImage === img.id
+                        ? "border-primary ring-2 ring-primary"
+                        : "border-transparent"
+                    }`}
                     onClick={() => setSelectedImage(img.id)}
                   >
                     <img
                       src={img.url}
                       alt={String(
                         (img.metadata as Record<string, unknown>).prompt ||
-                        "Generated image",
+                          "Generated image",
                       )}
                       className="w-full h-32 object-cover"
                     />
@@ -502,32 +503,32 @@ export function AIImageGenerator() {
                   (selectedImageData.metadata as Record<string, unknown>)
                     .prompt,
                 ) && (
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-muted-foreground mb-1">Prompt:</p>
-                      <p className="text-sm bg-muted/20 p-2 rounded">
-                        {String(
-                          (selectedImageData.metadata as Record<string, unknown>)
-                            .prompt,
-                        )}
-                      </p>
-                    </div>
-                  )}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-muted-foreground mb-1">Prompt:</p>
+                    <p className="text-sm bg-muted/20 p-2 rounded">
+                      {String(
+                        (selectedImageData.metadata as Record<string, unknown>)
+                          .prompt,
+                      )}
+                    </p>
+                  </div>
+                )}
                 {Boolean(
                   (selectedImageData.metadata as Record<string, unknown>)
                     .negative_prompt,
                 ) && (
-                    <div className="mt-2">
-                      <p className="text-muted-foreground text-sm mb-1">
-                        Negative Prompt:
-                      </p>
-                      <p className="text-xs bg-muted/20 p-2 rounded line-clamp-3">
-                        {String(
-                          (selectedImageData.metadata as Record<string, unknown>)
-                            .negative_prompt,
-                        )}
-                      </p>
-                    </div>
-                  )}
+                  <div className="mt-2">
+                    <p className="text-muted-foreground text-sm mb-1">
+                      Negative Prompt:
+                    </p>
+                    <p className="text-xs bg-muted/20 p-2 rounded line-clamp-3">
+                      {String(
+                        (selectedImageData.metadata as Record<string, unknown>)
+                          .negative_prompt,
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-center text-muted-foreground text-sm">

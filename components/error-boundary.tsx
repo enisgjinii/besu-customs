@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { errorLogger } from '@/lib/error-logger';
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { errorLogger } from "@/lib/error-logger";
 
 interface Props {
   children: ReactNode;
@@ -34,14 +34,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-    errorLogger.log('Error caught by error boundary', {
-      level: 'error',
-      category: 'ui',
+    console.error("Error caught by boundary:", error, errorInfo);
+    errorLogger.log("Error caught by error boundary", {
+      level: "error",
+      category: "ui",
       error,
       componentStack: errorInfo.componentStack || undefined,
       isClientVisible: true,
-      clientMessage: 'An error occurred. Please try again.',
+      clientMessage: "An error occurred. Please try again.",
     });
     this.setState({
       error,
@@ -85,16 +85,17 @@ export class ErrorBoundary extends Component<Props, State> {
                 <p className="text-sm font-mono text-red-600 dark:text-red-400 mb-2">
                   {this.state.error.toString()}
                 </p>
-                {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
-                  <details className="mt-4">
-                    <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
-                      Stack trace
-                    </summary>
-                    <pre className="mt-2 text-xs overflow-auto max-h-64 text-gray-700 dark:text-gray-300">
-                      {this.state.errorInfo.componentStack}
-                    </pre>
-                  </details>
-                )}
+                {process.env.NODE_ENV === "development" &&
+                  this.state.errorInfo && (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+                        Stack trace
+                      </summary>
+                      <pre className="mt-2 text-xs overflow-auto max-h-64 text-gray-700 dark:text-gray-300">
+                        {this.state.errorInfo.componentStack}
+                      </pre>
+                    </details>
+                  )}
               </div>
             )}
 
@@ -107,7 +108,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 Try Again
               </button>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => (window.location.href = "/")}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors"
               >
                 <Home className="w-4 h-4" />

@@ -14,11 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { LogOut, Settings, User, Menu } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,11 +49,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               {/* Mobile Menu Button */}
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden"
-                  >
+                  <Button variant="ghost" size="icon" className="md:hidden">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -66,7 +58,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 </SheetContent>
               </Sheet>
 
-              <h1 className="text-lg md:text-xl font-semibold">Admin Dashboard</h1>
+              <h1 className="text-lg md:text-xl font-semibold">
+                Admin Dashboard
+              </h1>
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">

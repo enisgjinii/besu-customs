@@ -42,20 +42,20 @@ export interface MaterialSection {
   originalName: string;
   // Use explicit categories but allow custom category strings
   category:
-  | "Jersey"
-  | "Panels"
-  | "Piping/Trim"
-  | "Other"
-  | "Trim Options DEMO"
-  | "Long Sleeve Shooting Shirt"
-  | "Basketball Shooting Shirt with Hoodie"
-  | "Basketball Shooting Shirt Short Sleeve"
-  | "Duffle Bag"
-  | "Backpack"
-  | "Jersey & Shorts"
-  | "Hoodie & Zipper"
-  | "Half Size Shorts"
-  | string;
+    | "Jersey"
+    | "Panels"
+    | "Piping/Trim"
+    | "Other"
+    | "Trim Options DEMO"
+    | "Long Sleeve Shooting Shirt"
+    | "Basketball Shooting Shirt with Hoodie"
+    | "Basketball Shooting Shirt Short Sleeve"
+    | "Duffle Bag"
+    | "Backpack"
+    | "Jersey & Shorts"
+    | "Hoodie & Zipper"
+    | "Half Size Shorts"
+    | string;
   color: string;
   roughness: number;
   metalness: number;
@@ -264,19 +264,22 @@ function generateAllProducts(): Product[] {
     {
       id: "basketball-shirt-long",
       title: "Basketball Shooting Shirt Long Sleeve",
-      modelUrl: "/models/basketball-shooting-shirt-long-sleeve-without-hoodie.glb",
+      modelUrl:
+        "/models/basketball-shooting-shirt-long-sleeve-without-hoodie.glb",
       category: "Jerseys",
     },
     {
       id: "basketball-shirt-hoodie",
       title: "Basketball Shooting Shirt with Hoodie",
-      modelUrl: "/models/basketball-shooting-shirt-short-sleeve-with-hoodie.glb",
+      modelUrl:
+        "/models/basketball-shooting-shirt-short-sleeve-with-hoodie.glb",
       category: "Jerseys",
     },
     {
       id: "basketball-shirt-short",
       title: "Basketball Shooting Shirt Short Sleeve",
-      modelUrl: "/models/basketball-shooting-shirt-short-sleeve-without-a-hoodie.glb",
+      modelUrl:
+        "/models/basketball-shooting-shirt-short-sleeve-without-a-hoodie.glb",
       category: "Jerseys",
     },
     {
@@ -458,8 +461,8 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         const product = get().products.find((p) => p.id === id) ?? null;
         if (product?.modelUrl) {
           // Clear sections and set model URL - sections will be loaded from API
-          set({ 
-            selectedProductId: id, 
+          set({
+            selectedProductId: id,
             currentModelUrl: product.modelUrl,
             sections: [],
             sectionsFromApi: false,
@@ -476,8 +479,15 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
                 const json = await resp.json();
                 if (json?.sections && json.sections.length > 0) {
                   // Populate sections from API - these have better names
-                  console.log("📋 Loaded sections from API:", json.sections.length);
-                  set({ sections: json.sections, sectionsFromApi: true, sectionsLoading: false });
+                  console.log(
+                    "📋 Loaded sections from API:",
+                    json.sections.length,
+                  );
+                  set({
+                    sections: json.sections,
+                    sectionsFromApi: true,
+                    sectionsLoading: false,
+                  });
                   return;
                 }
               }
@@ -507,11 +517,11 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           withTextures: sections.filter((s) => s.customTexture).length,
           sampleSection: sections[0]
             ? {
-              id: sections[0].id,
-              name: sections[0].name,
-              hasTexture: !!sections[0].customTexture,
-              textureLength: sections[0].customTexture?.length || 0,
-            }
+                id: sections[0].id,
+                name: sections[0].name,
+                hasTexture: !!sections[0].customTexture,
+                textureLength: sections[0].customTexture?.length || 0,
+              }
             : null,
         });
         return set({ sections, sectionsFromApi: fromApi ?? false });
@@ -599,7 +609,10 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           }
         }
 
-        set((state) => ({ textureLayers: [...state.textureLayers, layer], selectedTextureLayerId: layer.id }));
+        set((state) => ({
+          textureLayers: [...state.textureLayers, layer],
+          selectedTextureLayerId: layer.id,
+        }));
       },
       updateTextureLayer: (id: string, updates: Partial<TextureLayer>) =>
         set((state) => ({
@@ -610,7 +623,10 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       removeTextureLayer: (id: string) =>
         set((state) => ({
           textureLayers: state.textureLayers.filter((layer) => layer.id !== id),
-          selectedTextureLayerId: state.selectedTextureLayerId === id ? null : state.selectedTextureLayerId,
+          selectedTextureLayerId:
+            state.selectedTextureLayerId === id
+              ? null
+              : state.selectedTextureLayerId,
         })),
       duplicateTextureLayer: (id: string) =>
         set((state) => {
@@ -639,20 +655,25 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         }),
       reorderTextureLayers: (layers: TextureLayer[]) =>
         set({ textureLayers: layers }),
-      clearTextureLayers: () => set({ textureLayers: [], selectedTextureLayerId: null }),
-      setSelectedTextureLayerId: (id: string | null) => set({ selectedTextureLayerId: id }),
+      clearTextureLayers: () =>
+        set({ textureLayers: [], selectedTextureLayerId: null }),
+      setSelectedTextureLayerId: (id: string | null) =>
+        set({ selectedTextureLayerId: id }),
 
       // Scene controls
       showGrid: false,
       toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
       showBoundingBox: false,
-      toggleBoundingBox: () => set((state) => ({ showBoundingBox: !state.showBoundingBox })),
+      toggleBoundingBox: () =>
+        set((state) => ({ showBoundingBox: !state.showBoundingBox })),
       backgroundColor: "#f0f0f0",
       setBackgroundColor: (color: string) => set({ backgroundColor: color }),
       backgroundImage: null,
-      setBackgroundImage: (image: string | null) => set({ backgroundImage: image }),
+      setBackgroundImage: (image: string | null) =>
+        set({ backgroundImage: image }),
       backgroundVideo: null,
-      setBackgroundVideo: (video: string | null) => set({ backgroundVideo: video }),
+      setBackgroundVideo: (video: string | null) =>
+        set({ backgroundVideo: video }),
       isVideoPlaying: false,
       setIsVideoPlaying: (playing: boolean) => set({ isVideoPlaying: playing }),
       cameraControlsRef: null,
@@ -669,7 +690,8 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       fabricCanvas: null,
       setFabricCanvas: (canvas: any | null) => set({ fabricCanvas: canvas }),
       enable3DTextureInteraction: true,
-      setEnable3DTextureInteraction: (enabled: boolean) => set({ enable3DTextureInteraction: enabled }),
+      setEnable3DTextureInteraction: (enabled: boolean) =>
+        set({ enable3DTextureInteraction: enabled }),
 
       // Model loading
       modelLoading: false,
@@ -689,7 +711,8 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       mobilePanelOpen: false,
       mobilePanelHeight: 0,
       setMobilePanelOpen: (open: boolean) => set({ mobilePanelOpen: open }),
-      setMobilePanelHeight: (height: number) => set({ mobilePanelHeight: height }),
+      setMobilePanelHeight: (height: number) =>
+        set({ mobilePanelHeight: height }),
 
       // Recent colors
       recentColors: [],
@@ -707,9 +730,15 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       sectionColorPickerOpen: false,
       sectionColorPickerSectionId: null,
       openSectionColorPicker: (sectionId: string) =>
-        set({ sectionColorPickerOpen: true, sectionColorPickerSectionId: sectionId }),
+        set({
+          sectionColorPickerOpen: true,
+          sectionColorPickerSectionId: sectionId,
+        }),
       closeSectionColorPicker: () =>
-        set({ sectionColorPickerOpen: false, sectionColorPickerSectionId: null }),
+        set({
+          sectionColorPickerOpen: false,
+          sectionColorPickerSectionId: null,
+        }),
 
       // Presets
       presets: [],
@@ -756,40 +785,40 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         // Keep the current model but reset all customizations
         const currentModel = state.currentModelUrl;
         const currentProductId = state.selectedProductId;
-        
+
         // Reset sections to default colors
-        const resetSections = state.sections.map(s => ({
+        const resetSections = state.sections.map((s) => ({
           ...s,
-          color: '#ffffff',
+          color: "#ffffff",
           customTexture: undefined,
           gradient: undefined,
           trimDesign: undefined,
         }));
-        
+
         set({
           sections: resetSections,
           textureLayers: [],
           globalCustomTexture: null,
           linkedSections: new Set(),
           selectedSectionId: null,
-          backgroundColor: '#f0f0f0',
+          backgroundColor: "#f0f0f0",
           backgroundImage: null,
           backgroundVideo: null,
           recentColors: [],
-          deliveryNotes: '',
+          deliveryNotes: "",
         });
-        
-        console.log('🔄 Reset all customizations');
+
+        console.log("🔄 Reset all customizations");
       },
 
       // Delivery notes
-      deliveryNotes: '',
+      deliveryNotes: "",
       setDeliveryNotes: (notes: string) => set({ deliveryNotes: notes }),
 
       // ensure the store stays valid
     }),
     {
-      name: 'besu-configurator-storage',
+      name: "besu-configurator-storage",
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         // Only persist these specific fields
@@ -800,8 +829,8 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         currentModelUrl: state.currentModelUrl,
         deliveryNotes: state.deliveryNotes,
       }),
-    }
-  )
+    },
+  ),
 );
 
 export default useConfiguratorStore;

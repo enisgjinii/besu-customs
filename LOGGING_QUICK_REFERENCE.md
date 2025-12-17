@@ -3,47 +3,55 @@
 ## 🚀 Quick Start
 
 ```typescript
-import { useLogger } from '@/hooks/useLogger';
+import { useLogger } from "@/hooks/useLogger";
 
-const logger = useLogger({ category: 'ui', userId: user?.id });
+const logger = useLogger({ category: "ui", userId: user?.id });
 ```
 
 ## 📝 Common Patterns
 
 ### Log User Action
+
 ```typescript
-await logger.trackAction('button_clicked', { buttonId: 'submit' });
+await logger.trackAction("button_clicked", { buttonId: "submit" });
 ```
 
 ### Log API Call
+
 ```typescript
-await logger.trackApiCall('/api/data', 'POST', response.status);
+await logger.trackApiCall("/api/data", "POST", response.status);
 ```
 
 ### Log Error
+
 ```typescript
 try {
   // your code
 } catch (error) {
-  await logger.error('Operation failed', error as Error, { context: 'details' });
+  await logger.error("Operation failed", error as Error, {
+    context: "details",
+  });
 }
 ```
 
 ### Log Critical Error (Shows to Client)
+
 ```typescript
-await logger.critical('Payment failed', error as Error);
+await logger.critical("Payment failed", error as Error);
 ```
 
 ### Track Performance
+
 ```typescript
 const start = performance.now();
 // ... operation ...
-await logger.trackPerformance('operation_time', performance.now() - start);
+await logger.trackPerformance("operation_time", performance.now() - start);
 ```
 
 ## 🔍 What Gets Logged Automatically
 
 Every log includes:
+
 - ✅ IP Address
 - ✅ Country, Region, City
 - ✅ Browser, OS, Device
@@ -86,25 +94,25 @@ Every log includes:
 ## 🔧 Direct Logger Usage
 
 ```typescript
-import { errorLogger } from '@/lib/error-logger';
+import { errorLogger } from "@/lib/error-logger";
 
 // Quick methods
-await errorLogger.info('Message', { data });
-await errorLogger.warn('Warning', { data });
-await errorLogger.error('Error', error, { data });
-await errorLogger.critical('Critical', error, { data });
-await errorLogger.debug('Debug', { data });
+await errorLogger.info("Message", { data });
+await errorLogger.warn("Warning", { data });
+await errorLogger.error("Error", error, { data });
+await errorLogger.critical("Critical", error, { data });
+await errorLogger.debug("Debug", { data });
 
 // Full control
-await errorLogger.log('Custom message', {
-  level: 'error',
-  category: 'api',
+await errorLogger.log("Custom message", {
+  level: "error",
+  category: "api",
   error: error,
   statusCode: 500,
-  method: 'POST',
-  additionalData: { custom: 'data' },
+  method: "POST",
+  additionalData: { custom: "data" },
   isClientVisible: true,
-  clientMessage: 'User-friendly error message',
+  clientMessage: "User-friendly error message",
 });
 ```
 

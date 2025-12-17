@@ -3,11 +3,13 @@
 ## Getting Started
 
 ### 1. Load a 3D Model
+
 - Select a model from the sidebar
 - Wait for the model to load in the 3D viewport
 - The UV map will be automatically extracted
 
 ### 2. Open Texture Editor
+
 - Click the **"Texture"** tab in the sidebar
 - You'll see the UV map wireframe loaded as the canvas background
 - A loading spinner shows while the editor initializes
@@ -15,6 +17,7 @@
 ## Adding Content
 
 ### Add Text
+
 1. Type your text in the input field
 2. Adjust font size with the slider (12-200px)
 3. Pick a color using the color picker
@@ -22,6 +25,7 @@
 5. Text appears on canvas and is automatically selected
 
 ### Add Images
+
 1. Click **"Choose File"** under "Add Image"
 2. Select an image from your computer
 3. Image appears on canvas at 50% scale
@@ -30,23 +34,28 @@
 ## Manipulating Objects
 
 ### Select Objects
+
 - **Single click** on any text or image to select it
 - **Ctrl/Cmd + click** to multi-select
 - Click empty space to deselect all
 
 ### Move Objects
+
 - **Click and drag** to reposition
 - **Arrow keys** to nudge 1px at a time
 
 ### Resize Objects
+
 - Drag **corner handles** to resize
 - Hold **Shift** while dragging to maintain aspect ratio
 
 ### Rotate Objects
+
 - Drag the **rotation handle** (circular icon at top)
 - Objects rotate around their center point
 
 ### Edit Text
+
 - **Double-click** text to edit inline
 - Type new content
 - Click outside or press **Esc** to finish editing
@@ -54,6 +63,7 @@
 ## Controls Panel
 
 ### Selected Object Controls
+
 When you select an object, these buttons appear:
 
 - **Duplicate**: Creates a copy offset by 20px
@@ -67,6 +77,7 @@ When you select an object, these buttons appear:
 ## Real-Time 3D Preview
 
 ### How It Works
+
 - Every change to the canvas automatically updates the 3D model
 - Changes include:
   - Adding objects
@@ -77,6 +88,7 @@ When you select an object, these buttons appear:
   - Editing text content
 
 ### Performance
+
 - Updates are **debounced by 300ms** for smooth performance
 - You can drag objects continuously without lag
 - The texture applies to all materials on the model
@@ -84,21 +96,25 @@ When you select an object, these buttons appear:
 ## Tips & Tricks
 
 ### Precision Placement
+
 - Use **arrow keys** for precise 1px movements
 - Hold **Shift + arrow keys** for 10px jumps
 - Zoom in/out on 3D model to see details
 
 ### Text Styling
+
 - Choose contrasting colors for visibility
 - Larger fonts (80-120px) work better for readability
 - Position text on flat UV areas for best results
 
 ### Image Quality
+
 - Upload high-resolution images for best quality
 - Images scale down but won't scale up beyond original size
 - PNG images with transparency work great
 
 ### Multi-Object Selection
+
 - **Ctrl/Cmd + click** to add to selection
 - Drag a selection box around multiple objects
 - Transform multiple objects at once
@@ -155,38 +171,46 @@ Built-in Fabric.js shortcuts:
 ## Troubleshooting
 
 ### Canvas Not Loading
+
 - **Issue**: Spinner shows forever
 - **Solution**: Reload the page, ensure model is loaded first
 
 ### Text Too Small
+
 - **Issue**: Can't see text on 3D model
 - **Solution**: Increase font size to 80px or larger
 
 ### Image Quality Poor
+
 - **Issue**: Uploaded image looks pixelated
 - **Solution**: Upload higher resolution source image
 
 ### Objects Not Updating
+
 - **Issue**: Changes don't appear on 3D model
 - **Solution**: Check console for errors, refresh page
 
 ### Can't Select Object
+
 - **Issue**: Clicking doesn't select
 - **Solution**: Objects may be overlapping, move top object first
 
 ## Advanced Features
 
 ### Layer Order
+
 - Objects added later appear on top
 - Click "Bring to Front" (right-click menu coming soon)
 - For now, recreate objects in desired order
 
 ### Background UV Map
+
 - UV wireframe is locked (cannot be moved/deleted)
 - Acts as a guide for object placement
 - Shows exactly where textures will appear on 3D model
 
 ### Texture Resolution
+
 - Canvas is 800x800px for performance
 - Exports at full resolution (2048x2048px)
 - Maintains quality for production
@@ -194,6 +218,7 @@ Built-in Fabric.js shortcuts:
 ## Best Practices
 
 ### Design Workflow
+
 1. Plan layout on paper first
 2. Add largest elements first (backgrounds)
 3. Add medium elements (text, logos)
@@ -201,12 +226,14 @@ Built-in Fabric.js shortcuts:
 5. Review on 3D model frequently
 
 ### Performance
+
 - Avoid adding hundreds of objects
 - Group related elements when possible
 - Delete unused objects
 - Save/download frequently
 
 ### Collaboration
+
 - Download texture at each stage
 - Share PNG files with team
 - Version control with numbered saves (v1, v2, etc.)

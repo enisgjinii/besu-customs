@@ -3,6 +3,7 @@
 ## Problem
 
 Models with spaces in filenames fail to load in development mode:
+
 ```
 Unable to load from /models/Track%20and%20field%20top%20tank%20top.glb
 ```
@@ -25,11 +26,13 @@ npm run fix-filenames
 ```
 
 This will:
+
 1. Rename all `.glb` files (spaces → hyphens)
 2. Update `models.json` automatically
 3. Create a backup of `models.json`
 
 **Example:**
+
 - `Track and field top tank top.glb` → `track-and-field-top-tank-top.glb`
 - `Basketball Jersey and Shorts.glb` → `basketball-jersey-and-shorts.glb`
 
@@ -56,6 +59,7 @@ mv "Track and field top tank top.glb" "track-and-field-top-tank-top.glb"
 ```
 
 Then update the URL in `public/models.json`:
+
 ```json
 {
   "name": "Track and Field Top Tank Top",
@@ -68,6 +72,7 @@ Then update the URL in `public/models.json`:
 ### Service Worker (Already Fixed ✅)
 
 Updated `public/sw.js` to:
+
 - Only cache GET requests (not HEAD/POST)
 - Ignore cache errors gracefully
 - Handle opaque responses correctly
@@ -75,6 +80,7 @@ Updated `public/sw.js` to:
 ### URL Encoding (Already Fixed ✅)
 
 Updated `lib/model-loader-optimized.ts` to:
+
 - Detect if URL is already encoded
 - Avoid double-encoding
 - Handle spaces correctly
@@ -122,21 +128,24 @@ node scripts/rollback-renames.js  # (if needed)
 ✅ Better SEO  
 ✅ Easier debugging  
 ✅ Cross-platform compatible  
-✅ Cleaner URLs  
+✅ Cleaner URLs
 
 ## Summary
 
 **Quick Fix (1 command):**
+
 ```bash
 npm run fix-filenames
 ```
 
 **Or Test in Production:**
+
 ```bash
 npm run build && npm start
 ```
 
 **Result:**
+
 - ✅ All models load correctly
 - ✅ Service Worker works properly
 - ✅ Mobile optimizations active
@@ -145,6 +154,7 @@ npm run build && npm start
 ## Need Help?
 
 See detailed documentation:
+
 - `DEV_SERVER_NOTES.md` - Dev server issues
 - `FILENAME_BEST_PRACTICES.md` - Naming conventions
 - `MOBILE_OPTIMIZATION_GUIDE.md` - Full optimization guide

@@ -18,9 +18,11 @@ import {
 export function FloatingResetButton() {
   const [showDialog, setShowDialog] = useState(false);
   const resetAllCustomizations = useConfiguratorStore(
-    (state) => state.resetAllCustomizations
+    (state) => state.resetAllCustomizations,
   );
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
   const sections = useConfiguratorStore((state) => state.sections);
 
   // Only show if there's a model loaded and sections exist

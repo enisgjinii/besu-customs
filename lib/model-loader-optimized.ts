@@ -3,7 +3,7 @@
 /**
  * Progressive Model Loading Strategy for Mobile/3G
  * Using Three.js GLTFLoader
- * 
+ *
  * Features:
  * - Detects connection speed and device capabilities
  * - Loads low-res placeholder first, then upgrades
@@ -60,7 +60,7 @@ export function detectConnectionSpeed(): "slow" | "medium" | "fast" {
   // Fallback: check if mobile
   const isMobile =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
+      navigator.userAgent,
     );
   return isMobile ? "medium" : "fast";
 }
@@ -68,7 +68,7 @@ export function detectConnectionSpeed(): "slow" | "medium" | "fast" {
 // Get optimal model URL based on device and connection
 export function getOptimalModelUrl(
   baseUrl: string,
-  quality: "low" | "medium" | "high" | "auto" = "auto"
+  quality: "low" | "medium" | "high" | "auto" = "auto",
 ): string {
   if (quality === "auto") {
     const speed = detectConnectionSpeed();
@@ -162,7 +162,7 @@ export async function estimateModelSize(modelUrl: string): Promise<number> {
 // Get the best URL to load based on quality and availability
 export async function getBestModelUrl(
   modelUrl: string,
-  forceQuality: "low" | "medium" | "high" | "auto" = "auto"
+  forceQuality: "low" | "medium" | "high" | "auto" = "auto",
 ): Promise<{ url: string; quality: string }> {
   const speed = detectConnectionSpeed();
 
