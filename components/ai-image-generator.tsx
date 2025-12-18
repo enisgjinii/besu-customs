@@ -18,7 +18,6 @@ import {
   Sparkles,
   Download,
   Paintbrush,
-  Key,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -192,22 +191,13 @@ export function AIImageGenerator() {
         />
       </div>
 
-      {/* API Mode - System only */}
-      <div className="text-[10px] p-2 rounded-md bg-primary/10 border border-primary/20 text-primary">
-        <div className="flex items-center gap-1 mb-1">
-          <Sparkles className="w-3 h-3" />
-          <span className="font-medium">Using System API</span>
-        </div>
-      </div>
-
       {/* Usage Information */}
       {usage && (
         <div
-          className={`text-[10px] p-2 rounded-md ${
-            usage.remaining === 0
-              ? "text-destructive bg-destructive/10 border border-destructive/20"
-              : "text-muted-foreground bg-secondary/20"
-          }`}
+          className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
+            ? "text-destructive bg-destructive/10 border border-destructive/20"
+            : "text-muted-foreground bg-secondary/20"
+            }`}
         >
           <div className="flex items-center gap-1 mb-1">
             {usage.remaining === 0 ? (

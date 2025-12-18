@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   List,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -166,11 +167,10 @@ export function MaterialEditor() {
                       }}
                       onMouseEnter={() => setHighlightedSection(section.id)}
                       onMouseLeave={() => setHighlightedSection(null)}
-                      className={`inline-flex items-center gap-2 px-4 py-3 rounded-2xl border-2 transition-all whitespace-nowrap text-sm font-semibold touch-manipulation min-h-[52px] flex-shrink-0 ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105"
-                          : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50 active:scale-95 shadow-sm"
-                      } ${isLinked ? "ring-2 ring-blue-500/50" : ""}`}
+                      className={`inline-flex items-center gap-2 px-4 py-3 rounded-2xl border-2 transition-all whitespace-nowrap text-sm font-semibold touch-manipulation min-h-[52px] flex-shrink-0 ${isSelected
+                        ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105"
+                        : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50 active:scale-95 shadow-sm"
+                        } ${isLinked ? "ring-2 ring-blue-500/50" : ""}`}
                       style={{ touchAction: "manipulation" }}
                     >
                       <div
@@ -258,9 +258,8 @@ export function MaterialEditor() {
                       return (
                         <div
                           key={section.id}
-                          className={`group relative rounded-2xl transition-all duration-200 ${
-                            isLinked ? "ring-2 ring-blue-500/50" : ""
-                          }`}
+                          className={`group relative rounded-2xl transition-all duration-200 ${isLinked ? "ring-2 ring-blue-500/50" : ""
+                            }`}
                           onMouseEnter={() => setHighlightedSection(section.id)}
                           onMouseLeave={() => setHighlightedSection(null)}
                         >
@@ -269,11 +268,10 @@ export function MaterialEditor() {
                               setSelectedSection(section.id);
                               setHighlightedSection(section.id);
                             }}
-                            className={`w-full text-left px-5 py-5 md:px-4 md:py-4 text-base rounded-2xl transition-all duration-200 min-h-[72px] md:min-h-[48px] ${
-                              isSelected
-                                ? "bg-primary text-primary-foreground shadow-lg scale-[1.02] md:scale-100"
-                                : "bg-secondary/30 hover:bg-secondary/50 active:bg-secondary/70 active:scale-[0.98]"
-                            }`}
+                            className={`w-full text-left px-5 py-5 md:px-4 md:py-4 text-base rounded-2xl transition-all duration-200 min-h-[72px] md:min-h-[48px] ${isSelected
+                              ? "bg-primary text-primary-foreground shadow-lg scale-[1.02] md:scale-100"
+                              : "bg-secondary/30 hover:bg-secondary/50 active:bg-secondary/70 active:scale-[0.98]"
+                              }`}
                           >
                             <div className="flex items-center justify-start gap-5 md:gap-4">
                               <div
@@ -313,11 +311,10 @@ export function MaterialEditor() {
                             selectedSectionId !== section.id && (
                               <button
                                 onClick={() => toggleSectionLink(section.id)}
-                                className={`absolute right-4 md:right-3 top-1/2 -translate-y-1/2 p-3 md:p-2.5 rounded-xl transition-all min-w-[52px] min-h-[52px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center ${
-                                  isLinked
-                                    ? "bg-blue-500 text-white shadow-lg"
-                                    : "bg-background/90 text-muted-foreground hover:text-foreground hover:bg-background md:opacity-0 md:group-hover:opacity-100"
-                                }`}
+                                className={`absolute right-4 md:right-3 top-1/2 -translate-y-1/2 p-3 md:p-2.5 rounded-xl transition-all min-w-[52px] min-h-[52px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center ${isLinked
+                                  ? "bg-blue-500 text-white shadow-lg"
+                                  : "bg-background/90 text-muted-foreground hover:text-foreground hover:bg-background md:opacity-0 md:group-hover:opacity-100"
+                                  }`}
                                 title={
                                   isLinked
                                     ? "Click to unlink"
@@ -442,27 +439,80 @@ export function MaterialEditor() {
                     <label className="block text-xs font-medium mb-3">
                       Trim / Piping Design
                     </label>
-                    <select
-                      value={selectedSection.trimDesign || "none"}
-                      onChange={(e) =>
-                        updateSection(selectedSection.id, {
-                          trimDesign:
-                            e.target.value === "none"
-                              ? undefined
-                              : e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
-                    >
-                      <option value="none">No Trim</option>
-                      <option value="single-line">Single Line</option>
-                      <option value="double-line">Double Line</option>
-                      <option value="triple-line">Triple Line</option>
-                      <option value="dashed-line">Dashed Line</option>
-                      <option value="dotted-line">Dotted Line</option>
-                      <option value="zigzag">Zigzag Pattern</option>
-                      <option value="wave">Wave Pattern</option>
-                    </select>
+                    <div className="space-y-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-xs h-9"
+                        onClick={() => {
+                          // Generate a simple white stripe for tinting (or just a colored stripe)
+                          // For now, let's just make a solid color stripe based on current trim color
+                          const canvas = document.createElement("canvas");
+                          canvas.width = 512;
+                          canvas.height = 32; // Thin stripe
+                          const ctx = canvas.getContext("2d");
+                          if (ctx) {
+                            ctx.fillStyle = selectedSection.trimColor || "#000000";
+                            ctx.fillRect(0, 0, 512, 32);
+                            const dataUrl = canvas.toDataURL();
+
+                            useConfiguratorStore.getState().addTextureLayer({
+                              id: crypto.randomUUID(),
+                              name: `Trim Line`,
+                              type: "image",
+                              visible: true,
+                              locked: false,
+                              opacity: 1,
+                              blendMode: "normal",
+                              imageUrl: dataUrl,
+                              position: [0.5, 0.5, 0],
+                              scale: [1, 0.05, 1], // Full width, thin height default
+                              rotation: [0, 0, 0],
+                              order: useConfiguratorStore.getState().textureLayers.length,
+                            });
+                          }
+                        }}
+                      >
+                        <Plus className="w-3 h-3 mr-2" />
+                        Add Movable Trim Line
+                      </Button>
+                      <p className="text-[10px] text-muted-foreground">
+                        Adds a stripe layer you can drag and resize freely on the model.
+                      </p>
+
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-muted" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">
+                            Or use preset
+                          </span>
+                        </div>
+                      </div>
+
+                      <select
+                        value={selectedSection.trimDesign || "none"}
+                        onChange={(e) =>
+                          updateSection(selectedSection.id, {
+                            trimDesign:
+                              e.target.value === "none"
+                                ? undefined
+                                : e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
+                      >
+                        <option value="none">No Preset Trim</option>
+                        <option value="single-line">Single Line (Auto)</option>
+                        <option value="double-line">Double Line (Auto)</option>
+                        <option value="triple-line">Triple Line (Auto)</option>
+                        <option value="dashed-line">Dashed Line</option>
+                        <option value="dotted-line">Dotted Line</option>
+                        <option value="zigzag">Zigzag Pattern</option>
+                        <option value="wave">Wave Pattern</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Trim Color - only show if a trim design is selected */}
@@ -470,7 +520,7 @@ export function MaterialEditor() {
                     selectedSection.trimDesign !== "none" && (
                       <div className="mt-4">
                         <label className="block text-xs font-medium mb-3">
-                          Trim Color
+                          Preset Trim Color
                         </label>
                         <div className="flex items-center gap-3">
                           <input
@@ -517,32 +567,29 @@ export function MaterialEditor() {
                       updateSection(selectedSection.id, {
                         gradient: enabled
                           ? {
-                              enabled: true,
-                              type: "linear",
-                              colors: [selectedSection.color, "#ffffff"],
-                              angle: 90,
-                              stops: [0, 1],
-                            }
+                            enabled: true,
+                            type: "linear",
+                            colors: [selectedSection.color, "#ffffff"],
+                            angle: 90,
+                            stops: [0, 1],
+                          }
                           : undefined,
                       });
                     }}
                     disabled={!!selectedSection.customTexture}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                      selectedSection.gradient?.enabled
-                        ? "bg-primary"
-                        : "bg-input"
-                    } ${
-                      selectedSection.customTexture
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selectedSection.gradient?.enabled
+                      ? "bg-primary"
+                      : "bg-input"
+                      } ${selectedSection.customTexture
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                        selectedSection.gradient?.enabled
-                          ? "translate-x-4"
-                          : "translate-x-0.5"
-                      }`}
+                      className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${selectedSection.gradient?.enabled
+                        ? "translate-x-4"
+                        : "translate-x-0.5"
+                        }`}
                     />
                   </button>
                 </div>

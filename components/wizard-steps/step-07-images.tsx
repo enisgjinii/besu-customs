@@ -41,7 +41,7 @@ export function Step07Images() {
           blendMode: "normal",
           order: textureLayers.length,
           imageUrl: result,
-          position: [0.5, 0.35, 0], // Chest position
+          position: [0.5, 0.5, 0], // Center position
           rotation: [0, 0, 0],
           scale: [0.3, 0.3, 1],
         });

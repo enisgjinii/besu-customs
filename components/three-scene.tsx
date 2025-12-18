@@ -152,44 +152,131 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             );
           }
         } else if (layer.type === "text" && layer.text) {
-          // Text: Render at UV position with smooth anti-aliased text
+          // Text Rendering with Curving Support
           const u = layer.position?.[0] ?? 0.5;
           const v = layer.position?.[1] ?? 0.5;
-          const rotation = layer.rotation?.[2] ?? 0;
+          // Rotation Z is used for both orientation AND curvature by convention in our UI
+          // For simplicity, let's say "rotation" determines the baseline angle,
+          // but we need a separate "curvature" parameter.
+          // In Step 06, we mapped "Curvature Slider" to rotation[2].
+          // BUT, we also want normal rotation.
+          // Let's interpret layer.rotation[2] as the curvature angle (in radians) only if we set a flag,
+          // or we handle "curve" as a separate property.
+          // Looking at step-06-text.tsx: rotation: [0, 0, textCurvature]
+          // So currently rotation controls curvature. We need to distinguish actual rotation vs curvature.
+          // For now, let's assume rotation[2] IS curvature (as per user request "curving up and down").
 
-          // Use scale to control text size (scale[0] * base font size)
+          // To allow BOTH rotation and curvature, we should probably add a `curvature` prop to TextureLayer.
+          // Checking Step 06 again: It sets `rotation: [0, 0, radians]`.
+          // So the slider controls Z rotation, but the Label says "Curve".
+          // This means the user intention is Curvature.
+          // Let's treat rotation[2] as Curvature Angle (Theta).
+
+          const curvatureAngle = layer.rotation?.[2] ?? 0; // In radians
           const scaleMultiplier = layer.scale?.[0] ?? 1;
           const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
           const fontSize = baseFontSize * scaleMultiplier;
-
-          // Get font family from layer or default to Arial
           const fontFamily = layer.fontFamily || "Arial";
 
           const x = u * CANVAS_SIZE;
           const y = (1 - v) * CANVAS_SIZE;
 
-          ctx.translate(x, y);
-          ctx.rotate(rotation);
-
-          // Use smooth font rendering with dynamic font family
           ctx.font = `bold ${fontSize}px ${fontFamily}, Arial, sans-serif`;
           ctx.fillStyle = layer.textColor || "#000000";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 
-          // Add subtle shadow for better visibility on fabric
+          // Shadow
           ctx.shadowColor = "rgba(0,0,0,0.1)";
           ctx.shadowBlur = Math.max(2, fontSize * 0.02);
-          ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = Math.max(1, fontSize * 0.01);
 
-          ctx.fillText(layer.text, 0, 0);
+          if (Math.abs(curvatureAngle) < 0.05) {
+            // Straight text if angle is negligible
+            ctx.fillText(layer.text, x, y);
+          } else {
+            // Curved text
+            // Radius depends on how "curved" we want it.
+            // Let's assume the angle covers the whole text width.
+            const textWidth = ctx.measureText(layer.text).width;
+            // Arc length s = r * theta => r = s / theta
+            // Avoid division by zero
+            const r = textWidth / Math.abs(curvatureAngle);
+
+            ctx.save();
+            ctx.translate(x, y);
+
+            // If curving up (positive angle) or down (negative)
+            // For standard "Arch", let's move center of circle down.
+            // If angle > 0 (Smile/U-shape), center is above? No, usually "Arc" means rainbow shape.
+            // Let's follow standard convention: +Angle = Rainbow (Arch up), -Angle = Smile (Arch down)?
+            // Or vice versa. Let's try: + = rainbow (bulge up).
+            // This means center of circle is BELOW text.
+            // Wait, standard text path:
+            // If curvature is positive, we want A shape. Center is below.
+            // If curvature is negative, we want U shape. Center is above.
+
+            // Actually, let's stick to the slider in Step 6: -45 to +45 deg.
+            // Let's say + is Arch (Rainbow). Center is below text (y + r).
+            // Rotation per char = angle / length.
+
+            // Calculate Start Angle
+            // We want the text centered at angle -90 (top of circle) if we define 0 as right.
+            // Let's align characters along the arc.
+
+            // Direction factor: 1 for Arch (Rainbow), -1 for Smile
+            const direction = curvatureAngle > 0 ? -1 : 1;
+            const radius = Math.abs(r);
+
+            // Rotate entire context to orient the arc if needed?
+            // For now, assume fixed horizontal baseline for the arc center.
+
+            // We want the text centered at (0,0) of current translate.
+            // So we go down/up by radius to find circle center.
+            const cy = direction * radius;
+
+            // Pre-calculate angles for each char
+            // For improved spacing, use cumulative width
+            const chars = layer.text.split("");
+            const totalWidth = textWidth;
+            // Initial angle offset to center the text
+            // Arc length = totalWidth. Total Angle = totalWidth / radius.
+            const totalArcAngle = totalWidth / radius;
+            let currentAngle = -totalArcAngle / 2;
+
+            chars.forEach((char) => {
+              const charWidth = ctx.measureText(char).width;
+              // Angle for half this char
+              const charAngle = (charWidth / radius) / 2;
+              const theta = currentAngle + charAngle;
+
+              ctx.save();
+              // Move to pixel on arc
+              // x = r * sin(theta)
+              // y = r * cos(theta) -- relative to center
+              // But we are using Canvas coords where Y is down.
+              // Let's effectively rotate around the circle center.
+
+              // Move to Circle Center
+              ctx.translate(0, cy);
+              // Rotate to char position
+              ctx.rotate(direction * theta);
+              // Move back out to radius
+              ctx.translate(0, -direction * radius);
+
+              ctx.fillText(char, 0, 0);
+              ctx.restore();
+
+              currentAngle += (charWidth / radius);
+            });
+
+            ctx.restore();
+          }
 
           // Reset shadow
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
         }
-
         ctx.restore();
       });
 

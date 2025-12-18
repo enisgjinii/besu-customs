@@ -17,6 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ColorPickerModal } from "./color-picker-modal";
+import { TextureLayerSelector } from "@/components/texture-layer-selector";
 
 // Import Steps
 import { Step01Apparel } from "./wizard-steps/step-01-apparel";
@@ -108,9 +110,14 @@ export function ConfiguratorWizard() {
     <div
       className={cn(
         "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 z-40 flex flex-col",
-        isMobile ? "h-[280px]" : "h-[350px]", // Compact on mobile
+        isMobile ? "h-[280px]" : "h-[300px]", // Compact on mobile and desktop
       )}
     >
+      {/* Texture Layer Selector - Global access */}
+      <div className="bg-muted/10 border-b border-border/50">
+        <TextureLayerSelector />
+      </div>
+
       {/* Header: Steps Indicator - More compact on mobile */}
       <div className="flex items-center justify-between px-2 md:px-6 py-1.5 md:py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
         <div className="flex items-center gap-1 md:gap-3 overflow-x-auto no-scrollbar flex-1 pr-2">
@@ -312,6 +319,36 @@ export function ConfiguratorWizard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ConfiguratorColorPicker />
     </div>
+  );
+}
+
+function ConfiguratorColorPicker() {
+  const isOpen = useConfiguratorStore((s) => s.sectionColorPickerOpen);
+  const sectionId = useConfiguratorStore((s) => s.sectionColorPickerSectionId);
+  const closePicker = useConfiguratorStore((s) => s.closeSectionColorPicker);
+  const sections = useConfiguratorStore((s) => s.sections);
+  const updateSection = useConfiguratorStore((s) => s.updateSection);
+  const recentColors = useConfiguratorStore((s) => s.recentColors);
+  const addRecentColor = useConfiguratorStore((s) => s.addRecentColor);
+
+  const activeSection = sections.find((s) => s.id === sectionId);
+
+  if (!activeSection) return null;
+
+  return (
+    <ColorPickerModal
+      isOpen={isOpen}
+      onClose={closePicker}
+      currentColor={activeSection.color}
+      onColorChange={(color) => {
+        if (sectionId) updateSection(sectionId, { color });
+      }}
+      recentColors={recentColors}
+      onAddRecentColor={addRecentColor}
+      title={`Color: ${activeSection.name}`}
+    />
   );
 }

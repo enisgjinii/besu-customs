@@ -118,7 +118,7 @@ export function Step08AIImages() {
           blendMode: "normal",
           order: textureLayers.length,
           imageUrl: processedUrl,
-          position: [0.5, 0.35, 0], // Chest area (center X, upper Y)
+          position: [0.5, 0.5, 0], // Center position
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
           flipX: false,

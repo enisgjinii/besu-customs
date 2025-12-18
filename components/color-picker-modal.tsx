@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, Palette, Check, ChevronLeft } from "lucide-react";
+import { X, Palette, Check, ChevronLeft, Upload, Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PANTONE_COLORS, findNearestPantone, type PantoneColor } from "@/lib/pantone";
+import { extractColors } from "@/lib/color-extractor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 interface ColorPickerModalProps {
   isOpen: boolean;
@@ -17,43 +22,16 @@ interface ColorPickerModalProps {
   footer?: React.ReactNode;
 }
 
-const TEAM_COLORS = [
-  { name: "Navy Blue", color: "#000080" },
-  { name: "Royal Blue", color: "#4169E1" },
-  { name: "Forest Green", color: "#228B22" },
-  { name: "Maroon", color: "#800000" },
-  { name: "Cardinal Red", color: "#C41E3A" },
-  { name: "Orange", color: "#FF8C00" },
-  { name: "Purple", color: "#800080" },
-  { name: "Gold", color: "#FFD700" },
-  { name: "Black", color: "#000000" },
-  { name: "White", color: "#FFFFFF" },
-  { name: "Gray", color: "#808080" },
-  { name: "Silver", color: "#C0C0C0" },
-];
+// Group Pantones by category
+const CATEGORIZED_PANTONES = PANTONE_COLORS.reduce((acc, color) => {
+  const cat = color.category === 'coated' ? 'Standard' :
+    color.category === 'metallic' ? 'Metallic' :
+      'Other';
 
-const BASIC_COLORS = [
-  "#FF0000",
-  "#FF4500",
-  "#FFA500",
-  "#FFD700",
-  "#FFFF00",
-  "#ADFF2F",
-  "#00FF00",
-  "#008000",
-  "#00FFFF",
-  "#008080",
-  "#0000FF",
-  "#000080",
-  "#800080",
-  "#FF00FF",
-  "#FF69B4",
-  "#FFC0CB",
-  "#A52A2A",
-  "#800000",
-  "#808080",
-  "#000000",
-];
+  if (!acc[cat]) acc[cat] = [];
+  acc[cat].push(color);
+  return acc;
+}, {} as Record<string, PantoneColor[]>);
 
 export function ColorPickerModal({
   isOpen,
@@ -67,8 +45,13 @@ export function ColorPickerModal({
   footer,
 }: ColorPickerModalProps) {
   const [tempColor, setTempColor] = useState(currentColor);
-  const [activeSection, setActiveSection] = useState<"main" | "custom">("main");
+  const [selectedPantone, setSelectedPantone] = useState<PantoneColor | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+
+  // AI Extraction State
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [suggestedColors, setSuggestedColors] = useState<PantoneColor[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Detect mobile
   useEffect(() => {
@@ -78,35 +61,39 @@ export function ColorPickerModal({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Sync temp color with current color when modal opens
+  // Sync temp color
   useEffect(() => {
     if (isOpen) {
       setTempColor(currentColor);
-      setActiveSection("main");
+      const match = findNearestPantone(currentColor);
+      // Only set if it's a very close match to avoid snapping generic colors unexpectedly
+      setSelectedPantone(match);
     }
   }, [isOpen, currentColor]);
 
-  // Prevent body scroll when modal is open on mobile
+  // Lock body scroll
   useEffect(() => {
-    // Only lock body scroll for desktop (full-screen modal).
     if (isOpen && !isMobile) {
       const prev = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev || "";
-      };
+      return () => { document.body.style.overflow = prev || ""; };
     }
-    return;
   }, [isOpen, isMobile]);
 
   const handleColorSelect = useCallback(
     (color: string) => {
       setTempColor(color);
-      onColorChange(color);
-      onAddRecentColor?.(color);
+      // Auto-identify nearest Pantone
+      const pantone = findNearestPantone(color);
+      setSelectedPantone(pantone);
     },
-    [onColorChange, onAddRecentColor],
+    []
   );
+
+  const handlePantoneSelect = useCallback((pantone: PantoneColor) => {
+    setTempColor(pantone.hex);
+    setSelectedPantone(pantone);
+  }, []);
 
   const handleApplyColor = useCallback(() => {
     onColorChange(tempColor);
@@ -114,414 +101,280 @@ export function ColorPickerModal({
     onClose();
   }, [tempColor, onColorChange, onAddRecentColor, onClose]);
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsExtracting(true);
+      const imageUrl = URL.createObjectURL(file);
+
+      // Extract simplified colors
+      const extractedHexes = await extractColors(imageUrl, 5);
+
+      // Match to Pantones
+      const matches = extractedHexes.map(hex => findNearestPantone(hex));
+
+      // Filter out duplicate Pantones
+      const uniqueMatches = matches.filter((p, index, self) =>
+        index === self.findIndex((t) => t.code === p.code)
+      );
+
+      setSuggestedColors(uniqueMatches);
+      toast.success("Found matching Pantone colors!");
+
+      // Cleanup
+      URL.revokeObjectURL(imageUrl);
+    } catch (error) {
+      console.error("Color extraction failed:", error);
+      toast.error("Failed to analyze image colors.");
+    } finally {
+      setIsExtracting(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   if (!isOpen) return null;
 
-  // Mobile bottom sheet (non-blocking) rendered via portal so 3D view remains visible
-  if (isMobile) {
-    return createPortal(
-      <div className="fixed left-0 right-0 bottom-0 z-50">
-        {/* Backdrop for better focus */}
+  const Content = (
+    <div className="flex flex-col h-full">
+      {/* Current Selection Header */}
+      <div className="flex items-center gap-4 p-4 border-b bg-muted/20">
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm"
-          onClick={onClose}
+          className="w-16 h-16 rounded-lg border-2 border-border shadow-sm flex-shrink-0"
+          style={{ backgroundColor: tempColor }}
         />
-
-        <div className="relative mx-2 mb-safe bg-card rounded-t-3xl shadow-2xl max-h-[80vh] overflow-hidden">
-          {/* Drag Handle */}
-          <div className="w-full py-3 cursor-grab active:cursor-grabbing">
-            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">
+            Selected Color
+          </p>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-lg font-bold font-mono">{tempColor.toUpperCase()}</h3>
           </div>
+          {selectedPantone && (
+            <p className="text-sm font-medium text-primary truncate">
+              {selectedPantone.code} - {selectedPantone.name}
+            </p>
+          )}
+        </div>
+        <Button onClick={handleApplyColor} disabled={disabled} className="shrink-0">
+          Apply
+        </Button>
+      </div>
 
-          {/* Header - Enhanced */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border/30 bg-gradient-to-b from-background/50 to-transparent">
-            <div className="flex items-center gap-3">
-              {activeSection === "custom" ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveSection("main")}
-                  className="h-11 px-3 rounded-xl"
-                >
-                  <ChevronLeft className="w-5 h-5 mr-2" />
-                  Back
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="h-11 px-3 rounded-xl"
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-            <h2 className="font-bold text-lg tracking-tight">{title}</h2>
-            <div>
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-6">
+
+          {/* Smart Match Section */}
+          <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2 text-primary">
+                <Wand2 className="w-4 h-4" />
+                Smart Color Match
+              </h4>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
               <Button
+                variant="outline"
                 size="sm"
-                onClick={handleApplyColor}
-                disabled={disabled}
-                className="h-11 px-4 rounded-xl font-semibold"
+                className="h-8 gap-2 bg-background"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isExtracting}
               >
-                Done
+                {isExtracting ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Upload className="w-3 h-3" />
+                )}
+                Upload Image
               </Button>
             </div>
+
+            {suggestedColors.length > 0 ? (
+              <div className="grid grid-cols-5 gap-2">
+                {suggestedColors.map((pantone) => (
+                  <button
+                    key={pantone.code}
+                    onClick={() => handlePantoneSelect(pantone)}
+                    className={`group relative aspect-square rounded-lg border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
+                        ? "border-primary ring-2 ring-primary ring-offset-2"
+                        : "border-transparent hover:border-primary/50"
+                      }`}
+                  >
+                    <div
+                      className="absolute inset-0"
+                      style={{ backgroundColor: pantone.hex }}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-[8px] text-white truncate text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      {pantone.code}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Upload your team logo or artwork to automatically find the closest Pantone matches.
+              </p>
+            )}
           </div>
 
-          {/* Content - Enhanced scrolling */}
-          <div
-            className="overflow-y-auto thin-scrollbar"
-            style={{ maxHeight: "calc(80vh - 120px)" }}
-          >
-            <div className="p-5 pb-8">
-              {activeSection === "main" ? (
-                <div className="space-y-6">
-                  {/* Current Color Preview - Enhanced */}
-                  <div className="flex items-center gap-5 p-5 bg-gradient-to-r from-muted/30 to-muted/10 rounded-2xl border border-border/30">
-                    <div
-                      className="w-20 h-20 rounded-2xl border-3 border-border shadow-lg flex-shrink-0"
-                      style={{ backgroundColor: tempColor }}
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground mb-2 font-medium">
-                        Selected Color
-                      </p>
-                      <p className="font-mono text-xl font-bold tracking-wider">
-                        {tempColor.toUpperCase()}
-                      </p>
-                    </div>
-                    {tempColor !== currentColor && (
-                      <div className="flex items-center gap-2 text-primary bg-primary/10 px-3 py-2 rounded-xl">
-                        <Check className="w-5 h-5" />
-                        <span className="text-sm font-semibold">Changed</span>
-                      </div>
-                    )}
-                  </div>
+          <Tabs defaultValue="standard" className="w-full">
+            <TabsList className="w-full mb-4">
+              <TabsTrigger value="standard" className="flex-1">Standard</TabsTrigger>
+              <TabsTrigger value="metallic" className="flex-1">Metallic</TabsTrigger>
+              <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
+            </TabsList>
 
-                  {/* Recent Colors - Enhanced */}
-                  {recentColors.length > 0 && (
-                    <div>
-                      <h3 className="section-header-mobile mb-4 text-base">
-                        Recent Colors
-                      </h3>
-                      <div className="grid grid-cols-6 gap-3">
-                        {recentColors.slice(0, 12).map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => handleColorSelect(color)}
-                            disabled={disabled}
-                            className={`aspect-square rounded-2xl border-3 transition-all duration-200 min-h-[56px] ${
-                              tempColor.toLowerCase() === color.toLowerCase()
-                                ? "border-primary shadow-lg shadow-primary/30 scale-105"
-                                : "border-border/50 hover:border-primary/50 active:scale-95"
-                            }`}
-                            style={{ backgroundColor: color }}
-                            aria-label={`Select color ${color}`}
-                          >
-                            {tempColor.toLowerCase() ===
-                              color.toLowerCase() && (
-                              <Check className="w-6 h-6 text-white drop-shadow-lg mx-auto" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Team Colors - Enhanced */}
-                  <div>
-                    <h3 className="section-header-mobile mb-4 text-base">
-                      Team Colors
-                    </h3>
-                    <div className="grid grid-cols-1 gap-3">
-                      {TEAM_COLORS.map(({ name, color }) => (
-                        <button
-                          key={color}
-                          onClick={() => handleColorSelect(color)}
-                          disabled={disabled}
-                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 min-h-[68px] ${
-                            tempColor.toLowerCase() === color.toLowerCase()
-                              ? "border-primary bg-primary/8 shadow-md"
-                              : "border-border/50 active:border-primary/50 active:bg-secondary/30 hover:bg-secondary/20"
-                          }`}
-                        >
-                          <div
-                            className="w-12 h-12 rounded-xl border-2 border-border/30 shadow-sm flex-shrink-0"
-                            style={{ backgroundColor: color }}
-                          />
-                          <span className="text-base font-semibold flex-1 text-left">
-                            {name}
-                          </span>
-                          {tempColor.toLowerCase() === color.toLowerCase() && (
-                            <Check className="w-6 h-6 text-primary flex-shrink-0" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Basic Colors - Enhanced */}
-                  <div>
-                    <h3 className="section-header-mobile mb-4 text-base">
-                      Basic Colors
-                    </h3>
-                    <div className="grid grid-cols-5 gap-3">
-                      {BASIC_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          onClick={() => handleColorSelect(color)}
-                          disabled={disabled}
-                          className={`aspect-square rounded-2xl border-3 transition-all duration-200 min-h-[60px] ${
-                            tempColor.toLowerCase() === color.toLowerCase()
-                              ? "border-primary shadow-lg shadow-primary/30 scale-105"
-                              : "border-border/50 hover:border-primary/50 active:scale-95"
-                          }`}
-                          style={{ backgroundColor: color }}
-                          aria-label={`Select color ${color}`}
-                        >
-                          {tempColor.toLowerCase() === color.toLowerCase() && (
-                            <Check
-                              className={`w-6 h-6 mx-auto drop-shadow-lg ${
-                                color === "#FFFFFF" ||
-                                color === "#FFD700" ||
-                                color === "#FFFF00"
-                                  ? "text-gray-800"
-                                  : "text-white"
-                              }`}
-                            />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom Color Button - Enhanced */}
-                  <Button
-                    variant="outline"
-                    className="w-full h-16 text-base font-semibold rounded-2xl border-2 border-dashed border-border/50 hover:border-primary/50 transition-all duration-200"
-                    onClick={() => setActiveSection("custom")}
+            <TabsContent value="standard" className="mt-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {CATEGORIZED_PANTONES['Standard'].map((pantone) => (
+                  <button
+                    key={pantone.code}
+                    onClick={() => handlePantoneSelect(pantone)}
+                    className={`flex items-center gap-2 p-1.5 rounded-lg border text-left transition-all hover:bg-muted ${selectedPantone?.code === pantone.code
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-transparent hover:border-border"
+                      }`}
                   >
-                    <Palette className="w-6 h-6 mr-3" />
-                    <span>Create Custom Color</span>
-                  </Button>
-                </div>
-              ) : (
-                /* Custom Color Section - Enhanced */
-                <div className="space-y-6">
-                  {/* Large Color Preview - Enhanced */}
-                  <div className="flex flex-col items-center gap-5 p-6 bg-gradient-to-b from-muted/20 to-transparent rounded-2xl">
                     <div
-                      className="w-40 h-40 rounded-3xl border-4 border-border shadow-2xl"
-                      style={{ backgroundColor: tempColor }}
+                      className="w-8 h-8 rounded border shadow-sm shrink-0"
+                      style={{ backgroundColor: pantone.hex }}
                     />
-                    <p className="font-mono text-2xl font-bold tracking-wider">
-                      {tempColor.toUpperCase()}
-                    </p>
-                  </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold truncate">{pantone.code}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{pantone.name}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </TabsContent>
 
-                  {/* Color Picker - Enhanced */}
-                  <div className="space-y-4">
-                    <label className="section-header-mobile block text-base">
-                      Pick a Color
-                    </label>
+            <TabsContent value="metallic" className="mt-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {CATEGORIZED_PANTONES['Metallic']?.map((pantone) => (
+                  <button
+                    key={pantone.code}
+                    onClick={() => handlePantoneSelect(pantone)}
+                    className={`flex items-center gap-2 p-1.5 rounded-lg border text-left transition-all hover:bg-muted ${selectedPantone?.code === pantone.code
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-transparent hover:border-border"
+                      }`}
+                  >
+                    <div
+                      className="w-8 h-8 rounded border shadow-sm shrink-0"
+                      style={{ backgroundColor: pantone.hex }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold truncate">{pantone.code}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{pantone.name}</div>
+                    </div>
+                  </button>
+                )) || <div className="text-sm text-muted-foreground text-center py-4">No metallic colors found.</div>}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="custom" className="space-y-4">
+              <div className="space-y-4 pt-2">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Custom Hex Code</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">#</div>
+                      <input
+                        type="text"
+                        value={tempColor.replace('#', '')}
+                        onChange={(e) => {
+                          const val = '#' + e.target.value.replace('#', '');
+                          if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) setTempColor(val);
+                        }}
+                        className="w-full pl-7 pr-3 py-2 rounded-md border text-sm font-mono uppercase"
+                        placeholder="000000"
+                      />
+                    </div>
                     <input
                       type="color"
                       value={tempColor}
-                      onChange={(e) => setTempColor(e.target.value)}
-                      disabled={disabled}
-                      className="w-full h-24 rounded-2xl border-3 border-border cursor-pointer shadow-md"
-                    />
-                  </div>
-
-                  {/* Hex Input - Enhanced */}
-                  <div className="space-y-3">
-                    <label className="section-header-mobile block text-base">
-                      Hex Code
-                    </label>
-                    <input
-                      type="text"
-                      value={tempColor}
                       onChange={(e) => {
-                        const val = e.target.value;
-                        if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-                          setTempColor(val);
-                        }
+                        setTempColor(e.target.value);
+                        setSelectedPantone(null);
                       }}
-                      disabled={disabled}
-                      className="w-full h-16 px-5 text-xl font-mono rounded-2xl border-2 border-border bg-background focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
-                      placeholder="#000000"
+                      className="w-10 h-10 rounded border cursor-pointer p-0.5"
                     />
                   </div>
-
-                  {/* Apply Button - Enhanced */}
-                  <Button
-                    className="w-full h-16 text-base font-semibold rounded-2xl shadow-lg"
-                    onClick={handleApplyColor}
-                    disabled={disabled}
-                  >
-                    <Check className="w-6 h-6 mr-3" />
-                    <span>Apply This Color</span>
-                  </Button>
                 </div>
-              )}
 
-              {footer && <div className="mt-6">{footer}</div>}
-            </div>
+                {recentColors.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Recent Colors</label>
+                    <div className="flex flex-wrap gap-2">
+                      {recentColors.map(color => (
+                        <button
+                          key={color}
+                          onClick={() => handleColorSelect(color)}
+                          className="w-8 h-8 rounded border shadow-sm hover:scale-110 transition-transform"
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </ScrollArea>
+
+      {footer && <div className="p-4 border-t bg-muted/10">{footer}</div>}
+    </div>
+  );
+
+  // Mobile Bottom Sheet
+  if (isMobile) {
+    return createPortal(
+      <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative bg-background rounded-t-xl shadow-2xl h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center justify-between p-4 border-b">
+            <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+            <h3 className="font-semibold">{title}</h3>
+            <div className="w-12" /> {/* Spacer */}
+          </div>
+
+          <div className="flex-1 overflow-hidden relative">
+            {Content}
           </div>
         </div>
       </div>,
-      // portal target: body
-      document.body,
+      document.body
     );
   }
 
-  // Desktop modal (original design with improvements) rendered via portal
+  // Desktop Modal
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Palette className="w-5 h-5" />
-              {title}
-            </h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-background rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Palette className="w-4 h-4" />
+            {title}
+          </h3>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
 
-          {/* Current Color Preview */}
-          <div className="mb-6">
-            <div className="flex items-center gap-3">
-              <div className="text-sm font-medium">Current:</div>
-              <div
-                className="w-12 h-12 rounded-lg border-2 border-border shadow-sm"
-                style={{ backgroundColor: currentColor }}
-              />
-              <div className="text-sm text-muted-foreground font-mono">
-                {currentColor.toUpperCase()}
-              </div>
-            </div>
-          </div>
-
-          {/* Team Colors */}
-          <div className="mb-6">
-            <h4 className="text-sm font-medium mb-3">Team Colors</h4>
-            <div className="grid grid-cols-2 gap-3">
-              {TEAM_COLORS.map(({ name, color }) => (
-                <button
-                  key={color}
-                  onClick={() => handleColorSelect(color)}
-                  disabled={disabled}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                    currentColor.toLowerCase() === color.toLowerCase()
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50 hover:bg-secondary/50"
-                  } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  <div
-                    className="w-8 h-8 rounded-md border border-border/50 shadow-sm flex-shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="text-sm font-medium">{name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Colors */}
-          {recentColors.length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-sm font-medium mb-3">Recent Colors</h4>
-              <div className="grid grid-cols-8 gap-2">
-                {recentColors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => handleColorSelect(color)}
-                    disabled={disabled}
-                    className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${
-                      currentColor.toLowerCase() === color.toLowerCase()
-                        ? "ring-2 ring-primary"
-                        : ""
-                    } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Basic Colors */}
-          <div className="mb-6">
-            <h4 className="text-sm font-medium mb-3">Basic Colors</h4>
-            <div className="grid grid-cols-10 gap-2">
-              {BASIC_COLORS.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => handleColorSelect(color)}
-                  disabled={disabled}
-                  className={`w-8 h-8 rounded-md border-2 border-border/50 hover:border-primary transition-all ${
-                    currentColor.toLowerCase() === color.toLowerCase()
-                      ? "ring-2 ring-primary"
-                      : ""
-                  } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-110"}`}
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Custom Color Picker */}
-          <div className="mb-6">
-            <h4 className="text-sm font-medium mb-3">Custom Color</h4>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={tempColor}
-                onChange={(e) => setTempColor(e.target.value)}
-                disabled={disabled}
-                className="w-12 h-12 rounded-lg border border-input cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={tempColor}
-                  onChange={(e) => setTempColor(e.target.value)}
-                  disabled={disabled}
-                  className="w-full px-3 py-2 text-sm font-mono rounded-md border border-input bg-background disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="#000000"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleApplyColor}
-              disabled={disabled}
-              className="flex-1"
-            >
-              Apply Color
-            </Button>
-          </div>
-
-          {footer && <div className="mt-6">{footer}</div>}
+        <div className="flex-1 overflow-hidden relative">
+          {Content}
         </div>
       </div>
     </div>,
-    // portal target: body
-    document.body,
+    document.body
   );
 }

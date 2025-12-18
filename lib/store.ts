@@ -42,20 +42,20 @@ export interface MaterialSection {
   originalName: string;
   // Use explicit categories but allow custom category strings
   category:
-    | "Jersey"
-    | "Panels"
-    | "Piping/Trim"
-    | "Other"
-    | "Trim Options DEMO"
-    | "Long Sleeve Shooting Shirt"
-    | "Basketball Shooting Shirt with Hoodie"
-    | "Basketball Shooting Shirt Short Sleeve"
-    | "Duffle Bag"
-    | "Backpack"
-    | "Jersey & Shorts"
-    | "Hoodie & Zipper"
-    | "Half Size Shorts"
-    | string;
+  | "Jersey"
+  | "Panels"
+  | "Piping/Trim"
+  | "Other"
+  | "Trim Options DEMO"
+  | "Long Sleeve Shooting Shirt"
+  | "Basketball Shooting Shirt with Hoodie"
+  | "Basketball Shooting Shirt Short Sleeve"
+  | "Duffle Bag"
+  | "Backpack"
+  | "Jersey & Shorts"
+  | "Hoodie & Zipper"
+  | "Half Size Shorts"
+  | string;
   color: string;
   roughness: number;
   metalness: number;
@@ -517,11 +517,11 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           withTextures: sections.filter((s) => s.customTexture).length,
           sampleSection: sections[0]
             ? {
-                id: sections[0].id,
-                name: sections[0].name,
-                hasTexture: !!sections[0].customTexture,
-                textureLength: sections[0].customTexture?.length || 0,
-              }
+              id: sections[0].id,
+              name: sections[0].name,
+              hasTexture: !!sections[0].customTexture,
+              textureLength: sections[0].customTexture?.length || 0,
+            }
             : null,
         });
         return set({ sections, sectionsFromApi: fromApi ?? false });
@@ -766,7 +766,11 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       exportPreset: () => {
         const state = get();
         return JSON.stringify(
-          { sections: state.sections, productId: state.selectedProductId },
+          {
+            sections: state.sections,
+            productId: state.selectedProductId,
+            deliveryNotes: state.deliveryNotes,
+          },
           null,
           2,
         );
@@ -775,6 +779,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         try {
           const data = JSON.parse(json);
           if (data.sections) set({ sections: data.sections });
+          if (data.deliveryNotes) set({ deliveryNotes: data.deliveryNotes });
         } catch (err) {
           console.error("Failed to import preset:", err);
         }

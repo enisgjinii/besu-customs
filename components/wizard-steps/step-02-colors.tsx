@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { Link2, RotateCcw, Loader2 } from "lucide-react";
+import { Link2, RotateCcw, Loader2, Palette } from "lucide-react";
 
 export function Step02Colors() {
   const sections = useConfiguratorStore((state) => state.sections);
@@ -19,6 +19,9 @@ export function Step02Colors() {
   const updateSection = useConfiguratorStore((state) => state.updateSection);
   const updateAllSections = useConfiguratorStore(
     (state) => state.updateAllSections,
+  );
+  const openSectionColorPicker = useConfiguratorStore(
+    (state) => state.openSectionColorPicker,
   );
 
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -224,18 +227,29 @@ export function Step02Colors() {
             <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
               Custom Color
             </label>
-            <Input
-              type="text"
-              value={activeSection?.color || "#ffffff"}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-                  handleColorChange(val);
-                }
-              }}
-              className="h-10 md:h-11 text-sm md:text-base font-mono uppercase font-semibold"
-              placeholder="#000000"
-            />
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={activeSection?.color || "#ffffff"}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                    handleColorChange(val);
+                  }
+                }}
+                className="h-10 md:h-11 text-sm md:text-base font-mono uppercase font-semibold flex-1"
+                placeholder="#000000"
+              />
+              <Button
+                variant="secondary"
+                className="h-10 md:h-11 px-4 font-semibold"
+                onClick={() => activeSectionId && openSectionColorPicker(activeSectionId)}
+                disabled={!activeSectionId}
+              >
+                <Palette className="w-4 h-4 mr-2" />
+                Pantone / AI Match
+              </Button>
+            </div>
           </div>
         </div>
 

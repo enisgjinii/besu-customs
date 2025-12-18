@@ -270,7 +270,7 @@ export function Step06Text() {
       textColor: textColor,
       fontSize: fontSize,
       fontFamily: fontFamily,
-      position: [0.5, 0.35, 0] as [number, number, number], // Higher position (chest area)
+      position: [0.5, 0.5, 0] as [number, number, number], // Center (chest area)
       rotation: [0, 0, textCurvature] as [number, number, number], // Use rotation Z for curvature
       scale: [1, 1, 1] as [number, number, number],
     };
@@ -329,11 +329,10 @@ export function Step06Text() {
               <div
                 key={layer.id}
                 onClick={() => setSelectedTextId(layer.id)}
-                className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                  selectedTextId === layer.id
+                className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedTextId === layer.id
                     ? "bg-primary/10 border-primary"
                     : "bg-card border-border hover:bg-muted/50"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2 justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
