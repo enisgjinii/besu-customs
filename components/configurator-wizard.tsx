@@ -32,30 +32,15 @@ import { Step08AIImages } from "./wizard-steps/step-08-ai-images";
 import { Step09View } from "./wizard-steps/step-09-view";
 
 const STEPS = [
-  {
-    id: 1,
-    title: "SELECT APPAREL",
-    shortTitle: "APPAREL",
-    component: Step01Apparel,
-  },
-  { id: 2, title: "COLORS", shortTitle: "COLORS", component: Step02Colors },
-  { id: 3, title: "STYLE", shortTitle: "STYLE", component: Step03Style },
-  {
-    id: 4,
-    title: "SCHOOL LOGOS",
-    shortTitle: "LOGOS",
-    component: Step04SchoolLogo,
-  },
-  {
-    id: 5,
-    title: "PATTERNS",
-    shortTitle: "PATTERNS",
-    component: Step05Patterns,
-  },
-  { id: 6, title: "TEXT", shortTitle: "TEXT", component: Step06Text },
-  { id: 7, title: "IMAGES", shortTitle: "IMAGES", component: Step07Images },
-  { id: 8, title: "AI GEN", shortTitle: "AI", component: Step08AIImages },
-  { id: 9, title: "REVIEW", shortTitle: "REVIEW", component: Step09View },
+  { id: 1, title: "APPAREL", component: Step01Apparel },
+  { id: 2, title: "COLORS", component: Step02Colors },
+  { id: 3, title: "STYLE", component: Step03Style },
+  { id: 4, title: "LOGOS", component: Step04SchoolLogo },
+  { id: 5, title: "PATTERNS", component: Step05Patterns },
+  { id: 6, title: "TEXT", component: Step06Text },
+  { id: 7, title: "IMAGES", component: Step07Images },
+  { id: 8, title: "AI", component: Step08AIImages },
+  { id: 9, title: "REVIEW", component: Step09View },
 ];
 
 export function ConfiguratorWizard() {
@@ -64,32 +49,23 @@ export function ConfiguratorWizard() {
   const [isMounted, setIsMounted] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
 
-  // Store integration for View Locking
   const lockedView = useConfiguratorStore((s) => s.lockedView);
   const setLockedView = useConfiguratorStore((s) => s.setLockedView);
-  const resetAllCustomizations = useConfiguratorStore(
-    (s) => s.resetAllCustomizations,
-  );
-
-  // Check if model is selected
+  const resetAllCustomizations = useConfiguratorStore((s) => s.resetAllCustomizations);
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
   const isModelSelected = !!(currentModelUrl || selectedProductId);
 
-  // Responsive check and Mount check
   useEffect(() => {
     setIsMounted(true);
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const handleNext = () => {
-    // Prevent going to next step if on step 1 without model selected
-    if (currentStep === 1 && !isModelSelected) {
-      return;
-    }
+    if (currentStep === 1 && !isModelSelected) return;
     if (currentStep < STEPS.length) setCurrentStep((c) => c + 1);
   };
 
@@ -98,227 +74,155 @@ export function ConfiguratorWizard() {
   };
 
   const CurrentComponent = STEPS[currentStep - 1].component;
-
-  // Prevent hydration mismatch
   if (!isMounted) return null;
 
-  // Render View Lock Controls for relevant steps (Logo, Text, Images)
-  // Step 4, 6, 7 benefit from locking view
   const showViewLock = [4, 6, 7].includes(currentStep);
 
   return (
     <div
       className={cn(
-        "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 z-40 flex flex-col",
-        isMobile ? "h-[220px]" : "h-[280px]",
+        "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col",
+        isMobile ? "h-[45vh] max-h-[320px]" : "h-[280px]",
       )}
     >
-      {/* Texture Layer Selector - Global access */}
-      <div className="bg-muted/10 border-b border-border/50">
+      {/* Texture Layer Selector */}
+      <div className="border-b border-border/30 flex-shrink-0">
         <TextureLayerSelector />
       </div>
 
-      {/* Header: Steps Indicator - Compact on mobile */}
-      <div className="flex items-center justify-between px-1.5 md:px-6 py-1 md:py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
-        <div className="flex items-center gap-0.5 md:gap-3 overflow-x-auto no-scrollbar flex-1 pr-1">
-          {STEPS.map((s) => (
-            <div
-              key={s.id}
-              onClick={() => {
-                // Prevent navigation to other steps if no model selected
-                if (!isModelSelected && s.id !== 1) {
-                  return;
-                }
-                setCurrentStep(s.id);
-              }}
-              className={cn(
-                "flex items-center gap-0.5 md:gap-2 px-1.5 md:px-3 py-0.5 md:py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0",
-                currentStep === s.id
-                  ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
-                  : !isModelSelected && s.id !== 1
-                    ? "text-gray-300 dark:text-gray-700 cursor-not-allowed opacity-50"
-                    : "text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer",
-              )}
-            >
-              <div
-                className={cn(
-                  "w-3.5 h-3.5 md:w-5 md:h-5 rounded-full flex items-center justify-center text-[8px] md:text-[10px] font-bold",
-                  currentStep === s.id
-                    ? "bg-white text-black dark:bg-black dark:text-white"
-                    : "bg-gray-300 text-white",
-                )}
-              >
-                {s.id}
-              </div>
-              <span className="text-[8px] md:text-xs font-semibold tracking-wide">
-                {isMobile ? s.shortTitle : s.title}
-              </span>
-            </div>
-          ))}
+      {/* Header: Steps + Nav */}
+      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
+        {/* Steps - scrollable */}
+        <div className="flex-1 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1">
+            {STEPS.map((s) => {
+              const isDisabled = !isModelSelected && s.id !== 1;
+              const isActive = currentStep === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => !isDisabled && setCurrentStep(s.id)}
+                  disabled={isDisabled}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap transition-all flex-shrink-0",
+                    isActive
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : isDisabled
+                        ? "text-gray-300 dark:text-gray-700 cursor-not-allowed"
+                        : "text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700",
+                  )}
+                >
+                  <span className={cn(
+                    "w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold",
+                    isActive ? "bg-white text-black dark:bg-black dark:text-white" : "bg-gray-300 text-white",
+                  )}>
+                    {s.id}
+                  </span>
+                  {s.title}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Navigation Buttons - Compact */}
-        <div className="flex items-center gap-0.5 pl-1 border-l border-border/50 flex-shrink-0">
+        {/* Nav buttons */}
+        <div className="flex items-center gap-1 pl-2 border-l border-border/50 flex-shrink-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={handlePrev}
             disabled={currentStep === 1}
-            className="h-7 w-7 md:h-8 md:w-8 rounded-full hover:bg-muted"
+            className="h-7 w-7 rounded-full"
           >
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+            <ChevronLeft className="w-4 h-4" />
           </Button>
           <Button
             size="sm"
             onClick={handleNext}
-            disabled={
-              currentStep === STEPS.length ||
-              (currentStep === 1 && !isModelSelected)
-            }
-            className={cn(
-              "h-7 px-2.5 md:h-8 md:px-3 rounded-full font-semibold transition-all",
-              currentStep === STEPS.length
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : "bg-primary text-primary-foreground hover:bg-primary/90"
-            )}
+            disabled={currentStep === STEPS.length || (currentStep === 1 && !isModelSelected)}
+            className="h-7 px-3 rounded-full text-[10px] font-semibold"
           >
-            <span className="text-[10px] md:text-xs">Next</span> <ChevronRight className="w-3 h-3 ml-0.5" />
+            Next <ChevronRight className="w-3 h-3 ml-0.5" />
           </Button>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Mobile View Lock - Inline at top, not absolute */}
-        {showViewLock && isMobile && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-gray-900 border-b flex-shrink-0">
-            <Lock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[9px] text-muted-foreground mr-1">View:</span>
-            {["Front", "Back", "Left", "Right"].map((view) => (
-              <button
-                key={view}
-                onClick={() =>
-                  setLockedView(view === lockedView ? null : (view as any))
-                }
-                className={cn(
-                  "text-[9px] px-2 py-1 rounded transition-all",
-                  lockedView === view
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : "bg-white dark:bg-gray-800 text-gray-600 border border-gray-200",
-                )}
-              >
-                {view}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex-1 flex overflow-hidden">
-          {/* View Lock Panel - Hidden on mobile, shown on desktop */}
-          {showViewLock && !isMobile && (
-            <div className="w-32 flex-shrink-0 border-r border-gray-100 dark:border-gray-800 p-2 flex flex-col gap-1 overflow-y-auto bg-gray-50/50 dark:bg-gray-900/10">
-              <div className="flex items-center gap-1 mb-1 text-[10px] font-semibold text-muted-foreground">
-                <Lock className="w-3 h-3" /> View Lock
-              </div>
-              <div className="grid grid-cols-1 gap-1">
-                {["Front", "Back", "Left", "Right", "Top"].map((view) => (
-                  <button
-                    key={view}
-                    onClick={() =>
-                      setLockedView(view === lockedView ? null : (view as any))
-                    }
-                    className={cn(
-                      "text-[10px] px-2 py-1.5 rounded border transition-all text-left",
-                      lockedView === view
-                        ? "bg-black text-white dark:bg-white dark:text-black border-transparent"
-                        : "bg-white dark:bg-black text-gray-600 border-gray-200 hover:border-gray-400",
-                    )}
-                  >
-                    {view}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Main Step Content */}
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full w-full">
-              <div
-                className={cn(
-                  "max-w-3xl mx-auto",
-                  isMobile ? "p-2" : "p-4",
-                )}
-              >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    {CurrentComponent ? (
-                      <CurrentComponent />
-                    ) : (
-                      <div>Loading...</div>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Small Reset Icon Button - Compact on mobile */}
-                {isModelSelected && (
-                  <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                    <Button
-                      onClick={() => setShowResetDialog(true)}
-                      variant="destructive"
-                      size="icon"
-                      className="h-8 w-8 md:h-10 md:w-10 rounded-full hover:scale-105 transition-transform"
-                      title="Reset All Customizations"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+      {/* View Lock Bar - only on specific steps */}
+      {showViewLock && (
+        <div className="flex items-center gap-1 px-2 py-1 bg-gray-100/80 dark:bg-gray-800/80 border-b border-border/30 flex-shrink-0">
+          <Lock className="w-3 h-3 text-muted-foreground" />
+          <span className="text-[10px] text-muted-foreground mr-1">Lock:</span>
+          {["Front", "Back", "Left", "Right"].map((view) => (
+            <button
+              key={view}
+              onClick={() => setLockedView(view === lockedView ? null : (view as any))}
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded transition-all",
+                lockedView === view
+                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  : "bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600",
+              )}
+            >
+              {view}
+            </button>
+          ))}
         </div>
+      )}
+
+      {/* Content Area */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-3 md:p-4 max-w-3xl mx-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.15 }}
+              >
+                {CurrentComponent && <CurrentComponent />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </ScrollArea>
       </div>
 
-      {/* Reset Confirmation Dialog */}
+      {/* Reset button - fixed bottom right */}
+      {isModelSelected && (
+        <Button
+          onClick={() => setShowResetDialog(true)}
+          variant="destructive"
+          size="icon"
+          className="absolute bottom-2 right-2 h-8 w-8 rounded-full shadow-lg z-10"
+          title="Reset"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </Button>
+      )}
+
+      {/* Reset Dialog */}
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-        <AlertDialogContent className="max-w-md mx-4">
+        <AlertDialogContent className="max-w-sm mx-4">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <RotateCcw className="w-5 h-5 text-destructive" />
-              Reset All Customizations?
+            <AlertDialogTitle className="flex items-center gap-2 text-base">
+              <RotateCcw className="w-4 h-4 text-destructive" />
+              Reset All?
             </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="text-base space-y-3">
-                <p>This will clear all your changes including:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                  <li>Colors</li>
-                  <li>Patterns and textures</li>
-                  <li>Logos and images</li>
-                  <li>Text layers</li>
-                </ul>
-                <p className="font-semibold text-destructive">
-                  This action cannot be undone.
-                </p>
-              </div>
+            <AlertDialogDescription className="text-sm">
+              This will clear all colors, patterns, logos, and text. Cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 resetAllCustomizations();
                 setShowResetDialog(false);
               }}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90 h-9"
             >
-              Reset Everything
+              Reset
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -35,7 +35,7 @@ export function Step01Apparel() {
       {} as Record<string, Product[]>,
     );
 
-  // Load active products on mount (reusing logic from unified-sidebar)
+  // Load active products on mount
   useEffect(() => {
     const loadActiveProducts = async () => {
       try {
@@ -65,45 +65,31 @@ export function Step01Apparel() {
   }, [productsLoaded, products.length, setProducts]);
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Choose Your Apparel</h2>
-        <p className="text-sm text-muted-foreground">
-          Select the base product model you want to customize.
-        </p>
+    <div className="space-y-3">
+      <div>
+        <h2 className="text-sm font-semibold">Choose Apparel</h2>
+        <p className="text-xs text-muted-foreground">Select a product to customize</p>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Product Category</label>
-          <Select
-            value={selectedProductId || ""}
-            onValueChange={setSelectedProduct}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a product..." />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              {Object.entries(groupedProducts).map(([category, items]) => (
-                <div key={category} className="py-1">
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/30">
-                    {category}
-                  </div>
-                  {items.map((product) => (
-                    <SelectItem
-                      key={product.id}
-                      value={product.id}
-                      className="cursor-pointer"
-                    >
-                      {product.title}
-                    </SelectItem>
-                  ))}
-                </div>
+      <Select value={selectedProductId || ""} onValueChange={setSelectedProduct}>
+        <SelectTrigger className="w-full h-10">
+          <SelectValue placeholder="Select a product..." />
+        </SelectTrigger>
+        <SelectContent className="max-h-[250px]">
+          {Object.entries(groupedProducts).map(([category, items]) => (
+            <div key={category} className="py-1">
+              <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground bg-muted/30 uppercase">
+                {category}
+              </div>
+              {items.map((product) => (
+                <SelectItem key={product.id} value={product.id} className="text-sm py-2">
+                  {product.title}
+                </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            </div>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

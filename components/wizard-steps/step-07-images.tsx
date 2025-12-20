@@ -6,16 +6,10 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
-import { TextureLayerSelector } from "@/components/texture-layer-selector";
-import {
-  compressImageForMobile,
-  isMobile,
-} from "@/lib/mobile-performance-utils";
+import { compressImageForMobile, isMobile } from "@/lib/mobile-performance-utils";
 
 export function Step07Images() {
-  const addTextureLayer = useConfiguratorStore(
-    (state) => state.addTextureLayer,
-  );
+  const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,13 +18,9 @@ export function Step07Images() {
       const reader = new FileReader();
       reader.onload = async (event) => {
         let result = event.target?.result as string;
-
-        // Compress images on mobile for better performance
         if (isMobile()) {
-          toast.info("Optimizing image for mobile...");
           result = await compressImageForMobile(result, 1024, 0.85);
         }
-
         addTextureLayer({
           id: uuidv4(),
           name: file.name,
@@ -41,7 +31,7 @@ export function Step07Images() {
           blendMode: "normal",
           order: textureLayers.length,
           imageUrl: result,
-          position: [0.5, 0.5, 0], // Center position
+          position: [0.5, 0.5, 0],
           rotation: [0, 0, 0],
           scale: [0.3, 0.3, 1],
         });
@@ -52,20 +42,15 @@ export function Step07Images() {
     e.target.value = "";
   };
 
-  const layers = textureLayers.filter(
-    (l) => l.type === "image" && !l.name.startsWith("Text:"),
-  );
+  const layers = textureLayers.filter((l) => l.type === "image" && !l.name.startsWith("Text:"));
 
   return (
-    <div className="space-y-3">
-      {/* Texture Layer Selector - Shows what's selected */}
-      {textureLayers.length > 0 && <TextureLayerSelector />}
-
-      {/* Compact upload button */}
-      <Button variant="outline" className="w-full h-10 relative" asChild>
+    <div className="space-y-2">
+      {/* Upload */}
+      <Button variant="outline" className="w-full h-9 relative" asChild>
         <label className="cursor-pointer flex items-center justify-center gap-2">
           <Upload className="w-4 h-4" />
-          <span className="text-sm">Upload Image</span>
+          <span className="text-xs">Upload Image</span>
           <Input
             type="file"
             accept="image/*"
@@ -75,22 +60,16 @@ export function Step07Images() {
         </label>
       </Button>
 
-      {/* Image layers list */}
+      {/* Layers */}
       {layers.length > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-1 max-h-[150px] overflow-y-auto">
           {layers.map((layer) => (
             <div key={layer.id} className="p-1.5 rounded border bg-card">
-              <div className="flex items-center gap-2 mb-1.5">
+              <div className="flex items-center gap-2">
                 {layer.imageUrl && (
-                  <img
-                    src={layer.imageUrl}
-                    alt={layer.name}
-                    className="w-6 h-6 object-contain rounded bg-muted/50"
-                  />
+                  <img src={layer.imageUrl} alt={layer.name} className="w-6 h-6 object-contain rounded bg-muted/50" />
                 )}
-                <span className="text-xs font-medium truncate flex-1">
-                  {layer.name}
-                </span>
+                <span className="text-[10px] font-medium truncate flex-1">{layer.name}</span>
               </div>
               <LayerControls layerId={layer.id} compact />
             </div>

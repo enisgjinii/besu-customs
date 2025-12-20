@@ -46,8 +46,8 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
-      {/* 3D Viewer - Padding for bottom wizard */}
-      <main className="flex-1 relative w-full h-full pb-[220px] md:pb-[280px]">
+      {/* 3D Viewer */}
+      <main className="flex-1 relative w-full h-full">
         <Scene />
       </main>
 

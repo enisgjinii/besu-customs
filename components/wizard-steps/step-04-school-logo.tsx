@@ -10,13 +10,9 @@ import { PatternSelector } from "@/components/pattern-selector";
 import { getSchoolLogoPosition } from "@/lib/logo-positioning";
 
 export function Step04SchoolLogo() {
-  const addTextureLayer = useConfiguratorStore(
-    (state) => state.addTextureLayer,
-  );
+  const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
-  const currentModelUrl = useConfiguratorStore(
-    (state) => state.currentModelUrl,
-  );
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,25 +45,12 @@ export function Step04SchoolLogo() {
   const logos = textureLayers.filter((l) => l.type === "image");
 
   return (
-    <div className="space-y-3">
-      {/* School logos grid - compact */}
-      <div className="h-[140px]">
-        <PatternSelector
-          lockedCategory="school-logos"
-          className="h-full border-none shadow-none p-0"
-        />
-      </div>
-
-      {/* Upload button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full h-8 relative"
-        asChild
-      >
+    <div className="space-y-2">
+      {/* Upload button - top */}
+      <Button variant="outline" size="sm" className="w-full h-9 relative" asChild>
         <label className="cursor-pointer flex items-center justify-center gap-2">
-          <Upload className="w-3 h-3" />
-          <span className="text-xs">Upload Custom Logo</span>
+          <Upload className="w-4 h-4" />
+          <span className="text-xs">Upload Logo</span>
           <Input
             type="file"
             accept="image/*"
@@ -77,29 +60,28 @@ export function Step04SchoolLogo() {
         </label>
       </Button>
 
-      {/* Active logos list */}
+      {/* School logos grid */}
+      <div className="h-[100px] overflow-hidden">
+        <PatternSelector lockedCategory="school-logos" className="h-full border-none shadow-none p-0" />
+      </div>
+
+      {/* Active logos */}
       {logos.length > 0 && (
-        <div className="space-y-1.5">
-          <span className="text-[10px] text-muted-foreground font-medium">
-            Active Logos
-          </span>
-          {logos.map((layer) => (
-            <div key={layer.id} className="p-1.5 rounded border bg-card">
-              <div className="flex items-center gap-2 mb-1.5">
-                {layer.imageUrl && (
-                  <img
-                    src={layer.imageUrl}
-                    alt={layer.name}
-                    className="w-6 h-6 object-contain rounded bg-muted/50"
-                  />
-                )}
-                <span className="text-xs font-medium truncate flex-1">
-                  {layer.name}
-                </span>
+        <div className="space-y-1">
+          <span className="text-[10px] text-muted-foreground font-medium">Active ({logos.length})</span>
+          <div className="max-h-[80px] overflow-y-auto space-y-1">
+            {logos.map((layer) => (
+              <div key={layer.id} className="p-1.5 rounded border bg-card">
+                <div className="flex items-center gap-2">
+                  {layer.imageUrl && (
+                    <img src={layer.imageUrl} alt={layer.name} className="w-6 h-6 object-contain rounded bg-muted/50" />
+                  )}
+                  <span className="text-[10px] font-medium truncate flex-1">{layer.name}</span>
+                </div>
+                <LayerControls layerId={layer.id} compact />
               </div>
-              <LayerControls layerId={layer.id} compact />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
