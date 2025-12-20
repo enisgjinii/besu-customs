@@ -110,7 +110,7 @@ export function ConfiguratorWizard() {
     <div
       className={cn(
         "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 z-40 flex flex-col",
-        isMobile ? "h-[240px]" : "h-[280px]", // Compact on mobile and desktop
+        isMobile ? "h-[220px]" : "h-[280px]",
       )}
     >
       {/* Texture Layer Selector - Global access */}
@@ -118,9 +118,9 @@ export function ConfiguratorWizard() {
         <TextureLayerSelector />
       </div>
 
-      {/* Header: Steps Indicator - More compact on mobile */}
-      <div className="flex items-center justify-between px-2 md:px-6 py-1.5 md:py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
-        <div className="flex items-center gap-1 md:gap-3 overflow-x-auto no-scrollbar flex-1 pr-2">
+      {/* Header: Steps Indicator - Compact on mobile */}
+      <div className="flex items-center justify-between px-1.5 md:px-6 py-1 md:py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
+        <div className="flex items-center gap-0.5 md:gap-3 overflow-x-auto no-scrollbar flex-1 pr-1">
           {STEPS.map((s) => (
             <div
               key={s.id}
@@ -132,7 +132,7 @@ export function ConfiguratorWizard() {
                 setCurrentStep(s.id);
               }}
               className={cn(
-                "flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0",
+                "flex items-center gap-0.5 md:gap-2 px-1.5 md:px-3 py-0.5 md:py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0",
                 currentStep === s.id
                   ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
                   : !isModelSelected && s.id !== 1
@@ -142,7 +142,7 @@ export function ConfiguratorWizard() {
             >
               <div
                 className={cn(
-                  "w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center text-[9px] md:text-[10px] font-bold",
+                  "w-3.5 h-3.5 md:w-5 md:h-5 rounded-full flex items-center justify-center text-[8px] md:text-[10px] font-bold",
                   currentStep === s.id
                     ? "bg-white text-black dark:bg-black dark:text-white"
                     : "bg-gray-300 text-white",
@@ -150,7 +150,7 @@ export function ConfiguratorWizard() {
               >
                 {s.id}
               </div>
-              <span className="text-[9px] md:text-xs font-semibold tracking-wide">
+              <span className="text-[8px] md:text-xs font-semibold tracking-wide">
                 {isMobile ? s.shortTitle : s.title}
               </span>
             </div>
@@ -158,15 +158,15 @@ export function ConfiguratorWizard() {
         </div>
 
         {/* Navigation Buttons - Compact */}
-        <div className="flex items-center gap-1 pl-2 border-l flex-shrink-0">
+        <div className="flex items-center gap-0.5 pl-1 border-l border-border/50 flex-shrink-0">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={handlePrev}
             disabled={currentStep === 1}
-            className="h-6 w-6 md:h-8 md:w-8 p-0"
+            className="h-7 w-7 md:h-8 md:w-8 rounded-full hover:bg-muted"
           >
-            <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </Button>
           <Button
             size="sm"
@@ -176,48 +176,24 @@ export function ConfiguratorWizard() {
               (currentStep === 1 && !isModelSelected)
             }
             className={cn(
-              "h-6 text-[10px] px-2 md:h-8 md:text-xs md:px-3",
-              currentStep === STEPS.length && "bg-green-600",
+              "h-7 px-2.5 md:h-8 md:px-3 rounded-full font-semibold transition-all",
+              currentStep === STEPS.length
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
             )}
           >
-            Next <ChevronRight className="w-3 h-3 ml-0.5" />
+            <span className="text-[10px] md:text-xs">Next</span> <ChevronRight className="w-3 h-3 ml-0.5" />
           </Button>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* View Lock Panel - Hidden on mobile, shown on desktop */}
-        {showViewLock && !isMobile && (
-          <div className="w-32 flex-shrink-0 border-r border-gray-100 dark:border-gray-800 p-2 flex flex-col gap-1 overflow-y-auto bg-gray-50/50 dark:bg-gray-900/10">
-            <div className="flex items-center gap-1 mb-1 text-[10px] font-semibold text-muted-foreground">
-              <Lock className="w-3 h-3" /> View Lock
-            </div>
-            <div className="grid grid-cols-1 gap-1">
-              {["Front", "Back", "Left", "Right", "Top"].map((view) => (
-                <button
-                  key={view}
-                  onClick={() =>
-                    setLockedView(view === lockedView ? null : (view as any))
-                  }
-                  className={cn(
-                    "text-[10px] px-2 py-1.5 rounded border transition-all text-left",
-                    lockedView === view
-                      ? "bg-black text-white dark:bg-white dark:text-black border-transparent"
-                      : "bg-white dark:bg-black text-gray-600 border-gray-200 hover:border-gray-400",
-                  )}
-                >
-                  {view}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Mobile View Lock - Horizontal buttons at top */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Mobile View Lock - Inline at top, not absolute */}
         {showViewLock && isMobile && (
-          <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-1 px-2 py-1 bg-gray-50/90 dark:bg-gray-900/90 border-b">
+          <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-gray-900 border-b flex-shrink-0">
             <Lock className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[9px] text-muted-foreground mr-1">View:</span>
             {["Front", "Back", "Left", "Right"].map((view) => (
               <button
                 key={view}
@@ -237,48 +213,76 @@ export function ConfiguratorWizard() {
           </div>
         )}
 
-        {/* Main Step Content - Compact padding on mobile */}
-        <div className="flex-1 overflow-hidden relative">
-          <ScrollArea className="h-full w-full">
-            <div
-              className={cn(
-                "max-w-3xl mx-auto",
-                isMobile ? "p-2 pt-8" : "p-4", // Extra top padding on mobile for view lock buttons
-                showViewLock && isMobile && "pt-10",
-              )}
-            >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  {CurrentComponent ? (
-                    <CurrentComponent />
-                  ) : (
-                    <div>Loading...</div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Small Reset Icon Button - Static at bottom of each step */}
-              {isModelSelected && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                  <Button
-                    onClick={() => setShowResetDialog(true)}
-                    variant="destructive"
-                    size="icon"
-                    className="h-10 w-10 rounded-full hover:scale-105 transition-transform"
-                    title="Reset All Customizations"
+        <div className="flex-1 flex overflow-hidden">
+          {/* View Lock Panel - Hidden on mobile, shown on desktop */}
+          {showViewLock && !isMobile && (
+            <div className="w-32 flex-shrink-0 border-r border-gray-100 dark:border-gray-800 p-2 flex flex-col gap-1 overflow-y-auto bg-gray-50/50 dark:bg-gray-900/10">
+              <div className="flex items-center gap-1 mb-1 text-[10px] font-semibold text-muted-foreground">
+                <Lock className="w-3 h-3" /> View Lock
+              </div>
+              <div className="grid grid-cols-1 gap-1">
+                {["Front", "Back", "Left", "Right", "Top"].map((view) => (
+                  <button
+                    key={view}
+                    onClick={() =>
+                      setLockedView(view === lockedView ? null : (view as any))
+                    }
+                    className={cn(
+                      "text-[10px] px-2 py-1.5 rounded border transition-all text-left",
+                      lockedView === view
+                        ? "bg-black text-white dark:bg-white dark:text-black border-transparent"
+                        : "bg-white dark:bg-black text-gray-600 border-gray-200 hover:border-gray-400",
+                    )}
                   >
-                    <RotateCcw className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+                    {view}
+                  </button>
+                ))}
+              </div>
             </div>
-          </ScrollArea>
+          )}
+
+          {/* Main Step Content */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full w-full">
+              <div
+                className={cn(
+                  "max-w-3xl mx-auto",
+                  isMobile ? "p-2" : "p-4",
+                )}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {CurrentComponent ? (
+                      <CurrentComponent />
+                    ) : (
+                      <div>Loading...</div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Small Reset Icon Button - Compact on mobile */}
+                {isModelSelected && (
+                  <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                    <Button
+                      onClick={() => setShowResetDialog(true)}
+                      variant="destructive"
+                      size="icon"
+                      className="h-8 w-8 md:h-10 md:w-10 rounded-full hover:scale-105 transition-transform"
+                      title="Reset All Customizations"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
       </div>
 

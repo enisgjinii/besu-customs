@@ -104,45 +104,38 @@ export function MaterialEditor() {
   }
 
   return (
-    <div className="space-y-5 md:space-y-6" data-tour="material-editor">
+    <div className="space-y-3 md:space-y-6" data-tour="material-editor">
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base md:text-sm font-bold flex items-center gap-2">
-            <Palette className="w-5 h-5" />
-            {isVolleyballModel ? "Colors" : "Material Sections"}
+        <div className="flex items-center justify-between mb-2 md:mb-4">
+          <h3 className="text-sm md:text-sm font-semibold flex items-center gap-1.5">
+            <Palette className="w-4 h-4" />
+            {isVolleyballModel ? "Colors" : "Parts"}
           </h3>
           {linkedSections.size > 0 && (
             <button
               onClick={clearSectionLinks}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg hover:bg-accent/50"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 min-h-[32px] px-2 rounded-lg hover:bg-accent/50"
             >
-              <Unlink className="w-4 h-4" />
-              Clear Links
+              <Unlink className="w-3 h-3" />
+              Clear
             </button>
           )}
         </div>
 
-        {/* Linked sections info */}
+        {/* Linked sections info - Compact */}
         {selectedSectionId && linkedSections.size > 0 && (
-          <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-            <div className="flex items-center gap-3">
-              <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-              <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                {linkedSections.size} linked - edits apply to all
+          <div className="mb-2 md:mb-4 p-2 md:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg md:rounded-2xl">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                {linkedSections.size} linked
               </p>
             </div>
           </div>
         )}
 
-        {/* Mobile horizontal parts selector */}
-        <div className="md:hidden mb-5">
-          <div className="mb-3">
-            <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Palette className="w-4 h-4" />
-              Select Part to Color
-            </h4>
-          </div>
-
+        {/* Mobile horizontal parts selector - Compact */}
+        <div className="md:hidden mb-3">
           <div className="relative">
             <div
               className="overflow-x-auto overflow-y-hidden scrollbar-hide mobile-horizontal-scroll"
@@ -152,7 +145,7 @@ export function MaterialEditor() {
                 scrollBehavior: "smooth",
               }}
             >
-              <div className="inline-flex gap-2 pb-3 pr-6 pl-1">
+              <div className="inline-flex gap-1.5 pb-2 pr-4 pl-0.5">
                 {sections.map((section) => {
                   const isSelected = selectedSectionId === section.id;
                   const isLinked = linkedSections.has(section.id);
@@ -167,89 +160,65 @@ export function MaterialEditor() {
                       }}
                       onMouseEnter={() => setHighlightedSection(section.id)}
                       onMouseLeave={() => setHighlightedSection(null)}
-                      className={`inline-flex items-center gap-2 px-4 py-3 rounded-2xl border-2 transition-all whitespace-nowrap text-sm font-semibold touch-manipulation min-h-[52px] flex-shrink-0 ${isSelected
-                        ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105"
-                        : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50 active:scale-95 shadow-sm"
-                        } ${isLinked ? "ring-2 ring-blue-500/50" : ""}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border transition-all whitespace-nowrap text-xs font-medium touch-manipulation min-h-[40px] flex-shrink-0 ${isSelected
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-card text-muted-foreground border-border/50 active:scale-95"
+                        } ${isLinked ? "ring-1 ring-blue-500/50" : ""}`}
                       style={{ touchAction: "manipulation" }}
                     >
                       <div
-                        className="w-6 h-6 rounded-full border-2 border-white/40 shadow-sm flex-shrink-0"
+                        className="w-5 h-5 rounded-full border border-white/30 shadow-sm flex-shrink-0"
                         style={{ backgroundColor: section.color }}
                       />
-                      <div className="flex flex-col items-start">
-                        <span className="max-w-[100px] truncate leading-tight">
-                          {section.name}
+                      <span className="max-w-[80px] truncate">
+                        {section.name}
+                      </span>
+                      {badge && (
+                        <span className="text-[10px] opacity-70">
+                          {badge.text}
                         </span>
-                        {badge && (
-                          <span className="text-xs opacity-75 font-medium">
-                            {badge.text}
-                          </span>
-                        )}
-                      </div>
-                      {isLinked && (
-                        <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                       )}
                     </button>
                   );
                 })}
               </div>
             </div>
-
-            {/* Scroll indicators */}
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none" />
-            <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background via-background/60 to-transparent pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none" />
           </div>
         </div>
 
-        {/* Mobile-friendly hint */}
-        <div className="md:hidden mb-5 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-          <div className="flex items-start gap-3">
-            <Palette className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">
-                Quick Tip
-              </p>
-              <p className="text-sm text-blue-600 dark:text-blue-400">
-                Swipe left/right above to select parts, then use "Choose Color"
-                to change colors. Link sections together to change multiple
-                parts at once.
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Remove mobile hint - too verbose */}
 
-        <div className="space-y-5 md:space-y-4">
+        <div className="space-y-2 md:space-y-4">
           {Object.entries(groupedSections).map(
             ([category, categorySections]) => (
               <div key={category}>
-                {/* Category Header with Expand/Collapse - Enhanced for mobile */}
+                {/* Category Header - Compact for mobile */}
                 <button
                   onClick={() => toggleCategory(category)}
-                  className="w-full flex items-center justify-between p-5 md:p-4 text-left rounded-2xl hover:bg-secondary/50 active:bg-secondary/70 transition-all duration-200 mb-4 md:mb-3 min-h-[68px] md:min-h-[56px] bg-gradient-to-r from-secondary/20 to-transparent border border-border/30"
+                  className="w-full flex items-center justify-between p-2.5 md:p-4 text-left rounded-lg md:rounded-2xl hover:bg-secondary/50 active:bg-secondary/70 transition-all duration-150 mb-1.5 md:mb-3 min-h-[44px] md:min-h-[56px] bg-secondary/20 border border-border/20"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-1 h-8 bg-primary rounded-full" />
-                    <h4 className="text-sm md:text-xs font-bold text-foreground md:text-muted-foreground uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    <div className="w-0.5 h-5 bg-primary rounded-full" />
+                    <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide">
                       {category}
                     </h4>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {categorySections.length} item
-                      {categorySections.length !== 1 ? "s" : ""}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">
+                      {categorySections.length}
                     </span>
                     {expandedCategories[category] ? (
-                      <ChevronDown className="w-6 h-6 md:w-5 md:h-5 text-muted-foreground" />
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="w-6 h-6 md:w-5 md:h-5 text-muted-foreground" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
                 </button>
 
-                {/* Category Sections - Only show if expanded */}
+                {/* Category Sections - Compact */}
                 {expandedCategories[category] && (
-                  <div className="space-y-3 md:ml-2 md:pl-4 md:border-l-2 border-border/50">
+                  <div className="space-y-1.5 md:space-y-3 md:ml-2 md:pl-4 md:border-l-2 border-border/50">
                     {categorySections.map((section) => {
                       const isSelected = selectedSectionId === section.id;
                       const isLinked = linkedSections.has(section.id);
@@ -258,7 +227,7 @@ export function MaterialEditor() {
                       return (
                         <div
                           key={section.id}
-                          className={`group relative rounded-2xl transition-all duration-200 ${isLinked ? "ring-2 ring-blue-500/50" : ""
+                          className={`group relative rounded-lg md:rounded-2xl transition-all duration-150 ${isLinked ? "ring-1 ring-blue-500/50" : ""
                             }`}
                           onMouseEnter={() => setHighlightedSection(section.id)}
                           onMouseLeave={() => setHighlightedSection(null)}
@@ -268,42 +237,33 @@ export function MaterialEditor() {
                               setSelectedSection(section.id);
                               setHighlightedSection(section.id);
                             }}
-                            className={`w-full text-left px-5 py-5 md:px-4 md:py-4 text-base rounded-2xl transition-all duration-200 min-h-[72px] md:min-h-[48px] ${isSelected
-                              ? "bg-primary text-primary-foreground shadow-lg scale-[1.02] md:scale-100"
-                              : "bg-secondary/30 hover:bg-secondary/50 active:bg-secondary/70 active:scale-[0.98]"
+                            className={`w-full text-left px-3 py-2.5 md:px-4 md:py-4 text-sm rounded-lg md:rounded-2xl transition-all duration-150 min-h-[48px] md:min-h-[48px] ${isSelected
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "bg-secondary/20 hover:bg-secondary/40 active:bg-secondary/60"
                               }`}
                           >
-                            <div className="flex items-center justify-start gap-5 md:gap-4">
+                            <div className="flex items-center justify-start gap-3 md:gap-4">
                               <div
-                                className="w-12 h-12 md:w-6 md:h-6 rounded-xl md:rounded-lg flex-shrink-0 ring-2 md:ring-1.5 ring-border/50 shadow-md md:shadow-sm transition-all duration-200"
+                                className="w-8 h-8 md:w-6 md:h-6 rounded-lg md:rounded-lg flex-shrink-0 ring-1 ring-border/50 shadow-sm"
                                 style={{ backgroundColor: section.color }}
                               />
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 md:gap-2.5">
-                                  <span className="truncate font-bold md:font-semibold text-lg md:text-sm tracking-tight">
+                                <div className="flex items-center gap-2">
+                                  <span className="truncate font-medium text-sm">
                                     {section.name}
                                   </span>
                                   {badge && (
                                     <Badge
                                       variant={badge.variant}
-                                      className="text-xs px-2.5 py-1 md:px-2 md:py-0.5 flex-shrink-0 font-medium"
+                                      className="text-[10px] px-1.5 py-0 flex-shrink-0"
                                     >
                                       {badge.text}
                                     </Badge>
                                   )}
                                 </div>
-                                {/* Show color code on mobile for quick reference */}
-                                <div className="md:hidden mt-1">
-                                  <span className="text-sm font-mono opacity-70">
-                                    {section.color.toUpperCase()}
-                                  </span>
-                                </div>
                               </div>
                               {isLinked && (
-                                <Link2 className="w-6 h-6 md:w-5 md:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                              )}
-                              {isSelected && (
-                                <div className="w-3 h-3 bg-current rounded-full flex-shrink-0 md:hidden" />
+                                <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                               )}
                             </div>
                           </button>
@@ -311,17 +271,17 @@ export function MaterialEditor() {
                             selectedSectionId !== section.id && (
                               <button
                                 onClick={() => toggleSectionLink(section.id)}
-                                className={`absolute right-4 md:right-3 top-1/2 -translate-y-1/2 p-3 md:p-2.5 rounded-xl transition-all min-w-[52px] min-h-[52px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center ${isLinked
-                                  ? "bg-blue-500 text-white shadow-lg"
-                                  : "bg-background/90 text-muted-foreground hover:text-foreground hover:bg-background md:opacity-0 md:group-hover:opacity-100"
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all min-w-[36px] min-h-[36px] flex items-center justify-center ${isLinked
+                                  ? "bg-blue-500 text-white shadow-sm"
+                                  : "bg-background/80 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
                                   }`}
                                 title={
                                   isLinked
                                     ? "Click to unlink"
-                                    : "Click to link with selected"
+                                    : "Click to link"
                                 }
                               >
-                                <Link2 className="w-6 h-6 md:w-5 md:h-5" />
+                                <Link2 className="w-4 h-4" />
                               </button>
                             )}
                         </div>
@@ -336,29 +296,29 @@ export function MaterialEditor() {
       </div>
 
       {selectedSection && (
-        <div className="border-t border-border/50 pt-5 md:pt-6">
-          <div className="mb-5">
-            <h3 className="text-base md:text-sm font-bold flex items-center gap-2">
-              <Sliders className="w-5 h-5" />
-              Editing: {selectedSection.name}
+        <div className="border-t border-border/30 pt-3 md:pt-6">
+          <div className="mb-2 md:mb-5">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Sliders className="w-4 h-4" />
+              {selectedSection.name}
             </h3>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-3 md:space-y-5">
             {!isVolleyballModel && selectedSection.customTexture && (
-              <div className="p-4 bg-secondary/30 rounded-2xl">
-                <p className="text-sm text-muted-foreground mb-3">
+              <div className="p-2.5 bg-secondary/30 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-2">
                   Custom texture applied
                 </p>
                 <Button
-                  size="default"
+                  size="sm"
                   variant="outline"
                   onClick={() =>
                     updateSection(selectedSection.id, {
                       customTexture: undefined,
                     })
                   }
-                  className="w-full min-h-[56px] text-base rounded-xl font-medium"
+                  className="w-full min-h-[40px] text-sm rounded-lg"
                 >
                   Remove Texture
                 </Button>
@@ -366,14 +326,14 @@ export function MaterialEditor() {
             )}
 
             <div>
-              <label className="block text-lg md:text-sm font-bold mb-5 md:mb-4">
+              <label className="block text-xs font-medium mb-2 md:mb-4 text-muted-foreground">
                 Base Color
               </label>
 
-              {/* Color Preview and Picker Button - Enhanced for mobile */}
-              <div className="flex items-center gap-5 mb-5 p-4 md:p-0 bg-gradient-to-r from-muted/20 to-transparent rounded-2xl md:bg-none">
+              {/* Color Preview and Picker Button - Compact */}
+              <div className="flex items-center gap-3 mb-2 p-2 bg-secondary/20 rounded-lg">
                 <div
-                  className="w-20 h-20 md:w-14 md:h-14 rounded-2xl border-3 border-border shadow-lg flex-shrink-0 transition-all duration-200"
+                  className="w-12 h-12 md:w-14 md:h-14 rounded-lg border-2 border-border shadow-sm flex-shrink-0"
                   style={{ backgroundColor: selectedSection.color }}
                 />
                 <div className="flex-1">
@@ -384,13 +344,13 @@ export function MaterialEditor() {
                       !!selectedSection.gradient?.enabled
                     }
                     variant="outline"
-                    className="w-full justify-start min-h-[64px] md:min-h-[48px] text-lg md:text-sm font-semibold rounded-2xl md:rounded-xl border-2 hover:border-primary/50 transition-all duration-200"
+                    className="w-full justify-start min-h-[44px] text-sm font-medium rounded-lg border hover:border-primary/50"
                     data-tour="color-picker"
                   >
-                    <Palette className="w-6 h-6 md:w-5 md:h-5 mr-4 md:mr-3 flex-shrink-0" />
+                    <Palette className="w-4 h-4 mr-2 flex-shrink-0" />
                     <div className="flex flex-col items-start">
-                      <span className="text-base md:text-sm">Choose Color</span>
-                      <span className="text-sm md:text-xs text-muted-foreground font-mono">
+                      <span className="text-sm">Choose Color</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">
                         {selectedSection.color.toUpperCase()}
                       </span>
                     </div>
@@ -398,32 +358,20 @@ export function MaterialEditor() {
                 </div>
               </div>
 
-              {/* Color code display - Enhanced */}
-              <div className="bg-gradient-to-r from-secondary/40 to-secondary/20 px-5 py-4 rounded-2xl border border-border/30 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Current Color:
-                  </span>
-                  <span className="text-lg md:text-sm font-mono font-bold tracking-wider">
-                    {selectedSection.color.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Status messages - Enhanced */}
+              {/* Status messages - Compact */}
               {selectedSection.customTexture && (
-                <div className="flex items-center gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />
-                  <p className="text-sm text-orange-700 dark:text-orange-300 font-medium">
-                    Color picker disabled when texture is applied
+                <div className="flex items-center gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full flex-shrink-0" />
+                  <p className="text-xs text-orange-700 dark:text-orange-300">
+                    Color disabled with texture
                   </p>
                 </div>
               )}
               {selectedSection.gradient?.enabled && (
-                <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                    Color picker disabled when gradient is enabled
+                <div className="flex items-center gap-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Color disabled with gradient
                   </p>
                 </div>
               )}

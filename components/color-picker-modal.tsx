@@ -139,39 +139,36 @@ export function ColorPickerModal({
 
   const Content = (
     <div className="flex flex-col h-full">
-      {/* Current Selection Header */}
-      <div className="flex items-center gap-4 p-4 border-b bg-muted/20">
+      {/* Current Selection Header - Compact */}
+      <div className="flex items-center gap-3 p-3 border-b bg-muted/20">
         <div
-          className="w-16 h-16 rounded-lg border-2 border-border shadow-sm flex-shrink-0"
+          className="w-12 h-12 rounded-lg border-2 border-border shadow-sm flex-shrink-0"
           style={{ backgroundColor: tempColor }}
         />
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">
-            Selected Color
-          </p>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-lg font-bold font-mono">{tempColor.toUpperCase()}</h3>
+            <h3 className="text-sm font-bold font-mono">{tempColor.toUpperCase()}</h3>
           </div>
           {selectedPantone && (
-            <p className="text-sm font-medium text-primary truncate">
-              {selectedPantone.code} - {selectedPantone.name}
+            <p className="text-xs font-medium text-primary truncate">
+              {selectedPantone.code}
             </p>
           )}
         </div>
-        <Button onClick={handleApplyColor} disabled={disabled} className="shrink-0">
+        <Button onClick={handleApplyColor} disabled={disabled} size="sm" className="shrink-0 h-9">
           Apply
         </Button>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
+        <div className="p-3 space-y-4">
 
-          {/* Smart Match Section */}
-          <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold flex items-center gap-2 text-primary">
-                <Wand2 className="w-4 h-4" />
-                Smart Color Match
+          {/* Smart Match Section - Compact */}
+          <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-semibold flex items-center gap-1.5 text-primary">
+                <Wand2 className="w-3 h-3" />
+                Smart Match
               </h4>
               <input
                 type="file"
@@ -183,7 +180,7 @@ export function ColorPickerModal({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 gap-2 bg-background"
+                className="h-7 gap-1.5 bg-background text-xs"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isExtracting}
               >
@@ -192,18 +189,18 @@ export function ColorPickerModal({
                 ) : (
                   <Upload className="w-3 h-3" />
                 )}
-                Upload Image
+                Upload
               </Button>
             </div>
 
             {suggestedColors.length > 0 ? (
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-6 gap-1.5">
                 {suggestedColors.map((pantone) => (
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`group relative aspect-square rounded-lg border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
-                        ? "border-primary ring-2 ring-primary ring-offset-2"
+                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
+                        ? "border-primary ring-1 ring-primary"
                         : "border-transparent hover:border-primary/50"
                       }`}
                   >
@@ -211,44 +208,40 @@ export function ColorPickerModal({
                       className="absolute inset-0"
                       style={{ backgroundColor: pantone.hex }}
                     />
-                    <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-[8px] text-white truncate text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      {pantone.code}
-                    </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Upload your team logo or artwork to automatically find the closest Pantone matches.
+              <p className="text-[10px] text-muted-foreground">
+                Upload logo to find Pantone matches
               </p>
             )}
           </div>
 
           <Tabs defaultValue="standard" className="w-full">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="standard" className="flex-1">Standard</TabsTrigger>
-              <TabsTrigger value="metallic" className="flex-1">Metallic</TabsTrigger>
-              <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
+            <TabsList className="w-full mb-3 h-8">
+              <TabsTrigger value="standard" className="flex-1 text-xs h-7">Standard</TabsTrigger>
+              <TabsTrigger value="metallic" className="flex-1 text-xs h-7">Metallic</TabsTrigger>
+              <TabsTrigger value="custom" className="flex-1 text-xs h-7">Custom</TabsTrigger>
             </TabsList>
 
             <TabsContent value="standard" className="mt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 {CATEGORIZED_PANTONES['Standard'].map((pantone) => (
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`flex items-center gap-2 p-1.5 rounded-lg border text-left transition-all hover:bg-muted ${selectedPantone?.code === pantone.code
-                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                        : "border-transparent hover:border-border"
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
+                        ? "border-primary bg-primary/5"
+                        : "border-transparent hover:bg-muted"
                       }`}
                   >
                     <div
-                      className="w-8 h-8 rounded border shadow-sm shrink-0"
+                      className="w-6 h-6 rounded border shadow-sm shrink-0"
                       style={{ backgroundColor: pantone.hex }}
                     />
                     <div className="min-w-0">
-                      <div className="text-xs font-bold truncate">{pantone.code}</div>
-                      <div className="text-[10px] text-muted-foreground truncate">{pantone.name}</div>
+                      <div className="text-[10px] font-bold truncate">{pantone.code}</div>
                     </div>
                   </button>
                 ))}
@@ -256,36 +249,35 @@ export function ColorPickerModal({
             </TabsContent>
 
             <TabsContent value="metallic" className="mt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 {CATEGORIZED_PANTONES['Metallic']?.map((pantone) => (
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`flex items-center gap-2 p-1.5 rounded-lg border text-left transition-all hover:bg-muted ${selectedPantone?.code === pantone.code
-                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                        : "border-transparent hover:border-border"
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
+                        ? "border-primary bg-primary/5"
+                        : "border-transparent hover:bg-muted"
                       }`}
                   >
                     <div
-                      className="w-8 h-8 rounded border shadow-sm shrink-0"
+                      className="w-6 h-6 rounded border shadow-sm shrink-0"
                       style={{ backgroundColor: pantone.hex }}
                     />
                     <div className="min-w-0">
-                      <div className="text-xs font-bold truncate">{pantone.code}</div>
-                      <div className="text-[10px] text-muted-foreground truncate">{pantone.name}</div>
+                      <div className="text-[10px] font-bold truncate">{pantone.code}</div>
                     </div>
                   </button>
-                )) || <div className="text-sm text-muted-foreground text-center py-4">No metallic colors found.</div>}
+                )) || <div className="text-xs text-muted-foreground text-center py-3">No metallic colors</div>}
               </div>
             </TabsContent>
 
-            <TabsContent value="custom" className="space-y-4">
-              <div className="space-y-4 pt-2">
+            <TabsContent value="custom" className="space-y-3">
+              <div className="space-y-3 pt-1">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Custom Hex Code</label>
+                  <label className="text-xs font-medium mb-1.5 block">Custom Hex</label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">#</div>
+                      <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">#</div>
                       <input
                         type="text"
                         value={tempColor.replace('#', '')}
@@ -293,7 +285,7 @@ export function ColorPickerModal({
                           const val = '#' + e.target.value.replace('#', '');
                           if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) setTempColor(val);
                         }}
-                        className="w-full pl-7 pr-3 py-2 rounded-md border text-sm font-mono uppercase"
+                        className="w-full pl-6 pr-2 py-1.5 rounded border text-sm font-mono uppercase h-9"
                         placeholder="000000"
                       />
                     </div>
@@ -304,20 +296,20 @@ export function ColorPickerModal({
                         setTempColor(e.target.value);
                         setSelectedPantone(null);
                       }}
-                      className="w-10 h-10 rounded border cursor-pointer p-0.5"
+                      className="w-9 h-9 rounded border cursor-pointer p-0.5"
                     />
                   </div>
                 </div>
 
                 {recentColors.length > 0 && (
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Recent Colors</label>
-                    <div className="flex flex-wrap gap-2">
+                    <label className="text-xs font-medium mb-1.5 block">Recent</label>
+                    <div className="flex flex-wrap gap-1.5">
                       {recentColors.map(color => (
                         <button
                           key={color}
                           onClick={() => handleColorSelect(color)}
-                          className="w-8 h-8 rounded border shadow-sm hover:scale-110 transition-transform"
+                          className="w-7 h-7 rounded border shadow-sm hover:scale-105 transition-transform"
                           style={{ backgroundColor: color }}
                           title={color}
                         />
@@ -331,7 +323,7 @@ export function ColorPickerModal({
         </div>
       </ScrollArea>
 
-      {footer && <div className="p-4 border-t bg-muted/10">{footer}</div>}
+      {footer && <div className="p-3 border-t bg-muted/10">{footer}</div>}
     </div>
   );
 
@@ -339,11 +331,11 @@ export function ColorPickerModal({
   if (isMobile) {
     return createPortal(
       <div className="fixed inset-0 z-50 flex flex-col justify-end">
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-background rounded-t-xl shadow-2xl h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center justify-between p-4 border-b">
-            <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
-            <h3 className="font-semibold">{title}</h3>
+        <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+        <div className="relative bg-background rounded-t-xl shadow-xl h-[70vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center justify-between px-3 py-2 border-b">
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 text-sm">Cancel</Button>
+            <h3 className="font-medium text-sm">{title}</h3>
             <div className="w-12" /> {/* Spacer */}
           </div>
 
