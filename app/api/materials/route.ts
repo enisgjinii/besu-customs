@@ -139,17 +139,17 @@ export async function GET(request: Request) {
 
     // Basketball Jersey Top And Long Shorts renaming
     if (modelParam.includes("basketball-jersey-top-and-long-shorts.glb")) {
-      // FABRIC materials are actually the jersey parts
-      if (originalName === "FABRIC_1_2842") return "Shorts Waist Trim Color";
-      if (originalName === "FABRIC_1_2845") return "Back of Shorts Color";
-      if (originalName === "FABRIC_1_2848") return "Front of Shorts Color";
+      // FABRIC materials are actually the jersey parts (FIXED MAPPING)
+      if (originalName === "FABRIC_1_2842") return "Jersey Trim/Collar";
+      if (originalName === "FABRIC_1_2845") return "Back of Jersey Color";
+      if (originalName === "FABRIC_1_2848") return "Front of Jersey Color";
       if (originalName === "FABRIC_1_66694") return "Jersey Side Panels Color";
-      // Ble and Body materials are actually the shorts parts
+      // Ble and Body materials are actually the shorts parts (FIXED MAPPING)
       if (originalName === "Ble_66685")
-        return "Jersey Sleeve & Collar Trim Color";
-      if (originalName === "Body_B_66682") return "Back of Jersey Color";
-      if (originalName === "Body_F_66679") return "Front of Jersey Color";
-      // Button materials
+        return "Shorts Waist Trim/Side";
+      if (originalName === "Body_B_66682") return "Back of Shorts Color";
+      if (originalName === "Body_F_66679") return "Front of Shorts Color";
+      // Button materials - seem to be on jersey
       if (originalName === "Default_Button_66696")
         return "Jersey Button 1 Color";
       if (originalName === "Default_Button_66697")
@@ -367,12 +367,7 @@ export async function GET(request: Request) {
       if (originalName === "Body_Back_4") return "Back Color";
     }
 
-    // Volleyball Long Sleeve Tops renaming (materials and meshes)
-    if (modelParam.includes("volleyball-long-sleeve-tops.glb")) {
-      if (originalName === "Sleeves") return "Sleeves";
-      if (originalName === "Sleeves_FRONT_4165") return "Front of Shirt Color";
-      if (originalName === "Body_FRONT_4160") return "Back of Shirt Color";
-    }
+
 
     // Volleyball Shorts Spandex 4 (Long Length) renaming
     if (modelParam.includes("volleyball-shorts-spandex-4.glb")) {
@@ -688,15 +683,15 @@ export async function GET(request: Request) {
 
       // Define the desired order: Jersey sections first (Front, Back, Trim, Side Panels, Buttons), then Shorts sections (Front, Back, Waist)
       const desiredOrder = [
-        "Body_F_66679", // Front of Jersey Color
-        "Body_B_66682", // Back of Jersey Color
-        "Ble_66685", // Jersey Sleeve & Collar Trim Color
+        "FABRIC_1_2848", // Front of Jersey (was Front of Shorts)
+        "FABRIC_1_2845", // Back of Jersey (was Back of Shorts)
+        "FABRIC_1_2842", // Jersey Trim (was Shorts Waist)
         "FABRIC_1_66694", // Jersey Side Panels Color
         "Default_Button_66696", // Jersey Button 1 Color
         "Default_Button_66697", // Jersey Button 2 Color
-        "FABRIC_1_2848", // Front of Shorts Color
-        "FABRIC_1_2845", // Back of Shorts Color
-        "FABRIC_1_2842", // Shorts Waist Trim Color
+        "Body_F_66679", // Front of Shorts (was Front of Jersey)
+        "Body_B_66682", // Back of Shorts (was Back of Jersey)
+        "Ble_66685", // Shorts Trim (was Jersey Sleeve/Collar)
       ];
 
       const orderedSections: MaterialSection[] = [];
