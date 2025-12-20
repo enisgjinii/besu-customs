@@ -34,6 +34,7 @@ const TRIM_LOCATIONS = [
   { id: "waist", name: "Waist" },
   { id: "bottom", name: "Bottom Hem" },
   { id: "placket", name: "Button Placket" },
+  { id: "sides", name: "Side Panels" },
   { id: "custom", name: "Custom Position" },
 ];
 
@@ -57,7 +58,8 @@ export function Step03bTrimLines() {
         (trimLocation === "armholes" && sectionName.includes("arm")) ||
         (trimLocation === "waist" && sectionName.includes("waist")) ||
         (trimLocation === "bottom" && sectionName.includes("bottom")) ||
-        (trimLocation === "placket" && sectionName.includes("placket"))
+        (trimLocation === "placket" && sectionName.includes("placket")) ||
+        (trimLocation === "sides" && sectionName.includes("side"))
       );
     });
 
