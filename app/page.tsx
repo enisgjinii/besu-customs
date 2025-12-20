@@ -47,7 +47,7 @@ export default function Home() {
   return (
     <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
       {/* 3D Viewer - Responsive padding for bottom bar */}
-      <main className="flex-1 relative w-full h-full pb-[280px] md:pb-[300px]">
+      <main className="flex-1 relative w-full h-full pb-[240px] md:pb-[280px]">
         <Scene />
       </main>
 

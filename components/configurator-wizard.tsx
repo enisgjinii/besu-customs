@@ -110,7 +110,7 @@ export function ConfiguratorWizard() {
     <div
       className={cn(
         "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 z-40 flex flex-col",
-        isMobile ? "h-[280px]" : "h-[300px]", // Compact on mobile and desktop
+        isMobile ? "h-[240px]" : "h-[280px]", // Compact on mobile and desktop
       )}
     >
       {/* Texture Layer Selector - Global access */}

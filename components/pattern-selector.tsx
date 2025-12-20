@@ -186,15 +186,15 @@ function CategoryGrid({
 }) {
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
-    <div className="grid grid-cols-4 gap-1 pb-1">
+    <div className="grid grid-cols-3 gap-2 pb-1">
       {patterns.map((pattern) => (
         <button
           key={pattern.id}
           onClick={() => onSelect(pattern)}
           className={cn(
-            "rounded overflow-hidden border transition-all",
+            "rounded-lg overflow-hidden border-2 transition-all",
             selectedPattern === pattern.id
-              ? "border-primary ring-1 ring-primary"
+              ? "border-primary ring-2 ring-primary"
               : "border-border/50 hover:border-primary/50",
           )}
         >
@@ -203,6 +203,7 @@ function CategoryGrid({
               src={pattern.thumbnail}
               alt={pattern.name}
               className="w-full h-full object-cover"
+              style={{ imageRendering: "crisp-edges" }}
             />
             {selectedPattern === pattern.id && (
               <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">

@@ -100,17 +100,7 @@ export function AIImageGenerator() {
           }),
         );
 
-        // Also directly apply to UV map if we're in the UV editor context
-        // This ensures the image appears immediately in the UV canvas
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent("generated-image-available", {
-              detail: storageData,
-            }),
-          );
-        }, 100);
-
-        toast.success("Image generated and added to UV map!");
+        toast.success("Image generated! Click Apply to add it to your design.");
       } else {
         toast.success("Image generated successfully!");
       }

@@ -24,7 +24,6 @@ import {
   Strikethrough,
   MousePointer2,
   Bot,
-  School,
   Search,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -136,22 +135,7 @@ export function UVTextureEditor() {
     timestamp: number;
   } | null>(null);
 
-  // School Logos state
-  const [schoolLogos, setSchoolLogos] = useState<
-    { name: string; path: string }[]
-  >([]);
-  const [logoSearch, setLogoSearch] = useState("");
-  const [logosLoaded, setLogosLoaded] = useState(false);
 
-  useEffect(() => {
-    fetch("/school-logos.json")
-      .then((res) => res.json())
-      .then((data) => {
-        setSchoolLogos(data);
-        setLogosLoaded(true);
-      })
-      .catch((err) => console.error("Failed to load logos:", err));
-  }, []);
 
   const handleAddLogo = async (logoPath: string) => {
     if (!fabricCanvasRef.current) return;
@@ -899,7 +883,7 @@ export function UVTextureEditor() {
           toast.error("Failed to add AI image to canvas");
           try {
             if (blobUrl) URL.revokeObjectURL(blobUrl);
-          } catch (e) {}
+          } catch (e) { }
         });
     };
 
@@ -981,14 +965,14 @@ export function UVTextureEditor() {
             setPendingAIImage(null);
             try {
               if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl);
-            } catch (e) {}
+            } catch (e) { }
           })
           .catch((err) => {
             console.error("Failed to load pending AI image:", err);
             setPendingAIImage(null);
             try {
               if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl);
-            } catch (e) {}
+            } catch (e) { }
           });
       };
       applyPendingImage();
@@ -1002,8 +986,8 @@ export function UVTextureEditor() {
     const canvas = fabricCanvasRef.current;
 
     const textOptions: any = {
-      left: canvas.width! / 2 - 200,
-      top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
+      left: canvas.width! / 2 - 100, // Center horizontally
+      top: canvas.height! * 0.35, // Centered on chest area
       fontSize: fontSize,
       fill: textColor,
       fontFamily: fontFamily,
@@ -1235,7 +1219,7 @@ export function UVTextureEditor() {
 
           img.set({
             left: canvas.width! / 2 - (img.width! * scale) / 2,
-            top: canvas.height! / 4, // Positioned in upper quarter (chest area) instead of center
+            top: canvas.height! * 0.35 - (img.height! * scale) / 2, // Centered on chest area
             scaleX: scale,
             scaleY: scale,
           });
@@ -1424,7 +1408,7 @@ export function UVTextureEditor() {
         {/* Text Tab */}
         <TabsContent value="text" className="mt-4">
           <Card className="p-4">
-            <ScrollArea className="h-[400px] pr-3">
+            <ScrollArea className="h-[280px] sm:h-[400px] pr-3">
               <div className="space-y-4">
                 {/* Text Input */}
                 <div>
@@ -1837,9 +1821,78 @@ export function UVTextureEditor() {
 
       {/* Selection Tools - shown when object is selected */}
       {hasSelection && (
-        <Card className="p-4 space-y-2">
-          <h3 className="font-semibold mb-3">Selected Object</h3>
-          <div className="grid grid-cols-2 gap-2">
+        <Card className="p-4 space-y-3">
+          <h3 className="font-semibold text-sm">Selected Object</h3>
+
+          {/* Size Slider */}
+          <div className="space-y-1">
+            <Label className="text-xs">Size</Label>
+            <div className="flex items-center gap-2">
+              <Slider
+                defaultValue={[100]}
+                min={20}
+                max={200}
+                step={5}
+                className="flex-1"
+                onValueChange={(v) => {
+                  if (!fabricCanvasRef.current) return;
+                  const canvas = fabricCanvasRef.current;
+                  const activeObject = canvas.getActiveObject();
+                  if (activeObject) {
+                    const scale = v[0] / 100;
+                    activeObject.set({ scaleX: scale, scaleY: scale });
+                    canvas.renderAll();
+                    updateTexture();
+                  }
+                }}
+              />
+              <span className="text-xs w-10 text-right text-muted-foreground">100%</span>
+            </div>
+          </div>
+
+          {/* Rotation Slider */}
+          <div className="space-y-1">
+            <Label className="text-xs">Rotation</Label>
+            <div className="flex items-center gap-2">
+              <Slider
+                defaultValue={[0]}
+                min={-180}
+                max={180}
+                step={5}
+                className="flex-1"
+                onValueChange={(v) => {
+                  if (!fabricCanvasRef.current) return;
+                  const canvas = fabricCanvasRef.current;
+                  const activeObject = canvas.getActiveObject();
+                  if (activeObject) {
+                    activeObject.set({ angle: v[0] });
+                    canvas.renderAll();
+                    updateTexture();
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => {
+                  if (!fabricCanvasRef.current) return;
+                  const canvas = fabricCanvasRef.current;
+                  const activeObject = canvas.getActiveObject();
+                  if (activeObject) {
+                    activeObject.set({ angle: 0 });
+                    canvas.renderAll();
+                    updateTexture();
+                  }
+                }}
+              >
+                <RotateCcw className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2 pt-2">
             <Button onClick={handleDuplicate} variant="outline" size="sm">
               <Copy className="h-4 w-4 mr-2" />
               Duplicate
@@ -1895,8 +1948,7 @@ export function UVTextureEditor() {
       <Card className="p-4">
         <div
           ref={canvasContainerRef}
-          className="relative border rounded-md bg-gray-50 w-full flex items-center justify-center overflow-hidden"
-          style={{ minHeight: "400px" }}
+          className="relative border rounded-md bg-gray-50 w-full flex items-center justify-center overflow-hidden min-h-[300px] sm:min-h-[400px]"
         >
           {!isLoaded && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
