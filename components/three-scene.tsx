@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Center } from "@react-three/drei";
 import { useConfiguratorStore, MaterialSection } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
+import { LayerControlsOverlay } from "@/components/layer-controls-overlay";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import { extractSectionsFromThreeModel } from "@/lib/three-material-utils";
@@ -38,6 +39,7 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
 // Renders textures directly onto the model surface (no floating elements)
 function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
+  const selectedTextureLayerId = useConfiguratorStore((s) => s.selectedTextureLayerId);
   const perfConfig = useMobilePerformance();
 
   // Use optimal canvas size based on device performance
@@ -61,6 +63,107 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
   // Track loaded images to avoid reloading
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  // Helper function to draw a control icon
+  const drawControlIcon = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    iconType: "copy" | "rotate" | "delete" | "resize",
+    size: number
+  ) => {
+    const radius = size / 2;
+
+    // Draw circular background
+    ctx.save();
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = size * 0.15;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+
+    // Draw border based on icon type
+    const colors: Record<string, string> = {
+      copy: "#8b5cf6",
+      rotate: "#3b82f6",
+      delete: "#ef4444",
+      resize: "#3b82f6",
+    };
+    ctx.strokeStyle = colors[iconType];
+    ctx.lineWidth = size * 0.08;
+    ctx.stroke();
+
+    // Draw icon (simplified shapes)
+    ctx.strokeStyle = colors[iconType];
+    ctx.lineWidth = size * 0.1;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const iconSize = size * 0.4;
+
+    if (iconType === "copy") {
+      // Two overlapping rectangles
+      const rectSize = iconSize * 0.7;
+      ctx.strokeRect(x - rectSize / 2, y - rectSize / 2, rectSize, rectSize);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(x - rectSize / 2 + rectSize * 0.3, y - rectSize / 2 - rectSize * 0.3, rectSize, rectSize);
+      ctx.strokeRect(x - rectSize / 2 + rectSize * 0.3, y - rectSize / 2 - rectSize * 0.3, rectSize, rectSize);
+    } else if (iconType === "rotate") {
+      // Circular arrow
+      ctx.beginPath();
+      ctx.arc(x, y, iconSize * 0.5, -Math.PI * 0.7, Math.PI * 0.5);
+      ctx.stroke();
+      // Arrow head
+      const arrowX = x + iconSize * 0.5;
+      const arrowY = y;
+      ctx.beginPath();
+      ctx.moveTo(arrowX - iconSize * 0.2, arrowY - iconSize * 0.15);
+      ctx.lineTo(arrowX, arrowY);
+      ctx.lineTo(arrowX - iconSize * 0.15, arrowY + iconSize * 0.2);
+      ctx.stroke();
+    } else if (iconType === "delete") {
+      // Trash icon
+      const trashW = iconSize * 0.6;
+      const trashH = iconSize * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(x - trashW / 2, y - trashH / 2 + trashH * 0.15);
+      ctx.lineTo(x + trashW / 2, y - trashH / 2 + trashH * 0.15);
+      ctx.stroke();
+      // Trash body
+      ctx.beginPath();
+      ctx.moveTo(x - trashW / 2 + trashW * 0.1, y - trashH / 2 + trashH * 0.15);
+      ctx.lineTo(x - trashW / 2 + trashW * 0.2, y + trashH / 2);
+      ctx.lineTo(x + trashW / 2 - trashW * 0.2, y + trashH / 2);
+      ctx.lineTo(x + trashW / 2 - trashW * 0.1, y - trashH / 2 + trashH * 0.15);
+      ctx.stroke();
+      // Lid
+      ctx.beginPath();
+      ctx.moveTo(x - trashW * 0.2, y - trashH / 2);
+      ctx.lineTo(x + trashW * 0.2, y - trashH / 2);
+      ctx.stroke();
+    } else if (iconType === "resize") {
+      // Diagonal arrows
+      ctx.beginPath();
+      ctx.moveTo(x - iconSize * 0.4, y - iconSize * 0.4);
+      ctx.lineTo(x + iconSize * 0.4, y + iconSize * 0.4);
+      ctx.stroke();
+      // Arrow heads
+      ctx.beginPath();
+      ctx.moveTo(x - iconSize * 0.4, y - iconSize * 0.15);
+      ctx.lineTo(x - iconSize * 0.4, y - iconSize * 0.4);
+      ctx.lineTo(x - iconSize * 0.15, y - iconSize * 0.4);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + iconSize * 0.4, y + iconSize * 0.15);
+      ctx.lineTo(x + iconSize * 0.4, y + iconSize * 0.4);
+      ctx.lineTo(x + iconSize * 0.15, y + iconSize * 0.4);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  };
 
   useEffect(() => {
     const ctx = canvas.getContext("2d", {
@@ -95,6 +198,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       // Clear and re-render all layers in order
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+      // Track bounds for selected layer
+      let selectedLayerBounds: { x: number; y: number; width: number; height: number } | null = null;
 
       visibleLayers.forEach((layer) => {
         ctx.save();
@@ -150,29 +256,22 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
               imgWidth,
               imgHeight,
             );
+
+            // Track bounds if selected
+            if (layer.id === selectedTextureLayerId) {
+              selectedLayerBounds = {
+                x: x - imgWidth / 2,
+                y: y - imgHeight / 2,
+                width: imgWidth,
+                height: imgHeight,
+              };
+            }
           }
         } else if (layer.type === "text" && layer.text) {
           // Text Rendering with Curving Support
           const u = layer.position?.[0] ?? 0.5;
           const v = layer.position?.[1] ?? 0.5;
-          // Rotation Z is used for both orientation AND curvature by convention in our UI
-          // For simplicity, let's say "rotation" determines the baseline angle,
-          // but we need a separate "curvature" parameter.
-          // In Step 06, we mapped "Curvature Slider" to rotation[2].
-          // BUT, we also want normal rotation.
-          // Let's interpret layer.rotation[2] as the curvature angle (in radians) only if we set a flag,
-          // or we handle "curve" as a separate property.
-          // Looking at step-06-text.tsx: rotation: [0, 0, textCurvature]
-          // So currently rotation controls curvature. We need to distinguish actual rotation vs curvature.
-          // For now, let's assume rotation[2] IS curvature (as per user request "curving up and down").
-
-          // To allow BOTH rotation and curvature, we should probably add a `curvature` prop to TextureLayer.
-          // Checking Step 06 again: It sets `rotation: [0, 0, radians]`.
-          // So the slider controls Z rotation, but the Label says "Curve".
-          // This means the user intention is Curvature.
-          // Let's treat rotation[2] as Curvature Angle (Theta).
-
-          const curvatureAngle = layer.rotation?.[2] ?? 0; // In radians
+          const curvatureAngle = layer.rotation?.[2] ?? 0;
           const scaleMultiplier = layer.scale?.[0] ?? 1;
           const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
           const fontSize = baseFontSize * scaleMultiplier;
@@ -186,6 +285,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 
+          // Measure text for selection bounds
+          const textMetrics = ctx.measureText(layer.text);
+          const textWidth = textMetrics.width;
+          const textHeight = fontSize * 1.2;
+
           // Shadow
           ctx.shadowColor = "rgba(0,0,0,0.1)";
           ctx.shadowBlur = Math.max(2, fontSize * 0.02);
@@ -196,74 +300,29 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             ctx.fillText(layer.text, x, y);
           } else {
             // Curved text
-            // Radius depends on how "curved" we want it.
-            // Let's assume the angle covers the whole text width.
-            const textWidth = ctx.measureText(layer.text).width;
-            // Arc length s = r * theta => r = s / theta
-            // Avoid division by zero
             const r = textWidth / Math.abs(curvatureAngle);
 
             ctx.save();
             ctx.translate(x, y);
 
-            // If curving up (positive angle) or down (negative)
-            // For standard "Arch", let's move center of circle down.
-            // If angle > 0 (Smile/U-shape), center is above? No, usually "Arc" means rainbow shape.
-            // Let's follow standard convention: +Angle = Rainbow (Arch up), -Angle = Smile (Arch down)?
-            // Or vice versa. Let's try: + = rainbow (bulge up).
-            // This means center of circle is BELOW text.
-            // Wait, standard text path:
-            // If curvature is positive, we want A shape. Center is below.
-            // If curvature is negative, we want U shape. Center is above.
-
-            // Actually, let's stick to the slider in Step 6: -45 to +45 deg.
-            // Let's say + is Arch (Rainbow). Center is below text (y + r).
-            // Rotation per char = angle / length.
-
-            // Calculate Start Angle
-            // We want the text centered at angle -90 (top of circle) if we define 0 as right.
-            // Let's align characters along the arc.
-
-            // Direction factor: 1 for Arch (Rainbow), -1 for Smile
             const direction = curvatureAngle > 0 ? -1 : 1;
             const radius = Math.abs(r);
-
-            // Rotate entire context to orient the arc if needed?
-            // For now, assume fixed horizontal baseline for the arc center.
-
-            // We want the text centered at (0,0) of current translate.
-            // So we go down/up by radius to find circle center.
             const cy = direction * radius;
 
-            // Pre-calculate angles for each char
-            // For improved spacing, use cumulative width
             const chars = layer.text.split("");
             const totalWidth = textWidth;
-            // Initial angle offset to center the text
-            // Arc length = totalWidth. Total Angle = totalWidth / radius.
             const totalArcAngle = totalWidth / radius;
             let currentAngle = -totalArcAngle / 2;
 
             chars.forEach((char) => {
               const charWidth = ctx.measureText(char).width;
-              // Angle for half this char
               const charAngle = (charWidth / radius) / 2;
               const theta = currentAngle + charAngle;
 
               ctx.save();
-              // Move to pixel on arc
-              // x = r * sin(theta)
-              // y = r * cos(theta) -- relative to center
-              // But we are using Canvas coords where Y is down.
-              // Let's effectively rotate around the circle center.
-
-              // Move to Circle Center
               ctx.translate(0, cy);
-              // Rotate to char position
               ctx.rotate(direction * theta);
-              // Move back out to radius
               ctx.translate(0, -direction * radius);
-
               ctx.fillText(char, 0, 0);
               ctx.restore();
 
@@ -276,9 +335,57 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           // Reset shadow
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
+
+          // Track bounds if selected
+          if (layer.id === selectedTextureLayerId) {
+            selectedLayerBounds = {
+              x: x - textWidth / 2 - 10,
+              y: y - textHeight / 2 - 10,
+              width: textWidth + 20,
+              height: textHeight + 20,
+            };
+          }
         }
         ctx.restore();
       });
+
+      // Draw selection handles if a layer is selected
+      if (selectedLayerBounds && selectedTextureLayerId) {
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+
+        const b = selectedLayerBounds;
+        const padding = 15;
+        const controlSize = Math.max(30, CANVAS_SIZE * 0.025);
+
+        // Draw selection border (dashed blue line)
+        ctx.strokeStyle = "#3b82f6";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 6]);
+        ctx.strokeRect(
+          b.x - padding,
+          b.y - padding,
+          b.width + padding * 2,
+          b.height + padding * 2
+        );
+        ctx.setLineDash([]);
+
+        // Draw corner control icons
+        // Top-left: Duplicate (copy)
+        drawControlIcon(ctx, b.x - padding, b.y - padding, "copy", controlSize);
+
+        // Top-right: Rotate
+        drawControlIcon(ctx, b.x + b.width + padding, b.y - padding, "rotate", controlSize);
+
+        // Bottom-left: Delete
+        drawControlIcon(ctx, b.x - padding, b.y + b.height + padding, "delete", controlSize);
+
+        // Bottom-right: Resize
+        drawControlIcon(ctx, b.x + b.width + padding, b.y + b.height + padding, "resize", controlSize);
+
+        ctx.restore();
+      }
 
       texture.needsUpdate = true;
     };
@@ -322,7 +429,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     if (pendingImages === 0 || processedImages >= pendingImages) {
       renderAllLayers();
     }
-  }, [textureLayers, canvas, texture, CANVAS_SIZE]);
+  }, [textureLayers, selectedTextureLayerId, canvas, texture, CANVAS_SIZE, perfConfig.isLowEndDevice]);
 
   // Apply Texture to Material
   useEffect(() => {
@@ -823,6 +930,9 @@ export function ThreeScene({
 
         {!perfConfig.isLowEndDevice && <Environment preset="studio" />}
       </Canvas>
+
+      {/* Layer Controls Overlay - shows when a texture layer is selected */}
+      <LayerControlsOverlay />
 
       {/* Overlays for Loading, Empty State, Error - simplified for brevity in this rewrite */}
       {/* Overlays for Loading, Empty State, Error */}

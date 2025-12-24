@@ -445,9 +445,9 @@ export function UVTextureEditor() {
 
       // Lucide icon paths (exact paths from lucide-react)
       const lucideIconPaths = {
+        copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
         rotate:
           '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
-        pin: '<line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76c0 .73-.4 1.4-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>',
         trash:
           '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
         resize:
@@ -455,8 +455,8 @@ export function UVTextureEditor() {
       };
 
       const iconColors = {
+        copy: "#8b5cf6",
         rotate: "#3b82f6",
-        pin: "#6b7280",
         trash: "#ef4444",
         resize: "#3b82f6",
       };
@@ -473,7 +473,7 @@ export function UVTextureEditor() {
 
       // Render function using pre-rendered Lucide icon images
       const renderIconControl = (
-        iconKey: "rotate" | "pin" | "trash" | "resize",
+        iconKey: "copy" | "rotate" | "trash" | "resize",
         borderColor: string,
       ) => {
         return (
@@ -530,46 +530,58 @@ export function UVTextureEditor() {
         return true;
       };
 
-      // Pin handler
-      const pinHandler = (eventData: any, transform: any) => {
+      // Duplicate handler - clones the selected object
+      const duplicateHandler = (eventData: any, transform: any) => {
         const target = transform.target;
-        const isLocked = target.lockMovementX; // Check one property to determine state
+        const canvasObj = target.canvas;
 
-        // Toggle all lock properties
-        const newState = !isLocked;
-        target.set({
-          lockMovementX: newState,
-          lockMovementY: newState,
-          lockScalingX: newState,
-          lockScalingY: newState,
-          lockRotation: newState,
-          // Visual feedback
-          borderColor: newState ? "#ef4444" : "#3b82f6",
-          cornerColor: newState ? "#ef4444" : "#3b82f6",
+        // Clone the object
+        target.clone().then((cloned: any) => {
+          // Offset the clone slightly so it's visible
+          cloned.set({
+            left: (target.left || 0) + 30,
+            top: (target.top || 0) + 30,
+          });
+
+          // Apply custom controls to the cloned object
+          if (customControlsRef.current) {
+            cloned.controls = customControlsRef.current.controls;
+            cloned.set({
+              cornerSize: customControlsRef.current.cornerSize,
+              borderColor: customControlsRef.current.borderColor,
+              borderDashArray: customControlsRef.current.borderDashArray,
+              borderScaleFactor: customControlsRef.current.borderScaleFactor,
+              padding: customControlsRef.current.padding,
+            });
+          }
+
+          canvasObj.add(cloned);
+          canvasObj.setActiveObject(cloned);
+          canvasObj.requestRenderAll();
         });
 
-        target.canvas.requestRenderAll();
         return true;
       };
 
-      // Create custom controls - only 4 corners with Lucide icons
+      // Create custom controls - 4 corners with Lucide icons
+      // Layout: Duplicate (tl), Rotate (tr), Delete (bl), Resize (br)
       const customControls = {
         tl: new Control({
           x: -0.5,
           y: -0.5,
-          cursorStyle: "grab",
-          actionHandler: controlsUtils.rotationWithSnapping,
-          actionName: "rotate",
-          render: renderIconControl("rotate", "#3b82f6"),
+          cursorStyle: "copy",
+          mouseUpHandler: duplicateHandler,
+          render: renderIconControl("copy", "#8b5cf6"),
           sizeX: scaledCornerSize,
           sizeY: scaledCornerSize,
         }),
         tr: new Control({
           x: 0.5,
           y: -0.5,
-          cursorStyle: "pointer",
-          mouseUpHandler: pinHandler, // Use pin handler
-          render: renderIconControl("pin", "#6b7280"),
+          cursorStyle: "grab",
+          actionHandler: controlsUtils.rotationWithSnapping,
+          actionName: "rotate",
+          render: renderIconControl("rotate", "#3b82f6"),
           sizeX: scaledCornerSize,
           sizeY: scaledCornerSize,
         }),
