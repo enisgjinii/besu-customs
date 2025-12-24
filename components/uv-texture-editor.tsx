@@ -135,8 +135,6 @@ export function UVTextureEditor() {
     timestamp: number;
   } | null>(null);
 
-
-
   const handleAddLogo = async (logoPath: string) => {
     if (!fabricCanvasRef.current) return;
     const { FabricImage } = await import("fabric");
@@ -895,7 +893,7 @@ export function UVTextureEditor() {
           toast.error("Failed to add AI image to canvas");
           try {
             if (blobUrl) URL.revokeObjectURL(blobUrl);
-          } catch (e) { }
+          } catch (e) {}
         });
     };
 
@@ -977,14 +975,14 @@ export function UVTextureEditor() {
             setPendingAIImage(null);
             try {
               if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl);
-            } catch (e) { }
+            } catch (e) {}
           })
           .catch((err) => {
             console.error("Failed to load pending AI image:", err);
             setPendingAIImage(null);
             try {
               if (pendingBlobUrl) URL.revokeObjectURL(pendingBlobUrl);
-            } catch (e) { }
+            } catch (e) {}
           });
       };
       applyPendingImage();
@@ -1858,7 +1856,9 @@ export function UVTextureEditor() {
                   }
                 }}
               />
-              <span className="text-xs w-10 text-right text-muted-foreground">100%</span>
+              <span className="text-xs w-10 text-right text-muted-foreground">
+                100%
+              </span>
             </div>
           </div>
 

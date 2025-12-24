@@ -39,7 +39,9 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
 // Renders textures directly onto the model surface (no floating elements)
 function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
-  const selectedTextureLayerId = useConfiguratorStore((s) => s.selectedTextureLayerId);
+  const selectedTextureLayerId = useConfiguratorStore(
+    (s) => s.selectedTextureLayerId,
+  );
   const perfConfig = useMobilePerformance();
 
   // Use optimal canvas size based on device performance
@@ -70,7 +72,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     x: number,
     y: number,
     iconType: "copy" | "rotate" | "delete" | "resize",
-    size: number
+    size: number,
   ) => {
     const radius = size / 2;
 
@@ -108,8 +110,18 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       const rectSize = iconSize * 0.7;
       ctx.strokeRect(x - rectSize / 2, y - rectSize / 2, rectSize, rectSize);
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(x - rectSize / 2 + rectSize * 0.3, y - rectSize / 2 - rectSize * 0.3, rectSize, rectSize);
-      ctx.strokeRect(x - rectSize / 2 + rectSize * 0.3, y - rectSize / 2 - rectSize * 0.3, rectSize, rectSize);
+      ctx.fillRect(
+        x - rectSize / 2 + rectSize * 0.3,
+        y - rectSize / 2 - rectSize * 0.3,
+        rectSize,
+        rectSize,
+      );
+      ctx.strokeRect(
+        x - rectSize / 2 + rectSize * 0.3,
+        y - rectSize / 2 - rectSize * 0.3,
+        rectSize,
+        rectSize,
+      );
     } else if (iconType === "rotate") {
       // Circular arrow
       ctx.beginPath();
@@ -200,7 +212,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
       // Track bounds for selected layer
-      let selectedLayerBounds: { x: number; y: number; width: number; height: number } | null = null;
+      let selectedLayerBounds: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      } | null = null;
 
       visibleLayers.forEach((layer) => {
         ctx.save();
@@ -316,7 +333,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
             chars.forEach((char) => {
               const charWidth = ctx.measureText(char).width;
-              const charAngle = (charWidth / radius) / 2;
+              const charAngle = charWidth / radius / 2;
               const theta = currentAngle + charAngle;
 
               ctx.save();
@@ -326,7 +343,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
               ctx.fillText(char, 0, 0);
               ctx.restore();
 
-              currentAngle += (charWidth / radius);
+              currentAngle += charWidth / radius;
             });
 
             ctx.restore();
@@ -350,12 +367,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       });
 
       // Draw selection handles if a layer is selected
-      if (selectedLayerBounds && selectedTextureLayerId) {
+      if (selectedLayerBounds !== null && selectedTextureLayerId) {
         ctx.save();
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = "source-over";
 
-        const b = selectedLayerBounds;
+        // Explicit type to avoid TypeScript narrowing issues
+        const b: { x: number; y: number; width: number; height: number } =
+          selectedLayerBounds;
         const padding = 15;
         const controlSize = Math.max(30, CANVAS_SIZE * 0.025);
 
@@ -367,7 +386,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           b.x - padding,
           b.y - padding,
           b.width + padding * 2,
-          b.height + padding * 2
+          b.height + padding * 2,
         );
         ctx.setLineDash([]);
 
@@ -376,13 +395,31 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         drawControlIcon(ctx, b.x - padding, b.y - padding, "copy", controlSize);
 
         // Top-right: Rotate
-        drawControlIcon(ctx, b.x + b.width + padding, b.y - padding, "rotate", controlSize);
+        drawControlIcon(
+          ctx,
+          b.x + b.width + padding,
+          b.y - padding,
+          "rotate",
+          controlSize,
+        );
 
         // Bottom-left: Delete
-        drawControlIcon(ctx, b.x - padding, b.y + b.height + padding, "delete", controlSize);
+        drawControlIcon(
+          ctx,
+          b.x - padding,
+          b.y + b.height + padding,
+          "delete",
+          controlSize,
+        );
 
         // Bottom-right: Resize
-        drawControlIcon(ctx, b.x + b.width + padding, b.y + b.height + padding, "resize", controlSize);
+        drawControlIcon(
+          ctx,
+          b.x + b.width + padding,
+          b.y + b.height + padding,
+          "resize",
+          controlSize,
+        );
 
         ctx.restore();
       }
@@ -429,7 +466,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     if (pendingImages === 0 || processedImages >= pendingImages) {
       renderAllLayers();
     }
-  }, [textureLayers, selectedTextureLayerId, canvas, texture, CANVAS_SIZE, perfConfig.isLowEndDevice]);
+  }, [
+    textureLayers,
+    selectedTextureLayerId,
+    canvas,
+    texture,
+    CANVAS_SIZE,
+    perfConfig.isLowEndDevice,
+  ]);
 
   // Apply Texture to Material
   useEffect(() => {
@@ -598,11 +642,105 @@ function Model({
   }, [clonedScene, sections]);
 
   // Simplified interaction - drag to reposition textures on model surface
+  // Also handles clicks on control icons using UV-space proximity
   const { raycaster, gl, controls } = useThree();
   const { camera } = useThree();
   const selectedLayerRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef<{ u: number; v: number }>({ u: 0, v: 0 });
+
+  // Get store functions for control actions
+  const duplicateTextureLayer = useConfiguratorStore(
+    (s) => s.duplicateTextureLayer,
+  );
+  const removeTextureLayer = useConfiguratorStore((s) => s.removeTextureLayer);
+  const setSelectedTextureLayerId = useConfiguratorStore(
+    (s) => s.setSelectedTextureLayerId,
+  );
+
+  // Check if UV click is on a control icon (works in UV space 0-1)
+  const checkControlClickUV = (
+    clickU: number,
+    clickV: number,
+  ): string | null => {
+    const store = useConfiguratorStore.getState();
+    const selectedLayerId = store.selectedTextureLayerId;
+
+    console.log(`🔍 checkControlClickUV: click=(${clickU.toFixed(3)}, ${clickV.toFixed(3)}), selectedId=${selectedLayerId}`);
+
+    if (!selectedLayerId) {
+      console.log("⚠️ No selected layer, skipping control check");
+      return null;
+    }
+
+    const layer = store.textureLayers.find((l) => l.id === selectedLayerId);
+    if (!layer || !layer.visible) {
+      console.log("⚠️ Layer not found or not visible");
+      return null;
+    }
+
+    // Get layer position in UV space
+    const layerU = layer.position?.[0] ?? 0.5;
+    const layerV = layer.position?.[1] ?? 0.5;
+
+    // Estimate layer size in UV space based on scale
+    let halfWidth = 0.15; // Default for text
+    let halfHeight = 0.08;
+
+    if (layer.type === "image") {
+      const scaleX = layer.scale?.[0] ?? 0.3;
+      const scaleY = layer.scale?.[1] ?? 0.3;
+      halfWidth = scaleX / 2;
+      halfHeight = scaleY / 2;
+    } else if (layer.type === "text" && layer.text) {
+      const scale = layer.scale?.[0] ?? 1;
+      halfWidth = layer.text.length * 0.03 * scale;
+      halfHeight = 0.06 * scale;
+    }
+
+    console.log(`📍 Layer: "${layer.name}" at UV(${layerU.toFixed(3)}, ${layerV.toFixed(3)}), size: ${halfWidth.toFixed(3)} x ${halfHeight.toFixed(3)}`);
+
+    // Control positions in UV space (relative to layer center)
+    const controlOffset = 0.03; // Offset from layer edges
+    const hitRadius = 0.08; // INCREASED hit detection radius
+
+    const controls_uv = {
+      copy: {
+        u: layerU - halfWidth - controlOffset,
+        v: layerV + halfHeight + controlOffset,
+      },
+      rotate: {
+        u: layerU + halfWidth + controlOffset,
+        v: layerV + halfHeight + controlOffset,
+      },
+      delete: {
+        u: layerU - halfWidth - controlOffset,
+        v: layerV - halfHeight - controlOffset,
+      },
+      resize: {
+        u: layerU + halfWidth + controlOffset,
+        v: layerV - halfHeight - controlOffset,
+      },
+    };
+
+    console.log(`🎮 Controls: copy=(${controls_uv.copy.u.toFixed(3)}, ${controls_uv.copy.v.toFixed(3)}), rotate=(${controls_uv.rotate.u.toFixed(3)}, ${controls_uv.rotate.v.toFixed(3)})`);
+    console.log(`🎮 Controls: delete=(${controls_uv.delete.u.toFixed(3)}, ${controls_uv.delete.v.toFixed(3)}), resize=(${controls_uv.resize.u.toFixed(3)}, ${controls_uv.resize.v.toFixed(3)})`);
+    console.log(`📏 Hit radius: ${hitRadius}`);
+
+    // Check distance to each control in UV space
+    for (const [name, pos] of Object.entries(controls_uv)) {
+      const dist = Math.sqrt(
+        Math.pow(clickU - pos.u, 2) + Math.pow(clickV - pos.v, 2),
+      );
+      console.log(`  → ${name}: dist=${dist.toFixed(4)} (need < ${hitRadius})`);
+      if (dist < hitRadius) {
+        console.log(`🎯 HIT! Control: ${name}`);
+        return name;
+      }
+    }
+
+    return null;
+  };
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
@@ -616,7 +754,56 @@ function Model({
       const intersects = raycaster.intersectObject(clonedScene, true);
 
       if (intersects.length > 0 && intersects[0].uv) {
-        // Find visible draggable layers (excluding patterns)
+        const uv = intersects[0].uv;
+
+        // First check if clicking on a control icon
+        const controlClicked = checkControlClickUV(uv.x, uv.y);
+
+        if (controlClicked) {
+          const store = useConfiguratorStore.getState();
+          const selectedLayerId = store.selectedTextureLayerId;
+
+          if (selectedLayerId) {
+            switch (controlClicked) {
+              case "copy":
+                duplicateTextureLayer(selectedLayerId);
+                console.log("📋 Layer duplicated!");
+                break;
+              case "rotate":
+                const layer = store.textureLayers.find(
+                  (l) => l.id === selectedLayerId,
+                );
+                if (layer) {
+                  const currentRotation = layer.rotation?.[2] ?? 0;
+                  updateTextureLayer(selectedLayerId, {
+                    rotation: [0, 0, currentRotation + Math.PI / 12],
+                  });
+                  console.log("🔄 Layer rotated!");
+                }
+                break;
+              case "delete":
+                removeTextureLayer(selectedLayerId);
+                console.log("🗑️ Layer deleted!");
+                break;
+              case "resize":
+                const resizeLayer = store.textureLayers.find(
+                  (l) => l.id === selectedLayerId,
+                );
+                if (resizeLayer) {
+                  const currentScaleX = resizeLayer.scale?.[0] ?? 1;
+                  const currentScaleY = resizeLayer.scale?.[1] ?? 1;
+                  updateTextureLayer(selectedLayerId, {
+                    scale: [currentScaleX * 1.1, currentScaleY * 1.1, 1],
+                  });
+                  console.log("📐 Layer scaled up!");
+                }
+                break;
+            }
+          }
+          return; // Don't start drag when clicking controls
+        }
+
+        // Otherwise handle layer selection/dragging
         const activeLayers = useConfiguratorStore
           .getState()
           .textureLayers.filter(
@@ -626,6 +813,8 @@ function Model({
         if (activeLayers.length > 0) {
           const targetLayer = activeLayers[activeLayers.length - 1];
           if (targetLayer) {
+            // Select the layer
+            setSelectedTextureLayerId(targetLayer.id);
             selectedLayerRef.current = targetLayer.id;
             isDraggingRef.current = true;
 
@@ -665,33 +854,6 @@ function Model({
     };
 
     const handlePointerUp = () => {
-      // Log final position when dropping a layer - useful for capturing coordinates
-      if (selectedLayerRef.current) {
-        const store = useConfiguratorStore.getState();
-        const layer = store.textureLayers.find(
-          (l) => l.id === selectedLayerRef.current,
-        );
-        if (layer) {
-          const modelUrl = store.currentModelUrl;
-          console.log("📍 LAYER POSITION CAPTURED:");
-          console.log("  Layer:", layer.name);
-          console.log("  Model:", modelUrl);
-          console.log("  Position:", layer.position);
-          console.log("  Scale:", layer.scale);
-          console.log("");
-          console.log("📋 COPY THIS TO lib/logo-positioning.ts:");
-          console.log(`  // Model: ${modelUrl?.split("/").pop() || "unknown"}`);
-          console.log(`  leftChest: {`);
-          console.log(
-            `    position: [${layer.position?.[0]?.toFixed(4)}, ${layer.position?.[1]?.toFixed(4)}, 0],`,
-          );
-          console.log(
-            `    scale: [${layer.scale?.[0]?.toFixed(2)}, ${layer.scale?.[1]?.toFixed(2)}, 1],`,
-          );
-          console.log(`    rotation: [0, 0, 0],`);
-          console.log(`  },`);
-        }
-      }
       isDraggingRef.current = false;
       selectedLayerRef.current = null;
       if (controls) (controls as any).enabled = true;
@@ -706,7 +868,17 @@ function Model({
       gl.domElement.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [clonedScene, camera, gl, updateTextureLayer, controls, raycaster]);
+  }, [
+    clonedScene,
+    camera,
+    gl,
+    updateTextureLayer,
+    controls,
+    raycaster,
+    setSelectedTextureLayerId,
+    duplicateTextureLayer,
+    removeTextureLayer,
+  ]);
 
   useFrame(() => {
     if (autoRotate && modelRef.current) {
