@@ -102,6 +102,19 @@ export interface CameraState {
   zoom?: number;
 }
 
+export interface ActiveLayerBounds {
+  layerId: string;
+  canvasSize: number;
+  padding: number;
+  controlSize: number;
+  bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
 export interface ConfiguratorState {
   products: Product[];
   selectedProductId: string | null;
@@ -156,6 +169,8 @@ export interface ConfiguratorState {
   reorderTextureLayers: (layers: TextureLayer[]) => void;
   clearTextureLayers: () => void;
   setSelectedTextureLayerId: (id: string | null) => void;
+  activeLayerBounds: ActiveLayerBounds | null;
+  setActiveLayerBounds: (bounds: ActiveLayerBounds | null) => void;
 
   // Scene controls
   showGrid: boolean;
@@ -659,6 +674,27 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         set({ textureLayers: [], selectedTextureLayerId: null }),
       setSelectedTextureLayerId: (id: string | null) =>
         set({ selectedTextureLayerId: id }),
+      activeLayerBounds: null,
+      setActiveLayerBounds: (bounds: ActiveLayerBounds | null) =>
+        set((state) => {
+          const prev = state.activeLayerBounds;
+          if (!prev && !bounds) return {};
+          if (
+            prev &&
+            bounds &&
+            prev.layerId === bounds.layerId &&
+            prev.canvasSize === bounds.canvasSize &&
+            prev.padding === bounds.padding &&
+            prev.controlSize === bounds.controlSize &&
+            prev.bounds.x === bounds.bounds.x &&
+            prev.bounds.y === bounds.bounds.y &&
+            prev.bounds.width === bounds.bounds.width &&
+            prev.bounds.height === bounds.bounds.height
+          ) {
+            return {};
+          }
+          return { activeLayerBounds: bounds };
+        }),
 
       // Scene controls
       showGrid: false,

@@ -26,7 +26,7 @@ const TRIM_PATTERNS = [
   { id: "shadow", name: "Shadow", description: "Subtle shadow effect" },
 ];
 
-// Trim locations on jersey
+// Trim locations on jersey - including sides for jersey top/bottom
 const TRIM_LOCATIONS = [
   { id: "collar", name: "Collar" },
   { id: "sleeves", name: "Sleeves" },
@@ -35,6 +35,8 @@ const TRIM_LOCATIONS = [
   { id: "bottom", name: "Bottom Hem" },
   { id: "placket", name: "Button Placket" },
   { id: "sides", name: "Side Panels" },
+  { id: "left-side", name: "Left Side" },
+  { id: "right-side", name: "Right Side" },
   { id: "custom", name: "Custom Position" },
 ];
 
@@ -59,7 +61,11 @@ export function Step03bTrimLines() {
         (trimLocation === "waist" && sectionName.includes("waist")) ||
         (trimLocation === "bottom" && sectionName.includes("bottom")) ||
         (trimLocation === "placket" && sectionName.includes("placket")) ||
-        (trimLocation === "sides" && sectionName.includes("side"))
+        (trimLocation === "sides" && (sectionName.includes("side") || sectionName.includes("panel"))) ||
+        (trimLocation === "left-side" && (sectionName.includes("left") && sectionName.includes("side"))) ||
+        (trimLocation === "right-side" && (sectionName.includes("right") && sectionName.includes("side"))) ||
+        // Also match trim/piping sections for jersey top/bottom
+        (sectionName.includes("trim") || sectionName.includes("piping"))
       );
     });
 

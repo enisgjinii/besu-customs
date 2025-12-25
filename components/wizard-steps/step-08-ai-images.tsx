@@ -1,12 +1,10 @@
 "use strict";
 import { useConfiguratorStore } from "@/lib/store";
 import { AIImageGenerator } from "@/components/ai-image-generator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { TextureLayerSelector } from "@/components/texture-layer-selector";
+import { LayerControls } from "@/components/layer-controls";
 import {
   compressImageForMobile,
   isMobile,
@@ -17,6 +15,9 @@ export function Step08AIImages() {
     (state) => state.addTextureLayer,
   );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
+  const setSelectedTextureLayerId = useConfiguratorStore(
+    (state) => state.setSelectedTextureLayerId,
+  );
 
   // Helper to remove background (improved multi-corner detection)
   const processImageWithTransparency = async (
@@ -89,6 +90,7 @@ export function Step08AIImages() {
   };
 
   // Listen for generated images from the AIImageGenerator component
+  // Only adds when user explicitly clicks "Apply to Design"
   useEffect(() => {
     const handleGeneratedImage = async (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -97,20 +99,24 @@ export function Step08AIImages() {
       const data = customEvent.detail;
       if (!data || !data.url) return;
 
-      toast.info("Processing image (removing background)...");
+      toast.info("Processing image...");
 
       try {
         let processedUrl = await processImageWithTransparency(data.url);
 
         // Compress images on mobile for better performance
         if (isMobile()) {
-          toast.info("Optimizing AI image for mobile...");
           processedUrl = await compressImageForMobile(processedUrl, 1024, 0.85);
         }
 
+        // Use scale and rotation from the preview if provided
+        const scale = data.scale || 0.5;
+        const rotation = data.rotation || 0;
+
+        const newId = uuidv4();
         addTextureLayer({
-          id: uuidv4(),
-          name: `AI Gen ${new Date().toLocaleTimeString()}`,
+          id: newId,
+          name: `AI Design`,
           type: "image",
           visible: true,
           locked: false,
@@ -118,12 +124,14 @@ export function Step08AIImages() {
           blendMode: "normal",
           order: textureLayers.length,
           imageUrl: processedUrl,
-          position: [0.5, 0.5, 0], // Center position
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
+          position: [0.5, 0.35, 0], // Center chest position
+          rotation: [0, 0, rotation * (Math.PI / 180)],
+          scale: [scale, scale, 1],
           flipX: false,
         });
-        toast.success("AI Image added (Background Removed)");
+        
+        setSelectedTextureLayerId(newId);
+        toast.success("AI Image added! Adjust size and position as needed.");
       } catch (err) {
         console.error("Failed to process image", err);
         toast.error("Failed to process image");
@@ -137,24 +145,53 @@ export function Step08AIImages() {
         handleGeneratedImage,
       );
     };
-  }, [addTextureLayer, textureLayers.length]);
+  }, [addTextureLayer, textureLayers.length, setSelectedTextureLayerId]);
+
+  // Get AI-generated layers
+  const aiLayers = textureLayers.filter((l) => l.name.startsWith("AI"));
 
   return (
-    <div className="space-y-6">
-      {/* Texture Layer Selector - Shows what's selected */}
-      {textureLayers.length > 0 && <TextureLayerSelector />}
-
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Generate with AI</h2>
-        <p className="text-sm text-muted-foreground">
-          Create unique designs using AI. Images will be automatically added
-          with background removed.
+    <div className="space-y-3">
+      <div>
+        <h2 className="text-sm font-semibold">Generate with AI</h2>
+        <p className="text-xs text-muted-foreground">
+          Create unique designs. Preview before applying.
         </p>
       </div>
 
-      <div className="border rounded-xl p-4 bg-muted/10">
+      <div className="border rounded-lg p-3 bg-muted/10">
         <AIImageGenerator />
       </div>
+
+      {/* Show AI layers with controls */}
+      {aiLayers.length > 0 && (
+        <div className="space-y-1.5">
+          <span className="text-[10px] text-muted-foreground font-medium">
+            AI Designs ({aiLayers.length})
+          </span>
+          <div className="max-h-[100px] overflow-y-auto space-y-1.5">
+            {aiLayers.map((layer) => (
+              <div 
+                key={layer.id} 
+                className="p-2 rounded-lg border bg-card"
+                onClick={() => setSelectedTextureLayerId(layer.id)}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  {layer.imageUrl && (
+                    <img 
+                      src={layer.imageUrl} 
+                      alt={layer.name} 
+                      className="w-8 h-8 object-contain rounded bg-muted/50" 
+                    />
+                  )}
+                  <span className="text-xs font-medium truncate flex-1">{layer.name}</span>
+                </div>
+                <LayerControls layerId={layer.id} compact />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

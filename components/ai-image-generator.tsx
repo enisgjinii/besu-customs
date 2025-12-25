@@ -5,19 +5,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import {
   Loader2,
   Sparkles,
   Download,
-  Paintbrush,
+  Check,
+  X,
+  RotateCw,
+  ZoomIn,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,12 +22,13 @@ import { useConfiguratorStore } from "@/lib/store";
 export function AIImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<
-    Array<{ imageURL: string; imageUUID: string }>
-  >([]);
-  const [selectedSection, setSelectedSection] = useState<string | undefined>(
-    undefined,
-  );
+  const [generatedImage, setGeneratedImage] = useState<{
+    imageURL: string;
+    imageUUID: string;
+  } | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [imageScale, setImageScale] = useState(100);
+  const [imageRotation, setImageRotation] = useState(0);
   const [usage, setUsage] = useState<{
     limit: number;
     used: number;
@@ -48,6 +45,9 @@ export function AIImageGenerator() {
     }
 
     setLoading(true);
+    setGeneratedImage(null);
+    setPreviewMode(false);
+    
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -70,39 +70,17 @@ export function AIImageGenerator() {
         throw new Error(data.error || "Failed to generate image");
       }
 
-      setGeneratedImages(data.images);
+      if (data.images && data.images.length > 0) {
+        // Only store ONE image, show preview mode
+        setGeneratedImage(data.images[0]);
+        setPreviewMode(true);
+        setImageScale(100);
+        setImageRotation(0);
+        toast.success("Image generated! Review and apply when ready.");
+      }
+      
       if (data.usage) {
         setUsage(data.usage);
-      } else {
-        setUsage(null);
-      }
-
-      // Auto-save to localStorage and notify listeners
-      if (data.images && data.images.length > 0) {
-        const latestImage = data.images[0].imageURL;
-        const storageData = {
-          url: latestImage,
-          timestamp: Date.now(),
-        };
-        localStorage.setItem(
-          "latest_generated_ai_image",
-          JSON.stringify(storageData),
-        );
-
-        // Dispatch event for other components to pick up
-        console.log(
-          "🎨 AI Image Generator: Dispatching generated-image-available event",
-          storageData,
-        );
-        window.dispatchEvent(
-          new CustomEvent("generated-image-available", {
-            detail: storageData,
-          }),
-        );
-
-        toast.success("Image generated! Click Apply to add it to your design.");
-      } else {
-        toast.success("Image generated successfully!");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -114,14 +92,59 @@ export function AIImageGenerator() {
     }
   };
 
-  const handleDownload = async (imageURL: string, index: number) => {
+  const handleApplyImage = () => {
+    if (!generatedImage) return;
+
+    // Dispatch event for other components to pick up
+    const storageData = {
+      url: generatedImage.imageURL,
+      timestamp: Date.now(),
+      scale: imageScale / 100,
+      rotation: imageRotation,
+    };
+    
+    localStorage.setItem(
+      "latest_generated_ai_image",
+      JSON.stringify(storageData),
+    );
+
+    console.log(
+      "🎨 AI Image Generator: Dispatching generated-image-available event",
+      storageData,
+    );
+    window.dispatchEvent(
+      new CustomEvent("generated-image-available", {
+        detail: storageData,
+      }),
+    );
+
+    toast.success("AI Image applied to your design!");
+    setPreviewMode(false);
+    setGeneratedImage(null);
+  };
+
+  const handleRegenerate = () => {
+    setGeneratedImage(null);
+    setPreviewMode(false);
+    handleGenerate();
+  };
+
+  const handleDiscard = () => {
+    setGeneratedImage(null);
+    setPreviewMode(false);
+    toast.info("Image discarded");
+  };
+
+  const handleDownload = async () => {
+    if (!generatedImage) return;
+    
     try {
-      const response = await fetch(imageURL);
+      const response = await fetch(generatedImage.imageURL);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `ai-generated-${index + 1}.png`;
+      a.download = `ai-generated-${Date.now()}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -133,164 +156,179 @@ export function AIImageGenerator() {
     }
   };
 
-  const handleApplyToModel = async (imageURL: string) => {
-    if (!selectedSection || selectedSection === undefined) {
-      toast.error("Please select a material section first");
-      return;
-    }
-
-    try {
-      // Convert image URL to base64
-      const response = await fetch(imageURL);
-      const blob = await response.blob();
-      const reader = new FileReader();
-
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
-        updateSection(selectedSection, { customTexture: base64data });
-        toast.success("Texture applied to model!");
-      };
-
-      reader.readAsDataURL(blob);
-    } catch (error) {
-      console.error("Error applying texture:", error);
-      toast.error("Failed to apply texture");
-    }
-  };
-
   return (
-    <div className="space-y-4" data-tour="ai-generator">
-      <div className="space-y-2">
-        <Label htmlFor="ai-prompt" className="flex items-center gap-2 text-sm">
-          <Sparkles className="w-4 h-4" />
-          Describe the image you want to generate...
-        </Label>
-        <Input
-          id="ai-prompt"
-          placeholder="A futuristic sports jersey design..."
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !loading) {
-              handleGenerate();
-            }
-          }}
-          disabled={loading}
-          data-tour="ai-prompt"
-          className="text-sm"
-        />
-      </div>
+    <div className="space-y-3" data-tour="ai-generator">
+      {/* Prompt Input */}
+      {!previewMode && (
+        <>
+          <div className="space-y-1.5">
+            <Label htmlFor="ai-prompt" className="flex items-center gap-2 text-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              Describe your design
+            </Label>
+            <Input
+              id="ai-prompt"
+              placeholder="A futuristic sports jersey design..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !loading) {
+                  handleGenerate();
+                }
+              }}
+              disabled={loading}
+              className="text-sm h-9"
+            />
+          </div>
 
-      {/* Usage Information */}
-      {usage && (
-        <div
-          className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
-            ? "text-destructive bg-destructive/10 border border-destructive/20"
-            : "text-muted-foreground bg-secondary/20"
-            }`}
-        >
-          <div className="flex items-center gap-1 mb-1">
-            {usage.remaining === 0 ? (
-              <AlertCircle className="w-3 h-3" />
-            ) : (
-              <Sparkles className="w-3 h-3" />
-            )}
-            <span className="font-medium">System API Usage</span>
-          </div>
-          <div>
-            {usage.used}/{usage.limit} calls used ({usage.remaining} remaining)
-          </div>
-          {usage.remaining === 0 && (
-            <div className="text-[10px] text-destructive mt-1">
-              Daily limit reached. Please try again tomorrow.
+          {/* Usage Information */}
+          {usage && (
+            <div
+              className={`text-[10px] p-2 rounded-md ${
+                usage.remaining === 0
+                  ? "text-destructive bg-destructive/10 border border-destructive/20"
+                  : "text-muted-foreground bg-secondary/20"
+              }`}
+            >
+              <div className="flex items-center gap-1">
+                {usage.remaining === 0 ? (
+                  <AlertCircle className="w-3 h-3" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
+                <span>
+                  {usage.used}/{usage.limit} used ({usage.remaining} left)
+                </span>
+              </div>
             </div>
           )}
-        </div>
+
+          <Button
+            onClick={handleGenerate}
+            disabled={loading || !prompt.trim()}
+            className="w-full text-xs h-9"
+            size="sm"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3 mr-2" />
+                Generate Image
+              </>
+            )}
+          </Button>
+        </>
       )}
 
-      <Button
-        onClick={handleGenerate}
-        disabled={loading || !prompt.trim()}
-        className="w-full text-xs h-8"
-        data-tour="ai-generate"
-        size="sm"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-            Generating...
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-3 h-3 mr-2" />
-            Generate Image
-          </>
-        )}
-      </Button>
-
-      {generatedImages.length > 0 && (
+      {/* Preview Mode - Single Image with Controls */}
+      {previewMode && generatedImage && (
         <div className="space-y-3">
-          <Label className="text-sm">Generated Images</Label>
-
-          {/* Material Section Selector */}
-          <div className="space-y-2">
-            <Label htmlFor="material-section" className="text-xs">
-              Apply to Material Section
-            </Label>
-            <Select value={selectedSection} onValueChange={setSelectedSection}>
-              <SelectTrigger id="material-section" className="text-xs h-8">
-                <SelectValue placeholder="Select a section..." />
-              </SelectTrigger>
-              <SelectContent>
-                {sections.map((section) => (
-                  <SelectItem
-                    key={section.id}
-                    value={section.id}
-                    className="text-xs"
-                  >
-                    {section.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="text-xs font-medium text-center">
+            Preview - Adjust size & rotation before applying
+          </div>
+          
+          {/* Image Preview */}
+          <div className="relative rounded-lg overflow-hidden border bg-card">
+            <div 
+              className="aspect-square w-full flex items-center justify-center bg-muted/20 p-4"
+              style={{ minHeight: "150px" }}
+            >
+              <Image
+                src={generatedImage.imageURL}
+                alt="Generated AI Image"
+                width={256}
+                height={256}
+                className="object-contain max-h-[200px]"
+                style={{
+                  transform: `scale(${imageScale / 100}) rotate(${imageRotation}deg)`,
+                  transition: "transform 0.2s ease",
+                }}
+              />
+            </div>
           </div>
 
-          <div className="grid gap-2">
-            {generatedImages.map((image, index) => (
-              <div
-                key={image.imageUUID}
-                className="relative group rounded-md overflow-hidden border bg-card"
-              >
-                <Image
-                  src={image.imageURL}
-                  alt={`Generated ${index + 1}`}
-                  width={512}
-                  height={512}
-                  className="w-full h-auto object-cover"
-                />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleApplyToModel(image.imageURL)}
-                    disabled={!selectedSection}
-                    className="text-xs h-7 px-2"
-                  >
-                    <Paintbrush className="w-3 h-3 mr-1" />
-                    Apply
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleDownload(image.imageURL, index)}
-                    className="text-xs h-7 px-2"
-                  >
-                    <Download className="w-3 h-3 mr-1" />
-                    Download
-                  </Button>
-                </div>
-              </div>
-            ))}
+          {/* Size Control */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ZoomIn className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">Size</span>
+              <Slider
+                value={[imageScale]}
+                min={25}
+                max={200}
+                step={5}
+                onValueChange={([val]) => setImageScale(val)}
+                className="flex-1"
+              />
+              <span className="text-[10px] text-muted-foreground w-10 text-right">
+                {imageScale}%
+              </span>
+            </div>
+          </div>
+
+          {/* Rotation Control */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <RotateCw className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">Rotate</span>
+              <Slider
+                value={[imageRotation]}
+                min={0}
+                max={360}
+                step={15}
+                onValueChange={([val]) => setImageRotation(val)}
+                className="flex-1"
+              />
+              <span className="text-[10px] text-muted-foreground w-10 text-right">
+                {imageRotation}°
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDiscard}
+              className="flex-1 h-8 text-xs"
+            >
+              <X className="w-3 h-3 mr-1" />
+              Discard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRegenerate}
+              className="flex-1 h-8 text-xs"
+            >
+              <Sparkles className="w-3 h-3 mr-1" />
+              Regenerate
+            </Button>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="flex-1 h-8 text-xs"
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Download
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleApplyImage}
+              className="flex-1 h-8 text-xs bg-primary"
+            >
+              <Check className="w-3 h-3 mr-1" />
+              Apply to Design
+            </Button>
           </div>
         </div>
       )}

@@ -32,13 +32,13 @@ const STEPS = [
   { id: 0, title: "1. Apparel", component: Step01Apparel },
   { id: 1, title: "2. Colors", component: Step02Colors },
   { id: 2, title: "3. Style", component: Step03Style },
-  { id: 3, title: "3b. Trim Lines", component: Step03bTrimLines },
-  { id: 4, title: "4. School Logo", component: Step04SchoolLogo },
-  { id: 5, title: "5. Patterns", component: Step05Patterns },
-  { id: 6, title: "6. Text", component: Step06Text },
-  { id: 7, title: "7. Images", component: Step07Images },
-  { id: 8, title: "8. AI Images", component: Step08AIImages },
-  { id: 9, title: "9. View", component: Step09View },
+  { id: 3, title: "4. Trim Lines", component: Step03bTrimLines },
+  { id: 4, title: "5. Logo", component: Step04SchoolLogo },
+  { id: 5, title: "6. Patterns", component: Step05Patterns },
+  { id: 6, title: "7. Text", component: Step06Text },
+  { id: 7, title: "8. Images", component: Step07Images },
+  { id: 8, title: "9. AI Images", component: Step08AIImages },
+  { id: 9, title: "10. Review", component: Step09View },
 ];
 
 export function UnifiedSidebar({

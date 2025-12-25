@@ -24,6 +24,7 @@ import { TextureLayerSelector } from "@/components/texture-layer-selector";
 import { Step01Apparel } from "./wizard-steps/step-01-apparel";
 import { Step02Colors } from "./wizard-steps/step-02-colors";
 import { Step03Style } from "./wizard-steps/step-03-style";
+import { Step03bTrimLines } from "./wizard-steps/step-03b-trim-lines";
 import { Step04SchoolLogo } from "./wizard-steps/step-04-school-logo";
 import { Step05Patterns } from "./wizard-steps/step-05-patterns";
 import { Step06Text } from "./wizard-steps/step-06-text";
@@ -35,12 +36,13 @@ const STEPS = [
   { id: 1, title: "APPAREL", component: Step01Apparel },
   { id: 2, title: "COLORS", component: Step02Colors },
   { id: 3, title: "STYLE", component: Step03Style },
-  { id: 4, title: "LOGOS", component: Step04SchoolLogo },
-  { id: 5, title: "PATTERNS", component: Step05Patterns },
-  { id: 6, title: "TEXT", component: Step06Text },
-  { id: 7, title: "IMAGES", component: Step07Images },
-  { id: 8, title: "AI", component: Step08AIImages },
-  { id: 9, title: "REVIEW", component: Step09View },
+  { id: 4, title: "TRIM", component: Step03bTrimLines },
+  { id: 5, title: "LOGO", component: Step04SchoolLogo },
+  { id: 6, title: "PATTERNS", component: Step05Patterns },
+  { id: 7, title: "TEXT", component: Step06Text },
+  { id: 8, title: "IMAGES", component: Step07Images },
+  { id: 9, title: "AI", component: Step08AIImages },
+  { id: 10, title: "REVIEW", component: Step09View },
 ];
 
 export function ConfiguratorWizard() {
@@ -54,6 +56,7 @@ export function ConfiguratorWizard() {
   const resetAllCustomizations = useConfiguratorStore((s) => s.resetAllCustomizations);
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
+  const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const isModelSelected = !!(currentModelUrl || selectedProductId);
 
   useEffect(() => {
@@ -76,19 +79,21 @@ export function ConfiguratorWizard() {
   const CurrentComponent = STEPS[currentStep - 1].component;
   if (!isMounted) return null;
 
-  const showViewLock = [4, 6, 7].includes(currentStep);
+  const showViewLock = [5, 7, 8].includes(currentStep);
 
   return (
     <div
       className={cn(
         "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col",
-        isMobile ? "h-[45vh] max-h-[320px]" : "h-[280px]",
+        isMobile ? "h-[38vh] max-h-[280px]" : "h-[280px]",
       )}
     >
-      {/* Texture Layer Selector */}
-      <div className="border-b border-border/30 flex-shrink-0">
-        <TextureLayerSelector />
-      </div>
+      {/* Texture Layer Selector - Compact on mobile */}
+      {textureLayers.length > 0 && (
+        <div className="border-b border-border/30 flex-shrink-0">
+          <TextureLayerSelector />
+        </div>
+      )}
 
       {/* Header: Steps + Nav */}
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">

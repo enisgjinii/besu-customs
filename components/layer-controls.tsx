@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useConfiguratorStore } from "@/lib/store";
-import { Copy, FlipHorizontal, RotateCw, Trash2, ZoomIn } from "lucide-react";
+import { Copy, FlipHorizontal, RotateCw, Trash2, ZoomIn, Minus, Plus } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,17 @@ export function LayerControls({
   const rotation = layer.rotation?.[2] || 0;
   const flipX = layer.flipX || false;
 
+  // Quick size adjustment functions
+  const increaseSize = () => {
+    const newScale = Math.min(3, scale + 0.1);
+    updateTextureLayer(layerId, { scale: [newScale, newScale, newScale] });
+  };
+
+  const decreaseSize = () => {
+    const newScale = Math.max(0.05, scale - 0.1);
+    updateTextureLayer(layerId, { scale: [newScale, newScale, newScale] });
+  };
+
   const handleDuplicate = () => {
     addTextureLayer({
       ...layer,
@@ -49,56 +60,70 @@ export function LayerControls({
         compact ? "p-1.5 space-y-1.5" : "p-2 space-y-2",
       )}
     >
-      {/* Sliders row */}
-      <div className="flex items-center gap-3">
-        {/* Size */}
-        <div className="flex-1 flex items-center gap-2">
-          <ZoomIn className="w-3 h-3 text-muted-foreground shrink-0" />
-          <Slider
-            value={[scale * 100]}
-            min={5}
-            max={200}
-            step={1}
-            onValueChange={([val]) =>
-              updateTextureLayer(layerId, {
-                scale: [val / 100, val / 100, val / 100],
-              })
-            }
-            className="flex-1"
-          />
-          <span className="text-[9px] text-muted-foreground w-8 text-right">
-            {Math.round(scale * 100)}%
-          </span>
-        </div>
-
-        {/* Rotation */}
-        <div className="flex-1 flex items-center gap-2">
-          <RotateCw className="w-3 h-3 text-muted-foreground shrink-0" />
-          <Slider
-            value={[rotation * (180 / Math.PI)]}
-            min={0}
-            max={360}
-            step={5}
-            onValueChange={([val]) =>
-              updateTextureLayer(layerId, {
-                rotation: [0, 0, val * (Math.PI / 180)],
-              })
-            }
-            className="flex-1"
-          />
-          <span className="text-[9px] text-muted-foreground w-6 text-right">
-            {Math.round(rotation * (180 / Math.PI))}°
-          </span>
-        </div>
+      {/* Size controls with +/- buttons for easier mobile adjustment */}
+      <div className="flex items-center gap-2">
+        <ZoomIn className="w-3 h-3 text-muted-foreground shrink-0" />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={decreaseSize}
+          className="h-6 w-6"
+        >
+          <Minus className="w-3 h-3" />
+        </Button>
+        <Slider
+          value={[scale * 100]}
+          min={5}
+          max={300}
+          step={5}
+          onValueChange={([val]) =>
+            updateTextureLayer(layerId, {
+              scale: [val / 100, val / 100, val / 100],
+            })
+          }
+          className="flex-1"
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={increaseSize}
+          className="h-6 w-6"
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
+        <span className="text-[9px] text-muted-foreground w-10 text-right">
+          {Math.round(scale * 100)}%
+        </span>
       </div>
 
-      {/* Action buttons - icon only on mobile */}
+      {/* Rotation */}
+      <div className="flex items-center gap-2">
+        <RotateCw className="w-3 h-3 text-muted-foreground shrink-0" />
+        <Slider
+          value={[rotation * (180 / Math.PI)]}
+          min={0}
+          max={360}
+          step={5}
+          onValueChange={([val]) =>
+            updateTextureLayer(layerId, {
+              rotation: [0, 0, val * (Math.PI / 180)],
+            })
+          }
+          className="flex-1"
+        />
+        <span className="text-[9px] text-muted-foreground w-8 text-right">
+          {Math.round(rotation * (180 / Math.PI))}°
+        </span>
+      </div>
+
+      {/* Action buttons */}
       <div className="flex items-center gap-1">
         <Button
           variant={flipX ? "default" : "outline"}
           size="icon"
           onClick={() => updateTextureLayer(layerId, { flipX: !flipX })}
           className="h-6 w-6"
+          title="Flip Horizontal"
         >
           <FlipHorizontal className="w-3 h-3" />
         </Button>
@@ -107,6 +132,7 @@ export function LayerControls({
           size="icon"
           onClick={handleDuplicate}
           className="h-6 w-6"
+          title="Duplicate"
         >
           <Copy className="w-3 h-3" />
         </Button>
@@ -115,6 +141,7 @@ export function LayerControls({
           size="icon"
           onClick={() => removeTextureLayer(layerId)}
           className="h-6 w-6 ml-auto"
+          title="Delete"
         >
           <Trash2 className="w-3 h-3" />
         </Button>

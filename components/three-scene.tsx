@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Center } from "@react-three/drei";
-import { useConfiguratorStore, MaterialSection } from "@/lib/store";
+import {
+  useConfiguratorStore,
+  MaterialSection,
+} from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 import { LayerControlsOverlay } from "@/components/layer-controls-overlay";
 import { useTheme } from "next-themes";
@@ -41,6 +44,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const selectedTextureLayerId = useConfiguratorStore(
     (s) => s.selectedTextureLayerId,
+  );
+  const setActiveLayerBounds = useConfiguratorStore(
+    (s) => s.setActiveLayerBounds,
   );
   const perfConfig = useMobilePerformance();
 
@@ -366,6 +372,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         ctx.restore();
       });
 
+      const padding = 15;
+      const controlSize = Math.max(30, CANVAS_SIZE * 0.025);
+
       // Draw selection handles if a layer is selected
       if (selectedLayerBounds !== null && selectedTextureLayerId) {
         ctx.save();
@@ -375,8 +384,6 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         // Explicit type to avoid TypeScript narrowing issues
         const b: { x: number; y: number; width: number; height: number } =
           selectedLayerBounds;
-        const padding = 15;
-        const controlSize = Math.max(30, CANVAS_SIZE * 0.025);
 
         // Draw selection border (dashed blue line)
         ctx.strokeStyle = "#3b82f6";
@@ -422,6 +429,18 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         );
 
         ctx.restore();
+      }
+
+      if (selectedLayerBounds && selectedTextureLayerId) {
+        setActiveLayerBounds({
+          layerId: selectedTextureLayerId,
+          canvasSize: CANVAS_SIZE,
+          padding,
+          controlSize,
+          bounds: selectedLayerBounds,
+        });
+      } else {
+        setActiveLayerBounds(null);
       }
 
       texture.needsUpdate = true;
@@ -473,7 +492,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture,
     CANVAS_SIZE,
     perfConfig.isLowEndDevice,
+    setActiveLayerBounds,
   ]);
+
+  useEffect(() => {
+    return () => {
+      setActiveLayerBounds(null);
+    };
+  }, [setActiveLayerBounds]);
 
   // Apply Texture to Material
   useEffect(() => {
@@ -659,6 +685,7 @@ function Model({
   );
 
   // Check if UV click is on a control icon (works in UV space 0-1)
+  // Must match EXACTLY how TextureCompositor draws controls on canvas
   const checkControlClickUV = (
     clickU: number,
     clickV: number,
@@ -679,67 +706,123 @@ function Model({
       return null;
     }
 
-    // Get layer position in UV space
-    const layerU = layer.position?.[0] ?? 0.5;
-    const layerV = layer.position?.[1] ?? 0.5;
+    // Convert click UV to canvas pixel coordinates (matching TextureCompositor)
+    // Raycast UV: u=0 left, u=1 right, v=0 bottom, v=1 top
+    // Canvas: x=0 left, x=CANVAS_SIZE right, y=0 top, y=CANVAS_SIZE bottom
+    // TextureCompositor uses: x = u * CANVAS_SIZE, y = (1 - v) * CANVAS_SIZE
+    const activeBounds = store.activeLayerBounds;
+    const CANVAS_SIZE = activeBounds?.canvasSize ?? 4096;
+    const clickX = clickU * CANVAS_SIZE;
 
-    // Estimate layer size in UV space based on scale
-    let halfWidth = 0.15; // Default for text
-    let halfHeight = 0.08;
+    let padding = activeBounds?.padding ?? 15;
+    let controlSize =
+      activeBounds?.controlSize ?? Math.max(30, CANVAS_SIZE * 0.025);
+    // drawControlIcon draws a circle with radius=controlSize/2.
+    // Use a forgiving hit area since raycast UVs can be noisy.
+    let hitRadius = Math.max((controlSize / 2) * 1.8, controlSize * 0.9);
 
-    if (layer.type === "image") {
-      const scaleX = layer.scale?.[0] ?? 0.3;
-      const scaleY = layer.scale?.[1] ?? 0.3;
-      halfWidth = scaleX / 2;
-      halfHeight = scaleY / 2;
-    } else if (layer.type === "text" && layer.text) {
-      const scale = layer.scale?.[0] ?? 1;
-      halfWidth = layer.text.length * 0.03 * scale;
-      halfHeight = 0.06 * scale;
+    let bx: number;
+    let by: number;
+    let bw: number;
+    let bh: number;
+
+    if (activeBounds && activeBounds.layerId === selectedLayerId) {
+      bx = activeBounds.bounds.x;
+      by = activeBounds.bounds.y;
+      bw = activeBounds.bounds.width;
+      bh = activeBounds.bounds.height;
+    } else {
+      // Fall back to approximated geometry
+      const layerU = layer.position?.[0] ?? 0.5;
+      const layerV = layer.position?.[1] ?? 0.5;
+      const layerX = layerU * CANVAS_SIZE;
+      const layerY = (1 - layerV) * CANVAS_SIZE;
+
+      let halfWidth: number;
+      let halfHeight: number;
+
+      if (layer.type === "image") {
+        const scaleX = layer.scale?.[0] ?? 0.3;
+        const scaleY = layer.scale?.[1] ?? 0.3;
+        halfWidth = (CANVAS_SIZE * scaleX) / 2;
+        halfHeight = (CANVAS_SIZE * scaleY) / 2;
+      } else if (layer.type === "text" && layer.text) {
+        const scaleMultiplier = layer.scale?.[0] ?? 1;
+        const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
+        const fontSize = baseFontSize * scaleMultiplier;
+        halfWidth = (layer.text.length * fontSize * 0.6) / 2 + 10;
+        halfHeight = (fontSize * 1.2) / 2 + 10;
+      } else {
+        halfWidth = 100;
+        halfHeight = 50;
+      }
+
+      bx = layerX - halfWidth;
+      by = layerY - halfHeight;
+      bw = halfWidth * 2;
+      bh = halfHeight * 2;
+      hitRadius = controlSize * 1.5;
     }
 
-    console.log(`📍 Layer: "${layer.name}" at UV(${layerU.toFixed(3)}, ${layerV.toFixed(3)}), size: ${halfWidth.toFixed(3)} x ${halfHeight.toFixed(3)}`);
-
-    // Control positions in UV space (relative to layer center)
-    const controlOffset = 0.03; // Offset from layer edges
-    const hitRadius = 0.08; // INCREASED hit detection radius
-
-    const controls_uv = {
-      copy: {
-        u: layerU - halfWidth - controlOffset,
-        v: layerV + halfHeight + controlOffset,
-      },
-      rotate: {
-        u: layerU + halfWidth + controlOffset,
-        v: layerV + halfHeight + controlOffset,
-      },
-      delete: {
-        u: layerU - halfWidth - controlOffset,
-        v: layerV - halfHeight - controlOffset,
-      },
-      resize: {
-        u: layerU + halfWidth + controlOffset,
-        v: layerV - halfHeight - controlOffset,
-      },
+    const controls_px = {
+      copy: { x: bx - padding, y: by - padding },
+      rotate: { x: bx + bw + padding, y: by - padding },
+      delete: { x: bx - padding, y: by + bh + padding },
+      resize: { x: bx + bw + padding, y: by + bh + padding },
     };
 
-    console.log(`🎮 Controls: copy=(${controls_uv.copy.u.toFixed(3)}, ${controls_uv.copy.v.toFixed(3)}), rotate=(${controls_uv.rotate.u.toFixed(3)}, ${controls_uv.rotate.v.toFixed(3)})`);
-    console.log(`🎮 Controls: delete=(${controls_uv.delete.u.toFixed(3)}, ${controls_uv.delete.v.toFixed(3)}), resize=(${controls_uv.resize.u.toFixed(3)}, ${controls_uv.resize.v.toFixed(3)})`);
-    console.log(`📏 Hit radius: ${hitRadius}`);
+    console.log(
+      `📍 Layer: "${layer.name}" bounds=(${bx.toFixed(0)}, ${by.toFixed(
+        0,
+      )}, ${bw.toFixed(0)}, ${bh.toFixed(0)}) [canvas=${CANVAS_SIZE}]`,
+    );
+    console.log(`📏 Hit radius: ${hitRadius.toFixed(0)}px`);
 
-    // Check distance to each control in UV space
-    for (const [name, pos] of Object.entries(controls_uv)) {
-      const dist = Math.sqrt(
-        Math.pow(clickU - pos.u, 2) + Math.pow(clickV - pos.v, 2),
+    const testClick = (clickY: number): string | null => {
+      console.log(
+        `🖱️ Click at canvas(${clickX.toFixed(0)}, ${clickY.toFixed(0)})`,
       );
-      console.log(`  → ${name}: dist=${dist.toFixed(4)} (need < ${hitRadius})`);
-      if (dist < hitRadius) {
-        console.log(`🎯 HIT! Control: ${name}`);
-        return name;
-      }
-    }
 
-    return null;
+      let nearest: { name: string; dist: number } | null = null;
+
+      // Check distance to each control in pixel space
+      for (const [name, pos] of Object.entries(controls_px)) {
+        const dist = Math.hypot(clickX - pos.x, clickY - pos.y);
+        console.log(
+          `  → ${name}: pos=(${pos.x.toFixed(0)}, ${pos.y.toFixed(
+            0,
+          )}), dist=${dist.toFixed(0)}px (need < ${hitRadius.toFixed(0)})`,
+        );
+        if (!nearest || dist < nearest.dist) {
+          nearest = { name, dist };
+        }
+        if (dist < hitRadius) {
+          console.log(`🎯 HIT! Control: ${name}`);
+          return name;
+        }
+      }
+
+      // If click is within the selection border, snap to nearest control
+      const withinSelection =
+        clickX >= bx - padding - controlSize &&
+        clickX <= bx + bw + padding + controlSize &&
+        clickY >= by - padding - controlSize &&
+        clickY <= by + bh + padding + controlSize;
+
+      if (withinSelection && nearest && nearest.dist < hitRadius * 2) {
+        console.log(`🎯 SNAP HIT! Control: ${nearest.name}`);
+        return nearest.name;
+      }
+
+      return null;
+    };
+
+    // Some models deliver raycast UVs with V flipped relative to our compositor.
+    // Try both mappings; accept the first one that hits.
+    const clickY_flipped = (1 - clickV) * CANVAS_SIZE;
+    const clickY_unflipped = clickV * CANVAS_SIZE;
+
+    return testClick(clickY_flipped) ?? testClick(clickY_unflipped);
   };
 
   useEffect(() => {
@@ -752,12 +835,16 @@ function Model({
 
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
       const intersects = raycaster.intersectObject(clonedScene, true);
+      const hit = intersects.find((i) => i.uv);
 
-      if (intersects.length > 0 && intersects[0].uv) {
-        const uv = intersects[0].uv;
+      if (hit?.uv) {
+        const uv = hit.uv;
 
         // First check if clicking on a control icon
-        const controlClicked = checkControlClickUV(uv.x, uv.y);
+        const hitU = uv.x;
+        const hitV = uv.y;
+
+        const controlClicked = checkControlClickUV(hitU, hitV);
 
         if (controlClicked) {
           const store = useConfiguratorStore.getState();
@@ -811,7 +898,23 @@ function Model({
           );
 
         if (activeLayers.length > 0) {
-          const targetLayer = activeLayers[activeLayers.length - 1];
+          const nearest = activeLayers.reduce(
+            (
+              acc: { layer: (typeof activeLayers)[number] | null; dist: number },
+              layer,
+            ) => {
+              const layerU = layer.position?.[0] ?? 0.5;
+              const layerV = layer.position?.[1] ?? 0.5;
+              // Compare in same UV space (no flip needed - both are raw UV)
+              const dist = Math.hypot(layerU - hitU, (1 - layerV) - hitV);
+              if (dist < acc.dist) return { layer, dist };
+              return acc;
+            },
+            { layer: null, dist: Infinity },
+          );
+
+          const targetLayer = nearest.layer ?? activeLayers[activeLayers.length - 1];
+
           if (targetLayer) {
             // Select the layer
             setSelectedTextureLayerId(targetLayer.id);
@@ -820,9 +923,12 @@ function Model({
 
             const currentU = targetLayer.position?.[0] ?? 0.5;
             const currentV = targetLayer.position?.[1] ?? 0.5;
+            // Store offset in raycast UV space
+            // Layer V needs to be converted: canvas V = 1 - layer V
+            // Raycast V matches canvas Y direction after (1-v) transform
             dragOffsetRef.current = {
-              u: currentU - intersects[0].uv.x,
-              v: currentV + intersects[0].uv.y,
+              u: currentU - hitU,
+              v: (1 - currentV) - hitV,
             };
 
             if (controls) (controls as any).enabled = false;
@@ -832,25 +938,29 @@ function Model({
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!isDraggingRef.current || !selectedLayerRef.current || !clonedScene)
-        return;
+        if (!isDraggingRef.current || !selectedLayerRef.current || !clonedScene)
+          return;
 
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
 
-      const intersects = raycaster.intersectObject(clonedScene, true);
+        const intersects = raycaster.intersectObject(clonedScene, true);
+        const hit = intersects.find((i) => i.uv);
 
-      if (intersects.length > 0 && intersects[0].uv) {
-        const uv = intersects[0].uv;
-        const newU = uv.x + dragOffsetRef.current.u;
-        const newV = dragOffsetRef.current.v - uv.y;
+        if (hit?.uv) {
+          const uv = hit.uv;
+          const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+          const newU = clamp01(uv.x + dragOffsetRef.current.u);
+          // Convert back from raycast V to layer V
+          // raycast V + offset = canvas-space V, then 1 - that = layer V
+          const newV = clamp01(1 - (uv.y + dragOffsetRef.current.v));
 
-        updateTextureLayer(selectedLayerRef.current, {
-          position: [newU, newV, 0],
-        });
-      }
+          updateTextureLayer(selectedLayerRef.current, {
+            position: [newU, newV, 0],
+          });
+        }
     };
 
     const handlePointerUp = () => {

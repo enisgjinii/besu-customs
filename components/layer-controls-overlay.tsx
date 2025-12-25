@@ -31,6 +31,13 @@ export function LayerControlsOverlay() {
     (l) => l.id === selectedTextureLayerId,
   );
 
+  // Debug logging
+  console.log('🎛️ LayerControlsOverlay:', { 
+    selectedTextureLayerId, 
+    selectedLayer: selectedLayer?.name,
+    layerCount: textureLayers.length 
+  });
+
   // Don't render if no layer is selected
   if (!selectedLayer) return null;
 
@@ -68,70 +75,70 @@ export function LayerControlsOverlay() {
   };
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-      <div className="bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-2 py-1.5 flex items-center gap-1">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center gap-1.5">
         {/* Layer name indicator */}
-        <span className="px-3 text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[120px] truncate">
+        <span className="px-2 text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
           {selectedLayer.name || selectedLayer.type}
         </span>
 
-        <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
+        <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
         {/* Duplicate */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30"
+          className="h-10 w-10 p-0 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 active:scale-95 transition-transform"
           onClick={handleDuplicate}
           title="Duplicate"
         >
-          <Copy className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          <Copy className="h-5 w-5 text-purple-600 dark:text-purple-400" />
         </Button>
 
         {/* Rotate Left */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30"
+          className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
           onClick={handleRotateLeft}
           title="Rotate"
         >
-          <RotateCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <RotateCcw className="h-5 w-5 text-blue-600 dark:text-blue-400" />
         </Button>
 
         {/* Flip/Resize */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30"
+          className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
           onClick={handleFlipX}
           title="Flip Horizontal"
         >
-          <Maximize2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Maximize2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
         </Button>
 
         {/* Delete */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30"
+          className="h-10 w-10 p-0 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 active:scale-95 transition-transform"
           onClick={handleDelete}
           title="Delete"
         >
-          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+          <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
         </Button>
 
-        <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
+        <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
         {/* Close/Deselect */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-transform"
           onClick={handleDeselect}
           title="Deselect"
         >
-          <X className="h-4 w-4 text-gray-500" />
+          <X className="h-5 w-5 text-gray-500" />
         </Button>
       </div>
     </div>

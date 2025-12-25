@@ -11,6 +11,7 @@ import { compressImageForMobile, isMobile } from "@/lib/mobile-performance-utils
 export function Step07Images() {
   const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
+  const setSelectedTextureLayerId = useConfiguratorStore((state) => state.setSelectedTextureLayerId);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -21,8 +22,10 @@ export function Step07Images() {
         if (isMobile()) {
           result = await compressImageForMobile(result, 1024, 0.85);
         }
+        
+        const newId = uuidv4();
         addTextureLayer({
-          id: uuidv4(),
+          id: newId,
           name: file.name,
           type: "image",
           visible: true,
@@ -31,26 +34,36 @@ export function Step07Images() {
           blendMode: "normal",
           order: textureLayers.length,
           imageUrl: result,
-          position: [0.5, 0.5, 0],
+          // Center of chest position for better initial placement
+          position: [0.5, 0.35, 0],
           rotation: [0, 0, 0],
-          scale: [0.3, 0.3, 1],
+          scale: [0.35, 0.35, 1], // Larger initial size for easier adjustment
         });
-        toast.success("Image added");
+        setSelectedTextureLayerId(newId);
+        toast.success("Image added to center - drag to position");
       };
       reader.readAsDataURL(file);
     }
     e.target.value = "";
   };
 
-  const layers = textureLayers.filter((l) => l.type === "image" && !l.name.startsWith("Text:"));
+  // Filter to only show non-text, non-AI images
+  const layers = textureLayers.filter(
+    (l) => l.type === "image" && !l.name.startsWith("Text:") && !l.name.startsWith("AI")
+  );
 
   return (
     <div className="space-y-2">
+      <div>
+        <h2 className="text-sm font-semibold">Add Images</h2>
+        <p className="text-xs text-muted-foreground">Upload custom images for your design</p>
+      </div>
+
       {/* Upload */}
-      <Button variant="outline" className="w-full h-9 relative" asChild>
+      <Button variant="outline" className="w-full h-10 relative" asChild>
         <label className="cursor-pointer flex items-center justify-center gap-2">
           <Upload className="w-4 h-4" />
-          <span className="text-xs">Upload Image</span>
+          <span className="text-sm">Upload Image</span>
           <Input
             type="file"
             accept="image/*"
@@ -60,21 +73,40 @@ export function Step07Images() {
         </label>
       </Button>
 
-      {/* Layers */}
+      {/* Layers with improved controls */}
       {layers.length > 0 && (
-        <div className="space-y-1 max-h-[150px] overflow-y-auto">
-          {layers.map((layer) => (
-            <div key={layer.id} className="p-1.5 rounded border bg-card">
-              <div className="flex items-center gap-2">
-                {layer.imageUrl && (
-                  <img src={layer.imageUrl} alt={layer.name} className="w-6 h-6 object-contain rounded bg-muted/50" />
-                )}
-                <span className="text-[10px] font-medium truncate flex-1">{layer.name}</span>
+        <div className="space-y-1.5">
+          <span className="text-[10px] text-muted-foreground font-medium">
+            Images ({layers.length}) - Tap to edit
+          </span>
+          <div className="max-h-[120px] overflow-y-auto space-y-1.5">
+            {layers.map((layer) => (
+              <div 
+                key={layer.id} 
+                className="p-2 rounded-lg border bg-card hover:border-primary/50 transition-colors"
+                onClick={() => setSelectedTextureLayerId(layer.id)}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  {layer.imageUrl && (
+                    <img 
+                      src={layer.imageUrl} 
+                      alt={layer.name} 
+                      className="w-8 h-8 object-contain rounded bg-muted/50" 
+                    />
+                  )}
+                  <span className="text-xs font-medium truncate flex-1">{layer.name}</span>
+                </div>
+                <LayerControls layerId={layer.id} compact />
               </div>
-              <LayerControls layerId={layer.id} compact />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+      )}
+
+      {layers.length === 0 && (
+        <p className="text-xs text-muted-foreground text-center py-2">
+          No images added yet. Upload an image to get started.
+        </p>
       )}
     </div>
   );
