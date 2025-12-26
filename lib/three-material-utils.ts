@@ -210,6 +210,17 @@ export function applyMaterialsToThreeModel(
             targetMaterial.color = new THREE.Color(0xffffff);
           }
 
+          // Apply trim design
+          if (section.trimDesign && section.trimDesign !== "none") {
+            const trimTexture = createTrimDesignTexture(
+              section.trimDesign,
+              section.color || "#ffffff",
+              section.trimColor || "#000000",
+            );
+            targetMaterial.map = trimTexture;
+            targetMaterial.color = new THREE.Color(0xffffff);
+          }
+
           // Apply material properties
           if (section.roughness !== undefined) {
             targetMaterial.roughness = section.roughness;
@@ -281,6 +292,126 @@ function createGradientTexture(gradient: {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+// Create trim design texture
+function createTrimDesignTexture(
+  trimDesign: string,
+  baseColor: string,
+  trimColor: string,
+  size: number = 512,
+): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  // Fill with base color
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(0, 0, size, size);
+
+  // Apply trim pattern
+  ctx.strokeStyle = trimColor;
+  ctx.fillStyle = trimColor;
+  ctx.lineWidth = 8;
+
+  switch (trimDesign) {
+    case "solid":
+      // Simple solid color overlay
+      ctx.fillStyle = trimColor;
+      ctx.fillRect(0, 0, size, size);
+      break;
+
+    case "dashed":
+      // Horizontal dashed lines
+      ctx.setLineDash([20, 10]);
+      for (let y = 0; y < size; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.stroke();
+      }
+      break;
+
+    case "dotted":
+      // Dotted pattern
+      ctx.setLineDash([]);
+      for (let x = 20; x < size; x += 40) {
+        for (let y = 20; y < size; y += 40) {
+          ctx.beginPath();
+          ctx.arc(x, y, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      break;
+
+    case "wave":
+      // Wavy lines
+      ctx.setLineDash([]);
+      for (let y = 0; y < size; y += 60) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x < size; x += 20) {
+          const waveY = y + Math.sin((x / size) * Math.PI * 4) * 15;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.stroke();
+      }
+      break;
+
+    case "double":
+      // Double parallel lines
+      ctx.setLineDash([]);
+      for (let y = 0; y < size; y += 80) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.moveTo(0, y + 20);
+        ctx.lineTo(size, y + 20);
+        ctx.stroke();
+      }
+      break;
+
+    case "gradient":
+      // Gradient effect
+      const gradient = ctx.createLinearGradient(0, 0, size, 0);
+      gradient.addColorStop(0, baseColor);
+      gradient.addColorStop(0.5, trimColor);
+      gradient.addColorStop(1, baseColor);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      break;
+
+    case "embossed":
+      // Embossed effect with shadow
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = trimColor;
+      ctx.fillRect(0, 0, size, size);
+      break;
+
+    case "shadow":
+      // Subtle shadow effect
+      ctx.shadowColor = trimColor;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(5, 5, size - 10, size - 10);
+      break;
+
+    default:
+      // Fallback to solid
+      ctx.fillStyle = trimColor;
+      ctx.fillRect(0, 0, size, size);
+      break;
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
   return texture;
 }
 
