@@ -71,113 +71,116 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   // Track loaded images to avoid reloading
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Helper function to draw a control icon
+  // Helper function to draw a control icon (simple Lucide-style icons)
   const drawControlIcon = (
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
-    iconType: "copy" | "rotate" | "delete" | "pin",
+    iconType: "duplicate" | "rotate" | "resize" | "delete",
     size: number,
   ) => {
     const radius = size / 2;
 
-    // Draw circular background
+    // Draw circular background with shadow
     ctx.save();
     ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "rgba(0,0,0,0.3)";
-    ctx.shadowBlur = size * 0.15;
+    ctx.shadowColor = "rgba(0,0,0,0.4)";
+    ctx.shadowBlur = size * 0.25;
+    ctx.shadowOffsetY = size * 0.08;
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowColor = "transparent";
 
-    // Draw border based on icon type
+    // Fixed colors for each control type
     const colors: Record<string, string> = {
-      copy: "#8b5cf6",
-      rotate: "#3b82f6",
-      delete: "#ef4444",
-      pin: "#22c55e",
+      duplicate: "#8b5cf6",  // Purple
+      rotate: "#3b82f6",     // Blue
+      resize: "#22c55e",     // Green
+      delete: "#ef4444",     // Red
     };
+    
     ctx.strokeStyle = colors[iconType];
     ctx.lineWidth = size * 0.08;
     ctx.stroke();
 
-    // Draw icon (simplified shapes)
+    // Draw icons
     ctx.strokeStyle = colors[iconType];
     ctx.fillStyle = colors[iconType];
-    ctx.lineWidth = size * 0.1;
+    ctx.lineWidth = size * 0.09;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    const iconSize = size * 0.4;
+    const s = size * 0.18;
 
-    if (iconType === "copy") {
-      // Two overlapping rectangles
-      const rectSize = iconSize * 0.7;
-      ctx.strokeRect(x - rectSize / 2, y - rectSize / 2, rectSize, rectSize);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(
-        x - rectSize / 2 + rectSize * 0.3,
-        y - rectSize / 2 - rectSize * 0.3,
-        rectSize,
-        rectSize,
-      );
-      ctx.strokeStyle = colors[iconType];
-      ctx.strokeRect(
-        x - rectSize / 2 + rectSize * 0.3,
-        y - rectSize / 2 - rectSize * 0.3,
-        rectSize,
-        rectSize,
-      );
-    } else if (iconType === "rotate") {
-      // Circular arrow
+    if (iconType === "duplicate") {
+      // Lucide Copy icon - two overlapping rectangles
       ctx.beginPath();
-      ctx.arc(x, y, iconSize * 0.5, -Math.PI * 0.7, Math.PI * 0.5);
+      ctx.roundRect(x - s * 0.2, y - s * 1.4, s * 2, s * 2, s * 0.3);
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.roundRect(x - s * 1.2, y - s * 0.4, s * 2, s * 2, s * 0.3);
+      ctx.fill();
+      ctx.strokeStyle = colors[iconType];
+      ctx.stroke();
+    } else if (iconType === "rotate") {
+      // Lucide RotateCw icon - circular arrow
+      ctx.beginPath();
+      ctx.arc(x, y + s * 0.2, s * 1.2, -Math.PI * 0.8, Math.PI * 0.6);
       ctx.stroke();
       // Arrow head
-      const arrowX = x + iconSize * 0.5;
-      const arrowY = y;
       ctx.beginPath();
-      ctx.moveTo(arrowX - iconSize * 0.2, arrowY - iconSize * 0.15);
-      ctx.lineTo(arrowX, arrowY);
-      ctx.lineTo(arrowX - iconSize * 0.15, arrowY + iconSize * 0.2);
+      ctx.moveTo(x + s * 0.4, y - s * 1.3);
+      ctx.lineTo(x + s * 1.1, y - s * 0.8);
+      ctx.lineTo(x + s * 0.3, y - s * 0.5);
+      ctx.stroke();
+    } else if (iconType === "resize") {
+      // Lucide Maximize2 icon - diagonal arrows
+      ctx.beginPath();
+      ctx.moveTo(x - s * 1.1, y - s * 1.1);
+      ctx.lineTo(x + s * 1.1, y + s * 1.1);
+      ctx.stroke();
+      // Top-left arrow head
+      ctx.beginPath();
+      ctx.moveTo(x - s * 1.1, y - s * 0.3);
+      ctx.lineTo(x - s * 1.1, y - s * 1.1);
+      ctx.lineTo(x - s * 0.3, y - s * 1.1);
+      ctx.stroke();
+      // Bottom-right arrow head
+      ctx.beginPath();
+      ctx.moveTo(x + s * 1.1, y + s * 0.3);
+      ctx.lineTo(x + s * 1.1, y + s * 1.1);
+      ctx.lineTo(x + s * 0.3, y + s * 1.1);
       ctx.stroke();
     } else if (iconType === "delete") {
-      // Trash icon
-      const trashW = iconSize * 0.6;
-      const trashH = iconSize * 0.7;
+      // Lucide Trash2 icon
+      const w = s * 1.4;
+      const h = s * 1.6;
+      // Lid line
       ctx.beginPath();
-      ctx.moveTo(x - trashW / 2, y - trashH / 2 + trashH * 0.15);
-      ctx.lineTo(x + trashW / 2, y - trashH / 2 + trashH * 0.15);
+      ctx.moveTo(x - w, y - h * 0.5);
+      ctx.lineTo(x + w, y - h * 0.5);
+      ctx.stroke();
+      // Handle on lid
+      ctx.beginPath();
+      ctx.moveTo(x - s * 0.4, y - h * 0.5);
+      ctx.lineTo(x - s * 0.4, y - h * 0.75);
+      ctx.lineTo(x + s * 0.4, y - h * 0.75);
+      ctx.lineTo(x + s * 0.4, y - h * 0.5);
       ctx.stroke();
       // Trash body
       ctx.beginPath();
-      ctx.moveTo(x - trashW / 2 + trashW * 0.1, y - trashH / 2 + trashH * 0.15);
-      ctx.lineTo(x - trashW / 2 + trashW * 0.2, y + trashH / 2);
-      ctx.lineTo(x + trashW / 2 - trashW * 0.2, y + trashH / 2);
-      ctx.lineTo(x + trashW / 2 - trashW * 0.1, y - trashH / 2 + trashH * 0.15);
+      ctx.moveTo(x - w * 0.85, y - h * 0.35);
+      ctx.lineTo(x - w * 0.7, y + h * 0.55);
+      ctx.lineTo(x + w * 0.7, y + h * 0.55);
+      ctx.lineTo(x + w * 0.85, y - h * 0.35);
+      ctx.closePath();
       ctx.stroke();
-      // Lid
+      // Vertical line inside trash
       ctx.beginPath();
-      ctx.moveTo(x - trashW * 0.2, y - trashH / 2);
-      ctx.lineTo(x + trashW * 0.2, y - trashH / 2);
-      ctx.stroke();
-    } else if (iconType === "pin") {
-      // Pin/thumbtack icon
-      const pinSize = iconSize * 0.6;
-      // Pin head (circle)
-      ctx.beginPath();
-      ctx.arc(x, y - pinSize * 0.2, pinSize * 0.4, 0, Math.PI * 2);
-      ctx.stroke();
-      // Pin point (line going down)
-      ctx.beginPath();
-      ctx.moveTo(x, y + pinSize * 0.1);
-      ctx.lineTo(x, y + pinSize * 0.6);
-      ctx.stroke();
-      // Small horizontal line at base of head
-      ctx.beginPath();
-      ctx.moveTo(x - pinSize * 0.25, y + pinSize * 0.1);
-      ctx.lineTo(x + pinSize * 0.25, y + pinSize * 0.1);
+      ctx.moveTo(x, y - h * 0.15);
+      ctx.lineTo(x, y + h * 0.35);
       ctx.stroke();
     }
 
@@ -255,7 +258,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
           }
         } else if (layer.type === "image" && layer.imageUrl) {
-          // Image: Draw at UV position with scale - smooth rendering
+          // Image: Draw at UV position with scale
           const img = imageCache.current.get(layer.imageUrl);
           if (img && img.complete) {
             const u = layer.position?.[0] ?? 0.5;
@@ -265,10 +268,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             const rotation = layer.rotation?.[2] ?? 0;
 
             // Calculate pixel position (UV 0-1 to canvas coords)
+            // Canvas y=0 is top, texture flipY=true handles the flip
             const imgWidth = CANVAS_SIZE * scaleX;
             const imgHeight = CANVAS_SIZE * scaleY;
             const x = u * CANVAS_SIZE;
-            const y = (1 - v) * CANVAS_SIZE; // Flip V for canvas (top-left origin)
+            const y = (1 - v) * CANVAS_SIZE;
 
             ctx.translate(x, y);
             ctx.rotate(rotation);
@@ -325,13 +329,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           } else {
             // Curved text
             const r = textWidth / Math.abs(curvatureAngle);
-
-            ctx.save();
-            ctx.translate(x, y);
-
             const direction = curvatureAngle > 0 ? -1 : 1;
             const radius = Math.abs(r);
             const cy = direction * radius;
+
+            ctx.save();
+            ctx.translate(x, y);
 
             const chars = layer.text.split("");
             const totalWidth = textWidth;
@@ -399,35 +402,17 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         ctx.setLineDash([]);
 
         // Draw corner control icons directly on the texture
-        // Top-left: Duplicate (copy)
-        drawControlIcon(ctx, b.x - padding, b.y - padding, "copy", controlSize);
+        // Top-left: Duplicate
+        drawControlIcon(ctx, b.x - padding, b.y - padding, "duplicate", controlSize);
 
         // Top-right: Rotate
-        drawControlIcon(
-          ctx,
-          b.x + b.width + padding,
-          b.y - padding,
-          "rotate",
-          controlSize,
-        );
+        drawControlIcon(ctx, b.x + b.width + padding, b.y - padding, "rotate", controlSize);
 
         // Bottom-left: Delete
-        drawControlIcon(
-          ctx,
-          b.x - padding,
-          b.y + b.height + padding,
-          "delete",
-          controlSize,
-        );
+        drawControlIcon(ctx, b.x - padding, b.y + b.height + padding, "delete", controlSize);
 
-        // Bottom-right: Pin
-        drawControlIcon(
-          ctx,
-          b.x + b.width + padding,
-          b.y + b.height + padding,
-          "pin",
-          controlSize,
-        );
+        // Bottom-right: Resize
+        drawControlIcon(ctx, b.x + b.width + padding, b.y + b.height + padding, "resize", controlSize);
 
         ctx.restore();
       }
@@ -741,10 +726,10 @@ function Model({
     }
 
     const controls_px = {
-      copy: { x: bx - padding, y: by - padding },
+      duplicate: { x: bx - padding, y: by - padding },
       rotate: { x: bx + bw + padding, y: by - padding },
       delete: { x: bx - padding, y: by + bh + padding },
-      pin: { x: bx + bw + padding, y: by + bh + padding },
+      resize: { x: bx + bw + padding, y: by + bh + padding },
     };
 
     console.log(
@@ -828,7 +813,7 @@ function Model({
 
           if (selectedLayerId) {
             switch (controlClicked) {
-              case "copy":
+              case "duplicate":
                 duplicateTextureLayer(selectedLayerId);
                 console.log("📋 Layer duplicated!");
                 break;
@@ -848,15 +833,18 @@ function Model({
                 removeTextureLayer(selectedLayerId);
                 console.log("🗑️ Layer deleted!");
                 break;
-              case "pin":
-                const pinLayer = store.textureLayers.find(
+              case "resize":
+                const resizeLayer = store.textureLayers.find(
                   (l) => l.id === selectedLayerId,
                 );
-                if (pinLayer) {
+                if (resizeLayer) {
+                  const currentScale = resizeLayer.scale?.[0] ?? 1;
+                  // Toggle between larger and smaller sizes
+                  const newScale = currentScale >= 1.5 ? 0.5 : currentScale + 0.25;
                   updateTextureLayer(selectedLayerId, {
-                    locked: !pinLayer.locked,
+                    scale: [newScale, newScale, 1],
                   });
-                  console.log(pinLayer.locked ? "📌 Layer unpinned!" : "📌 Layer pinned!");
+                  console.log(`📐 Layer resized to ${Math.round(newScale * 100)}%!`);
                 }
                 break;
             }
