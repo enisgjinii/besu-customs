@@ -89,6 +89,7 @@ export function Step03bTrimLines() {
 
     try {
       sectionsToUpdate.forEach((section) => {
+        console.log(`🎨 Applying trim to section: "${section.name}" (${section.id})`);
         updateSection(section.id, {
           trimDesign: trimPattern,
           trimColor: trimColor,

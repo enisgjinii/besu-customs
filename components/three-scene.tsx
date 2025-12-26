@@ -11,7 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { LayerControlsOverlay } from "@/components/layer-controls-overlay";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
-import { extractSectionsFromThreeModel } from "@/lib/three-material-utils";
+import { extractSectionsFromThreeModel, applyMaterialsToThreeModel } from "@/lib/three-material-utils";
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
 
@@ -637,34 +637,9 @@ function Model({
   // Sync Colors - Base Layer
   useEffect(() => {
     if (!clonedScene || sections.length === 0) return;
-    clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material) {
-        const materials = Array.isArray(child.material)
-          ? child.material
-          : [child.material];
-        materials.forEach((mat) => {
-          const section = sections.find(
-            (s) =>
-              s.originalName === mat.name ||
-              s.id === mat.name ||
-              mat.name.includes(s.originalName),
-          );
-          if (section && mat instanceof THREE.MeshStandardMaterial) {
-            if (section.color) {
-              mat.color.set(section.color);
-            }
-            // Remove map if we are using Decals, unless it's a specific pattern map?
-            // For now, assume Decals replace the need for baked map for Images/Logos.
-            // If we have "Patterns", we might set map here.
-            // But to fix "Color Over Image", we relying on Decals.
-            // mat.map = null; // Removed as patterns will use mat.map
-            mat.transparent = false;
-            mat.side = THREE.DoubleSide;
-            mat.needsUpdate = true;
-          }
-        });
-      }
-    });
+    
+    console.log("🎨 Applying materials with trim support to model, sections:", sections.length);
+    applyMaterialsToThreeModel(clonedScene, sections);
   }, [clonedScene, sections]);
 
   // Simplified interaction - drag to reposition textures on model surface

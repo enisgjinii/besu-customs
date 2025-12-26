@@ -165,7 +165,8 @@ export function applyMaterialsToThreeModel(
           if (
             section.color &&
             !section.customTexture &&
-            !section.gradient?.enabled
+            !section.gradient?.enabled &&
+            !section.trimDesign
           ) {
             targetMaterial.color = new THREE.Color(section.color);
             targetMaterial.map = null;
@@ -210,7 +211,7 @@ export function applyMaterialsToThreeModel(
             targetMaterial.color = new THREE.Color(0xffffff);
           }
 
-          // Apply trim design
+          // Apply trim design (highest priority - overrides other textures)
           if (section.trimDesign && section.trimDesign !== "none") {
             const trimTexture = createTrimDesignTexture(
               section.trimDesign,
@@ -219,6 +220,7 @@ export function applyMaterialsToThreeModel(
             );
             targetMaterial.map = trimTexture;
             targetMaterial.color = new THREE.Color(0xffffff);
+            console.log(`🎨 Applied trim "${section.trimDesign}" to section "${section.name}"`);
           }
 
           // Apply material properties
@@ -314,7 +316,7 @@ function createTrimDesignTexture(
   // Apply trim pattern
   ctx.strokeStyle = trimColor;
   ctx.fillStyle = trimColor;
-  ctx.lineWidth = 8;
+  ctx.lineWidth = Math.max(4, size * 0.01); // Responsive line width
 
   switch (trimDesign) {
     case "solid":
@@ -325,8 +327,11 @@ function createTrimDesignTexture(
 
     case "dashed":
       // Horizontal dashed lines
-      ctx.setLineDash([20, 10]);
-      for (let y = 0; y < size; y += 40) {
+      const dashSize = size * 0.04;
+      const gapSize = size * 0.02;
+      ctx.setLineDash([dashSize, gapSize]);
+      ctx.lineWidth = size * 0.02;
+      for (let y = 0; y < size; y += size * 0.08) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(size, y);
@@ -337,10 +342,12 @@ function createTrimDesignTexture(
     case "dotted":
       // Dotted pattern
       ctx.setLineDash([]);
-      for (let x = 20; x < size; x += 40) {
-        for (let y = 20; y < size; y += 40) {
+      const dotRadius = size * 0.015;
+      const dotSpacing = size * 0.08;
+      for (let x = dotSpacing; x < size; x += dotSpacing) {
+        for (let y = dotSpacing; y < size; y += dotSpacing) {
           ctx.beginPath();
-          ctx.arc(x, y, 8, 0, Math.PI * 2);
+          ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -349,11 +356,13 @@ function createTrimDesignTexture(
     case "wave":
       // Wavy lines
       ctx.setLineDash([]);
-      for (let y = 0; y < size; y += 60) {
+      ctx.lineWidth = size * 0.015;
+      const waveSpacing = size * 0.12;
+      for (let y = 0; y < size; y += waveSpacing) {
         ctx.beginPath();
         ctx.moveTo(0, y);
-        for (let x = 0; x < size; x += 20) {
-          const waveY = y + Math.sin((x / size) * Math.PI * 4) * 15;
+        for (let x = 0; x <= size; x += size * 0.02) {
+          const waveY = y + Math.sin((x / size) * Math.PI * 6) * (size * 0.03);
           ctx.lineTo(x, waveY);
         }
         ctx.stroke();
@@ -363,12 +372,15 @@ function createTrimDesignTexture(
     case "double":
       // Double parallel lines
       ctx.setLineDash([]);
-      for (let y = 0; y < size; y += 80) {
+      ctx.lineWidth = size * 0.01;
+      const doubleSpacing = size * 0.16;
+      const doubleGap = size * 0.04;
+      for (let y = 0; y < size; y += doubleSpacing) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(size, y);
-        ctx.moveTo(0, y + 20);
-        ctx.lineTo(size, y + 20);
+        ctx.moveTo(0, y + doubleGap);
+        ctx.lineTo(size, y + doubleGap);
         ctx.stroke();
       }
       break;
@@ -386,19 +398,28 @@ function createTrimDesignTexture(
     case "embossed":
       // Embossed effect with shadow
       ctx.shadowColor = "rgba(0,0,0,0.5)";
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
+      ctx.shadowBlur = size * 0.008;
+      ctx.shadowOffsetX = size * 0.004;
+      ctx.shadowOffsetY = size * 0.004;
       ctx.fillStyle = trimColor;
       ctx.fillRect(0, 0, size, size);
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       break;
 
     case "shadow":
       // Subtle shadow effect
       ctx.shadowColor = trimColor;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = size * 0.02;
       ctx.fillStyle = baseColor;
-      ctx.fillRect(5, 5, size - 10, size - 10);
+      const inset = size * 0.01;
+      ctx.fillRect(inset, inset, size - inset * 2, size - inset * 2);
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
       break;
 
     default:
@@ -412,6 +433,9 @@ function createTrimDesignTexture(
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
+  texture.needsUpdate = true;
+  
+  console.log(`🎨 Generated trim texture: ${trimDesign} (${size}x${size})`);
   return texture;
 }
 
