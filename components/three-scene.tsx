@@ -634,7 +634,11 @@ function Model({
   const { camera } = useThree();
   const selectedLayerRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
+  const isResizingRef = useRef(false);
+  const isRotatingRef = useRef(false);
   const dragOffsetRef = useRef<{ u: number; v: number }>({ u: 0, v: 0 });
+  const resizeStartRef = useRef<{ scale: number; startU: number; startV: number; centerU: number; centerV: number }>({ scale: 1, startU: 0, startV: 0, centerU: 0.5, centerV: 0.5 });
+  const rotateStartRef = useRef<{ rotation: number; startAngle: number; centerU: number; centerV: number }>({ rotation: 0, startAngle: 0, centerU: 0.5, centerV: 0.5 });
 
   // Get store functions for control actions
   const duplicateTextureLayer = useConfiguratorStore(
@@ -806,27 +810,29 @@ function Model({
         const hitV = uv.y;
 
         const controlClicked = checkControlClickUV(hitU, hitV);
+        console.log("🎯 Control clicked:", controlClicked, "at UV:", hitU.toFixed(3), hitV.toFixed(3));
 
         if (controlClicked) {
           const store = useConfiguratorStore.getState();
           const selectedLayerId = store.selectedTextureLayerId;
 
           if (selectedLayerId) {
+            const layer = store.textureLayers.find((l) => l.id === selectedLayerId);
+            console.log("🎮 Processing control:", controlClicked, "for layer:", layer?.name);
+            
             switch (controlClicked) {
               case "duplicate":
                 duplicateTextureLayer(selectedLayerId);
                 console.log("📋 Layer duplicated!");
                 break;
               case "rotate":
-                const layer = store.textureLayers.find(
-                  (l) => l.id === selectedLayerId,
-                );
+                // For now, let's test with a simple 15-degree rotation to see if rotation works at all
                 if (layer) {
                   const currentRotation = layer.rotation?.[2] ?? 0;
                   updateTextureLayer(selectedLayerId, {
-                    rotation: [0, 0, currentRotation + Math.PI / 12],
+                    rotation: [0, 0, currentRotation + Math.PI / 12], // +15 degrees
                   });
-                  console.log("🔄 Layer rotated!");
+                  console.log("🔄 Layer rotated by 15°!");
                 }
                 break;
               case "delete":
@@ -834,17 +840,21 @@ function Model({
                 console.log("🗑️ Layer deleted!");
                 break;
               case "resize":
-                const resizeLayer = store.textureLayers.find(
-                  (l) => l.id === selectedLayerId,
-                );
-                if (resizeLayer) {
-                  const currentScale = resizeLayer.scale?.[0] ?? 1;
-                  // Toggle between larger and smaller sizes
-                  const newScale = currentScale >= 1.5 ? 0.5 : currentScale + 0.25;
-                  updateTextureLayer(selectedLayerId, {
-                    scale: [newScale, newScale, 1],
-                  });
-                  console.log(`📐 Layer resized to ${Math.round(newScale * 100)}%!`);
+                // Start resize dragging mode
+                if (layer) {
+                  isResizingRef.current = true;
+                  selectedLayerRef.current = selectedLayerId;
+                  const centerU = layer.position?.[0] ?? 0.5;
+                  const centerV = layer.position?.[1] ?? 0.5;
+                  resizeStartRef.current = {
+                    scale: layer.scale?.[0] ?? 1,
+                    startU: hitU,
+                    startV: hitV,
+                    centerU: centerU,
+                    centerV: centerV,
+                  };
+                  if (controls) (controls as any).enabled = false;
+                  console.log("📐 Started resizing...");
                 }
                 break;
             }
@@ -900,33 +910,86 @@ function Model({
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-        if (!isDraggingRef.current || !selectedLayerRef.current || !clonedScene)
-          return;
+      // Check if any interaction mode is active
+      const isAnyInteraction = isDraggingRef.current || isResizingRef.current || isRotatingRef.current;
+      if (!isAnyInteraction || !selectedLayerRef.current || !clonedScene) return;
 
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
 
-        const intersects = raycaster.intersectObject(clonedScene, true);
-        const hit = intersects.find((i) => i.uv);
+      const intersects = raycaster.intersectObject(clonedScene, true);
+      const hit = intersects.find((i) => i.uv);
 
-        if (hit?.uv) {
-          const uv = hit.uv;
+      if (hit?.uv) {
+        const uv = hit.uv;
+        const hitU = uv.x;
+        const hitV = uv.y;
+
+        // Handle resize dragging
+        if (isResizingRef.current) {
+          const { scale, startU, startV, centerU, centerV } = resizeStartRef.current;
+          
+          // Calculate distance from center at start and now
+          const startDist = Math.hypot(startU - centerU, startV - centerV);
+          const currentDist = Math.hypot(hitU - centerU, hitV - centerV);
+          
+          // Scale proportionally
+          if (startDist > 0.01) {
+            const scaleFactor = currentDist / startDist;
+            const newScale = Math.max(0.1, Math.min(3, scale * scaleFactor));
+            
+            updateTextureLayer(selectedLayerRef.current, {
+              scale: [newScale, newScale, 1],
+            });
+          }
+          return;
+        }
+
+        // Handle rotate dragging
+        if (isRotatingRef.current) {
+          const { rotation, startAngle, centerU, centerV } = rotateStartRef.current;
+          const currentAngle = Math.atan2(hitV - centerV, hitU - centerU);
+          const deltaAngle = currentAngle - startAngle;
+          const newRotation = rotation + deltaAngle;
+          
+          console.log("🔄 Rotating:", {
+            currentAngle: (currentAngle * 180 / Math.PI).toFixed(1) + "°",
+            startAngle: (startAngle * 180 / Math.PI).toFixed(1) + "°", 
+            deltaAngle: (deltaAngle * 180 / Math.PI).toFixed(1) + "°",
+            newRotation: (newRotation * 180 / Math.PI).toFixed(1) + "°"
+          });
+          
+          updateTextureLayer(selectedLayerRef.current, {
+            rotation: [0, 0, newRotation],
+          });
+          return;
+        }
+
+        // Handle position dragging
+        if (isDraggingRef.current) {
           const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-          const newU = clamp01(uv.x + dragOffsetRef.current.u);
-          // Convert back from raycast V to layer V
-          // raycast V + offset = canvas-space V, then 1 - that = layer V
-          const newV = clamp01(1 - (uv.y + dragOffsetRef.current.v));
+          const newU = clamp01(hitU + dragOffsetRef.current.u);
+          const newV = clamp01(1 - (hitV + dragOffsetRef.current.v));
 
           updateTextureLayer(selectedLayerRef.current, {
             position: [newU, newV, 0],
           });
         }
+      }
     };
 
     const handlePointerUp = () => {
+      if (isResizingRef.current) {
+        console.log("📐 Resize complete!");
+      }
+      if (isRotatingRef.current) {
+        console.log("🔄 Rotate complete!");
+      }
       isDraggingRef.current = false;
+      isResizingRef.current = false;
+      isRotatingRef.current = false;
       selectedLayerRef.current = null;
       if (controls) (controls as any).enabled = true;
     };
