@@ -8,7 +8,6 @@ import {
   MaterialSection,
 } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
-import { LayerControlsOverlay } from "@/components/layer-controls-overlay";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import { extractSectionsFromThreeModel, applyMaterialsToThreeModel } from "@/lib/three-material-utils";
@@ -77,7 +76,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
-    iconType: "copy" | "rotate" | "delete" | "resize",
+    iconType: "copy" | "rotate" | "delete" | "pin",
     size: number,
   ) => {
     const radius = size / 2;
@@ -97,7 +96,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       copy: "#8b5cf6",
       rotate: "#3b82f6",
       delete: "#ef4444",
-      resize: "#3b82f6",
+      pin: "#22c55e",
     };
     ctx.strokeStyle = colors[iconType];
     ctx.lineWidth = size * 0.08;
@@ -105,6 +104,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     // Draw icon (simplified shapes)
     ctx.strokeStyle = colors[iconType];
+    ctx.fillStyle = colors[iconType];
     ctx.lineWidth = size * 0.1;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -122,6 +122,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         rectSize,
         rectSize,
       );
+      ctx.strokeStyle = colors[iconType];
       ctx.strokeRect(
         x - rectSize / 2 + rectSize * 0.3,
         y - rectSize / 2 - rectSize * 0.3,
@@ -161,22 +162,22 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       ctx.moveTo(x - trashW * 0.2, y - trashH / 2);
       ctx.lineTo(x + trashW * 0.2, y - trashH / 2);
       ctx.stroke();
-    } else if (iconType === "resize") {
-      // Diagonal arrows
+    } else if (iconType === "pin") {
+      // Pin/thumbtack icon
+      const pinSize = iconSize * 0.6;
+      // Pin head (circle)
       ctx.beginPath();
-      ctx.moveTo(x - iconSize * 0.4, y - iconSize * 0.4);
-      ctx.lineTo(x + iconSize * 0.4, y + iconSize * 0.4);
+      ctx.arc(x, y - pinSize * 0.2, pinSize * 0.4, 0, Math.PI * 2);
       ctx.stroke();
-      // Arrow heads
+      // Pin point (line going down)
       ctx.beginPath();
-      ctx.moveTo(x - iconSize * 0.4, y - iconSize * 0.15);
-      ctx.lineTo(x - iconSize * 0.4, y - iconSize * 0.4);
-      ctx.lineTo(x - iconSize * 0.15, y - iconSize * 0.4);
+      ctx.moveTo(x, y + pinSize * 0.1);
+      ctx.lineTo(x, y + pinSize * 0.6);
       ctx.stroke();
+      // Small horizontal line at base of head
       ctx.beginPath();
-      ctx.moveTo(x + iconSize * 0.4, y + iconSize * 0.15);
-      ctx.lineTo(x + iconSize * 0.4, y + iconSize * 0.4);
-      ctx.lineTo(x + iconSize * 0.15, y + iconSize * 0.4);
+      ctx.moveTo(x - pinSize * 0.25, y + pinSize * 0.1);
+      ctx.lineTo(x + pinSize * 0.25, y + pinSize * 0.1);
       ctx.stroke();
     }
 
@@ -397,7 +398,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         );
         ctx.setLineDash([]);
 
-        // Draw corner control icons
+        // Draw corner control icons directly on the texture
         // Top-left: Duplicate (copy)
         drawControlIcon(ctx, b.x - padding, b.y - padding, "copy", controlSize);
 
@@ -419,12 +420,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           controlSize,
         );
 
-        // Bottom-right: Resize
+        // Bottom-right: Pin
         drawControlIcon(
           ctx,
           b.x + b.width + padding,
           b.y + b.height + padding,
-          "resize",
+          "pin",
           controlSize,
         );
 
@@ -743,7 +744,7 @@ function Model({
       copy: { x: bx - padding, y: by - padding },
       rotate: { x: bx + bw + padding, y: by - padding },
       delete: { x: bx - padding, y: by + bh + padding },
-      resize: { x: bx + bw + padding, y: by + bh + padding },
+      pin: { x: bx + bw + padding, y: by + bh + padding },
     };
 
     console.log(
@@ -847,17 +848,15 @@ function Model({
                 removeTextureLayer(selectedLayerId);
                 console.log("🗑️ Layer deleted!");
                 break;
-              case "resize":
-                const resizeLayer = store.textureLayers.find(
+              case "pin":
+                const pinLayer = store.textureLayers.find(
                   (l) => l.id === selectedLayerId,
                 );
-                if (resizeLayer) {
-                  const currentScaleX = resizeLayer.scale?.[0] ?? 1;
-                  const currentScaleY = resizeLayer.scale?.[1] ?? 1;
+                if (pinLayer) {
                   updateTextureLayer(selectedLayerId, {
-                    scale: [currentScaleX * 1.1, currentScaleY * 1.1, 1],
+                    locked: !pinLayer.locked,
                   });
-                  console.log("📐 Layer scaled up!");
+                  console.log(pinLayer.locked ? "📌 Layer unpinned!" : "📌 Layer pinned!");
                 }
                 break;
             }
@@ -1188,10 +1187,6 @@ export function ThreeScene({
         {!perfConfig.isLowEndDevice && <Environment preset="studio" />}
       </Canvas>
 
-      {/* Layer Controls Overlay - shows when a texture layer is selected */}
-      <LayerControlsOverlay />
-
-      {/* Overlays for Loading, Empty State, Error - simplified for brevity in this rewrite */}
       {/* Overlays for Loading, Empty State, Error */}
       {modelLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
