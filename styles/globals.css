@@ -347,4 +347,17 @@
   textarea {
     font-size: 16px;
   }
+
+  /* Mobile delete button improvements */
+  .mobile-delete-btn {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-delete-btn:active {
+    transform: scale(0.95);
+    background-color: rgba(239, 68, 68, 0.1);
+  }
 }

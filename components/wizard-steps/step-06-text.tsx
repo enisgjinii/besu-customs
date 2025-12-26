@@ -78,11 +78,24 @@ export function Step06Text() {
   };
 
   const handleDeleteText = (id: string) => {
-    removeTextureLayer(id);
-    if (selectedTextId === id) {
-      setSelectedTextId(null);
+    // Add confirmation on mobile for better UX
+    if (window.innerWidth < 768) {
+      if (!confirm("Delete this text? This action cannot be undone.")) {
+        return;
+      }
     }
-    toast.success("Text removed");
+    
+    try {
+      removeTextureLayer(id);
+      if (selectedTextId === id) {
+        setSelectedTextId(null);
+      }
+      console.log("✅ Text layer deleted successfully:", id);
+      toast.success("Text removed");
+    } catch (error) {
+      console.error("❌ Failed to delete text layer:", error);
+      toast.error("Failed to delete text");
+    }
   };
 
   const textLayers = textureLayers.filter((l) => l.type === "text");
@@ -146,13 +159,13 @@ export function Step06Text() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6 shrink-0 hover:bg-destructive/10"
+                  className="h-8 w-8 shrink-0 hover:bg-destructive/10 touch-manipulation mobile-delete-btn md:h-6 md:w-6"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteText(layer.id);
                   }}
                 >
-                  <Trash2 className="w-3 h-3 text-destructive" />
+                  <Trash2 className="w-4 h-4 text-destructive md:w-3 md:h-3" />
                 </Button>
               </div>
 

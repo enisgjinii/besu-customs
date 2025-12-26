@@ -54,9 +54,9 @@ export function PlacementGuide({
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
   const rotateStartRef = useRef({ angle: 0, startAngle: 0 });
 
-  // Control sizes
-  const controlSize = isCompact ? 24 : 32;
-  const iconSize = isCompact ? 12 : 16;
+  // Control sizes - increased for better mobile touch targets
+  const controlSize = isCompact ? 32 : 40;
+  const iconSize = isCompact ? 16 : 20;
 
   // Convert percentage to pixels
   const getPixelPosition = useCallback(() => {

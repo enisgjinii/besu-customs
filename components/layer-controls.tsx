@@ -4,6 +4,7 @@ import { useConfiguratorStore } from "@/lib/store";
 import { Copy, FlipHorizontal, RotateCw, Trash2, ZoomIn, Minus, Plus } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface LayerControlsProps {
   layerId: string;
@@ -67,9 +68,9 @@ export function LayerControls({
           variant="outline"
           size="icon"
           onClick={decreaseSize}
-          className="h-6 w-6"
+          className="h-8 w-8 touch-manipulation"
         >
-          <Minus className="w-3 h-3" />
+          <Minus className="w-4 h-4" />
         </Button>
         <Slider
           value={[scale * 100]}
@@ -87,9 +88,9 @@ export function LayerControls({
           variant="outline"
           size="icon"
           onClick={increaseSize}
-          className="h-6 w-6"
+          className="h-8 w-8 touch-manipulation"
         >
-          <Plus className="w-3 h-3" />
+          <Plus className="w-4 h-4" />
         </Button>
         <span className="text-[9px] text-muted-foreground w-10 text-right">
           {Math.round(scale * 100)}%
@@ -122,28 +123,43 @@ export function LayerControls({
           variant={flipX ? "default" : "outline"}
           size="icon"
           onClick={() => updateTextureLayer(layerId, { flipX: !flipX })}
-          className="h-6 w-6"
+          className="h-8 w-8 touch-manipulation"
           title="Flip Horizontal"
         >
-          <FlipHorizontal className="w-3 h-3" />
+          <FlipHorizontal className="w-4 h-4" />
         </Button>
         <Button
           variant="outline"
           size="icon"
           onClick={handleDuplicate}
-          className="h-6 w-6"
+          className="h-8 w-8 touch-manipulation"
           title="Duplicate"
         >
-          <Copy className="w-3 h-3" />
+          <Copy className="w-4 h-4" />
         </Button>
         <Button
           variant="destructive"
           size="icon"
-          onClick={() => removeTextureLayer(layerId)}
-          className="h-6 w-6 ml-auto"
+          onClick={() => {
+            // Add confirmation on mobile for better UX
+            if (window.innerWidth < 768) {
+              if (!confirm("Delete this design? This action cannot be undone.")) {
+                return;
+              }
+            }
+            try {
+              removeTextureLayer(layerId);
+              console.log("✅ Layer deleted successfully:", layerId);
+              toast.success("Design deleted");
+            } catch (error) {
+              console.error("❌ Failed to delete layer:", error);
+              toast.error("Failed to delete design");
+            }
+          }}
+          className="h-8 w-8 ml-auto touch-manipulation mobile-delete-btn md:h-6 md:w-6"
           title="Delete"
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-4 h-4 md:w-3 md:h-3" />
         </Button>
       </div>
     </div>
