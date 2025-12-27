@@ -107,80 +107,88 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     // Draw icons
     ctx.strokeStyle = colors[iconType];
     ctx.fillStyle = colors[iconType];
-    ctx.lineWidth = size * 0.09;
+    ctx.lineWidth = size * 0.1;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    const s = size * 0.18;
+    const s = size * 0.15;
 
     if (iconType === "duplicate") {
-      // Lucide Copy icon - two overlapping rectangles
+      // Modern duplicate icon - two overlapping squares with plus
       ctx.beginPath();
-      ctx.roundRect(x - s * 0.2, y - s * 1.4, s * 2, s * 2, s * 0.3);
+      // Back square
+      ctx.rect(x - s * 0.5, y - s * 0.5, s * 1.8, s * 1.8);
       ctx.stroke();
-      ctx.fillStyle = "#ffffff";
+      // Front square (filled)
+      ctx.fillStyle = colors[iconType];
+      ctx.fillRect(x + s * 0.2, y + s * 0.2, s * 1.8, s * 1.8);
+      // Plus sign on front square
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = size * 0.06;
       ctx.beginPath();
-      ctx.roundRect(x - s * 1.2, y - s * 0.4, s * 2, s * 2, s * 0.3);
-      ctx.fill();
-      ctx.strokeStyle = colors[iconType];
+      ctx.moveTo(x + s * 0.7, y + s * 1.1);
+      ctx.lineTo(x + s * 1.3, y + s * 1.1);
+      ctx.moveTo(x + s * 1.0, y + s * 0.8);
+      ctx.lineTo(x + s * 1.0, y + s * 1.4);
       ctx.stroke();
     } else if (iconType === "rotate") {
-      // Lucide RotateCw icon - circular arrow
+      // Modern rotate icon - circular arrow with dot
       ctx.beginPath();
-      ctx.arc(x, y + s * 0.2, s * 1.2, -Math.PI * 0.8, Math.PI * 0.6);
+      ctx.arc(x, y, s * 1.3, 0, Math.PI * 1.5);
       ctx.stroke();
-      // Arrow head
+      // Arrow head (triangle)
+      ctx.fillStyle = colors[iconType];
       ctx.beginPath();
-      ctx.moveTo(x + s * 0.4, y - s * 1.3);
-      ctx.lineTo(x + s * 1.1, y - s * 0.8);
-      ctx.lineTo(x + s * 0.3, y - s * 0.5);
-      ctx.stroke();
+      ctx.moveTo(x + s * 1.3, y);
+      ctx.lineTo(x + s * 0.8, y - s * 0.4);
+      ctx.lineTo(x + s * 0.8, y + s * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      // Center dot
+      ctx.beginPath();
+      ctx.arc(x, y, s * 0.3, 0, Math.PI * 2);
+      ctx.fill();
     } else if (iconType === "resize") {
-      // Lucide Maximize2 icon - diagonal arrows
+      // Modern resize icon - four corner arrows
+      const offset = s * 1.2;
+      ctx.lineWidth = size * 0.08;
+      
+      // Top-left corner
       ctx.beginPath();
-      ctx.moveTo(x - s * 1.1, y - s * 1.1);
-      ctx.lineTo(x + s * 1.1, y + s * 1.1);
+      ctx.moveTo(x - offset, y - offset + s * 0.6);
+      ctx.lineTo(x - offset, y - offset);
+      ctx.lineTo(x - offset + s * 0.6, y - offset);
       ctx.stroke();
-      // Top-left arrow head
+      
+      // Top-right corner  
       ctx.beginPath();
-      ctx.moveTo(x - s * 1.1, y - s * 0.3);
-      ctx.lineTo(x - s * 1.1, y - s * 1.1);
-      ctx.lineTo(x - s * 0.3, y - s * 1.1);
+      ctx.moveTo(x + offset - s * 0.6, y - offset);
+      ctx.lineTo(x + offset, y - offset);
+      ctx.lineTo(x + offset, y - offset + s * 0.6);
       ctx.stroke();
-      // Bottom-right arrow head
+      
+      // Bottom-left corner
       ctx.beginPath();
-      ctx.moveTo(x + s * 1.1, y + s * 0.3);
-      ctx.lineTo(x + s * 1.1, y + s * 1.1);
-      ctx.lineTo(x + s * 0.3, y + s * 1.1);
+      ctx.moveTo(x - offset, y + offset - s * 0.6);
+      ctx.lineTo(x - offset, y + offset);
+      ctx.lineTo(x - offset + s * 0.6, y + offset);
+      ctx.stroke();
+      
+      // Bottom-right corner
+      ctx.beginPath();
+      ctx.moveTo(x + offset - s * 0.6, y + offset);
+      ctx.lineTo(x + offset, y + offset);
+      ctx.lineTo(x + offset, y + offset - s * 0.6);
       ctx.stroke();
     } else if (iconType === "delete") {
-      // Lucide Trash2 icon
-      const w = s * 1.4;
-      const h = s * 1.6;
-      // Lid line
+      // Modern delete icon - clean X
+      const offset = s * 1.1;
+      ctx.lineWidth = size * 0.12;
       ctx.beginPath();
-      ctx.moveTo(x - w, y - h * 0.5);
-      ctx.lineTo(x + w, y - h * 0.5);
-      ctx.stroke();
-      // Handle on lid
-      ctx.beginPath();
-      ctx.moveTo(x - s * 0.4, y - h * 0.5);
-      ctx.lineTo(x - s * 0.4, y - h * 0.75);
-      ctx.lineTo(x + s * 0.4, y - h * 0.75);
-      ctx.lineTo(x + s * 0.4, y - h * 0.5);
-      ctx.stroke();
-      // Trash body
-      ctx.beginPath();
-      ctx.moveTo(x - w * 0.85, y - h * 0.35);
-      ctx.lineTo(x - w * 0.7, y + h * 0.55);
-      ctx.lineTo(x + w * 0.7, y + h * 0.55);
-      ctx.lineTo(x + w * 0.85, y - h * 0.35);
-      ctx.closePath();
-      ctx.stroke();
-      // Vertical line inside trash
-      ctx.beginPath();
-      ctx.moveTo(x, y - h * 0.15);
-      ctx.lineTo(x, y + h * 0.35);
+      ctx.moveTo(x - offset, y - offset);
+      ctx.lineTo(x + offset, y + offset);
+      ctx.moveTo(x + offset, y - offset);
+      ctx.lineTo(x - offset, y + offset);
       ctx.stroke();
     }
 
