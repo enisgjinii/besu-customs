@@ -81,17 +81,6 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   ) => {
     const radius = size / 2;
 
-    // Draw circular background with shadow
-    ctx.save();
-    ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "rgba(0,0,0,0.4)";
-    ctx.shadowBlur = size * 0.25;
-    ctx.shadowOffsetY = size * 0.08;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowColor = "transparent";
-
     // Fixed colors for each control type
     const colors: Record<string, string> = {
       duplicate: "#8b5cf6",  // Purple
@@ -99,87 +88,46 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       resize: "#22c55e",     // Green
       delete: "#ef4444",     // Red
     };
-    
-    ctx.strokeStyle = colors[iconType];
-    ctx.lineWidth = size * 0.08;
-    ctx.stroke();
 
-    // Draw Lucide icons
-    ctx.strokeStyle = colors[iconType];
+    // Draw circular background with colored fill
+    ctx.save();
     ctx.fillStyle = colors[iconType];
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = size * 0.2;
+    ctx.shadowOffsetY = size * 0.05;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+
+    // Draw white icon/symbol
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = size * 0.08;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-
-    const iconSize = size * 0.4;
-    const halfIcon = iconSize / 2;
+    
+    // Use simple text symbols that render cleanly
+    ctx.font = `bold ${size * 0.45}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
     if (iconType === "duplicate") {
-      // Lucide Copy icon - exact SVG path
-      ctx.beginPath();
-      // Back rectangle
-      ctx.rect(x - halfIcon * 0.6, y - halfIcon * 0.6, iconSize * 0.7, iconSize * 0.7);
-      ctx.stroke();
-      // Front rectangle
-      ctx.beginPath();
-      ctx.rect(x - halfIcon * 0.2, y - halfIcon * 0.2, iconSize * 0.7, iconSize * 0.7);
-      ctx.stroke();
+      // Plus symbol for duplicate/add
+      ctx.font = `bold ${size * 0.55}px Arial, sans-serif`;
+      ctx.fillText("+", x, y);
     } else if (iconType === "rotate") {
-      // Lucide RotateCw icon - circular arrow going clockwise
-      const r = halfIcon * 0.65;
-      
-      // Draw the circular arc (about 270 degrees)
-      ctx.beginPath();
-      ctx.arc(x, y, r, -Math.PI * 0.5, Math.PI * 0.75, false);
-      ctx.stroke();
-      
-      // Arrow head at the end of arc (bottom-left area, pointing down-left)
-      const endAngle = Math.PI * 0.75;
-      const tipX = x + Math.cos(endAngle) * r;
-      const tipY = y + Math.sin(endAngle) * r;
-      
-      // Draw arrowhead pointing in direction of rotation
-      ctx.beginPath();
-      ctx.moveTo(tipX - halfIcon * 0.25, tipY - halfIcon * 0.15);
-      ctx.lineTo(tipX + halfIcon * 0.05, tipY + halfIcon * 0.25);
-      ctx.lineTo(tipX + halfIcon * 0.2, tipY - halfIcon * 0.1);
-      ctx.stroke();
+      // Circular arrow using Unicode
+      ctx.font = `${size * 0.5}px Arial, sans-serif`;
+      ctx.fillText("↻", x, y + size * 0.02);
     } else if (iconType === "resize") {
-      // Lucide Maximize2 icon - exact SVG path
-      const offset = halfIcon * 0.7;
-      // Top-left corner
-      ctx.beginPath();
-      ctx.moveTo(x - offset, y - offset + halfIcon * 0.4);
-      ctx.lineTo(x - offset, y - offset);
-      ctx.lineTo(x - offset + halfIcon * 0.4, y - offset);
-      ctx.stroke();
-      // Top-right corner
-      ctx.beginPath();
-      ctx.moveTo(x + offset - halfIcon * 0.4, y - offset);
-      ctx.lineTo(x + offset, y - offset);
-      ctx.lineTo(x + offset, y - offset + halfIcon * 0.4);
-      ctx.stroke();
-      // Bottom-left corner
-      ctx.beginPath();
-      ctx.moveTo(x - offset, y + offset - halfIcon * 0.4);
-      ctx.lineTo(x - offset, y + offset);
-      ctx.lineTo(x - offset + halfIcon * 0.4, y + offset);
-      ctx.stroke();
-      // Bottom-right corner
-      ctx.beginPath();
-      ctx.moveTo(x + offset - halfIcon * 0.4, y + offset);
-      ctx.lineTo(x + offset, y + offset);
-      ctx.lineTo(x + offset, y + offset - halfIcon * 0.4);
-      ctx.stroke();
+      // Diagonal resize arrows
+      ctx.font = `${size * 0.45}px Arial, sans-serif`;
+      ctx.fillText("⤡", x, y);
     } else if (iconType === "delete") {
-      // Lucide X icon - exact SVG path
-      const offset = halfIcon * 0.7;
-      ctx.beginPath();
-      ctx.moveTo(x - offset, y - offset);
-      ctx.lineTo(x + offset, y + offset);
-      ctx.moveTo(x + offset, y - offset);
-      ctx.lineTo(x - offset, y + offset);
-      ctx.stroke();
+      // X symbol for delete
+      ctx.font = `bold ${size * 0.5}px Arial, sans-serif`;
+      ctx.fillText("×", x, y);
     }
 
     ctx.restore();
