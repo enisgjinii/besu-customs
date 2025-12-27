@@ -268,11 +268,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             const rotation = layer.rotation?.[2] ?? 0;
 
             // Calculate pixel position (UV 0-1 to canvas coords)
-            // Canvas y=0 is top, texture flipY=true handles the flip
+            // Since texture.flipY = false, use direct UV mapping
             const imgWidth = CANVAS_SIZE * scaleX;
             const imgHeight = CANVAS_SIZE * scaleY;
             const x = u * CANVAS_SIZE;
-            const y = (1 - v) * CANVAS_SIZE;
+            const y = v * CANVAS_SIZE;
 
             ctx.translate(x, y);
             ctx.rotate(rotation);
@@ -306,7 +306,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           const fontFamily = layer.fontFamily || "Arial";
 
           const x = u * CANVAS_SIZE;
-          const y = (1 - v) * CANVAS_SIZE;
+          const y = v * CANVAS_SIZE;
 
           ctx.font = `bold ${fontSize}px ${fontFamily}, Arial, sans-serif`;
           ctx.fillStyle = layer.textColor || "#000000";
@@ -672,9 +672,10 @@ function Model({
     }
 
     // Convert click UV to canvas pixel coordinates (matching TextureCompositor)
-    // Raycast UV: u=0 left, u=1 right, v=0 bottom, v=1 top
+    // Since texture.flipY = false, use direct UV mapping
+    // UV: u=0 left, u=1 right, v=0 top, v=1 bottom (same as canvas)
     // Canvas: x=0 left, x=CANVAS_SIZE right, y=0 top, y=CANVAS_SIZE bottom
-    // TextureCompositor uses: x = u * CANVAS_SIZE, y = (1 - v) * CANVAS_SIZE
+    // TextureCompositor uses: x = u * CANVAS_SIZE, y = v * CANVAS_SIZE
     const activeBounds = store.activeLayerBounds;
     const CANVAS_SIZE = activeBounds?.canvasSize ?? 4096;
     const clickX = clickU * CANVAS_SIZE;
@@ -701,7 +702,7 @@ function Model({
       const layerU = layer.position?.[0] ?? 0.5;
       const layerV = layer.position?.[1] ?? 0.5;
       const layerX = layerU * CANVAS_SIZE;
-      const layerY = (1 - layerV) * CANVAS_SIZE;
+      const layerY = layerV * CANVAS_SIZE;
 
       let halfWidth: number;
       let halfHeight: number;
@@ -782,12 +783,10 @@ function Model({
       return null;
     };
 
-    // Some models deliver raycast UVs with V flipped relative to our compositor.
-    // Try both mappings; accept the first one that hits.
-    const clickY_flipped = (1 - clickV) * CANVAS_SIZE;
-    const clickY_unflipped = clickV * CANVAS_SIZE;
+    // Since we're using consistent UV mapping (flipY = false), only test direct mapping
+    const clickY = clickV * CANVAS_SIZE;
 
-    return testClick(clickY_flipped) ?? testClick(clickY_unflipped);
+    return testClick(clickY);
   };
 
   useEffect(() => {
@@ -885,8 +884,8 @@ function Model({
             ) => {
               const layerU = layer.position?.[0] ?? 0.5;
               const layerV = layer.position?.[1] ?? 0.5;
-              // Compare in same UV space (no flip needed - both are raw UV)
-              const dist = Math.hypot(layerU - hitU, (1 - layerV) - hitV);
+              // Compare in same UV space (direct mapping, no flip)
+              const dist = Math.hypot(layerU - hitU, layerV - hitV);
               if (dist < acc.dist) return { layer, dist };
               return acc;
             },
@@ -903,12 +902,10 @@ function Model({
 
             const currentU = targetLayer.position?.[0] ?? 0.5;
             const currentV = targetLayer.position?.[1] ?? 0.5;
-            // Store offset in raycast UV space
-            // Layer V needs to be converted: canvas V = 1 - layer V
-            // Raycast V matches canvas Y direction after (1-v) transform
+            // Store offset in raycast UV space (direct mapping)
             dragOffsetRef.current = {
               u: currentU - hitU,
-              v: (1 - currentV) - hitV,
+              v: currentV - hitV,
             };
 
             if (controls) (controls as any).enabled = false;
@@ -979,7 +976,7 @@ function Model({
         if (isDraggingRef.current) {
           const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
           const newU = clamp01(hitU + dragOffsetRef.current.u);
-          const newV = clamp01(1 - (hitV + dragOffsetRef.current.v));
+          const newV = clamp01(hitV + dragOffsetRef.current.v);
 
           updateTextureLayer(selectedLayerRef.current, {
             position: [newU, newV, 0],
