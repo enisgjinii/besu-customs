@@ -73,16 +73,17 @@ const NavButton = memo(function NavButton({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-xl transition-all duration-150 min-w-[60px] min-h-[44px] ${
+      className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-4 py-2 rounded-xl transition-all duration-150 min-w-[56px] sm:min-w-[64px] min-h-[48px] active:scale-95 ${
         isActive
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground active:bg-accent"
+          ? "bg-primary text-primary-foreground shadow-md"
+          : "text-muted-foreground active:bg-accent/50"
       }`}
+      style={{ WebkitTapHighlightColor: "transparent" }}
       aria-label={label}
       aria-pressed={isActive}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-[9px] font-medium">{label}</span>
+      <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+      <span className="text-[9px] sm:text-[10px] font-medium">{label}</span>
     </button>
   );
 });
@@ -328,43 +329,43 @@ export function MobileBottomNav() {
 
           {activeTab === "export" && (
             <div className="p-3 space-y-3 pb-4">
-              {/* Quick Actions - Compact Grid */}
-              <div className="grid grid-cols-4 gap-2">
+              {/* Quick Actions - Responsive Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <Button
                   variant="outline"
-                  className="flex flex-col items-center gap-1 h-16 rounded-xl p-2"
+                  className="flex flex-col items-center gap-1.5 h-20 sm:h-16 rounded-xl p-2 active:scale-95 transition-transform"
                   onClick={handleResetCamera}
                 >
-                  <RotateCcw className="w-5 h-5" />
-                  <span className="text-[10px]">Reset</span>
+                  <RotateCcw className="w-6 h-6 sm:w-5 sm:h-5" />
+                  <span className="text-xs sm:text-[10px] font-medium">Reset View</span>
                 </Button>
                 <Button
                   variant={autoRotate ? "default" : "outline"}
-                  className="flex flex-col items-center gap-1 h-16 rounded-xl p-2"
+                  className="flex flex-col items-center gap-1.5 h-20 sm:h-16 rounded-xl p-2 active:scale-95 transition-transform"
                   onClick={() => setAutoRotate(!autoRotate)}
                 >
                   {autoRotate ? (
-                    <Pause className="w-5 h-5" />
+                    <Pause className="w-6 h-6 sm:w-5 sm:h-5" />
                   ) : (
-                    <Play className="w-5 h-5" />
+                    <Play className="w-6 h-6 sm:w-5 sm:h-5" />
                   )}
-                  <span className="text-[10px]">{autoRotate ? "Stop" : "Spin"}</span>
+                  <span className="text-xs sm:text-[10px] font-medium">{autoRotate ? "Stop" : "Auto Spin"}</span>
                 </Button>
                 <Button
                   variant={showGrid ? "default" : "outline"}
-                  className="flex flex-col items-center gap-1 h-16 rounded-xl p-2"
+                  className="flex flex-col items-center gap-1.5 h-20 sm:h-16 rounded-xl p-2 active:scale-95 transition-transform"
                   onClick={toggleGrid}
                 >
-                  <Grid3x3 className="w-5 h-5" />
-                  <span className="text-[10px]">Grid</span>
+                  <Grid3x3 className="w-6 h-6 sm:w-5 sm:h-5" />
+                  <span className="text-xs sm:text-[10px] font-medium">Grid</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex flex-col items-center gap-1 h-16 rounded-xl p-2"
+                  className="flex flex-col items-center gap-1.5 h-20 sm:h-16 rounded-xl p-2 active:scale-95 transition-transform"
                   onClick={handleScreenshot}
                 >
-                  <FileImage className="w-5 h-5" />
-                  <span className="text-[10px]">Save</span>
+                  <FileImage className="w-6 h-6 sm:w-5 sm:h-5" />
+                  <span className="text-xs sm:text-[10px] font-medium">Save Image</span>
                 </Button>
               </div>
             </div>
@@ -374,8 +375,8 @@ export function MobileBottomNav() {
 
       {/* Bottom Navigation Bar - Compact */}
       <div
-        className="bg-card/98 backdrop-blur-lg border-t border-border/40 px-2 py-1.5 flex items-center justify-around pb-safe relative z-50"
-        style={{ transform: "translateZ(0)" }}
+        className="bg-card/98 backdrop-blur-lg border-t border-border/40 px-2 sm:px-4 py-2 flex items-center justify-around pb-safe relative z-50"
+        style={{ transform: "translateZ(0)", WebkitTapHighlightColor: "transparent" }}
       >
         <NavButton
           icon={Palette}
