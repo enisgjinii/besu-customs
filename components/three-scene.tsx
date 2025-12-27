@@ -146,14 +146,21 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     ctx.imageSmoothingEnabled = !perfConfig.isLowEndDevice;
     ctx.imageSmoothingQuality = perfConfig.isLowEndDevice ? "low" : "high";
 
-    // Clear canvas with white (neutral for multiply blending with material color)
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
     // Get visible layers sorted by order
     const visibleLayers = textureLayers
       .filter((l) => l.visible)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // Check if we have stripe layers (need transparent background)
+    const hasStripeLayer = visibleLayers.some(l => l.name?.includes("Side Stripe"));
+    
+    // Clear canvas - use transparent for stripe layers, white for regular patterns
+    if (hasStripeLayer) {
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    } else {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    }
 
     if (visibleLayers.length === 0) {
       texture.needsUpdate = true;
@@ -165,9 +172,16 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     let processedImages = 0;
 
     const renderAllLayers = () => {
-      // Clear and re-render all layers in order
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      // Check if we have any stripe layers (need transparent background)
+      const hasStripeLayer = visibleLayers.some(l => l.name?.includes("Side Stripe"));
+      
+      // Clear canvas - use transparent for stripe layers, white for regular patterns
+      if (hasStripeLayer) {
+        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      }
 
       // Track bounds for selected layer
       let selectedLayerBounds: {
@@ -449,14 +463,21 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture.colorSpace = THREE.SRGBColorSpace;
 
     const hasLayers = textureLayers.some((l) => l.visible);
+    const hasStripeLayer = textureLayers.some(l => l.visible && l.name?.includes("Side Stripe"));
 
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
         const mat = child.material as THREE.MeshStandardMaterial;
         if (hasLayers) {
           mat.map = texture;
+          // Enable transparency for stripe layers so the material color shows through
+          if (hasStripeLayer) {
+            mat.transparent = true;
+            mat.alphaTest = 0.01; // Discard nearly transparent pixels
+          }
         } else {
           mat.map = null;
+          mat.transparent = false;
         }
         mat.needsUpdate = true;
       }

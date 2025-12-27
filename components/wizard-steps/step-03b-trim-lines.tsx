@@ -43,79 +43,113 @@ const TRIM_LOCATIONS = [
 ];
 
 // Generate a stripe texture as data URL
+// This creates vertical stripes that will appear on the sides of jerseys/pants
+// The stripes are semi-opaque so they blend with the underlying material color
 function generateStripeTexture(
   color: string,
   pattern: string,
   width: number,
   side: "left" | "right" | "both"
 ): string {
+  const SIZE = 1024; // Higher resolution for better quality
   const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = SIZE;
+  canvas.height = SIZE;
   const ctx = canvas.getContext("2d")!;
 
-  // Clear with transparent
-  ctx.clearRect(0, 0, 512, 512);
+  // Start with fully transparent canvas
+  ctx.clearRect(0, 0, SIZE, SIZE);
 
-  // Calculate stripe positions based on side
-  // UV coordinates: left side of jersey is around U=0.1-0.2, right side is around U=0.8-0.9
-  const stripeWidth = Math.max(10, width * 2);
+  // Stripe width as percentage of canvas (width slider is 2-30, map to 2-8% of canvas)
+  const stripeWidthPercent = 0.02 + (width / 30) * 0.06;
+  const stripeWidth = Math.round(SIZE * stripeWidthPercent);
   
+  // Parse the color and create a semi-transparent version for better blending
   const drawStripe = (x: number) => {
+    // Use full opacity for the stripe color
     ctx.fillStyle = color;
     
     switch (pattern) {
       case "solid":
-        ctx.fillRect(x, 0, stripeWidth, 512);
+        ctx.fillRect(x, 0, stripeWidth, SIZE);
         break;
       case "dashed":
-        for (let y = 0; y < 512; y += 40) {
-          ctx.fillRect(x, y, stripeWidth, 25);
+        const dashHeight = SIZE * 0.05;
+        const dashGap = SIZE * 0.03;
+        for (let y = 0; y < SIZE; y += dashHeight + dashGap) {
+          ctx.fillRect(x, y, stripeWidth, dashHeight);
         }
         break;
       case "dotted":
-        for (let y = 10; y < 512; y += 30) {
+        const dotSpacing = SIZE * 0.04;
+        const dotRadius = stripeWidth * 0.4;
+        for (let y = dotSpacing; y < SIZE; y += dotSpacing) {
           ctx.beginPath();
-          ctx.arc(x + stripeWidth / 2, y, stripeWidth / 3, 0, Math.PI * 2);
+          ctx.arc(x + stripeWidth / 2, y, dotRadius, 0, Math.PI * 2);
           ctx.fill();
         }
         break;
       case "double":
-        ctx.fillRect(x, 0, stripeWidth / 3, 512);
-        ctx.fillRect(x + stripeWidth * 2 / 3, 0, stripeWidth / 3, 512);
+        const lineWidth = stripeWidth * 0.35;
+        const gap = stripeWidth * 0.3;
+        ctx.fillRect(x, 0, lineWidth, SIZE);
+        ctx.fillRect(x + lineWidth + gap, 0, lineWidth, SIZE);
         break;
       case "wave":
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        for (let y = 0; y <= 512; y += 5) {
-          const waveX = x + Math.sin(y / 30) * (stripeWidth / 4) + stripeWidth / 2;
+        const amplitude = stripeWidth * 0.3;
+        const frequency = SIZE / 80;
+        ctx.moveTo(x + stripeWidth / 2, 0);
+        for (let y = 0; y <= SIZE; y += 2) {
+          const waveX = x + stripeWidth / 2 + Math.sin(y / frequency) * amplitude;
           ctx.lineTo(waveX, y);
         }
-        ctx.lineTo(x + stripeWidth, 512);
-        ctx.lineTo(x + stripeWidth, 0);
+        ctx.lineTo(x + stripeWidth, SIZE);
+        ctx.lineTo(x, SIZE);
+        ctx.lineTo(x, 0);
         ctx.closePath();
         ctx.fill();
         break;
       case "gradient":
         const gradient = ctx.createLinearGradient(x, 0, x + stripeWidth, 0);
         gradient.addColorStop(0, "transparent");
-        gradient.addColorStop(0.3, color);
-        gradient.addColorStop(0.7, color);
+        gradient.addColorStop(0.2, color);
+        gradient.addColorStop(0.8, color);
         gradient.addColorStop(1, "transparent");
         ctx.fillStyle = gradient;
-        ctx.fillRect(x, 0, stripeWidth, 512);
+        ctx.fillRect(x, 0, stripeWidth, SIZE);
+        break;
+      case "embossed":
+        const embossGradient = ctx.createLinearGradient(x, 0, x + stripeWidth, 0);
+        embossGradient.addColorStop(0, "rgba(255,255,255,0.3)");
+        embossGradient.addColorStop(0.5, color);
+        embossGradient.addColorStop(1, "rgba(0,0,0,0.3)");
+        ctx.fillStyle = embossGradient;
+        ctx.fillRect(x, 0, stripeWidth, SIZE);
+        break;
+      case "shadow":
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = stripeWidth * 0.3;
+        ctx.shadowOffsetX = stripeWidth * 0.1;
+        ctx.fillRect(x, 0, stripeWidth, SIZE);
+        ctx.shadowColor = "transparent";
         break;
       default:
-        ctx.fillRect(x, 0, stripeWidth, 512);
+        ctx.fillRect(x, 0, stripeWidth, SIZE);
     }
   };
 
-  // Draw stripes on appropriate sides
+  // Draw stripes at multiple positions to cover different UV layouts
+  // Most jersey/pants models have sides at edges OR at ~20%/80% positions
   if (side === "left" || side === "both") {
-    drawStripe(50); // Left side stripe
+    drawStripe(0);
+    drawStripe(Math.round(SIZE * 0.15));
+    drawStripe(Math.round(SIZE * 0.25)); // Additional coverage
   }
   if (side === "right" || side === "both") {
-    drawStripe(512 - 50 - stripeWidth); // Right side stripe
+    drawStripe(SIZE - stripeWidth);
+    drawStripe(Math.round(SIZE * 0.82));
+    drawStripe(Math.round(SIZE * 0.72)); // Additional coverage
   }
 
   return canvas.toDataURL("image/png");
@@ -160,7 +194,7 @@ export function Step03bTrimLines() {
         visible: true,
         locked: false,
         opacity: 1,
-        blendMode: "normal",
+        blendMode: "normal", // Use normal blend so transparent areas stay transparent
         order: textureLayers.length,
         imageUrl: stripeTexture,
         position: [0.5, 0.5, 0],
