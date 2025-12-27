@@ -242,10 +242,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             }
           }
         } else if (layer.type === "text" && layer.text) {
-          // Text Rendering with Curving Support
+          // Text Rendering with Rotation and Curving Support
           const u = layer.position?.[0] ?? 0.5;
           const v = layer.position?.[1] ?? 0.5;
-          const curvatureAngle = layer.rotation?.[2] ?? 0;
+          const rotation = layer.rotation?.[2] ?? 0;
           const scaleMultiplier = layer.scale?.[0] ?? 1;
           const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
           const fontSize = baseFontSize * scaleMultiplier;
@@ -269,18 +269,25 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           ctx.shadowBlur = Math.max(2, fontSize * 0.02);
           ctx.shadowOffsetY = Math.max(1, fontSize * 0.01);
 
-          if (Math.abs(curvatureAngle) < 0.05) {
-            // Straight text if angle is negligible
-            ctx.fillText(layer.text, x, y);
+          // Apply rotation transform (like images)
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(rotation);
+          if (layer.flipX) ctx.scale(-1, 1);
+
+          // Check if this should be curved text (large rotation values indicate curvature intent)
+          const isCurvedText = Math.abs(rotation) > Math.PI / 4; // > 45 degrees = curved
+          
+          if (!isCurvedText) {
+            // Simple rotated text
+            ctx.fillText(layer.text, 0, 0);
           } else {
-            // Curved text
+            // Curved text for large rotation values
+            const curvatureAngle = rotation;
             const r = textWidth / Math.abs(curvatureAngle);
             const direction = curvatureAngle > 0 ? -1 : 1;
             const radius = Math.abs(r);
             const cy = direction * radius;
-
-            ctx.save();
-            ctx.translate(x, y);
 
             const chars = layer.text.split("");
             const totalWidth = textWidth;
@@ -301,9 +308,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
               currentAngle += charWidth / radius;
             });
-
-            ctx.restore();
           }
+
+          ctx.restore();
 
           // Reset shadow
           ctx.shadowColor = "transparent";
