@@ -273,7 +273,7 @@ export function MaterialEditor() {
                                 onClick={() => toggleSectionLink(section.id)}
                                 className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all min-w-[36px] min-h-[36px] flex items-center justify-center ${isLinked
                                   ? "bg-blue-500 text-white shadow-sm"
-                                  : "bg-background/80 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
+                                  : "bg-background/80 text-muted-foreground hover:text-foreground md:opacity-60 md:group-hover:opacity-100"
                                   }`}
                                 title={
                                   isLinked

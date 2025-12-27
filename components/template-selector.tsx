@@ -136,7 +136,7 @@ export function TemplateSelector() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 opacity-60 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={(e) =>
                             handleDeleteTemplate(template.name, e)
                           }

@@ -623,8 +623,8 @@ export function ConfiguratorBottomBar() {
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Export Design</h3>
-                <button onClick={() => setMenuOpen(false)}>
-                  <X className="w-5 h-5 text-gray-400" />
+                <button onClick={() => setMenuOpen(false)} className="p-1 hover:bg-muted rounded">
+                  <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
                 </button>
               </div>
               <div className="space-y-3">

@@ -826,13 +826,21 @@ function Model({
                 console.log("📋 Layer duplicated!");
                 break;
               case "rotate":
-                // For now, let's test with a simple 15-degree rotation to see if rotation works at all
+                // Start rotate dragging mode
                 if (layer) {
-                  const currentRotation = layer.rotation?.[2] ?? 0;
-                  updateTextureLayer(selectedLayerId, {
-                    rotation: [0, 0, currentRotation + Math.PI / 12], // +15 degrees
-                  });
-                  console.log("🔄 Layer rotated by 15°!");
+                  isRotatingRef.current = true;
+                  selectedLayerRef.current = selectedLayerId;
+                  const centerU = layer.position?.[0] ?? 0.5;
+                  const centerV = layer.position?.[1] ?? 0.5;
+                  const startAngle = Math.atan2(hitV - centerV, hitU - centerU);
+                  rotateStartRef.current = {
+                    rotation: layer.rotation?.[2] ?? 0,
+                    startAngle: startAngle,
+                    centerU: centerU,
+                    centerV: centerV,
+                  };
+                  if (controls) (controls as any).enabled = false;
+                  console.log("🔄 Started rotating...");
                 }
                 break;
               case "delete":
