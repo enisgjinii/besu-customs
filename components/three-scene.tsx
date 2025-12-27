@@ -1044,6 +1044,7 @@ export function ThreeScene({
 }) {
   const [initError] = useState<string | null>(null);
   const [modelUrl, setModelUrl] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const modelLoading = useConfiguratorStore((s) => s.modelLoading);
@@ -1051,6 +1052,14 @@ export function ThreeScene({
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const setSections = useConfiguratorStore((s) => s.setSections);
   const perfConfig = useMobilePerformance();
+
+  // Check if mobile for camera positioning
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     if (!currentModelUrl) {
@@ -1145,11 +1154,18 @@ export function ThreeScene({
 
   if (initError) return <div>Error: {initError}</div>;
 
+  // Adjust camera position based on screen size to account for bottom navigation
+  const cameraPosition: [number, number, number] = isMobile ? [0, 2, 8] : [0, 1.2, 8];
+
   return (
     <div className="w-full h-full relative">
       <Canvas
         shadows={!perfConfig.isLowEndDevice && perfConfig.shadowsEnabled}
         dpr={[1, Math.min(perfConfig.pixelRatio, 2)]}
+        camera={{
+          position: cameraPosition,
+          fov: 50,
+        }}
         gl={{
           antialias: perfConfig.antialias,
           alpha: true,

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { ConfiguratorHeader } from "@/components/configurator-header";
 import { ConfiguratorWizard } from "@/components/configurator-wizard";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { useEffect } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -46,13 +47,16 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
-      {/* 3D Viewer */}
-      <main className="flex-1 relative w-full h-full">
+      {/* 3D Viewer - Account for both wizard and mobile nav with generous padding */}
+      <main className="flex-1 relative w-full h-full pb-[420px] md:pb-[300px]">
         <Scene />
       </main>
 
       {/* Wizard Bottom Bar */}
       <ConfiguratorWizard />
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 }
