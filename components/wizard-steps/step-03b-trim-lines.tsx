@@ -13,6 +13,7 @@ import {
 import { Palette, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
 // Predefined trim line patterns
 const TRIM_PATTERNS = [
@@ -35,14 +36,97 @@ const TRIM_LOCATIONS = [
   { id: "bottom", name: "Bottom Hem" },
   { id: "placket", name: "Button Placket" },
   { id: "sides", name: "Side Panels" },
-  { id: "left-side", name: "Left Side" },
-  { id: "right-side", name: "Right Side" },
+  { id: "left-side-stripe", name: "Left Side Stripe (Jersey/Pants)" },
+  { id: "right-side-stripe", name: "Right Side Stripe (Jersey/Pants)" },
+  { id: "both-side-stripes", name: "Both Side Stripes (Jersey/Pants)" },
   { id: "custom", name: "Custom Position" },
 ];
+
+// Generate a stripe texture as data URL
+function generateStripeTexture(
+  color: string,
+  pattern: string,
+  width: number,
+  side: "left" | "right" | "both"
+): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d")!;
+
+  // Clear with transparent
+  ctx.clearRect(0, 0, 512, 512);
+
+  // Calculate stripe positions based on side
+  // UV coordinates: left side of jersey is around U=0.1-0.2, right side is around U=0.8-0.9
+  const stripeWidth = Math.max(10, width * 2);
+  
+  const drawStripe = (x: number) => {
+    ctx.fillStyle = color;
+    
+    switch (pattern) {
+      case "solid":
+        ctx.fillRect(x, 0, stripeWidth, 512);
+        break;
+      case "dashed":
+        for (let y = 0; y < 512; y += 40) {
+          ctx.fillRect(x, y, stripeWidth, 25);
+        }
+        break;
+      case "dotted":
+        for (let y = 10; y < 512; y += 30) {
+          ctx.beginPath();
+          ctx.arc(x + stripeWidth / 2, y, stripeWidth / 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      case "double":
+        ctx.fillRect(x, 0, stripeWidth / 3, 512);
+        ctx.fillRect(x + stripeWidth * 2 / 3, 0, stripeWidth / 3, 512);
+        break;
+      case "wave":
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        for (let y = 0; y <= 512; y += 5) {
+          const waveX = x + Math.sin(y / 30) * (stripeWidth / 4) + stripeWidth / 2;
+          ctx.lineTo(waveX, y);
+        }
+        ctx.lineTo(x + stripeWidth, 512);
+        ctx.lineTo(x + stripeWidth, 0);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case "gradient":
+        const gradient = ctx.createLinearGradient(x, 0, x + stripeWidth, 0);
+        gradient.addColorStop(0, "transparent");
+        gradient.addColorStop(0.3, color);
+        gradient.addColorStop(0.7, color);
+        gradient.addColorStop(1, "transparent");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, 0, stripeWidth, 512);
+        break;
+      default:
+        ctx.fillRect(x, 0, stripeWidth, 512);
+    }
+  };
+
+  // Draw stripes on appropriate sides
+  if (side === "left" || side === "both") {
+    drawStripe(50); // Left side stripe
+  }
+  if (side === "right" || side === "both") {
+    drawStripe(512 - 50 - stripeWidth); // Right side stripe
+  }
+
+  return canvas.toDataURL("image/png");
+}
 
 export function Step03bTrimLines() {
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
+  const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
+  const textureLayers = useConfiguratorStore((state) => state.textureLayers);
+  const removeTextureLayer = useConfiguratorStore((state) => state.removeTextureLayer);
 
   const [trimPattern, setTrimPattern] = useState("solid");
   const [trimColor, setTrimColor] = useState("#000000");
@@ -61,6 +145,33 @@ export function Step03bTrimLines() {
       return;
     }
 
+    // Handle side stripe locations as texture layers
+    if (trimLocation === "left-side-stripe" || trimLocation === "right-side-stripe" || trimLocation === "both-side-stripes") {
+      const side = trimLocation === "left-side-stripe" ? "left" : 
+                   trimLocation === "right-side-stripe" ? "right" : "both";
+      
+      const stripeTexture = generateStripeTexture(trimColor, trimPattern, trimWidth, side);
+      
+      const layerId = `side-stripe-${side}-${uuidv4().slice(0, 8)}`;
+      addTextureLayer({
+        id: layerId,
+        name: `Side Stripe (${side})`,
+        type: "pattern",
+        visible: true,
+        locked: false,
+        opacity: 1,
+        blendMode: "normal",
+        order: textureLayers.length,
+        imageUrl: stripeTexture,
+        position: [0.5, 0.5, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      });
+      
+      toast.success(`Side stripe added! Visible on ${side === "both" ? "both sides" : side + " side"} of jersey/pants.`);
+      return;
+    }
+
     // Find sections that match the trim location
     const sectionsToUpdate = sections.filter((s) => {
       const sectionName = s.name.toLowerCase();
@@ -73,8 +184,6 @@ export function Step03bTrimLines() {
         (trimLocation === "bottom" && sectionName.includes("bottom")) ||
         (trimLocation === "placket" && sectionName.includes("placket")) ||
         (trimLocation === "sides" && (sectionName.includes("side") || sectionName.includes("panel"))) ||
-        (trimLocation === "left-side" && (sectionName.includes("left") && sectionName.includes("side"))) ||
-        (trimLocation === "right-side" && (sectionName.includes("right") && sectionName.includes("side"))) ||
         // Also match trim/piping sections for jersey top/bottom
         (sectionName.includes("trim") || sectionName.includes("piping"))
       );
@@ -82,7 +191,7 @@ export function Step03bTrimLines() {
 
     if (sectionsToUpdate.length === 0) {
       toast.error(
-        `No sections found matching "${TRIM_LOCATIONS.find(l => l.id === trimLocation)?.name}". Try a different location or apply to specific sections in the Colors tab.`,
+        `No sections found matching "${TRIM_LOCATIONS.find(l => l.id === trimLocation)?.name}". Try "Side Stripes" for jersey/pants side lines.`,
       );
       return;
     }
@@ -106,6 +215,9 @@ export function Step03bTrimLines() {
 
   // Show which sections have trims
   const sectionsWithTrims = sections.filter((s) => s.trimDesign);
+  
+  // Show side stripe layers
+  const sideStripeLayers = textureLayers.filter((l) => l.name.includes("Side Stripe"));
 
   return (
     <div className="space-y-6">
@@ -281,9 +393,67 @@ export function Step03bTrimLines() {
         </div>
       )}
 
+      {/* Show Side Stripe Layers */}
+      {sideStripeLayers.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold">
+              Side Stripes ({sideStripeLayers.length})
+            </Label>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                sideStripeLayers.forEach((layer) => {
+                  removeTextureLayer(layer.id);
+                });
+                toast.success("All side stripes removed");
+              }}
+              className="h-8 text-xs touch-manipulation"
+            >
+              Clear All
+            </Button>
+          </div>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {sideStripeLayers.map((layer) => (
+              <div
+                key={layer.id}
+                className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-sm"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {layer.imageUrl && (
+                    <img 
+                      src={layer.imageUrl} 
+                      alt={layer.name}
+                      className="w-8 h-8 object-contain rounded bg-white"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{layer.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Texture layer stripe
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 shrink-0 hover:bg-destructive/10 touch-manipulation"
+                  onClick={() => {
+                    removeTextureLayer(layer.id);
+                    toast.success("Side stripe removed");
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded text-xs text-blue-900 dark:text-blue-200">
-        <strong>💡 Tip:</strong> Trim lines are applied to the selected location
-        on your jersey. Use multiple trims to create complex designs!
+        <strong>💡 Tip:</strong> Use "Side Stripes" options to add vertical stripes on the sides of jerseys and pants. These appear as texture overlays on the garment.
       </div>
     </div>
   );

@@ -43,26 +43,31 @@ export function Step08AIImages() {
         const w = canvas.width;
         const h = canvas.height;
 
-        // Sample background color from all 4 corners
+        // Sample background color from all 4 corners and edges
         const getPixel = (x: number, y: number) => {
           const i = (y * w + x) * 4;
           return [data[i], data[i + 1], data[i + 2]];
         };
 
-        const corners = [
+        // Sample more points for better background detection
+        const samplePoints = [
           getPixel(0, 0), // top-left
           getPixel(w - 1, 0), // top-right
           getPixel(0, h - 1), // bottom-left
           getPixel(w - 1, h - 1), // bottom-right
+          getPixel(Math.floor(w / 2), 0), // top-center
+          getPixel(Math.floor(w / 2), h - 1), // bottom-center
+          getPixel(0, Math.floor(h / 2)), // left-center
+          getPixel(w - 1, Math.floor(h / 2)), // right-center
         ];
 
-        // Average the corner colors
-        const rBg = Math.round(corners.reduce((s, c) => s + c[0], 0) / 4);
-        const gBg = Math.round(corners.reduce((s, c) => s + c[1], 0) / 4);
-        const bBg = Math.round(corners.reduce((s, c) => s + c[2], 0) / 4);
+        // Average the sample colors
+        const rBg = Math.round(samplePoints.reduce((s, c) => s + c[0], 0) / samplePoints.length);
+        const gBg = Math.round(samplePoints.reduce((s, c) => s + c[1], 0) / samplePoints.length);
+        const bBg = Math.round(samplePoints.reduce((s, c) => s + c[2], 0) / samplePoints.length);
 
         // Higher tolerance for better background removal
-        const tolerance = 60;
+        const tolerance = 80;
 
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];

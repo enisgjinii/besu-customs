@@ -135,12 +135,23 @@ export function applyMaterialsToThreeModel(
         : [child.material];
 
       materials.forEach((material, index) => {
-        const section = sections.find(
+        // Try to find section by material name first
+        let section = sections.find(
           (s) =>
             s.originalName === material.name ||
             s.id === material.name ||
             material.name.includes(s.originalName),
         );
+
+        // If not found by material name, try to find by mesh name (for volleyball models)
+        if (!section && child.name) {
+          section = sections.find(
+            (s) =>
+              s.originalName === child.name ||
+              child.name.includes(s.originalName) ||
+              s.originalName.includes(child.name),
+          );
+        }
 
         if (!section) return;
 

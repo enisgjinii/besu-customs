@@ -25,6 +25,61 @@ export interface ModelPreset {
 // Model-specific presets - add more as you capture coordinates
 // NOTE: UV maps typically have FRONT on the RIGHT side (U > 0.5) and BACK on LEFT side (U < 0.5)
 const MODEL_PRESETS: Record<string, ModelPreset> = {
+  // Baseball Cap - special UV layout, front panel is center
+  "baseball-cap": {
+    keywords: ["cap", "baseball-cap", "hat"],
+    leftChest: {
+      position: [0.5, 0.35, 0], // Center front of cap
+      scale: [0.25, 0.25, 1],
+      rotation: [0, 0, 0], // No rotation needed
+    },
+    back: {
+      position: [0.5, 0.7, 0], // Back of cap
+      scale: [0.2, 0.2, 1],
+      rotation: [0, 0, 0],
+    },
+  },
+
+  // Baseball Jersey - front chest area
+  "baseball-jersey": {
+    keywords: ["baseball-jersey", "baseball jersey"],
+    leftChest: {
+      position: [0.5, 0.35, 0], // Center chest
+      scale: [0.3, 0.3, 1],
+      rotation: [0, 0, 0],
+    },
+    rightChest: {
+      position: [0.65, 0.35, 0], // Right chest
+      scale: [0.15, 0.15, 1],
+      rotation: [0, 0, 0],
+    },
+    back: {
+      position: [0.5, 0.4, 0], // Back center
+      scale: [0.35, 0.35, 1],
+      rotation: [0, 0, 0],
+    },
+  },
+
+  // Basketball Jersey - combined top and shorts
+  "basketball-jersey": {
+    keywords: ["basketball", "jersey-top", "long-shorts"],
+    leftChest: {
+      position: [0.5, 0.25, 0], // Upper chest (jersey portion)
+      scale: [0.25, 0.25, 1],
+      rotation: [0, 0, 0],
+    },
+    rightChest: {
+      position: [0.65, 0.25, 0], // Right chest
+      scale: [0.15, 0.15, 1],
+      rotation: [0, 0, 0],
+    },
+    back: {
+      position: [0.5, 0.3, 0], // Back of jersey
+      scale: [0.3, 0.3, 1],
+      rotation: [0, 0, 0],
+    },
+  },
+
   // Standard button-up shirt
   // Front chest is typically in the RIGHT half of UV (U around 0.7-0.85)
   "button-shirt": {

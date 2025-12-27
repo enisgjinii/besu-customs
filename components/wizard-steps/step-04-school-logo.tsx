@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
 import { getSchoolLogoPosition } from "@/lib/logo-positioning";
 import { compressImageForMobile, isMobile } from "@/lib/mobile-performance-utils";
+import { useRef } from "react";
 
 // Predefined school logos - no need for PatternSelector duplication
 const SCHOOL_LOGOS = [
@@ -24,10 +25,18 @@ export function Step04SchoolLogo() {
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
   const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
   const setSelectedTextureLayerId = useConfiguratorStore((state) => state.setSelectedTextureLayerId);
+  
+  // Track if upload is in progress to prevent duplicate uploads
+  const isUploadingRef = useRef(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Prevent duplicate uploads
+    if (isUploadingRef.current) return;
+    
     const file = e.target.files?.[0];
     if (file) {
+      isUploadingRef.current = true;
+      
       const logoPreset = getSchoolLogoPosition(currentModelUrl);
       const reader = new FileReader();
       reader.onload = async (event) => {
@@ -56,9 +65,15 @@ export function Step04SchoolLogo() {
         });
         setSelectedTextureLayerId(newId);
         toast.success("Logo added to center - drag to position");
+        
+        // Reset upload flag after a short delay
+        setTimeout(() => {
+          isUploadingRef.current = false;
+        }, 500);
       };
       reader.readAsDataURL(file);
     }
+    // Reset the input value to allow re-uploading the same file
     e.target.value = "";
   };
 

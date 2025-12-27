@@ -345,8 +345,11 @@ export async function GET(request: Request) {
 
     // Volleyball Long Sleeve Tops renaming
     if (modelParam.includes("volleyball-long-sleeve-tops.glb")) {
-      if (originalName === "Sleeves_FRONT_4165") return "Front of Shirt Color";
-      if (originalName === "Body_FRONT_4160") return "Back of Shirt Color";
+      // Note: This model only has 2 materials - the naming in the GLB is confusing
+      // Sleeves_FRONT_4165 controls the front body area
+      // Body_FRONT_4160 controls the back body area
+      if (originalName === "Sleeves_FRONT_4165") return "Front Body Color";
+      if (originalName === "Body_FRONT_4160") return "Back Body Color";
     }
 
     // Volleyball Short Sleeve Tops mesh renaming
@@ -365,6 +368,9 @@ export async function GET(request: Request) {
         return "Bottom Trim";
       if (originalName === "Body_Front_4") return "Front Color";
       if (originalName === "Body_Back_4") return "Back Color";
+      // Add additional body parts for color changing
+      if (originalName === "Body_Front_1") return "Front Panel 1";
+      if (originalName === "Body_Back_2") return "Back Panel 2";
     }
 
 

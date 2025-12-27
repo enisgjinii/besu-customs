@@ -20,10 +20,8 @@ interface PatternSelectorProps {
   lockedCategory?: PatternCategory;
 }
 
-// Filter out school-logos from the main pattern selector since it's handled in Step04
-const FILTERED_CATEGORIES = PATTERN_CATEGORIES.filter(
-  (cat) => cat.id !== "school-logos"
-);
+// Include school-logos in the main pattern selector
+const FILTERED_CATEGORIES = PATTERN_CATEGORIES;
 
 export function PatternSelector({
   onPatternSelect,
@@ -150,42 +148,44 @@ function CategoryGrid({
 }) {
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pb-1">
-      {patterns.map((pattern) => (
-        <button
-          key={pattern.id}
-          onClick={() => onSelect(pattern)}
-          className={cn(
-            "rounded-lg overflow-hidden border-2 transition-all active:scale-95",
-            selectedPattern === pattern.id
-              ? "border-primary ring-2 ring-primary"
-              : "border-border/50 hover:border-primary/50",
-          )}
-          style={{ WebkitTapHighlightColor: "transparent" }}
-        >
-          <div className="aspect-square w-full relative bg-muted/10">
-            <img
-              src={pattern.thumbnail}
-              alt={pattern.name}
-              className="w-full h-full object-cover"
-              style={{ 
-                imageRendering: "auto",
-                WebkitBackfaceVisibility: "hidden",
-                backfaceVisibility: "hidden",
-              }}
-              loading="lazy"
-            />
-            {selectedPattern === pattern.id && (
-              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                <Check className="w-2.5 h-2.5 text-primary-foreground" />
-              </div>
+    <div className="max-h-[280px] overflow-y-auto pr-1">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pb-1">
+        {patterns.map((pattern) => (
+          <button
+            key={pattern.id}
+            onClick={() => onSelect(pattern)}
+            className={cn(
+              "rounded-lg overflow-hidden border-2 transition-all active:scale-95",
+              selectedPattern === pattern.id
+                ? "border-primary ring-2 ring-primary"
+                : "border-border/50 hover:border-primary/50",
             )}
-          </div>
-          <div className="px-1 py-0.5 bg-background/80 text-[8px] text-center truncate">
-            {pattern.name}
-          </div>
-        </button>
-      ))}
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            <div className="aspect-square w-full relative bg-muted/10">
+              <img
+                src={pattern.thumbnail}
+                alt={pattern.name}
+                className="w-full h-full object-cover"
+                style={{ 
+                  imageRendering: "auto",
+                  WebkitBackfaceVisibility: "hidden",
+                  backfaceVisibility: "hidden",
+                }}
+                loading="lazy"
+              />
+              {selectedPattern === pattern.id && (
+                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                </div>
+              )}
+            </div>
+            <div className="px-1 py-0.5 bg-background/80 text-[8px] text-center truncate">
+              {pattern.name}
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
