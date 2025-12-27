@@ -126,22 +126,24 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       ctx.stroke();
     } else if (iconType === "rotate") {
       // Lucide RotateCw icon - circular arrow going clockwise
+      const r = halfIcon * 0.65;
+      
+      // Draw the circular arc (about 270 degrees)
       ctx.beginPath();
-      // Draw arc from top going clockwise, leaving gap for arrow
-      ctx.arc(x, y, halfIcon * 0.7, -Math.PI * 0.6, Math.PI * 0.4, false);
+      ctx.arc(x, y, r, -Math.PI * 0.5, Math.PI * 0.75, false);
       ctx.stroke();
       
-      // Arrow head at the end (pointing clockwise)
-      const arrowX = x + Math.cos(Math.PI * 0.4) * halfIcon * 0.7;
-      const arrowY = y + Math.sin(Math.PI * 0.4) * halfIcon * 0.7;
-      const arrowSize = halfIcon * 0.25;
+      // Arrow head at the end of arc (bottom-left area, pointing down-left)
+      const endAngle = Math.PI * 0.75;
+      const tipX = x + Math.cos(endAngle) * r;
+      const tipY = y + Math.sin(endAngle) * r;
       
+      // Draw arrowhead pointing in direction of rotation
       ctx.beginPath();
-      ctx.moveTo(arrowX, arrowY);
-      ctx.lineTo(arrowX - arrowSize * 0.8, arrowY - arrowSize);
-      ctx.lineTo(arrowX - arrowSize * 0.8, arrowY + arrowSize);
-      ctx.closePath();
-      ctx.fill();
+      ctx.moveTo(tipX - halfIcon * 0.25, tipY - halfIcon * 0.15);
+      ctx.lineTo(tipX + halfIcon * 0.05, tipY + halfIcon * 0.25);
+      ctx.lineTo(tipX + halfIcon * 0.2, tipY - halfIcon * 0.1);
+      ctx.stroke();
     } else if (iconType === "resize") {
       // Lucide Maximize2 icon - exact SVG path
       const offset = halfIcon * 0.7;
