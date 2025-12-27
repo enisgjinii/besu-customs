@@ -416,6 +416,13 @@
     width: 100%;
     justify-content: center;
   }
+  
+  /* Wizard content scroll fix */
+  .wizard-content-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+  }
 }
 
 /* Small mobile devices (iPhone SE, etc.) */

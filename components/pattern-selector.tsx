@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PATTERN_CATEGORIES,
@@ -108,7 +107,7 @@ export function PatternSelector({
             ))}
           </TabsList>
 
-          <ScrollArea className="h-full pr-1 -mr-1">
+          <div className="overflow-visible">
             {categoriesToShow.map((category) => (
               <TabsContent
                 key={category.id}
@@ -122,18 +121,18 @@ export function PatternSelector({
                 />
               </TabsContent>
             ))}
-          </ScrollArea>
+          </div>
         </Tabs>
       )}
 
       {!showTabs && (
-        <ScrollArea className="h-full pr-1 -mr-1">
+        <div className="overflow-visible">
           <CategoryGrid
             categoryId={activeCategory}
             selectedPattern={selectedPattern}
             onSelect={handlePatternClick}
           />
-        </ScrollArea>
+        </div>
       )}
     </Card>
   );
@@ -151,17 +150,18 @@ function CategoryGrid({
 }) {
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
-    <div className="grid grid-cols-3 gap-2 pb-1">
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pb-1">
       {patterns.map((pattern) => (
         <button
           key={pattern.id}
           onClick={() => onSelect(pattern)}
           className={cn(
-            "rounded-lg overflow-hidden border-2 transition-all",
+            "rounded-lg overflow-hidden border-2 transition-all active:scale-95",
             selectedPattern === pattern.id
               ? "border-primary ring-2 ring-primary"
               : "border-border/50 hover:border-primary/50",
           )}
+          style={{ WebkitTapHighlightColor: "transparent" }}
         >
           <div className="aspect-square w-full relative bg-muted/10">
             <img
@@ -170,7 +170,6 @@ function CategoryGrid({
               className="w-full h-full object-cover"
               style={{ 
                 imageRendering: "auto",
-                // Use higher quality rendering for patterns
                 WebkitBackfaceVisibility: "hidden",
                 backfaceVisibility: "hidden",
               }}

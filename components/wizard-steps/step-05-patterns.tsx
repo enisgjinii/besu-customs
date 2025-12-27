@@ -9,9 +9,7 @@ export function Step05Patterns() {
         <h2 className="text-sm font-semibold">Design Patterns</h2>
         <p className="text-xs text-muted-foreground">Select a pattern to apply</p>
       </div>
-      <div className="h-[180px] overflow-hidden">
-        <PatternSelector />
-      </div>
+      <PatternSelector />
     </div>
   );
 }

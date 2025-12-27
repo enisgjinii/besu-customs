@@ -176,9 +176,9 @@ export function ConfiguratorWizard() {
       )}
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div className="p-3 md:p-4 max-w-3xl mx-auto">
+      <div className="flex-1 overflow-hidden min-h-0">
+        <div className="h-full overflow-y-auto overscroll-contain wizard-content-scroll" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="p-3 md:p-4 max-w-3xl mx-auto pb-16">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
@@ -191,7 +191,7 @@ export function ConfiguratorWizard() {
               </motion.div>
             </AnimatePresence>
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Reset button - fixed bottom right */}
