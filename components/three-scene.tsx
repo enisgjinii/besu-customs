@@ -125,15 +125,21 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       ctx.rect(x - halfIcon * 0.2, y - halfIcon * 0.2, iconSize * 0.7, iconSize * 0.7);
       ctx.stroke();
     } else if (iconType === "rotate") {
-      // Lucide RotateCw icon - exact SVG path
+      // Lucide RotateCw icon - circular arrow going clockwise
       ctx.beginPath();
-      ctx.arc(x, y, halfIcon * 0.8, -Math.PI * 0.75, Math.PI * 0.5, false);
+      // Draw arc from top going clockwise, leaving gap for arrow
+      ctx.arc(x, y, halfIcon * 0.7, -Math.PI * 0.6, Math.PI * 0.4, false);
       ctx.stroke();
-      // Arrow head
+      
+      // Arrow head at the end (pointing clockwise)
+      const arrowX = x + Math.cos(Math.PI * 0.4) * halfIcon * 0.7;
+      const arrowY = y + Math.sin(Math.PI * 0.4) * halfIcon * 0.7;
+      const arrowSize = halfIcon * 0.25;
+      
       ctx.beginPath();
-      ctx.moveTo(x + halfIcon * 0.8, y);
-      ctx.lineTo(x + halfIcon * 0.4, y - halfIcon * 0.3);
-      ctx.lineTo(x + halfIcon * 0.4, y + halfIcon * 0.3);
+      ctx.moveTo(arrowX, arrowY);
+      ctx.lineTo(arrowX - arrowSize * 0.8, arrowY - arrowSize);
+      ctx.lineTo(arrowX - arrowSize * 0.8, arrowY + arrowSize);
       ctx.closePath();
       ctx.fill();
     } else if (iconType === "resize") {
