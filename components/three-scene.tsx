@@ -104,86 +104,68 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     ctx.lineWidth = size * 0.08;
     ctx.stroke();
 
-    // Draw icons
+    // Draw Lucide icons
     ctx.strokeStyle = colors[iconType];
     ctx.fillStyle = colors[iconType];
-    ctx.lineWidth = size * 0.1;
+    ctx.lineWidth = size * 0.08;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    const s = size * 0.15;
+    const iconSize = size * 0.4;
+    const halfIcon = iconSize / 2;
 
     if (iconType === "duplicate") {
-      // Modern duplicate icon - two overlapping squares with plus
+      // Lucide Copy icon - exact SVG path
       ctx.beginPath();
-      // Back square
-      ctx.rect(x - s * 0.5, y - s * 0.5, s * 1.8, s * 1.8);
+      // Back rectangle
+      ctx.rect(x - halfIcon * 0.6, y - halfIcon * 0.6, iconSize * 0.7, iconSize * 0.7);
       ctx.stroke();
-      // Front square (filled)
-      ctx.fillStyle = colors[iconType];
-      ctx.fillRect(x + s * 0.2, y + s * 0.2, s * 1.8, s * 1.8);
-      // Plus sign on front square
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = size * 0.06;
+      // Front rectangle
       ctx.beginPath();
-      ctx.moveTo(x + s * 0.7, y + s * 1.1);
-      ctx.lineTo(x + s * 1.3, y + s * 1.1);
-      ctx.moveTo(x + s * 1.0, y + s * 0.8);
-      ctx.lineTo(x + s * 1.0, y + s * 1.4);
+      ctx.rect(x - halfIcon * 0.2, y - halfIcon * 0.2, iconSize * 0.7, iconSize * 0.7);
       ctx.stroke();
     } else if (iconType === "rotate") {
-      // Modern rotate icon - circular arrow with dot
+      // Lucide RotateCw icon - exact SVG path
       ctx.beginPath();
-      ctx.arc(x, y, s * 1.3, 0, Math.PI * 1.5);
+      ctx.arc(x, y, halfIcon * 0.8, -Math.PI * 0.75, Math.PI * 0.5, false);
       ctx.stroke();
-      // Arrow head (triangle)
-      ctx.fillStyle = colors[iconType];
+      // Arrow head
       ctx.beginPath();
-      ctx.moveTo(x + s * 1.3, y);
-      ctx.lineTo(x + s * 0.8, y - s * 0.4);
-      ctx.lineTo(x + s * 0.8, y + s * 0.4);
+      ctx.moveTo(x + halfIcon * 0.8, y);
+      ctx.lineTo(x + halfIcon * 0.4, y - halfIcon * 0.3);
+      ctx.lineTo(x + halfIcon * 0.4, y + halfIcon * 0.3);
       ctx.closePath();
       ctx.fill();
-      // Center dot
-      ctx.beginPath();
-      ctx.arc(x, y, s * 0.3, 0, Math.PI * 2);
-      ctx.fill();
     } else if (iconType === "resize") {
-      // Modern resize icon - four corner arrows
-      const offset = s * 1.2;
-      ctx.lineWidth = size * 0.08;
-      
+      // Lucide Maximize2 icon - exact SVG path
+      const offset = halfIcon * 0.7;
       // Top-left corner
       ctx.beginPath();
-      ctx.moveTo(x - offset, y - offset + s * 0.6);
+      ctx.moveTo(x - offset, y - offset + halfIcon * 0.4);
       ctx.lineTo(x - offset, y - offset);
-      ctx.lineTo(x - offset + s * 0.6, y - offset);
+      ctx.lineTo(x - offset + halfIcon * 0.4, y - offset);
       ctx.stroke();
-      
-      // Top-right corner  
+      // Top-right corner
       ctx.beginPath();
-      ctx.moveTo(x + offset - s * 0.6, y - offset);
+      ctx.moveTo(x + offset - halfIcon * 0.4, y - offset);
       ctx.lineTo(x + offset, y - offset);
-      ctx.lineTo(x + offset, y - offset + s * 0.6);
+      ctx.lineTo(x + offset, y - offset + halfIcon * 0.4);
       ctx.stroke();
-      
       // Bottom-left corner
       ctx.beginPath();
-      ctx.moveTo(x - offset, y + offset - s * 0.6);
+      ctx.moveTo(x - offset, y + offset - halfIcon * 0.4);
       ctx.lineTo(x - offset, y + offset);
-      ctx.lineTo(x - offset + s * 0.6, y + offset);
+      ctx.lineTo(x - offset + halfIcon * 0.4, y + offset);
       ctx.stroke();
-      
       // Bottom-right corner
       ctx.beginPath();
-      ctx.moveTo(x + offset - s * 0.6, y + offset);
+      ctx.moveTo(x + offset - halfIcon * 0.4, y + offset);
       ctx.lineTo(x + offset, y + offset);
-      ctx.lineTo(x + offset, y + offset - s * 0.6);
+      ctx.lineTo(x + offset, y + offset - halfIcon * 0.4);
       ctx.stroke();
     } else if (iconType === "delete") {
-      // Modern delete icon - clean X
-      const offset = s * 1.1;
-      ctx.lineWidth = size * 0.12;
+      // Lucide X icon - exact SVG path
+      const offset = halfIcon * 0.7;
       ctx.beginPath();
       ctx.moveTo(x - offset, y - offset);
       ctx.lineTo(x + offset, y + offset);
