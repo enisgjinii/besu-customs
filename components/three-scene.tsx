@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment, Center } from "@react-three/drei";
+import { OrbitControls, Environment, Center } from "@react-three/drei";
 import {
   useConfiguratorStore,
   MaterialSection,
@@ -11,6 +11,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import { extractSectionsFromThreeModel, applyMaterialsToThreeModel } from "@/lib/three-material-utils";
+import { useCachedGLTF } from "@/hooks/use-cached-gltf";
+import { getModelCache } from "@/lib/model-cache";
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
 
@@ -522,7 +524,10 @@ function Model({
   customSections?: MaterialSection[];
   customAutoRotate?: boolean;
 }) {
-  const { scene } = useGLTF(url) as GLTF;
+  // Use cached GLTF loader for faster loading and memory management
+  const { gltf, loading: gltfLoading, error: gltfError } = useCachedGLTF(url);
+  const scene = gltf?.scene ?? null;
+  
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
   const modelRef = useRef<THREE.Group>(null);
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
@@ -538,6 +543,21 @@ function Model({
 
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
   const onLoadRef = useRef(onLoad);
+
+  // Log cache stats on load
+  useEffect(() => {
+    if (gltf && !gltfLoading) {
+      const stats = getModelCache().getStats();
+      console.log(`📊 Model cache: ${stats.cachedModels} models, ${stats.totalMemoryMB.toFixed(1)} MB`);
+    }
+  }, [gltf, gltfLoading]);
+
+  // Handle loading errors
+  useEffect(() => {
+    if (gltfError) {
+      console.error("❌ Model loading error:", gltfError);
+    }
+  }, [gltfError]);
 
   // Clone logic ... (simplified for this edit, assume similar to before)
   useEffect(() => {

@@ -8,7 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Product } from "@/lib/store";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { getModelCache } from "@/lib/model-cache";
 
 export function Step01Apparel() {
   const products = useConfiguratorStore((state) => state.products);
@@ -20,6 +21,28 @@ export function Step01Apparel() {
     (state) => state.setSelectedProduct,
   );
   const [productsLoaded, setProductsLoaded] = useState(false);
+
+  // Preload model on hover for faster switching
+  const handleProductHover = useCallback((product: Product) => {
+    if (product.modelUrl) {
+      getModelCache().preload(product.modelUrl);
+    }
+  }, []);
+
+  // Preload first few models when dropdown opens
+  const handleDropdownOpen = useCallback((open: boolean) => {
+    if (open && products.length > 0) {
+      // Preload first 3 models for instant switching
+      const modelsToPreload = products
+        .filter(p => p.modelUrl)
+        .slice(0, 3)
+        .map(p => p.modelUrl!);
+      
+      modelsToPreload.forEach(url => {
+        getModelCache().preload(url);
+      });
+    }
+  }, [products]);
 
   // Group products by category
   const groupedProducts = products
@@ -71,7 +94,11 @@ export function Step01Apparel() {
         <p className="text-xs text-muted-foreground">Select a product to customize</p>
       </div>
 
-      <Select value={selectedProductId || ""} onValueChange={setSelectedProduct}>
+      <Select 
+        value={selectedProductId || ""} 
+        onValueChange={setSelectedProduct}
+        onOpenChange={handleDropdownOpen}
+      >
         <SelectTrigger className="w-full h-10">
           <SelectValue placeholder="Select a product..." />
         </SelectTrigger>
@@ -82,7 +109,13 @@ export function Step01Apparel() {
                 {category}
               </div>
               {items.map((product) => (
-                <SelectItem key={product.id} value={product.id} className="text-sm py-2">
+                <SelectItem 
+                  key={product.id} 
+                  value={product.id} 
+                  className="text-sm py-2"
+                  onMouseEnter={() => handleProductHover(product)}
+                  onFocus={() => handleProductHover(product)}
+                >
                   {product.title}
                 </SelectItem>
               ))}
