@@ -1339,6 +1339,8 @@ export function ThreeScene({
         camera={{
           position: cameraPosition,
           fov: 50,
+          near: 0.1,
+          far: 1000,
         }}
         gl={{
           antialias: perfConfig.antialias,
@@ -1361,6 +1363,8 @@ export function ThreeScene({
           enableDamping
           dampingFactor={0.05}
           enableRotate={!useConfiguratorStore.getState().lockedView}
+          minDistance={0.5}
+          maxDistance={20}
         />
         <CameraViewLock />
 
@@ -1379,12 +1383,16 @@ export function ThreeScene({
         {!perfConfig.isLowEndDevice && <Environment preset="studio" />}
       </Canvas>
 
-      {/* Overlays for Loading, Empty State, Error */}
-      {modelLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
-          <Spinner className="text-primary w-12 h-12" />
-        </div>
-      )}
+      {/* Loading Transition Overlay */}
+      <div
+        className={`absolute inset-0 flex flex-col items-center justify-center bg-background z-20 transition-opacity duration-700 ease-in-out ${modelLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+      >
+        <Spinner className="text-primary w-12 h-12 mb-4" />
+        <p className="text-sm text-muted-foreground animate-pulse">
+          Loading 3D Model...
+        </p>
+      </div>
 
       {/* Empty State Overlay - Moved inside ThreeScene to ensure it respects loading */}
       {!modelUrl && !modelLoading && (

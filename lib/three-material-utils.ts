@@ -250,6 +250,19 @@ export function applyMaterialsToThreeModel(
           // Enable double-sided rendering
           targetMaterial.side = THREE.DoubleSide;
 
+          // Fix Z-Fighting for overlapping geometry (Trims/Collars/Stitching)
+          const isTrim =
+            /trim|collar|stitch|seam|detail|piping/i.test(section.name) ||
+            /trim|collar|stitch|seam|detail|piping/i.test(
+              section.originalName,
+            );
+
+          if (isTrim) {
+            targetMaterial.polygonOffset = true;
+            targetMaterial.polygonOffsetFactor = -1.0;
+            targetMaterial.polygonOffsetUnits = -1.0;
+          }
+
           targetMaterial.needsUpdate = true;
         }
       });
