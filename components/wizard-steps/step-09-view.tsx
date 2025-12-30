@@ -24,12 +24,14 @@ export function Step09View() {
   const setDeliveryNotes = useConfiguratorStore(
     (state) => state.setDeliveryNotes,
   );
+  const textureLayers = useConfiguratorStore((state) => state.textureLayers);
 
   const [format, setFormat] = useState<"png" | "svg" | "pdf" | "jpg">("png");
   const [fileName, setFileName] = useState("my-besu-design");
   const [isExporting, setIsExporting] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [highRes, setHighRes] = useState(true); // Enable high-res by default
 
   const handleSendEmail = async (data: { recipientEmail: string; clientEmails: string[]; message: string }) => {
     setIsSendingEmail(true);
@@ -237,6 +239,37 @@ export function Step09View() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* High Resolution Toggle */}
+        {(format === "png" || format === "jpg") && (
+          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+            <input
+              type="checkbox"
+              id="high-res"
+              checked={highRes}
+              onChange={(e) => setHighRes(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300"
+            />
+            <Label htmlFor="high-res" className="text-sm cursor-pointer flex-1">
+              High Resolution (2x)
+              <span className="block text-xs text-muted-foreground font-normal">
+                Better for printing. Larger file size.
+              </span>
+            </Label>
+          </div>
+        )}
+
+        {/* Applied Decals Info */}
+        {textureLayers.length > 0 && (
+          <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <p className="text-xs font-medium text-primary">
+              {textureLayers.length} decal{textureLayers.length !== 1 ? 's' : ''} applied
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              All logos, text, and patterns will be captured in the export.
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Delivery Notes (Optional)</Label>

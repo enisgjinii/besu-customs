@@ -19,11 +19,12 @@ export function Step08AIImages() {
     (state) => state.setSelectedTextureLayerId,
   );
 
-  // Helper to remove background (improved multi-corner detection)
+  // Improved background removal using flood-fill from corners
+  // This provides much better edge detection than simple color matching
   const processImageWithTransparency = async (
     imageUrl: string,
   ): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.src = imageUrl;
@@ -43,53 +44,130 @@ export function Step08AIImages() {
         const w = canvas.width;
         const h = canvas.height;
 
-        // Sample background color from all 4 corners and edges
+        // Get pixel color at position
         const getPixel = (x: number, y: number) => {
           const i = (y * w + x) * 4;
-          return [data[i], data[i + 1], data[i + 2]];
+          return [data[i], data[i + 1], data[i + 2], data[i + 3]];
         };
 
-        // Sample more points for better background detection
-        const samplePoints = [
-          getPixel(0, 0), // top-left
-          getPixel(w - 1, 0), // top-right
-          getPixel(0, h - 1), // bottom-left
-          getPixel(w - 1, h - 1), // bottom-right
-          getPixel(Math.floor(w / 2), 0), // top-center
-          getPixel(Math.floor(w / 2), h - 1), // bottom-center
-          getPixel(0, Math.floor(h / 2)), // left-center
-          getPixel(w - 1, Math.floor(h / 2)), // right-center
+        // Set pixel alpha
+        const setAlpha = (x: number, y: number, alpha: number) => {
+          const i = (y * w + x) * 4;
+          data[i + 3] = alpha;
+        };
+
+        // Color difference check
+        const colorMatch = (c1: number[], c2: number[], tolerance: number) => {
+          return (
+            Math.abs(c1[0] - c2[0]) <= tolerance &&
+            Math.abs(c1[1] - c2[1]) <= tolerance &&
+            Math.abs(c1[2] - c2[2]) <= tolerance
+          );
+        };
+
+        // Sample background colors from all 4 corners with edge averaging
+        const corners = [
+          getPixel(0, 0),
+          getPixel(w - 1, 0),
+          getPixel(0, h - 1),
+          getPixel(w - 1, h - 1),
         ];
 
-        // Average the sample colors
-        const rBg = Math.round(
-          samplePoints.reduce((s, c) => s + c[0], 0) / samplePoints.length,
-        );
-        const gBg = Math.round(
-          samplePoints.reduce((s, c) => s + c[1], 0) / samplePoints.length,
-        );
-        const bBg = Math.round(
-          samplePoints.reduce((s, c) => s + c[2], 0) / samplePoints.length,
-        );
+        // Add edge samples for better background detection
+        const edgeSamples = [
+          getPixel(Math.floor(w / 2), 0),
+          getPixel(Math.floor(w / 2), h - 1),
+          getPixel(0, Math.floor(h / 2)),
+          getPixel(w - 1, Math.floor(h / 2)),
+        ];
 
-        // Higher tolerance for better background removal
-        const tolerance = 80;
+        // Combine corners and edges
+        const allSamples = [...corners, ...edgeSamples];
 
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
+        // Find the most common background color (mode)
+        const colorKey = (c: number[]) => `${c[0]}_${c[1]}_${c[2]}`;
+        const colorCounts = new Map<string, { color: number[]; count: number }>();
 
-          const diff =
-            Math.abs(r - rBg) + Math.abs(g - gBg) + Math.abs(b - bBg);
+        for (const sample of allSamples) {
+          const key = colorKey(sample);
+          const existing = colorCounts.get(key);
+          if (existing) {
+            existing.count++;
+          } else {
+            colorCounts.set(key, { color: sample, count: 1 });
+          }
+        }
 
-          if (diff < tolerance * 3) {
-            // Gradual transparency based on how close to background
-            const alpha = Math.min(
-              255,
-              Math.max(0, (diff / (tolerance * 3)) * 255),
-            );
-            data[i + 3] = alpha;
+        // Use the most frequent corner color as background
+        let bgColor = corners[0];
+        let maxCount = 0;
+        colorCounts.forEach((value) => {
+          if (value.count > maxCount) {
+            maxCount = value.count;
+            bgColor = value.color;
+          }
+        });
+
+        // Use flood-fill from corners to mark background pixels
+        const visited = new Set<number>();
+        const bgPixels = new Set<number>();
+        const tolerance = 50; // Per-channel tolerance
+        const stack: [number, number][] = [];
+
+        // Start flood-fill from each corner
+        const startPoints: [number, number][] = [
+          [0, 0],
+          [w - 1, 0],
+          [0, h - 1],
+          [w - 1, h - 1],
+        ];
+
+        for (const [sx, sy] of startPoints) {
+          const startColor = getPixel(sx, sy);
+          if (!colorMatch(startColor, bgColor, tolerance)) continue;
+
+          stack.push([sx, sy]);
+
+          while (stack.length > 0) {
+            const [x, y] = stack.pop()!;
+            const idx = y * w + x;
+
+            if (x < 0 || x >= w || y < 0 || y >= h) continue;
+            if (visited.has(idx)) continue;
+            visited.add(idx);
+
+            const pixel = getPixel(x, y);
+            if (!colorMatch(pixel, bgColor, tolerance)) continue;
+
+            bgPixels.add(idx);
+
+            // Add 4-connected neighbors
+            stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+          }
+        }
+
+        // Apply transparency to background pixels with smooth edges
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const idx = y * w + x;
+
+            if (bgPixels.has(idx)) {
+              // Check if this is an edge pixel (has non-bg neighbor)
+              const isEdge = [
+                [x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]
+              ].some(([nx, ny]) => {
+                if (nx < 0 || nx >= w || ny < 0 || ny >= h) return false;
+                return !bgPixels.has(ny * w + nx);
+              });
+
+              if (isEdge) {
+                // Semi-transparent edge for anti-aliasing
+                setAlpha(x, y, 64);
+              } else {
+                // Fully transparent background
+                setAlpha(x, y, 0);
+              }
+            }
           }
         }
 

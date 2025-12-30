@@ -86,8 +86,11 @@ export function ConfiguratorWizard() {
   return (
     <div
       className={cn(
-        "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col",
-        isMobile ? "h-[35vh] max-h-[280px]" : "h-[280px]",
+        "bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col",
+        // Mobile: relative positioning within flex container, Desktop: absolute with fixed height
+        isMobile
+          ? "relative flex-1 min-h-0"
+          : "absolute bottom-0 left-0 right-0 h-[280px]",
       )}
     >
       {/* Texture Layer Selector - Compact on mobile */}

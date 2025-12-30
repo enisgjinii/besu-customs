@@ -2,7 +2,7 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload } from "lucide-react";
+import { Upload, Check, Search } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
@@ -10,27 +10,15 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
-import { useRef, useState } from "react";
-
-
-// Predefined school logos - no need for PatternSelector duplication
-const SCHOOL_LOGOS = [
-  { id: "logo-1", name: "Eagles", url: "/logos/eagles.png" },
-  { id: "logo-2", name: "Tigers", url: "/logos/tigers.png" },
-  { id: "logo-3", name: "Bears", url: "/logos/bears.png" },
-  { id: "logo-4", name: "Lions", url: "/logos/lions.png" },
-  { id: "logo-5", name: "Hawks", url: "/logos/hawks.png" },
-  { id: "logo-6", name: "Wolves", url: "/logos/wolves.png" },
-];
+import { useRef, useState, useMemo } from "react";
+import { getPatternsByCategory, type Pattern } from "@/lib/patterns";
+import { cn } from "@/lib/utils";
 
 export function Step04SchoolLogo() {
   const addTextureLayer = useConfiguratorStore(
     (state) => state.addTextureLayer,
   );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
-  const currentModelUrl = useConfiguratorStore(
-    (state) => state.currentModelUrl,
-  );
   const setPlacementMode = useConfiguratorStore((state) => state.setPlacementMode);
   const setPendingLayer = useConfiguratorStore((state) => state.setPendingLayer);
   const isPlacementMode = useConfiguratorStore((state) => state.isPlacementMode);
@@ -38,14 +26,23 @@ export function Step04SchoolLogo() {
     (state) => state.setSelectedTextureLayerId,
   );
 
-  // Track pending upload
-  const [pendingFile, setPendingFile] = useState<{
-    file: File;
-    result: string;
-  } | null>(null);
-
   // Track if upload is in progress
   const uploadLockRef = useRef(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
+
+  // Get school logos from patterns library
+  const schoolLogos = useMemo(() => getPatternsByCategory("school-logos"), []);
+
+  // Filter logos by search
+  const filteredLogos = useMemo(() => {
+    if (!searchQuery.trim()) return schoolLogos.slice(0, 50); // Show first 50 by default
+    const q = searchQuery.toLowerCase();
+    return schoolLogos.filter(logo =>
+      logo.name.toLowerCase().includes(q) ||
+      logo.description?.toLowerCase().includes(q)
+    ).slice(0, 50);
+  }, [schoolLogos, searchQuery]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // Prevent duplicate uploads
@@ -82,16 +79,30 @@ export function Step04SchoolLogo() {
     e.target.value = "";
   };
 
+  // Handle selecting a predefined school logo
+  const handleLogoSelect = (logo: Pattern) => {
+    setSelectedLogoId(logo.id);
 
+    // Enter placement mode with this logo
+    setPendingLayer({
+      type: "image",
+      imageUrl: logo.thumbnail,
+      name: logo.name,
+      scale: [0.3, 0.3, 1],
+      rotation: [0, 0, 0]
+    });
+    setPlacementMode(true);
+    toast.info(`Click on the model to place "${logo.name}"`);
+  };
 
   const logos = textureLayers.filter((l) => l.type === "image");
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div>
         <h2 className="text-sm font-semibold">Add Logo</h2>
         <p className="text-xs text-muted-foreground">
-          Upload your team or school logo
+          Select a school logo or upload your own
         </p>
       </div>
 
@@ -105,30 +116,92 @@ export function Step04SchoolLogo() {
             onClick={() => {
               setPlacementMode(false);
               setPendingLayer(null);
+              setSelectedLogoId(null);
             }}
           >
             Cancel
           </Button>
         </div>
       ) : (
-        /* Upload button */
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full h-10 relative"
-          asChild
-        >
-          <label className="cursor-pointer flex items-center justify-center gap-2">
-            <Upload className="w-4 h-4" />
-            <span className="text-sm">Upload Logo Image</span>
-            <Input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              onChange={handleFileUpload}
-            />
-          </label>
-        </Button>
+        <>
+          {/* Upload custom logo button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-10 relative"
+            asChild
+          >
+            <label className="cursor-pointer flex items-center justify-center gap-2">
+              <Upload className="w-4 h-4" />
+              <span className="text-sm">Upload Custom Logo</span>
+              <Input
+                type="file"
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={handleFileUpload}
+              />
+            </label>
+          </Button>
+
+          {/* School Logos Section */}
+          {schoolLogos.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  School Logos ({schoolLogos.length})
+                </span>
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search logos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+
+              {/* Logo grid */}
+              <div className="max-h-[150px] overflow-y-auto rounded-lg border bg-muted/20 p-1.5">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+                  {filteredLogos.map((logo) => (
+                    <button
+                      key={logo.id}
+                      onClick={() => handleLogoSelect(logo)}
+                      className={cn(
+                        "relative aspect-square rounded-lg border-2 overflow-hidden transition-all active:scale-95 bg-white",
+                        selectedLogoId === logo.id
+                          ? "border-primary ring-2 ring-primary"
+                          : "border-transparent hover:border-primary/50"
+                      )}
+                      title={logo.name}
+                    >
+                      <img
+                        src={logo.thumbnail}
+                        alt={logo.name}
+                        className="w-full h-full object-contain p-1"
+                        loading="lazy"
+                      />
+                      {selectedLogoId === logo.id && (
+                        <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {filteredLogos.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    No logos found matching "{searchQuery}"
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Active logos with improved controls */}
@@ -137,7 +210,7 @@ export function Step04SchoolLogo() {
           <span className="text-[10px] text-muted-foreground font-medium">
             Active Logos ({logos.length}) - Tap to edit
           </span>
-          <div className="max-h-[120px] overflow-y-auto space-y-1.5">
+          <div className="max-h-[100px] overflow-y-auto space-y-1.5">
             {logos.map((layer) => (
               <div
                 key={layer.id}
@@ -163,11 +236,12 @@ export function Step04SchoolLogo() {
         </div>
       )}
 
-      {logos.length === 0 && (
+      {logos.length === 0 && !isPlacementMode && (
         <p className="text-xs text-muted-foreground text-center py-2">
-          No logos added yet. Upload an image to get started.
+          No logos added yet. Select or upload a logo to get started.
         </p>
       )}
     </div>
   );
 }
+
