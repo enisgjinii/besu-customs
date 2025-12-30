@@ -149,27 +149,42 @@ export function ConfiguratorWizard() {
         )}
 
         {/* Nav buttons */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handlePrev}
-            disabled={currentStep === 1}
-            className="h-9 w-9 rounded-full"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleNext}
-            disabled={
-              currentStep === STEPS.length ||
-              (currentStep === 1 && !isModelSelected)
-            }
-            className="h-9 px-4 rounded-full text-sm font-semibold"
-          >
-            Next <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Mobile Reset Button - In Header */}
+          {isMobile && isModelSelected && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowResetDialog(true)}
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              title="Reset"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
+          )}
+
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handlePrev}
+              disabled={currentStep === 1}
+              className="h-9 w-9 rounded-full"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleNext}
+              disabled={
+                currentStep === STEPS.length ||
+                (currentStep === 1 && !isModelSelected)
+              }
+              className="h-9 px-4 rounded-full text-sm font-semibold"
+            >
+              Next <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -221,8 +236,8 @@ export function ConfiguratorWizard() {
         </div>
       </div>
 
-      {/* Reset button - fixed bottom right */}
-      {isModelSelected && (
+      {/* Reset button - fixed bottom right (Desktop Only) */}
+      {!isMobile && isModelSelected && (
         <Button
           onClick={() => setShowResetDialog(true)}
           variant="outline"

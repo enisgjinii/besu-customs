@@ -287,18 +287,23 @@ export function Step03bTrimLines() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Add Trim Lines</h2>
-        <p className="text-sm text-muted-foreground">
-          Add decorative trim lines to collar, sleeves, cuffs, and other areas
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h2 className="text-sm font-semibold">Add Trim Lines</h2>
+        <p className="text-xs text-muted-foreground">
+          Add decorative lines to edges
         </p>
       </div>
 
-      {/* Trim Preview */}
-      <div className="p-4 bg-muted/20 rounded-lg border space-y-2">
-        <Label className="text-xs font-semibold">Preview</Label>
-        <div className="h-20 bg-white rounded border flex items-center justify-center relative overflow-hidden">
+      {/* Compact Preview */}
+      <div className="p-3 bg-muted/20 rounded-lg border space-y-1.5">
+        <div className="flex justify-between items-center">
+          <Label className="text-xs font-semibold">Preview</Label>
+          <span className="text-[10px] text-muted-foreground">
+            {TRIM_PATTERNS.find((p) => p.id === trimPattern)?.name}
+          </span>
+        </div>
+        <div className="h-10 bg-white rounded border flex items-center justify-center relative overflow-hidden">
           <div
             style={{
               height: `${trimWidth}px`,
@@ -324,47 +329,63 @@ export function Step03bTrimLines() {
             }}
           />
         </div>
-        <p className="text-xs text-muted-foreground text-center">
-          {TRIM_PATTERNS.find((p) => p.id === trimPattern)?.description}
-        </p>
       </div>
 
-      {/* Trim Pattern Selector */}
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">Trim Style</Label>
-        <Select value={trimPattern} onValueChange={setTrimPattern}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select trim pattern" />
-          </SelectTrigger>
-          <SelectContent>
-            {TRIM_PATTERNS.map((pattern) => (
-              <SelectItem key={pattern.id} value={pattern.id}>
-                <div>
-                  <span className="font-medium">{pattern.name}</span>
-                  <span className="text-xs text-muted-foreground block">
-                    {pattern.description}
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Grid for Pattern and Location */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Style</Label>
+          <Select value={trimPattern} onValueChange={setTrimPattern}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Pattern" />
+            </SelectTrigger>
+            <SelectContent>
+              {TRIM_PATTERNS.map((pattern) => (
+                <SelectItem key={pattern.id} value={pattern.id} className="text-xs">
+                  {pattern.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Location</Label>
+          <Select value={trimLocation} onValueChange={setTrimLocation}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Apply to..." />
+            </SelectTrigger>
+            <SelectContent>
+              {TRIM_LOCATIONS.map((loc) => (
+                <SelectItem key={loc.id} value={loc.id} className="text-xs">
+                  {loc.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Color & Width Controls */}
-      <div className="space-y-3">
-        <Label className="text-sm font-semibold">Trim Color & Width</Label>
-        <div className="flex gap-3 items-center">
-          <input
-            type="color"
-            value={trimColor}
-            onChange={(e) => setTrimColor(e.target.value)}
-            className="w-12 h-12 border rounded cursor-pointer touch-manipulation md:w-10 md:h-10"
-          />
-          <div className="flex-1 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Width</span>
-              <span className="text-xs font-medium">{trimWidth}px</span>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">Appearance</Label>
+        <div className="flex gap-3 items-center p-2 border rounded-lg bg-card">
+          <div className="shrink-0">
+            <input
+              type="color"
+              value={trimColor}
+              onChange={(e) => setTrimColor(e.target.value)}
+              className="w-8 h-8 rounded-full border-none p-0 cursor-pointer overflow-hidden"
+              style={{ padding: 0 }}
+            />
+          </div>
+
+          <div className="h-8 w-px bg-border mx-1" />
+
+          <div className="flex-1 space-y-1.5">
+            <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span>Width</span>
+              <span>{trimWidth}px</span>
             </div>
             <Slider
               value={[trimWidth]}
@@ -372,36 +393,20 @@ export function Step03bTrimLines() {
               min={2}
               max={30}
               step={1}
-              className="touch-manipulation"
+              className="touch-manipulation py-1"
             />
           </div>
         </div>
       </div>
 
-      {/* Location Selector */}
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">Apply To</Label>
-        <Select value={trimLocation} onValueChange={setTrimLocation}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select location" />
-          </SelectTrigger>
-          <SelectContent>
-            {TRIM_LOCATIONS.map((loc) => (
-              <SelectItem key={loc.id} value={loc.id}>
-                {loc.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Apply Button */}
       <Button
         onClick={handleAddTrim}
-        className="w-full h-12 touch-manipulation"
+        className="w-full h-10 touch-manipulation text-sm font-semibold"
+        size="sm"
       >
         <Plus className="w-4 h-4 mr-2" />
-        Add Trim to {TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name}
+        Apply to {TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name.split(" ")[0]}
       </Button>
 
       {/* Show Applied Trims */}

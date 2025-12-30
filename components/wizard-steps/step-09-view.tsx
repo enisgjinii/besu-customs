@@ -206,50 +206,52 @@ export function Step09View() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">View & Approve Order</h2>
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight">Final Review</h2>
         <p className="text-sm text-muted-foreground">
-          Review your design and export the final result.
+          Check your design specs and export for production
         </p>
-        <div className="p-4 bg-muted/20 border rounded-lg text-xs text-muted-foreground">
-          ℹ️ <strong>Tip:</strong> Position the 3D model exactly how you want it
-          before exporting.
-        </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>File Name</Label>
-          <Input
-            value={fileName}
-            onChange={(e) => setFileName(e.target.value)}
-          />
+      <div className="space-y-5">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Order Details</Label>
+            <Input
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              className="h-10 border-input bg-card"
+              placeholder="Design Name"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Select value={format} onValueChange={(v: any) => setFormat(v)}>
+              <SelectTrigger className="h-10 bg-card">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="png">PNG Image (High Quality)</SelectItem>
+                <SelectItem value="jpg">JPG Image (Efficient)</SelectItem>
+                <SelectItem value="svg">SVG (Vector Wrapper)</SelectItem>
+                <SelectItem value="pdf">PDF Document</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>Image Format</Label>
-          <Select value={format} onValueChange={(v: any) => setFormat(v)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="png">PNG (High Quality)</SelectItem>
-              <SelectItem value="jpg">JPG (Small File)</SelectItem>
-              <SelectItem value="svg">SVG (Vector Wrapper)</SelectItem>
-              <SelectItem value="pdf">PDF (Print Layout)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* High Resolution Toggle */}
+        {/* High Resolution Feature Card */}
         {(format === "png" || format === "jpg") && (
-          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-            <Label htmlFor="high-res" className="text-sm cursor-pointer flex-1">
-              High Resolution (2x)
-              <span className="block text-xs text-muted-foreground font-normal">
-                Better for printing. Larger file size.
-              </span>
-            </Label>
+          <div className="flex items-center justify-between p-4 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/10 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+            <div className="flex items-start gap-3">
+              <div className="bg-white dark:bg-indigo-950 p-2 rounded-lg shadow-sm mt-0.5">
+                <Download className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="high-res" className="text-sm font-semibold cursor-pointer">Ultra High-Res</Label>
+                <span className="text-xs text-muted-foreground">Export at 2x resolution (4K)</span>
+              </div>
+            </div>
             <Switch
               id="high-res"
               checked={highRes}
@@ -260,56 +262,66 @@ export function Step09View() {
 
         {/* Applied Decals Info */}
         {textureLayers.length > 0 && (
-          <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-            <p className="text-xs font-medium text-primary">
-              {textureLayers.length} decal{textureLayers.length !== 1 ? 's' : ''} applied
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              All logos, text, and patterns will be captured in the export.
-            </p>
+          <div className="flex items-center gap-3 p-3 bg-muted/30 border rounded-lg">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-xs font-bold text-primary">{textureLayers.length}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Applied Elements</p>
+              <p className="text-xs text-muted-foreground truncate">
+                Includes all logos, text, and patterns
+              </p>
+            </div>
           </div>
         )}
 
-        <div className="space-y-2">
-          <Label>Delivery Notes (Optional)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Notes</Label>
           <Textarea
-            placeholder="Add any special instructions for your team (colors, measurements, materials, special requests, etc.)"
+            placeholder="Special instructions for production (colors, sizing, etc.)"
             value={deliveryNotes}
             onChange={(e) => setDeliveryNotes(e.target.value)}
-            className="min-h-[100px] resize-none"
+            className="min-h-[80px] resize-none bg-card"
           />
-          <p className="text-xs text-muted-foreground">
-            These notes will be included with your order for the production team
-          </p>
         </div>
 
-        <div className="pt-4 space-y-3">
+        <div className="pt-2 space-y-3">
           <Button
-            className="w-full"
+            className="w-full h-11 text-base font-medium"
             size="lg"
             onClick={handleExportImage}
             disabled={isExporting}
           >
-            <Download className="w-4 h-4 mr-2" />
-            {isExporting ? "Processing..." : `Download ${format.toUpperCase()}`}
+            {isExporting ? (
+              "Processing..."
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download {format.toUpperCase()}
+              </>
+            )}
           </Button>
 
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleExportVideo}
-            disabled={isExporting}
-          >
-            <Video className="w-4 h-4 mr-2" />
-            {isExporting ? "Recording..." : "Record 360° Video"}
-          </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              className="w-full h-10"
+              onClick={handleExportVideo}
+              disabled={isExporting}
+            >
+              <Video className="w-4 h-4 mr-2" />
+              360° Video
+            </Button>
 
-          <EmailDialog
-            open={emailOpen}
-            onOpenChange={setEmailOpen}
-            onSend={handleSendEmail}
-            loading={isSendingEmail}
-          />
+            <div className="w-full">
+              <EmailDialog
+                open={emailOpen}
+                onOpenChange={setEmailOpen}
+                onSend={handleSendEmail}
+                loading={isSendingEmail}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

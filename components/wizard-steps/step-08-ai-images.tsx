@@ -9,6 +9,7 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
+import { Sparkles } from "lucide-react";
 
 export function Step08AIImages() {
   const addTextureLayer = useConfiguratorStore(
@@ -240,44 +241,63 @@ export function Step08AIImages() {
   const aiLayers = textureLayers.filter((l) => l.name.startsWith("AI"));
 
   return (
-    <div className="space-y-3">
-      <div>
-        <h2 className="text-sm font-semibold">Generate with AI</h2>
-        <p className="text-xs text-muted-foreground">
-          Create unique designs. Preview before applying.
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight">AI Generation</h2>
+        <p className="text-sm text-muted-foreground">
+          Create unique patterns and designs with AI
         </p>
       </div>
 
-      <div className="border rounded-lg p-3 bg-muted/10">
-        <AIImageGenerator />
+      <div className="p-1">
+        <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 bg-muted/30 border-b">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-500" />
+              Design Generator
+            </h3>
+          </div>
+          <div className="p-4">
+            <AIImageGenerator />
+          </div>
+        </div>
       </div>
 
       {/* Show AI layers with controls */}
       {aiLayers.length > 0 && (
-        <div className="space-y-1.5">
-          <span className="text-[10px] text-muted-foreground font-medium">
-            AI Designs ({aiLayers.length})
-          </span>
-          <div className="max-h-[100px] overflow-y-auto space-y-1.5">
+        <div className="space-y-3 pt-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+            Generated Designs ({aiLayers.length})
+          </h3>
+          <div className="grid gap-2">
             {aiLayers.map((layer) => (
               <div
                 key={layer.id}
-                className="p-2 rounded-lg border bg-card"
+                className="group relative flex items-center gap-3 p-3 rounded-xl border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer"
                 onClick={() => setSelectedTextureLayerId(layer.id)}
               >
-                <div className="flex items-center gap-2 mb-1.5">
-                  {layer.imageUrl && (
+                <div className="relative w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
+                  {layer.imageUrl ? (
                     <img
                       src={layer.imageUrl}
                       alt={layer.name}
-                      className="w-8 h-8 object-contain rounded bg-muted/50"
+                      className="w-full h-full object-cover"
                     />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-muted-foreground" />
                   )}
-                  <span className="text-xs font-medium truncate flex-1">
-                    {layer.name}
-                  </span>
                 </div>
-                <LayerControls layerId={layer.id} compact />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate mb-1">{layer.name}</p>
+                  <div className="flex items-center text-[10px] text-muted-foreground">
+                    <span className="truncate">AI Generated • High Quality</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <LayerControls layerId={layer.id} compact />
+                </div>
               </div>
             ))}
           </div>
