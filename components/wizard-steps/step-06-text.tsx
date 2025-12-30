@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { PlacementSelector } from "@/components/placement-selector";
+import { LogoPreset } from "@/lib/logo-positioning";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -70,11 +72,20 @@ export function Step06Text() {
     }
   }, []);
 
+  const [showPlacement, setShowPlacement] = useState(false);
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+
   const handleAddText = () => {
     if (!textInput.trim()) {
       toast.error("Please enter some text");
       return;
     }
+    // Show placement selector instead of adding immediately
+    setShowPlacement(true);
+  };
+
+  const handlePlacementSelect = (preset: LogoPreset) => {
+    if (!textInput.trim()) return;
 
     const newId = uuidv4();
     const newLayer = {
@@ -90,16 +101,16 @@ export function Step06Text() {
       textColor: textColor,
       fontSize: 80,
       fontFamily: "Roboto",
-      // Center of chest position
-      position: [0.5, 0.35, 0] as [number, number, number],
-      rotation: [0, 0, 0] as [number, number, number],
-      scale: [0.5, 0.5, 1] as [number, number, number],
+      position: preset.position,
+      rotation: preset.rotation,
+      scale: preset.scale,
     };
     addTextureLayer(newLayer);
     setSelectedTextId(newId);
     setSelectedTextureLayerId(newId);
     setTextInput("");
-    toast.success("Text added to center - drag to position");
+    setShowPlacement(false);
+    toast.success("Text added successfully");
   };
 
   const handleDeleteText = (id: string) => {
@@ -145,28 +156,37 @@ export function Step06Text() {
       </div>
 
       {/* Quick Add */}
-      <div className="flex gap-2">
-        <Input
-          value={textInput}
-          onChange={(e) => setTextInput(e.target.value)}
-          placeholder="Enter text..."
-          onKeyDown={(e) => e.key === "Enter" && handleAddText()}
-          className="h-9 text-sm flex-1"
+      {/* Quick Add or Placement Selector */}
+      {showPlacement ? (
+        <PlacementSelector
+          modelUrl={currentModelUrl}
+          onSelect={handlePlacementSelect}
+          onCancel={() => setShowPlacement(false)}
         />
-        <input
-          type="color"
-          value={textColor}
-          onChange={(e) => setTextColor(e.target.value)}
-          className="w-9 h-9 p-0.5 border rounded cursor-pointer shrink-0"
-        />
-        <Button
-          onClick={handleAddText}
-          size="icon"
-          className="h-9 w-9 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
-      </div>
+      ) : (
+        <div className="flex gap-2">
+          <Input
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            placeholder="Enter text..."
+            onKeyDown={(e) => e.key === "Enter" && handleAddText()}
+            className="h-9 text-sm flex-1"
+          />
+          <input
+            type="color"
+            value={textColor}
+            onChange={(e) => setTextColor(e.target.value)}
+            className="w-9 h-9 p-0.5 border rounded cursor-pointer shrink-0"
+          />
+          <Button
+            onClick={handleAddText}
+            size="icon"
+            className="h-9 w-9 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Text Layers */}
       {textLayers.length > 0 && (
@@ -178,11 +198,10 @@ export function Step06Text() {
                 setSelectedTextId(layer.id);
                 setSelectedTextureLayerId(layer.id);
               }}
-              className={`p-2 rounded-lg border cursor-pointer transition-colors ${
-                selectedTextId === layer.id
-                  ? "bg-primary/10 border-primary"
-                  : "bg-card border-border hover:border-primary/50"
-              }`}
+              className={`p-2 rounded-lg border cursor-pointer transition-colors ${selectedTextId === layer.id
+                ? "bg-primary/10 border-primary"
+                : "bg-card border-border hover:border-primary/50"
+                }`}
             >
               <div className="flex items-center gap-2 justify-between">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -297,7 +316,7 @@ export function Step06Text() {
                         size="sm"
                         variant={
                           layer.position?.[0] === pos[0] &&
-                          layer.position?.[1] === pos[1]
+                            layer.position?.[1] === pos[1]
                             ? "default"
                             : "outline"
                         }

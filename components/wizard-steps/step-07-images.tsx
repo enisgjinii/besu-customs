@@ -11,6 +11,8 @@ import {
   isMobile,
 } from "@/lib/mobile-performance-utils";
 import { useRef, useState } from "react";
+import { PlacementSelector } from "@/components/placement-selector";
+import { LogoPreset } from "@/lib/logo-positioning";
 
 // Helper to remove background from images
 const removeBackground = async (imageUrl: string): Promise<string> => {
@@ -101,6 +103,12 @@ export function Step07Images() {
   const isUploadingRef = useRef(false);
   const [autoRemoveBg, setAutoRemoveBg] = useState(true);
 
+  // Track pending upload
+  const [pendingFile, setPendingFile] = useState<{
+    file: File;
+    result: string;
+  } | null>(null);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // Prevent duplicate uploads
     if (isUploadingRef.current) return;
@@ -123,34 +131,40 @@ export function Step07Images() {
           result = await compressImageForMobile(result, 1024, 0.85);
         }
 
-        const newId = uuidv4();
-        addTextureLayer({
-          id: newId,
-          name: file.name,
-          type: "image",
-          visible: true,
-          locked: false,
-          opacity: 1,
-          blendMode: "normal",
-          order: textureLayers.length,
-          imageUrl: result,
-          // Center of chest position for better initial placement
-          position: [0.5, 0.35, 0],
-          rotation: [0, 0, 0],
-          scale: [0.35, 0.35, 1], // Larger initial size for easier adjustment
-        });
-        setSelectedTextureLayerId(newId);
-        toast.success("Image added to center - drag to position");
-
-        // Reset upload flag after a short delay
-        setTimeout(() => {
-          isUploadingRef.current = false;
-        }, 500);
+        // Store as pending for placement selection
+        setPendingFile({ file, result });
+        isUploadingRef.current = false;
+        toast.info("Select where to place the image");
       };
       reader.readAsDataURL(file);
     }
     // Reset the input value to allow re-uploading the same file
     e.target.value = "";
+  };
+
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+
+  const handlePlacementSelect = (preset: LogoPreset) => {
+    if (!pendingFile) return;
+
+    const newId = uuidv4();
+    addTextureLayer({
+      id: newId,
+      name: pendingFile.file.name,
+      type: "image",
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      order: textureLayers.length,
+      imageUrl: pendingFile.result,
+      position: preset.position,
+      rotation: preset.rotation,
+      scale: preset.scale,
+    });
+    setSelectedTextureLayerId(newId);
+    setPendingFile(null);
+    toast.success("Image added successfully");
   };
 
   // Function to manually remove background from existing layer
@@ -199,19 +213,27 @@ export function Step07Images() {
         </button>
       </div>
 
-      {/* Upload */}
-      <Button variant="outline" className="w-full h-10 relative" asChild>
-        <label className="cursor-pointer flex items-center justify-center gap-2">
-          <Upload className="w-4 h-4" />
-          <span className="text-sm">Upload Image</span>
-          <Input
-            type="file"
-            accept="image/*"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            onChange={handleFileUpload}
-          />
-        </label>
-      </Button>
+      {/* Upload or Placement Selector */}
+      {pendingFile ? (
+        <PlacementSelector
+          modelUrl={currentModelUrl}
+          onSelect={handlePlacementSelect}
+          onCancel={() => setPendingFile(null)}
+        />
+      ) : (
+        <Button variant="outline" className="w-full h-10 relative" asChild>
+          <label className="cursor-pointer flex items-center justify-center gap-2">
+            <Upload className="w-4 h-4" />
+            <span className="text-sm">Upload Image</span>
+            <Input
+              type="file"
+              accept="image/*"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              onChange={handleFileUpload}
+            />
+          </label>
+        </Button>
+      )}
 
       {/* Layers with improved controls */}
       {layers.length > 0 && (

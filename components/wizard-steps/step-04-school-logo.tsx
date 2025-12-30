@@ -6,12 +6,13 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
-import { getSchoolLogoPosition } from "@/lib/logo-positioning";
 import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { PlacementSelector } from "@/components/placement-selector";
+import { LogoPreset } from "@/lib/logo-positioning";
 
 // Predefined school logos - no need for PatternSelector duplication
 const SCHOOL_LOGOS = [
@@ -35,18 +36,23 @@ export function Step04SchoolLogo() {
     (state) => state.setSelectedTextureLayerId,
   );
 
-  // Track if upload is in progress to prevent duplicate uploads
-  const isUploadingRef = useRef(false);
+  // Track pending upload
+  const [pendingFile, setPendingFile] = useState<{
+    file: File;
+    result: string;
+  } | null>(null);
+
+  // Track if upload is in progress
+  const uploadLockRef = useRef(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // Prevent duplicate uploads
-    if (isUploadingRef.current) return;
+    if (uploadLockRef.current) return;
 
     const file = e.target.files?.[0];
     if (file) {
-      isUploadingRef.current = true;
+      uploadLockRef.current = true;
 
-      const logoPreset = getSchoolLogoPosition(currentModelUrl);
       const reader = new FileReader();
       reader.onload = async (event) => {
         let result = event.target?.result as string;
@@ -56,34 +62,38 @@ export function Step04SchoolLogo() {
           result = await compressImageForMobile(result, 512, 0.85);
         }
 
-        const newId = uuidv4();
-        addTextureLayer({
-          id: newId,
-          name: file.name,
-          type: "image",
-          visible: true,
-          locked: false,
-          opacity: 1,
-          blendMode: "normal",
-          order: textureLayers.length,
-          imageUrl: result,
-          // Center of chest position for better initial placement
-          position: [0.5, 0.35, 0],
-          rotation: [0, 0, 0],
-          scale: [0.35, 0.35, 1], // Larger initial size for easier adjustment
-        });
-        setSelectedTextureLayerId(newId);
-        toast.success("Logo added to center - drag to position");
-
-        // Reset upload flag after a short delay
-        setTimeout(() => {
-          isUploadingRef.current = false;
-        }, 500);
+        // Store as pending to allow placement selection
+        setPendingFile({ file, result });
+        uploadLockRef.current = false;
+        toast.info("Select where to place the logo");
       };
       reader.readAsDataURL(file);
     }
     // Reset the input value to allow re-uploading the same file
     e.target.value = "";
+  };
+
+  const handlePlacementSelect = (preset: LogoPreset) => {
+    if (!pendingFile) return;
+
+    const newId = uuidv4();
+    addTextureLayer({
+      id: newId,
+      name: pendingFile.file.name,
+      type: "image",
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      order: textureLayers.length,
+      imageUrl: pendingFile.result,
+      position: preset.position,
+      rotation: preset.rotation,
+      scale: preset.scale,
+    });
+    setSelectedTextureLayerId(newId);
+    setPendingFile(null);
+    toast.success("Logo added successfully");
   };
 
   const logos = textureLayers.filter((l) => l.type === "image");
@@ -97,24 +107,32 @@ export function Step04SchoolLogo() {
         </p>
       </div>
 
-      {/* Upload button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full h-10 relative"
-        asChild
-      >
-        <label className="cursor-pointer flex items-center justify-center gap-2">
-          <Upload className="w-4 h-4" />
-          <span className="text-sm">Upload Logo Image</span>
-          <Input
-            type="file"
-            accept="image/*"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            onChange={handleFileUpload}
-          />
-        </label>
-      </Button>
+      {pendingFile ? (
+        <PlacementSelector
+          modelUrl={currentModelUrl}
+          onSelect={handlePlacementSelect}
+          onCancel={() => setPendingFile(null)}
+        />
+      ) : (
+        /* Upload button */
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full h-10 relative"
+          asChild
+        >
+          <label className="cursor-pointer flex items-center justify-center gap-2">
+            <Upload className="w-4 h-4" />
+            <span className="text-sm">Upload Logo Image</span>
+            <Input
+              type="file"
+              accept="image/*"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              onChange={handleFileUpload}
+            />
+          </label>
+        </Button>
+      )}
 
       {/* Active logos with improved controls */}
       {logos.length > 0 && (
