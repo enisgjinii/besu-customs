@@ -134,6 +134,19 @@ export function PatternSelector({
           />
         </div>
       )}
+      {/* Remove Pattern Action */}
+      <div className="mt-2 text-center">
+        <button
+          onClick={() => {
+            const removeTextureLayer = useConfiguratorStore.getState().removeTextureLayer;
+            removeTextureLayer("main-pattern-layer");
+            setSelectedPattern(null);
+          }}
+          className="text-xs text-muted-foreground hover:text-destructive underline decoration-dotted underline-offset-4"
+        >
+          Remove Pattern Only
+        </button>
+      </div>
     </Card>
   );
 }

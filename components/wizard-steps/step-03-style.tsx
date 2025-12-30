@@ -77,11 +77,23 @@ export function Step03Style() {
 
   return (
     <div className="space-y-2">
-      <div>
-        <h2 className="text-sm font-semibold">Quick Styles</h2>
-        <p className="text-xs text-muted-foreground">
-          Apply preset color schemes
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold">Quick Styles</h2>
+          <p className="text-xs text-muted-foreground">
+            Apply preset color schemes
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            // Reset sections to white
+            sections.forEach(s => updateSection(s.id, { color: "#ffffff" }));
+            setSelectedStyle(null);
+          }}
+          className="text-[10px] text-muted-foreground hover:text-destructive border border-border hover:border-destructive/30 px-2 py-1 rounded"
+        >
+          Clear Style
+        </button>
       </div>
 
       <div className="grid grid-cols-4 gap-2">

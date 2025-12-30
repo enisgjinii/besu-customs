@@ -28,6 +28,58 @@ export function Step09View() {
   const [format, setFormat] = useState<"png" | "svg" | "pdf" | "jpg">("png");
   const [fileName, setFileName] = useState("my-besu-design");
   const [isExporting, setIsExporting] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  const handleSendEmail = async (data: { recipientEmail: string; clientEmails: string[]; message: string }) => {
+    setIsSendingEmail(true);
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+
+    if (!canvas) {
+      toast.error("3D Canvas not found");
+      setIsSendingEmail(false);
+      return;
+    }
+
+    try {
+      // Capture PNG for email
+      const dataUrl = canvas.toDataURL("image/png", 1.0);
+
+      // Prepare files - for now sending just the main preview
+      // In a real scenario, you might generate PDF on the server or multiple views
+      const files = [
+        {
+          filename: `${fileName}.png`,
+          content: dataUrl
+        }
+      ];
+
+      const response = await fetch("/api/send-design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientEmail: data.recipientEmail,
+          clientEmails: data.clientEmails,
+          files,
+          message: data.message
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success("Email sent successfully!");
+        setEmailOpen(false);
+      } else {
+        toast.error(result.error || "Failed to send email");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   const handleExportImage = async () => {
     setIsExporting(true);
@@ -220,12 +272,107 @@ export function Step09View() {
             {isExporting ? "Recording..." : "Record 360° Video"}
           </Button>
 
-          <Button variant="ghost" className="w-full">
-            <Share2 className="w-4 h-4 mr-2" />
-            Share Design Link
-          </Button>
+          <EmailDialog
+            open={emailOpen}
+            onOpenChange={setEmailOpen}
+            onSend={handleSendEmail}
+            loading={isSendingEmail}
+          />
         </div>
       </div>
     </div>
   );
+}
+
+function EmailDialog({
+  open,
+  onOpenChange,
+  onSend,
+  loading,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSend: (data: { recipientEmail: string; clientEmails: string[]; message: string }) => void;
+  loading: boolean;
+}) {
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [clientEmails, setClientEmails] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = () => {
+    if (!recipientEmail) {
+      toast.error("Recipient email is required");
+      return;
+    }
+
+    // Split emails by comma or whitespace and filter empty
+    const clients = clientEmails.split(/[,\s]+/).filter(e => e.trim().length > 0);
+
+    onSend({
+      recipientEmail,
+      clientEmails: clients,
+      message
+    });
+  };
+
+  return (
+    <div className="w-full">
+      <Button
+        variant="default"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+        onClick={() => onOpenChange(true)}
+      >
+        <Share2 className="w-4 h-4 mr-2" />
+        Send to Client
+      </Button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full space-y-4 shadow-xl border animate-in zoom-in-95">
+            <h3 className="text-lg font-semibold">Send Design Files</h3>
+
+            <div className="space-y-2">
+              <Label htmlFor="recipient">Client Email (To)</Label>
+              <Input
+                id="recipient"
+                placeholder="client@example.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cc-clients">Additional Emails (CC)</Label>
+              <Input
+                id="cc-clients"
+                placeholder="partner@example.com, manager@example.com"
+                value={clientEmails}
+                onChange={(e) => setClientEmails(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground">Separate multiple emails with commas</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="msg">Message (Optional)</Label>
+              <Textarea
+                id="msg"
+                placeholder="Here is the design we discussed..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? "Sending..." : "Send Emails"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
