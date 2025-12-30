@@ -36,12 +36,12 @@ export function Step04SchoolLogo() {
 
   // Filter logos by search
   const filteredLogos = useMemo(() => {
-    if (!searchQuery.trim()) return schoolLogos.slice(0, 50); // Show first 50 by default
+    if (!searchQuery.trim()) return schoolLogos; // Show ALL logos
     const q = searchQuery.toLowerCase();
     return schoolLogos.filter(logo =>
       logo.name.toLowerCase().includes(q) ||
       logo.description?.toLowerCase().includes(q)
-    ).slice(0, 50);
+    );
   }, [schoolLogos, searchQuery]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,11 +98,11 @@ export function Step04SchoolLogo() {
   const logos = textureLayers.filter((l) => l.type === "image");
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1">
+    <div className="space-y-3">
+      <div className="space-y-0.5">
         <h2 className="text-sm font-semibold">Add Logo</h2>
         <p className="text-xs text-muted-foreground">
-          Select a school logo or upload your own
+          Choose a school logo or upload your own
         </p>
       </div>
 
@@ -132,71 +132,80 @@ export function Step04SchoolLogo() {
         </div>
       ) : (
         <>
-          {/* Upload custom logo button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full h-12 relative border-dashed border-2 hover:bg-muted/10 hover:border-primary/50 transition-colors"
-            asChild
-          >
-            <label className="cursor-pointer flex items-center justify-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                <Upload className="w-3.5 h-3.5 text-muted-foreground" />
-              </div>
-              <span className="text-sm font-medium">Upload Custom Logo</span>
-              <Input
-                type="file"
-                accept="image/*"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={handleFileUpload}
-              />
-            </label>
-          </Button>
+          {/* Upload custom logo button - Compact Card Style */}
+          <div className="relative group">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full h-10 border border-transparent hover:border-primary/20 transition-all font-medium text-xs shadow-sm bg-muted/50 hover:bg-muted"
+              asChild
+            >
+              <label className="cursor-pointer flex items-center justify-center gap-2">
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Custom Logo</span>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleFileUpload}
+                />
+              </label>
+            </Button>
+            <p className="text-[9px] text-muted-foreground text-center mt-1">supports png, jpg, webp</p>
+          </div>
+
+          <div className="h-px bg-border/50" />
 
           {/* School Logos Section */}
           {schoolLogos.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-medium text-muted-foreground">
-                  School Logos ({schoolLogos.length})
+                <span className="text-xs font-semibold">
+                  School Library
+                </span>
+                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                  {schoolLogos.length} logos
                 </span>
               </div>
 
               {/* Search input */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search logos..."
+                  placeholder="Search library..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-10 pl-9 text-xs border-0 bg-muted/30 focus-visible:bg-background transition-colors rounded-xl"
+                  className="h-9 pl-9 text-xs border-0 bg-muted/40 focus-visible:bg-background transition-colors rounded-lg focus-visible:ring-1"
                 />
               </div>
 
-              {/* Logo grid */}
-              <div className="max-h-[300px] overflow-y-auto pr-1">
-                <div className="grid grid-cols-4 gap-2.5">
+              {/* Logo grid - Taller for better browsing */}
+              <div className="max-h-[40vh] min-h-[150px] overflow-y-auto pr-1 -mr-1">
+                <div className="grid grid-cols-4 xs:grid-cols-5 gap-2">
                   {filteredLogos.map((logo) => (
                     <button
                       key={logo.id}
                       onClick={() => handleLogoSelect(logo)}
                       className={cn(
-                        "group relative aspect-square rounded-xl overflow-hidden border-2 transition-all active:scale-95 bg-white",
+                        "group relative aspect-square rounded-lg overflow-hidden border transition-all active:scale-95 bg-white shadow-sm",
                         selectedLogoId === logo.id
-                          ? "border-primary ring-2 ring-primary ring-offset-2"
-                          : "border-border/40 hover:border-primary/50"
+                          ? "border-primary ring-2 ring-primary ring-offset-1"
+                          : "border-border/40 hover:border-primary/50 hover:shadow-md"
                       )}
                       title={logo.name}
                     >
-                      <img
-                        src={logo.thumbnail}
-                        alt={logo.name}
-                        className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-110"
-                        loading="lazy"
-                      />
+                      <div className="absolute inset-0 p-1.5 flex items-center justify-center">
+                        <img
+                          src={logo.thumbnail}
+                          alt={logo.name}
+                          className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                          loading="lazy"
+                        />
+                      </div>
+
                       {selectedLogoId === logo.id && (
-                        <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                        <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center shadow-sm z-10">
                           <Check className="w-2.5 h-2.5 text-primary-foreground" />
                         </div>
                       )}
@@ -204,9 +213,10 @@ export function Step04SchoolLogo() {
                   ))}
                 </div>
                 {filteredLogos.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-8">
-                    No logos found matching "{searchQuery}"
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <Search className="w-8 h-8 opacity-20 mb-2" />
+                    <p className="text-xs">No logos found for "{searchQuery}"</p>
+                  </div>
                 )}
               </div>
             </div>
