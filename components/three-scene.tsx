@@ -977,14 +977,32 @@ function Model({
               const layerV = layer.position?.[1] ?? 0.5;
               // Compare in same UV space (direct mapping, no flip)
               const dist = Math.hypot(layerU - hitU, layerV - hitV);
-              if (dist < acc.dist) return { layer, dist };
+
+              // Calculate dynamic threshold based on layer type and scale
+              let threshold = 0.15; // Default fallback
+              if (layer.type === "image") {
+                const s = Math.max(
+                  layer.scale?.[0] ?? 0.35,
+                  layer.scale?.[1] ?? 0.35,
+                );
+                threshold = (s / 2) * 1.2; // 20% buffer around image
+              } else if (layer.type === "text") {
+                // Text scale is usually 1, but covers less area than full box usually
+                // Use a reasonable hit radius for text
+                threshold = 0.2 * (layer.scale?.[0] ?? 1);
+              }
+
+              if (dist < threshold && dist < acc.dist) {
+                return { layer, dist };
+              }
               return acc;
             },
             { layer: null, dist: Infinity },
           );
 
-          const targetLayer =
-            nearest.layer ?? activeLayers[activeLayers.length - 1];
+          // Only select if we actually hit something within threshold
+          // REMOVED dangerous fallback that always selected *something*
+          const targetLayer = nearest.layer;
 
           if (targetLayer) {
             // Select the layer
