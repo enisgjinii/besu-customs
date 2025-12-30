@@ -1,9 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ConfiguratorHeader } from "@/components/configurator-header";
 import { ConfiguratorWizard } from "@/components/configurator-wizard";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { useEffect, useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -16,10 +14,12 @@ const Scene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center h-full bg-white dark:bg-black">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black dark:border-white"></div>
-          <p className="text-sm text-gray-500">Loading 3D viewer...</p>
+      <div className="flex items-center justify-center h-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">Loading 3D viewer...</p>
         </div>
       </div>
     ),
@@ -28,9 +28,7 @@ const Scene = dynamic(
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
-  const currentModelUrl = useConfiguratorStore(
-    (state) => state.currentModelUrl,
-  );
+  const [mounted, setMounted] = useState(false);
   const sections = useConfiguratorStore((state) => state.sections);
   const setSelectedSection = useConfiguratorStore(
     (state) => state.setSelectedSection,
@@ -38,6 +36,7 @@ export default function Home() {
 
   // Detect mobile viewport
   useEffect(() => {
+    setMounted(true);
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -54,37 +53,42 @@ export default function Home() {
     }
   }, [sections, setSelectedSection]);
 
+  // Prevent flash during hydration
+  if (!mounted) {
+    return (
+      <div className="h-screen w-screen bg-white dark:bg-black flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      </div>
+    );
+  }
+
+  // Mobile Layout: 3D viewer on top (40%), controls below (60%)
+  if (isMobile) {
+    return (
+      <div className="h-[100dvh] w-screen bg-white dark:bg-black flex flex-col overflow-hidden">
+        {/* 3D Viewer - 40% of viewport height */}
+        <div className="h-[40dvh] min-h-[200px] flex-shrink-0 relative bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
+          <Scene />
+        </div>
+
+        {/* Controls Area - 60% of viewport, scrollable */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <ConfiguratorWizard />
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Layout: Full height with fixed bottom wizard
   return (
     <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
-      {/* 3D Viewer - Mobile: fixed 50vh top area, Desktop: flexible with padding */}
-      <main 
-        className={`
-          relative w-full
-          ${isMobile 
-            ? 'h-[50vh] min-h-[280px] flex-shrink-0' 
-            : 'flex-1 pb-[300px]'
-          }
-        `}
-      >
+      {/* 3D Viewer - Takes remaining space above wizard */}
+      <main className="flex-1 relative w-full pb-[280px]">
         <Scene />
       </main>
 
-      {/* Controls Area - Mobile: scrollable bottom 50%, Desktop: fixed bottom bar */}
-      <div 
-        className={`
-          ${isMobile 
-            ? 'flex-1 overflow-y-auto overflow-x-hidden' 
-            : ''
-          }
-        `}
-      >
-        {/* Wizard Bottom Bar */}
-        <ConfiguratorWizard />
-
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav />
-      </div>
+      {/* Wizard - Fixed at bottom */}
+      <ConfiguratorWizard />
     </div>
   );
 }
-

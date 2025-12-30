@@ -100,60 +100,64 @@ export function ConfiguratorWizard() {
         </div>
       )}
 
-      {/* Header: Steps + Nav - Ultra Compact on Mobile */}
-      <div className="flex items-center gap-1 px-1.5 py-1 sm:px-2 sm:py-1.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
-        {/* Steps - scrollable, minimal */}
-        <div className="flex-1 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-0.5 sm:gap-1.5">
-            {STEPS.map((s) => {
-              const isDisabled = !isModelSelected && s.id !== 1;
-              const isActive = currentStep === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => !isDisabled && setCurrentStep(s.id)}
-                  disabled={isDisabled}
-                  className={cn(
-                    "flex items-center justify-center rounded-full text-[9px] font-semibold whitespace-nowrap transition-all flex-shrink-0",
-                    // Mobile: just circles with numbers
-                    "w-7 h-7 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1 sm:gap-1 sm:min-h-[28px]",
-                    isActive
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : isDisabled
-                        ? "text-gray-300 dark:text-gray-700 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                        : "text-gray-500 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400",
-                  )}
-                  style={{ WebkitTapHighlightColor: "transparent" }}
-                >
-                  {/* Mobile: just number, Desktop: number + title */}
-                  <span className="sm:hidden">{s.id}</span>
-                  <span
-                    className={cn(
-                      "hidden sm:flex w-4 h-4 rounded-full items-center justify-center text-[9px] font-bold",
-                      isActive
-                        ? "bg-white text-black dark:bg-black dark:text-white"
-                        : "bg-gray-300 text-white",
-                    )}
-                  >
-                    {s.id}
-                  </span>
-                  <span className="hidden sm:inline">{s.title}</span>
-                </button>
-              );
-            })}
+      {/* Header: Steps + Nav */}
+      <div className="flex items-center gap-2 px-2 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 flex-shrink-0">
+        {/* Current step indicator for mobile */}
+        {isMobile && (
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex-shrink-0">
+              {currentStep}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold truncate">{STEPS[currentStep - 1].title}</p>
+              <p className="text-[10px] text-muted-foreground">Step {currentStep} of {STEPS.length}</p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Nav buttons - smaller on mobile */}
-        <div className="flex items-center gap-1 pl-1.5 border-l border-border/50 flex-shrink-0">
+        {/* Step pills - Desktop only */}
+        {!isMobile && (
+          <div className="flex-1 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1.5">
+              {STEPS.map((s) => {
+                const isDisabled = !isModelSelected && s.id !== 1;
+                const isActive = currentStep === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => !isDisabled && setCurrentStep(s.id)}
+                    disabled={isDisabled}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : isDisabled
+                          ? "text-gray-300 dark:text-gray-700 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                          : "text-gray-600 bg-gray-200 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600",
+                    )}
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                  >
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/20">
+                      {s.id}
+                    </span>
+                    <span>{s.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Nav buttons */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={handlePrev}
             disabled={currentStep === 1}
-            className="h-7 w-7 rounded-full active:scale-95"
+            className="h-9 w-9 rounded-full"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           <Button
             size="sm"
@@ -162,44 +166,46 @@ export function ConfiguratorWizard() {
               currentStep === STEPS.length ||
               (currentStep === 1 && !isModelSelected)
             }
-            className="h-7 px-2.5 rounded-full text-[10px] font-semibold active:scale-95"
+            className="h-9 px-4 rounded-full text-sm font-semibold"
           >
-            Next <ChevronRight className="w-3 h-3 ml-0.5" />
+            Next <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
       </div>
 
       {/* View Lock Bar - only on specific steps */}
       {showViewLock && (
-        <div className="flex items-center gap-1 px-2 py-1 bg-gray-100/80 dark:bg-gray-800/80 border-b border-border/30 flex-shrink-0">
-          <Lock className="w-3 h-3 text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground mr-1">Lock:</span>
-          {["Front", "Back", "Left", "Right"].map((view) => (
-            <button
-              key={view}
-              onClick={() =>
-                setLockedView(view === lockedView ? null : (view as any))
-              }
-              className={cn(
-                "text-[10px] px-2 py-0.5 rounded transition-all",
-                lockedView === view
-                  ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600",
-              )}
-            >
-              {view}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 px-3 py-2 bg-gray-100/80 dark:bg-gray-800/80 border-b border-border/30 flex-shrink-0">
+          <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs text-muted-foreground mr-1">Lock:</span>
+          <div className="flex gap-1.5 flex-1 overflow-x-auto">
+            {["Front", "Back", "Left", "Right"].map((view) => (
+              <button
+                key={view}
+                onClick={() =>
+                  setLockedView(view === lockedView ? null : (view as any))
+                }
+                className={cn(
+                  "text-xs px-3 py-1.5 rounded-full transition-all flex-shrink-0 font-medium",
+                  lockedView === view
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600",
+                )}
+              >
+                {view}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Content Area */}
       <div className="flex-1 overflow-hidden min-h-0">
         <div
-          className="h-full overflow-y-auto overscroll-contain wizard-content-scroll"
+          className="h-full overflow-y-auto overscroll-y-auto"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <div className="p-3 md:p-4 max-w-3xl mx-auto pb-16">
+          <div className="p-4 max-w-3xl mx-auto pb-20">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}

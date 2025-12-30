@@ -133,10 +133,10 @@ export function Step06Text() {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-sm font-semibold">Add Text</h2>
-        <p className="text-xs text-muted-foreground">
+        <h2 className="text-base font-semibold">Add Text</h2>
+        <p className="text-sm text-muted-foreground">
           Add custom text to your design
         </p>
       </div>
@@ -165,20 +165,20 @@ export function Step06Text() {
             onChange={(e) => setTextInput(e.target.value)}
             placeholder="Enter text..."
             onKeyDown={(e) => e.key === "Enter" && handleAddText()}
-            className="h-9 text-sm flex-1"
+            className="h-11 text-base flex-1"
           />
           <input
             type="color"
             value={textColor}
             onChange={(e) => setTextColor(e.target.value)}
-            className="w-9 h-9 p-0.5 border rounded cursor-pointer shrink-0"
+            className="w-11 h-11 p-1 border rounded-lg cursor-pointer shrink-0"
           />
           <Button
             onClick={handleAddText}
             size="icon"
-            className="h-9 w-9 shrink-0"
+            className="h-11 w-11 shrink-0"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
           </Button>
         </div>
       )}
