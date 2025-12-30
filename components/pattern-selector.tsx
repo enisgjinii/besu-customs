@@ -140,7 +140,8 @@ export function PatternSelector({
       <div className="mt-4 flex justify-center">
         <button
           onClick={() => {
-            const removeTextureLayer = useConfiguratorStore.getState().removeTextureLayer;
+            const removeTextureLayer =
+              useConfiguratorStore.getState().removeTextureLayer;
             removeTextureLayer("main-pattern-layer");
             setSelectedPattern(null);
           }}

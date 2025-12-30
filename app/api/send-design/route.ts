@@ -1,63 +1,72 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-
-
 export async function POST(req: NextRequest) {
-    try {
-        const body = await req.json();
-        const { recipientEmail, clientEmails, files, message, designName, orderDetails } = body;
+  try {
+    const body = await req.json();
+    const {
+      recipientEmail,
+      clientEmails,
+      files,
+      message,
+      designName,
+      orderDetails,
+    } = body;
 
-        if (!recipientEmail) {
-            return NextResponse.json(
-                { error: "Recipient email is required" },
-                { status: 400 }
-            );
-        }
+    if (!recipientEmail) {
+      return NextResponse.json(
+        { error: "Recipient email is required" },
+        { status: 400 },
+      );
+    }
 
-        // Check credentials
-        if (
-            !process.env.SMTP_HOST ||
-            !process.env.SMTP_USER ||
-            !process.env.SMTP_PASS
-        ) {
-            console.warn("⚠️ SMTP credentials missing. Logging email instead.");
-            // Log payload size for debugging
-            const payloadSize = JSON.stringify(body).length;
-            console.log(`📦 Payload size: ${(payloadSize / 1024 / 1024).toFixed(2)} MB`);
-            console.log("To:", recipientEmail);
-            console.log("CC:", clientEmails);
-            console.log("Message:", message);
-            console.log("Files:", files?.length || 0, "attachments");
+    // Check credentials
+    if (
+      !process.env.SMTP_HOST ||
+      !process.env.SMTP_USER ||
+      !process.env.SMTP_PASS
+    ) {
+      console.warn("⚠️ SMTP credentials missing. Logging email instead.");
+      // Log payload size for debugging
+      const payloadSize = JSON.stringify(body).length;
+      console.log(
+        `📦 Payload size: ${(payloadSize / 1024 / 1024).toFixed(2)} MB`,
+      );
+      console.log("To:", recipientEmail);
+      console.log("CC:", clientEmails);
+      console.log("Message:", message);
+      console.log("Files:", files?.length || 0, "attachments");
 
-            return NextResponse.json({
-                success: true,
-                message: "Simulated email sent (SMTP credentials missing)"
-            });
-        }
+      return NextResponse.json({
+        success: true,
+        message: "Simulated email sent (SMTP credentials missing)",
+      });
+    }
 
-        // Configure transporter
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: Number(process.env.SMTP_PORT) || 587,
-            secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
+    // Configure transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
 
-        // Prepare attachments
-        // files is expected to be an array of { filename, content (base64) }
-        const attachments = files?.map((file: any) => ({
-            filename: file.filename,
-            content: file.content.includes("base64,") ? file.content.split("base64,")[1] : file.content,
-            encoding: "base64",
-        })) || [];
+    // Prepare attachments
+    // files is expected to be an array of { filename, content (base64) }
+    const attachments =
+      files?.map((file: any) => ({
+        filename: file.filename,
+        content: file.content.includes("base64,")
+          ? file.content.split("base64,")[1]
+          : file.content,
+        encoding: "base64",
+      })) || [];
 
-        // Premium HTML Template
-        const htmlContent = `
+    // Premium HTML Template
+    const htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -84,17 +93,21 @@ export async function POST(req: NextRequest) {
                 <div class="content">
                     <h2 style="margin-top: 0; color: #111827;">Your Design: <span class="highlight">${designName || "Custom Jersey"}</span></h2>
                     
-                    ${message ? `
+                    ${
+                      message
+                        ? `
                     <div class="message-box">
                         <strong style="display:block; margin-bottom:5px; color:#374151;">Message from Designer:</strong>
                         "${message}"
-                    </div>` : ''}
+                    </div>`
+                        : ""
+                    }
 
                     <p>Attached you will find the assets for your custom design configuration. This package includes:</p>
                     <ul style="color: #4b5563; margin-bottom: 30px;">
                         <li>📸 <strong>High-Resolution Preview</strong> (PNG)</li>
                         <li>📄 <strong>Specification Sheet</strong> (PDF)</li>
-                        ${attachments.some((a: any) => a.filename.endsWith('.mp4') || a.filename.endsWith('.webm')) ? '<li>📽️ <strong>360° Video Preview</strong></li>' : ''}
+                        ${attachments.some((a: any) => a.filename.endsWith(".mp4") || a.filename.endsWith(".webm")) ? "<li>📽️ <strong>360° Video Preview</strong></li>" : ""}
                     </ul>
 
                     <h3>Design Specifications</h3>
@@ -110,17 +123,30 @@ export async function POST(req: NextRequest) {
                                 <td><strong>Decals/Logos</strong></td>
                                 <td>${orderDetails?.decals || 0} applied</td>
                             </tr>
-                            ${orderDetails?.materials ? orderDetails.materials.slice(0, 5).map((m: any) => `
+                            ${
+                              orderDetails?.materials
+                                ? orderDetails.materials
+                                    .slice(0, 5)
+                                    .map(
+                                      (m: any) => `
                             <tr>
                                 <td>${m.name}</td>
                                 <td>${m.color}</td>
-                            </tr>`).join('') : ''}
-                            ${orderDetails?.materials?.length > 5 ? `<tr><td>...and others</td><td></td></tr>` : ''}
-                            ${orderDetails?.notes ? `
+                            </tr>`,
+                                    )
+                                    .join("")
+                                : ""
+                            }
+                            ${orderDetails?.materials?.length > 5 ? `<tr><td>...and others</td><td></td></tr>` : ""}
+                            ${
+                              orderDetails?.notes
+                                ? `
                             <tr>
                                 <td><strong>Notes</strong></td>
                                 <td>${orderDetails.notes}</td>
-                            </tr>` : ''}
+                            </tr>`
+                                : ""
+                            }
                         </tbody>
                     </table>
 
@@ -136,25 +162,27 @@ export async function POST(req: NextRequest) {
         </html>
         `;
 
-        // Send mail
-        const info = await transporter.sendMail({
-            from: `"Besu Customs" <${process.env.SMTP_USER}>`,
-            to: recipientEmail,
-            cc: clientEmails || [],
-            subject: `Design Assets: ${designName || 'Your Custom Design'}`,
-            text: message || `Here are your design assets for ${designName || 'your custom order'}.`,
-            html: htmlContent,
-            attachments,
-        });
+    // Send mail
+    const info = await transporter.sendMail({
+      from: `"Besu Customs" <${process.env.SMTP_USER}>`,
+      to: recipientEmail,
+      cc: clientEmails || [],
+      subject: `Design Assets: ${designName || "Your Custom Design"}`,
+      text:
+        message ||
+        `Here are your design assets for ${designName || "your custom order"}.`,
+      html: htmlContent,
+      attachments,
+    });
 
-        console.log("Message sent: %s", info.messageId);
+    console.log("Message sent: %s", info.messageId);
 
-        return NextResponse.json({ success: true, messageId: info.messageId });
-    } catch (error) {
-        console.error("Error sending email:", error);
-        return NextResponse.json(
-            { error: "Failed to send email" },
-            { status: 500 }
-        );
-    }
+    return NextResponse.json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return NextResponse.json(
+      { error: "Failed to send email" },
+      { status: 500 },
+    );
+  }
 }

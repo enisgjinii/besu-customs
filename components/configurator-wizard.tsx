@@ -109,8 +109,12 @@ export function ConfiguratorWizard() {
               {currentStep}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold truncate">{STEPS[currentStep - 1].title}</p>
-              <p className="text-[10px] text-muted-foreground">Step {currentStep} of {STEPS.length}</p>
+              <p className="text-sm font-semibold truncate">
+                {STEPS[currentStep - 1].title}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Step {currentStep} of {STEPS.length}
+              </p>
             </div>
           </div>
         )}

@@ -19,7 +19,9 @@ const Scene = dynamic(
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           </div>
-          <p className="text-xs font-medium text-muted-foreground">Loading 3D viewer...</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Loading 3D viewer...
+          </p>
         </div>
       </div>
     ),
