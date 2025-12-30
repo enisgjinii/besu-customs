@@ -88,26 +88,28 @@ export function PatternSelector({
   const showTabs = !lockedCategory && categoriesToShow.length > 1;
 
   return (
-    <Card className={cn("p-2", className)}>
+    <Card className={cn("p-0 border-0 shadow-none bg-transparent", className)}>
       {showTabs && (
         <Tabs
           value={activeCategory}
           onValueChange={(v) => setActiveCategory(v as PatternCategory)}
-          className="w-full"
+          className="w-full space-y-3"
         >
-          <TabsList className="w-full flex flex-wrap h-auto p-0.5 mb-2 gap-0.5 bg-muted/50">
-            {categoriesToShow.map((category) => (
-              <TabsTrigger
-                key={category.id}
-                value={category.id}
-                className="flex-1 min-w-[50px] py-1 px-1.5 text-[9px] data-[state=active]:bg-background data-[state=active]:text-primary transition-all"
-              >
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="w-full overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
+            <TabsList className="flex h-9 w-max bg-transparent p-0 gap-2">
+              {categoriesToShow.map((category) => (
+                <TabsTrigger
+                  key={category.id}
+                  value={category.id}
+                  className="rounded-full border border-border bg-background px-4 py-1.5 text-xs font-medium text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                >
+                  {category.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
-          <div className="overflow-visible">
+          <div>
             {categoriesToShow.map((category) => (
               <TabsContent
                 key={category.id}
@@ -135,16 +137,19 @@ export function PatternSelector({
         </div>
       )}
       {/* Remove Pattern Action */}
-      <div className="mt-2 text-center">
+      <div className="mt-4 flex justify-center">
         <button
           onClick={() => {
             const removeTextureLayer = useConfiguratorStore.getState().removeTextureLayer;
             removeTextureLayer("main-pattern-layer");
             setSelectedPattern(null);
           }}
-          className="text-xs text-muted-foreground hover:text-destructive underline decoration-dotted underline-offset-4"
+          className="group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors px-3 py-1.5 rounded-full hover:bg-destructive/10"
         >
-          Remove Pattern Only
+          <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center opacity-70 group-hover:opacity-100">
+            <span className="h-0.5 w-2 bg-current rounded-full" />
+          </div>
+          Remove Pattern
         </button>
       </div>
     </Card>
@@ -164,39 +169,41 @@ function CategoryGrid({
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
     <div className="max-h-[60vh] overflow-y-auto pr-1">
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pb-1">
+      <div className="grid grid-cols-3 gap-3 pb-1">
         {patterns.map((pattern) => (
           <button
             key={pattern.id}
             onClick={() => onSelect(pattern)}
             className={cn(
-              "rounded-lg overflow-hidden border-2 transition-all active:scale-95",
+              "group relative aspect-square rounded-xl overflow-hidden border-2 transition-all active:scale-95",
               selectedPattern === pattern.id
-                ? "border-primary ring-2 ring-primary"
+                ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
                 : "border-border/50 hover:border-primary/50",
             )}
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
-            <div className="aspect-square w-full relative bg-muted/10">
+            <div className="absolute inset-0 bg-muted/10">
               <img
                 src={pattern.thumbnail}
                 alt={pattern.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 style={{
                   imageRendering: "auto",
-                  WebkitBackfaceVisibility: "hidden",
-                  backfaceVisibility: "hidden",
                 }}
                 loading="lazy"
               />
+              {/* Overlay with Name on Hover (Desktop) or Selected (Mobile) */}
+              <div className="absolute inset-x-0 bottom-0 py-1.5 bg-black/60 backdrop-blur-[1px] translate-y-full group-hover:translate-y-0 transition-transform">
+                <p className="text-[9px] text-white text-center font-medium truncate px-1">
+                  {pattern.name}
+                </p>
+              </div>
+
               {selectedPattern === pattern.id && (
-                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-sm z-10">
+                  <Check className="w-3 h-3" />
                 </div>
               )}
-            </div>
-            <div className="px-1 py-0.5 bg-background/80 text-[8px] text-center truncate">
-              {pattern.name}
             </div>
           </button>
         ))}

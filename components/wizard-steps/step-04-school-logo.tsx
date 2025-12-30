@@ -98,8 +98,8 @@ export function Step04SchoolLogo() {
   const logos = textureLayers.filter((l) => l.type === "image");
 
   return (
-    <div className="space-y-3">
-      <div>
+    <div className="space-y-4">
+      <div className="space-y-1">
         <h2 className="text-sm font-semibold">Add Logo</h2>
         <p className="text-xs text-muted-foreground">
           Select a school logo or upload your own
@@ -107,9 +107,16 @@ export function Step04SchoolLogo() {
       </div>
 
       {isPlacementMode ? (
-        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center animate-pulse">
-          <p className="text-sm font-medium text-primary mb-1">Placement Mode Active</p>
-          <p className="text-xs text-muted-foreground mb-2">Click on the model to place your logo</p>
+        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl text-center space-y-3 animate-pulse">
+          <div className="flex justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Search className="w-5 h-5 text-primary" />
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-primary">Tap to Place</p>
+            <p className="text-xs text-muted-foreground">Touch anywhere on the 3D model</p>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -118,6 +125,7 @@ export function Step04SchoolLogo() {
               setPendingLayer(null);
               setSelectedLogoId(null);
             }}
+            className="h-8 text-xs bg-background"
           >
             Cancel
           </Button>
@@ -128,12 +136,14 @@ export function Step04SchoolLogo() {
           <Button
             variant="outline"
             size="sm"
-            className="w-full h-10 relative"
+            className="w-full h-12 relative border-dashed border-2 hover:bg-muted/10 hover:border-primary/50 transition-colors"
             asChild
           >
             <label className="cursor-pointer flex items-center justify-center gap-2">
-              <Upload className="w-4 h-4" />
-              <span className="text-sm">Upload Custom Logo</span>
+              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                <Upload className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+              <span className="text-sm font-medium">Upload Custom Logo</span>
               <Input
                 type="file"
                 accept="image/*"
@@ -145,8 +155,8 @@ export function Step04SchoolLogo() {
 
           {/* School Logos Section */}
           {schoolLogos.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-medium text-muted-foreground">
                   School Logos ({schoolLogos.length})
                 </span>
@@ -154,39 +164,39 @@ export function Step04SchoolLogo() {
 
               {/* Search input */}
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search logos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-8 pl-8 text-xs"
+                  className="h-10 pl-9 text-xs border-0 bg-muted/30 focus-visible:bg-background transition-colors rounded-xl"
                 />
               </div>
 
               {/* Logo grid */}
-              <div className="max-h-[150px] overflow-y-auto rounded-lg border bg-muted/20 p-1.5">
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+              <div className="max-h-[300px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-4 gap-2.5">
                   {filteredLogos.map((logo) => (
                     <button
                       key={logo.id}
                       onClick={() => handleLogoSelect(logo)}
                       className={cn(
-                        "relative aspect-square rounded-lg border-2 overflow-hidden transition-all active:scale-95 bg-white",
+                        "group relative aspect-square rounded-xl overflow-hidden border-2 transition-all active:scale-95 bg-white",
                         selectedLogoId === logo.id
-                          ? "border-primary ring-2 ring-primary"
-                          : "border-transparent hover:border-primary/50"
+                          ? "border-primary ring-2 ring-primary ring-offset-2"
+                          : "border-border/40 hover:border-primary/50"
                       )}
                       title={logo.name}
                     >
                       <img
                         src={logo.thumbnail}
                         alt={logo.name}
-                        className="w-full h-full object-contain p-1"
+                        className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-110"
                         loading="lazy"
                       />
                       {selectedLogoId === logo.id && (
-                        <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                        <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow-sm">
                           <Check className="w-2.5 h-2.5 text-primary-foreground" />
                         </div>
                       )}
@@ -194,7 +204,7 @@ export function Step04SchoolLogo() {
                   ))}
                 </div>
                 {filteredLogos.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-4">
+                  <p className="text-xs text-muted-foreground text-center py-8">
                     No logos found matching "{searchQuery}"
                   </p>
                 )}
@@ -206,28 +216,33 @@ export function Step04SchoolLogo() {
 
       {/* Active logos with improved controls */}
       {logos.length > 0 && (
-        <div className="space-y-1.5">
-          <span className="text-[10px] text-muted-foreground font-medium">
-            Active Logos ({logos.length}) - Tap to edit
+        <div className="space-y-2 pt-2 border-t">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider px-1">
+            Active Logos
           </span>
-          <div className="max-h-[100px] overflow-y-auto space-y-1.5">
+          <div className="max-h-[140px] overflow-y-auto space-y-2 pr-1">
             {logos.map((layer) => (
               <div
                 key={layer.id}
-                className="p-2 rounded-lg border bg-card hover:border-primary/50 transition-colors"
+                className="p-2.5 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm"
                 onClick={() => setSelectedTextureLayerId(layer.id)}
               >
-                <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex items-center gap-3 mb-2">
                   {layer.imageUrl && (
-                    <img
-                      src={layer.imageUrl}
-                      alt={layer.name}
-                      className="w-8 h-8 object-contain rounded bg-muted/50"
-                    />
+                    <div className="w-10 h-10 rounded-lg bg-muted/30 p-1 border flex-shrink-0">
+                      <img
+                        src={layer.imageUrl}
+                        alt={layer.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                   )}
-                  <span className="text-xs font-medium truncate flex-1">
-                    {layer.name}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-medium truncate block">
+                      {layer.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Tap to edit position</span>
+                  </div>
                 </div>
                 <LayerControls layerId={layer.id} compact />
               </div>
@@ -237,8 +252,8 @@ export function Step04SchoolLogo() {
       )}
 
       {logos.length === 0 && !isPlacementMode && (
-        <p className="text-xs text-muted-foreground text-center py-2">
-          No logos added yet. Select or upload a logo to get started.
+        <p className="text-xs text-muted-foreground text-center py-4 opacity-50">
+          Select or upload a logo to get started.
         </p>
       )}
     </div>
