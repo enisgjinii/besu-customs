@@ -148,7 +148,7 @@ function CategoryGrid({
 }) {
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
-    <div className="max-h-[280px] overflow-y-auto pr-1">
+    <div className="max-h-[60vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pb-1">
         {patterns.map((pattern) => (
           <button

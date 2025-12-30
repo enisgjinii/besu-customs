@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfiguratorStore } from "@/lib/store";
+import { removeBackground } from "@/lib/mobile-performance-utils";
 
 export function AIImageGenerator() {
   const [prompt, setPrompt] = useState("");
@@ -47,7 +48,7 @@ export function AIImageGenerator() {
     setLoading(true);
     setGeneratedImage(null);
     setPreviewMode(false);
-    
+
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -78,7 +79,7 @@ export function AIImageGenerator() {
         setImageRotation(0);
         toast.success("Image generated! Review and apply when ready.");
       }
-      
+
       if (data.usage) {
         setUsage(data.usage);
       }
@@ -92,17 +93,38 @@ export function AIImageGenerator() {
     }
   };
 
-  const handleApplyImage = () => {
+  const handleApplyImage = async () => {
     if (!generatedImage) return;
+
+    toast.loading("Processing image...");
+
+    // Apply background removal to make the image blend better with garments
+    let processedUrl = generatedImage.imageURL;
+    try {
+      // Fetch the image and convert to data URL for processing
+      const response = await fetch(generatedImage.imageURL);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+
+      // Remove white/light background
+      processedUrl = await removeBackground(dataUrl, 235, 5);
+      console.log("✅ Background removed from AI image");
+    } catch (error) {
+      console.warn("Background removal failed, using original image:", error);
+    }
 
     // Dispatch event for other components to pick up
     const storageData = {
-      url: generatedImage.imageURL,
+      url: processedUrl,
       timestamp: Date.now(),
       scale: imageScale / 100,
       rotation: imageRotation,
     };
-    
+
     localStorage.setItem(
       "latest_generated_ai_image",
       JSON.stringify(storageData),
@@ -118,7 +140,8 @@ export function AIImageGenerator() {
       }),
     );
 
-    toast.success("AI Image applied to your design!");
+    toast.dismiss();
+    toast.success("AI Image applied with background removed!");
     setPreviewMode(false);
     setGeneratedImage(null);
   };
@@ -137,7 +160,7 @@ export function AIImageGenerator() {
 
   const handleDownload = async () => {
     if (!generatedImage) return;
-    
+
     try {
       const response = await fetch(generatedImage.imageURL);
       const blob = await response.blob();
@@ -184,11 +207,10 @@ export function AIImageGenerator() {
           {/* Usage Information */}
           {usage && (
             <div
-              className={`text-[10px] p-2 rounded-md ${
-                usage.remaining === 0
+              className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
                   ? "text-destructive bg-destructive/10 border border-destructive/20"
                   : "text-muted-foreground bg-secondary/20"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-1">
                 {usage.remaining === 0 ? (
@@ -230,10 +252,10 @@ export function AIImageGenerator() {
           <div className="text-xs font-medium text-center">
             Preview - Adjust size & rotation before applying
           </div>
-          
+
           {/* Image Preview */}
           <div className="relative rounded-lg overflow-hidden border bg-card">
-            <div 
+            <div
               className="aspect-square w-full flex items-center justify-center bg-muted/20 p-4"
               style={{ minHeight: "150px" }}
             >
@@ -310,7 +332,7 @@ export function AIImageGenerator() {
               Regenerate
             </Button>
           </div>
-          
+
           <div className="flex gap-2">
             <Button
               variant="outline"

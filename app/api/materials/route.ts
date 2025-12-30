@@ -138,22 +138,21 @@ export async function GET(request: Request) {
     }
 
     // Basketball Jersey Top And Long Shorts renaming
+    // CORRECTED MAPPING - User confirmed: FABRIC controls shorts, Body/Ble controls jersey
     if (modelParam.includes("basketball-jersey-top-and-long-shorts.glb")) {
-      // FABRIC materials are actually the jersey parts (FIXED MAPPING)
-      if (originalName === "FABRIC_1_2842") return "Jersey Trim/Collar";
-      if (originalName === "FABRIC_1_2845") return "Back of Jersey Color";
-      if (originalName === "FABRIC_1_2848") return "Front of Jersey Color";
-      if (originalName === "FABRIC_1_66694") return "Jersey Side Panels Color";
-      // Ble and Body materials are actually the shorts parts (FIXED MAPPING)
+      // FABRIC materials actually control the SHORTS (user confirmed)
+      if (originalName === "FABRIC_1_2842") return "Shorts Waist/Trim";
+      if (originalName === "FABRIC_1_2845") return "Back of Shorts Color";
+      if (originalName === "FABRIC_1_2848") return "Front of Shorts Color";
+      if (originalName === "FABRIC_1_66694") return "Shorts Side Panels Color";
+      // Ble and Body materials actually control the JERSEY (user confirmed)
       if (originalName === "Ble_66685")
-        return "Shorts Waist Trim/Side";
-      if (originalName === "Body_B_66682") return "Back of Shorts Color";
-      if (originalName === "Body_F_66679") return "Front of Shorts Color";
-      // Button materials - seem to be on jersey
-      if (originalName === "Default_Button_66696")
-        return "Jersey Button 1 Color";
-      if (originalName === "Default_Button_66697")
-        return "Jersey Button 2 Color";
+        return "Jersey Trim/Collar";
+      if (originalName === "Body_B_66682") return "Back of Jersey Color";
+      if (originalName === "Body_F_66679") return "Front of Jersey Color";
+      // Button materials - these don't seem to work per user feedback, hiding them
+      if (originalName === "Default_Button_66696") return null;
+      if (originalName === "Default_Button_66697") return null;
     }
 
     // Basketball Jersey and Shorts renaming
@@ -466,15 +465,12 @@ export async function GET(request: Request) {
 
   // Function to assign categories for specific models
   const getCategoryForSection = (originalName: string): string => {
-    // Basketball Jersey Top And Long Shorts categories (corrected mapping)
+    // Basketball Jersey Top And Long Shorts categories (CORRECTED - swapped)
     if (modelParam.includes("basketball-jersey-top-and-long-shorts.glb")) {
-      // FABRIC_1_ materials are actually the jersey parts
-      if (originalName.includes("FABRIC_1_")) return "Basketball Jersey Colors";
-      // Body_ and Ble_ materials are actually the shorts parts
+      // FABRIC_1_ materials actually control SHORTS
+      if (originalName.includes("FABRIC_1_")) return "Basketball Shorts Colors";
+      // Body_ and Ble_ materials actually control JERSEY
       if (originalName.includes("Body_") || originalName === "Ble_66685")
-        return "Basketball Shorts Colors";
-      // Button materials
-      if (originalName.includes("Default_Button_"))
         return "Basketball Jersey Colors";
       return "Other";
     }
@@ -687,17 +683,15 @@ export async function GET(request: Request) {
     if (modelParam.includes("basketball-jersey-top-and-long-shorts.glb")) {
       const reordered = [...sections];
 
-      // Define the desired order: Jersey sections first (Front, Back, Trim, Side Panels, Buttons), then Shorts sections (Front, Back, Waist)
+      // CORRECTED order: Jersey sections first (Body/Ble), then Shorts sections (FABRIC)
       const desiredOrder = [
-        "FABRIC_1_2848", // Front of Jersey (was Front of Shorts)
-        "FABRIC_1_2845", // Back of Jersey (was Back of Shorts)
-        "FABRIC_1_2842", // Jersey Trim (was Shorts Waist)
-        "FABRIC_1_66694", // Jersey Side Panels Color
-        "Default_Button_66696", // Jersey Button 1 Color
-        "Default_Button_66697", // Jersey Button 2 Color
-        "Body_F_66679", // Front of Shorts (was Front of Jersey)
-        "Body_B_66682", // Back of Shorts (was Back of Jersey)
-        "Ble_66685", // Shorts Trim (was Jersey Sleeve/Collar)
+        "Body_F_66679", // Front of Jersey Color
+        "Body_B_66682", // Back of Jersey Color
+        "Ble_66685", // Jersey Trim/Collar
+        "FABRIC_1_2848", // Front of Shorts Color
+        "FABRIC_1_2845", // Back of Shorts Color
+        "FABRIC_1_2842", // Shorts Waist/Trim
+        "FABRIC_1_66694", // Shorts Side Panels Color
       ];
 
       const orderedSections: MaterialSection[] = [];

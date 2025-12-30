@@ -63,12 +63,12 @@ function generateStripeTexture(
   // Stripe width as percentage of canvas (width slider is 2-30, map to 2-8% of canvas)
   const stripeWidthPercent = 0.02 + (width / 30) * 0.06;
   const stripeWidth = Math.round(SIZE * stripeWidthPercent);
-  
+
   // Parse the color and create a semi-transparent version for better blending
   const drawStripe = (x: number) => {
     // Use full opacity for the stripe color
     ctx.fillStyle = color;
-    
+
     switch (pattern) {
       case "solid":
         ctx.fillRect(x, 0, stripeWidth, SIZE);
@@ -140,16 +140,29 @@ function generateStripeTexture(
   };
 
   // Draw stripes at multiple positions to cover different UV layouts
-  // Most jersey/pants models have sides at edges OR at ~20%/80% positions
+  // Jersey/pants models map side panels to various UV positions
+  // We'll draw at multiple locations to ensure visibility on most models
   if (side === "left" || side === "both") {
+    // Left edge positions
     drawStripe(0);
+    drawStripe(Math.round(SIZE * 0.05));
+    drawStripe(Math.round(SIZE * 0.10));
     drawStripe(Math.round(SIZE * 0.15));
-    drawStripe(Math.round(SIZE * 0.25)); // Additional coverage
+    // Mid-left positions (some models map sides here)
+    drawStripe(Math.round(SIZE * 0.25));
+    drawStripe(Math.round(SIZE * 0.30));
+    drawStripe(Math.round(SIZE * 0.35));
   }
   if (side === "right" || side === "both") {
+    // Right edge positions
     drawStripe(SIZE - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.82));
-    drawStripe(Math.round(SIZE * 0.72)); // Additional coverage
+    drawStripe(Math.round(SIZE * 0.95) - stripeWidth);
+    drawStripe(Math.round(SIZE * 0.90) - stripeWidth);
+    drawStripe(Math.round(SIZE * 0.85) - stripeWidth);
+    // Mid-right positions
+    drawStripe(Math.round(SIZE * 0.75) - stripeWidth);
+    drawStripe(Math.round(SIZE * 0.70) - stripeWidth);
+    drawStripe(Math.round(SIZE * 0.65) - stripeWidth);
   }
 
   return canvas.toDataURL("image/png");
@@ -173,7 +186,7 @@ export function Step03bTrimLines() {
       toast.error("Please select a trim pattern");
       return;
     }
-    
+
     if (!trimColor) {
       toast.error("Please select a trim color");
       return;
@@ -181,11 +194,11 @@ export function Step03bTrimLines() {
 
     // Handle side stripe locations as texture layers
     if (trimLocation === "left-side-stripe" || trimLocation === "right-side-stripe" || trimLocation === "both-side-stripes") {
-      const side = trimLocation === "left-side-stripe" ? "left" : 
-                   trimLocation === "right-side-stripe" ? "right" : "both";
-      
+      const side = trimLocation === "left-side-stripe" ? "left" :
+        trimLocation === "right-side-stripe" ? "right" : "both";
+
       const stripeTexture = generateStripeTexture(trimColor, trimPattern, trimWidth, side);
-      
+
       const layerId = `side-stripe-${side}-${uuidv4().slice(0, 8)}`;
       addTextureLayer({
         id: layerId,
@@ -201,7 +214,7 @@ export function Step03bTrimLines() {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
-      
+
       toast.success(`Side stripe added! Visible on ${side === "both" ? "both sides" : side + " side"} of jersey/pants.`);
       return;
     }
@@ -249,7 +262,7 @@ export function Step03bTrimLines() {
 
   // Show which sections have trims
   const sectionsWithTrims = sections.filter((s) => s.trimDesign);
-  
+
   // Show side stripe layers
   const sideStripeLayers = textureLayers.filter((l) => l.name.includes("Side Stripe"));
 
@@ -273,8 +286,8 @@ export function Step03bTrimLines() {
               width: "80%",
               borderRadius: trimPattern === "wave" ? "50% 50%" : "0",
               boxShadow:
-                trimPattern === "shadow" ? "0 2px 4px rgba(0,0,0,0.2)" : 
-                trimPattern === "embossed" ? "inset 0 2px 4px rgba(0,0,0,0.3)" : "",
+                trimPattern === "shadow" ? "0 2px 4px rgba(0,0,0,0.2)" :
+                  trimPattern === "embossed" ? "inset 0 2px 4px rgba(0,0,0,0.3)" : "",
               backgroundImage:
                 trimPattern === "dashed"
                   ? `repeating-linear-gradient(90deg, ${trimColor} 0, ${trimColor} 10px, transparent 10px, transparent 20px)`
@@ -456,8 +469,8 @@ export function Step03bTrimLines() {
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {layer.imageUrl && (
-                    <img 
-                      src={layer.imageUrl} 
+                    <img
+                      src={layer.imageUrl}
                       alt={layer.name}
                       className="w-8 h-8 object-contain rounded bg-white"
                     />

@@ -256,3 +256,72 @@ export const measurePerformance = (label: string, fn: () => void) => {
     fn();
   }
 };
+
+/**
+ * Simple canvas-based background removal
+ * Makes white/light-colored backgrounds transparent
+ * Works well for AI-generated images that typically have white/uniform backgrounds
+ */
+export const removeBackground = async (
+  dataUrl: string,
+  threshold: number = 240, // Pixels brighter than this become transparent
+  edgeFeather: number = 5 // Feather edges for smoother transition
+): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      // Pass 1: Find edge pixels and mark background pixels
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        // Calculate brightness (simple luminance)
+        const brightness = (r + g + b) / 3;
+
+        // Check if pixel is close to white/light gray (likely background)
+        const isBackground = brightness > threshold &&
+          Math.abs(r - g) < 20 &&
+          Math.abs(g - b) < 20 &&
+          Math.abs(r - b) < 20;
+
+        if (isBackground) {
+          // Make background transparent
+          data[i + 3] = 0;
+        } else {
+          // Keep foreground opaque
+          // Apply edge softening based on how close to threshold
+          const distanceFromThreshold = threshold - brightness;
+          if (distanceFromThreshold < edgeFeather * 10 && distanceFromThreshold > 0) {
+            // Feather the edge
+            const alpha = Math.min(255, (distanceFromThreshold / (edgeFeather * 10)) * 255);
+            data[i + 3] = Math.round(alpha);
+          }
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+};

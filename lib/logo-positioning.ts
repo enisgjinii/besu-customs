@@ -26,36 +26,37 @@ export interface ModelPreset {
 // NOTE: UV maps typically have FRONT on the RIGHT side (U > 0.5) and BACK on LEFT side (U < 0.5)
 const MODEL_PRESETS: Record<string, ModelPreset> = {
   // Baseball Cap - special UV layout, front panel is center
+  // Logos on caps should be larger and more prominent
   "baseball-cap": {
     keywords: ["cap", "baseball-cap", "hat"],
     leftChest: {
-      position: [0.5, 0.35, 0], // Center front of cap
-      scale: [0.25, 0.25, 1],
-      rotation: [0, 0, 0], // No rotation needed
+      position: [0.5, 0.4, 0], // Center front of cap, slightly lower for visibility
+      scale: [0.35, 0.35, 1], // Larger scale for cap logos
+      rotation: [0, 0, 0],
     },
     back: {
-      position: [0.5, 0.7, 0], // Back of cap
+      position: [0.5, 0.25, 0], // Back strap area
       scale: [0.2, 0.2, 1],
       rotation: [0, 0, 0],
     },
   },
 
-  // Baseball Jersey - front chest area
+  // Baseball Jersey - front chest area with larger logos
   "baseball-jersey": {
     keywords: ["baseball-jersey", "baseball jersey"],
     leftChest: {
       position: [0.5, 0.35, 0], // Center chest
-      scale: [0.3, 0.3, 1],
+      scale: [0.35, 0.35, 1], // Larger for jerseys
       rotation: [0, 0, 0],
     },
     rightChest: {
-      position: [0.65, 0.35, 0], // Right chest
-      scale: [0.15, 0.15, 1],
+      position: [0.65, 0.35, 0], // Right chest for smaller number/logo
+      scale: [0.2, 0.2, 1],
       rotation: [0, 0, 0],
     },
     back: {
-      position: [0.5, 0.4, 0], // Back center
-      scale: [0.35, 0.35, 1],
+      position: [0.5, 0.4, 0], // Back center for name/number
+      scale: [0.4, 0.4, 1],
       rotation: [0, 0, 0],
     },
   },
