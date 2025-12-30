@@ -1,4 +1,4 @@
-"use strict";
+"use client";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,14 +189,12 @@ export function Step07Images() {
         </div>
         <button
           onClick={() => setAutoRemoveBg(!autoRemoveBg)}
-          className={`w-10 h-5 rounded-full transition-colors ${
-            autoRemoveBg ? "bg-primary" : "bg-muted"
-          }`}
+          className={`w-10 h-5 rounded-full transition-colors ${autoRemoveBg ? "bg-primary" : "bg-muted"
+            }`}
         >
           <div
-            className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
-              autoRemoveBg ? "translate-x-5" : "translate-x-0.5"
-            }`}
+            className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${autoRemoveBg ? "translate-x-5" : "translate-x-0.5"
+              }`}
           />
         </button>
       </div>

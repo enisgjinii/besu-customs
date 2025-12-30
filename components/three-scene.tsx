@@ -151,12 +151,13 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       .filter((l) => l.visible)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    // Check if we have stripe layers (need transparent background)
+    // Check if we have stripe layers (only stripes need transparent background)
     const hasStripeLayer = visibleLayers.some((l) =>
       l.name?.includes("Side Stripe"),
     );
 
-    // Clear canvas - use transparent for stripe layers, white for regular patterns
+    // Clear canvas - white background for most layers (including images)
+    // Only use transparent for side stripes which need to blend with material colors
     if (hasStripeLayer) {
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     } else {
@@ -174,12 +175,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     let processedImages = 0;
 
     const renderAllLayers = () => {
-      // Check if we have any stripe layers (need transparent background)
+      // Check if we have stripe layers (only stripes need transparent background)
       const hasStripeLayer = visibleLayers.some((l) =>
         l.name?.includes("Side Stripe"),
       );
 
-      // Clear canvas - use transparent for stripe layers, white for regular patterns
+      // Clear canvas - white for most layers, transparent for stripes
       if (hasStripeLayer) {
         ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
       } else {
@@ -491,23 +492,19 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture.colorSpace = THREE.SRGBColorSpace;
 
     const hasLayers = textureLayers.some((l) => l.visible);
-    const hasStripeLayer = textureLayers.some(
-      (l) => l.visible && l.name?.includes("Side Stripe"),
-    );
 
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
         const mat = child.material as THREE.MeshStandardMaterial;
+
         if (hasLayers) {
+          // Apply texture to all visible layers
           mat.map = texture;
-          // Enable transparency for stripe layers so the material color shows through
-          if (hasStripeLayer) {
-            mat.transparent = true;
-            mat.alphaTest = 0.01; // Discard nearly transparent pixels
-          }
+          // Don't use alphaTest - it was making transparent areas invisible
+          mat.transparent = false;
+          mat.alphaTest = 0;
         } else {
           mat.map = null;
-          mat.transparent = false;
         }
         mat.needsUpdate = true;
       }

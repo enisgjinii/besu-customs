@@ -1,4 +1,4 @@
-"use strict";
+"use client";
 import { useConfiguratorStore } from "@/lib/store";
 import { AIImageGenerator } from "@/components/ai-image-generator";
 import { useState, useEffect } from "react";
