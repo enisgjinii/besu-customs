@@ -87,7 +87,7 @@ export function ConfiguratorWizard() {
     <div
       className={cn(
         "absolute bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col",
-        isMobile ? "h-[42vh] max-h-[320px]" : "h-[280px]",
+        isMobile ? "h-[35vh] max-h-[280px]" : "h-[280px]",
       )}
     >
       {/* Texture Layer Selector - Compact on mobile */}
@@ -97,11 +97,11 @@ export function ConfiguratorWizard() {
         </div>
       )}
 
-      {/* Header: Steps + Nav */}
-      <div className="flex items-center gap-1 px-2 py-1.5 sm:py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
-        {/* Steps - scrollable */}
+      {/* Header: Steps + Nav - Ultra Compact on Mobile */}
+      <div className="flex items-center gap-1 px-1.5 py-1 sm:px-2 sm:py-1.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
+        {/* Steps - scrollable, minimal */}
         <div className="flex-1 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="flex items-center gap-0.5 sm:gap-1.5">
             {STEPS.map((s) => {
               const isDisabled = !isModelSelected && s.id !== 1;
               const isActive = currentStep === s.id;
@@ -111,18 +111,22 @@ export function ConfiguratorWizard() {
                   onClick={() => !isDisabled && setCurrentStep(s.id)}
                   disabled={isDisabled}
                   className={cn(
-                    "flex items-center gap-1 px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-semibold whitespace-nowrap transition-all flex-shrink-0 min-h-[32px] sm:min-h-[28px]",
+                    "flex items-center justify-center rounded-full text-[9px] font-semibold whitespace-nowrap transition-all flex-shrink-0",
+                    // Mobile: just circles with numbers
+                    "w-7 h-7 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1 sm:gap-1 sm:min-h-[28px]",
                     isActive
                       ? "bg-black text-white dark:bg-white dark:text-black"
                       : isDisabled
-                        ? "text-gray-300 dark:text-gray-700 cursor-not-allowed"
-                        : "text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300",
+                        ? "text-gray-300 dark:text-gray-700 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                        : "text-gray-500 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400",
                   )}
                   style={{ WebkitTapHighlightColor: "transparent" }}
                 >
+                  {/* Mobile: just number, Desktop: number + title */}
+                  <span className="sm:hidden">{s.id}</span>
                   <span
                     className={cn(
-                      "w-4 h-4 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[8px] sm:text-[9px] font-bold",
+                      "hidden sm:flex w-4 h-4 rounded-full items-center justify-center text-[9px] font-bold",
                       isActive
                         ? "bg-white text-black dark:bg-black dark:text-white"
                         : "bg-gray-300 text-white",
@@ -130,21 +134,21 @@ export function ConfiguratorWizard() {
                   >
                     {s.id}
                   </span>
-                  <span className="hidden xs:inline sm:inline">{s.title}</span>
+                  <span className="hidden sm:inline">{s.title}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Nav buttons */}
-        <div className="flex items-center gap-1.5 pl-2 border-l border-border/50 flex-shrink-0">
+        {/* Nav buttons - smaller on mobile */}
+        <div className="flex items-center gap-1 pl-1.5 border-l border-border/50 flex-shrink-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={handlePrev}
             disabled={currentStep === 1}
-            className="h-8 w-8 sm:h-7 sm:w-7 rounded-full active:scale-95"
+            className="h-7 w-7 rounded-full active:scale-95"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -155,7 +159,7 @@ export function ConfiguratorWizard() {
               currentStep === STEPS.length ||
               (currentStep === 1 && !isModelSelected)
             }
-            className="h-8 sm:h-7 px-3 sm:px-3 rounded-full text-[10px] sm:text-[10px] font-semibold active:scale-95"
+            className="h-7 px-2.5 rounded-full text-[10px] font-semibold active:scale-95"
           >
             Next <ChevronRight className="w-3 h-3 ml-0.5" />
           </Button>

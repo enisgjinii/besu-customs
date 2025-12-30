@@ -9,7 +9,25 @@ import type { MaterialSection } from "./store";
  */
 
 // Parse material name to get display name
-function parseMaterialName(name: string): string {
+function parseMaterialName(name: string, modelUrl?: string): string {
+  const lowerName = name.toLowerCase();
+
+  // Model-specific overrides
+  if (modelUrl) {
+    if (modelUrl.includes("basketball-jersey-top-and-long-shorts") || modelUrl.includes("basketball-jersey-and-shorts")) {
+      if (lowerName.includes("body_f") || lowerName.includes("front")) return "Jersey Front";
+      if (lowerName.includes("body_b") || lowerName.includes("back")) return "Jersey Back";
+      if (lowerName.includes("fabric_1") || lowerName === "fabric 1") return "Shorts";
+      if (lowerName.includes("waist")) return "Waistband";
+    }
+
+    // Volleyball specific
+    if (modelUrl.includes("volleyball")) {
+      if (lowerName.includes("body")) return "Body";
+      if (lowerName.includes("sleeve")) return "Sleeves";
+    }
+  }
+
   // Common specific overrides
   const overrides: Record<string, string> = {
     fabric_front: "Front Body",
@@ -22,9 +40,8 @@ function parseMaterialName(name: string): string {
     fabric_1: "Main Body",
     "fabic 1": "Main Body",
     material: "Base",
+    default_button: "Button",
   };
-
-  const lowerName = name.toLowerCase();
 
   // Check strict overrides first
   if (overrides[lowerName]) return overrides[lowerName];
@@ -35,8 +52,8 @@ function parseMaterialName(name: string): string {
     .replace(/(generated|instance|clone|copy)/gi, "")
     // Remove common prefixes
     .replace(/^(mat_|material_|mtl_|mesh_|obj_)/i, "")
-    // Remove common suffixes like .001, _001
-    .replace(/[._-]\d{3,}$/i, "")
+    // Remove common suffixes like .001, _001 or _2542 (variable length)
+    .replace(/[._-]\d+$/i, "")
     // Replace separators with spaces
     .replace(/[._-]/g, " ")
     // Split camelCase (e.g., "FrontBody" -> "Front Body")
@@ -95,7 +112,7 @@ export function extractSectionsFromThreeModel(
 
         const section: MaterialSection = {
           id: material.name,
-          name: parseMaterialName(material.name),
+          name: parseMaterialName(material.name, modelUrl),
           originalName: material.name,
           category: "Other",
           color,

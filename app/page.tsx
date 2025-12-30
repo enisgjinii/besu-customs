@@ -47,14 +47,14 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
-      {/* 3D Viewer - Account for both wizard and mobile nav with generous padding */}
-      <main className="flex-1 relative w-full h-full pb-[420px] md:pb-[300px]">
+      {/* 3D Viewer - Account for wizard panel */}
+      <main className="flex-1 relative w-full h-full pb-[340px] md:pb-[300px]">
         <Scene />
       </main>
 
       {/* Wizard Bottom Bar */}
       <ConfiguratorWizard />
-      
+
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
     </div>

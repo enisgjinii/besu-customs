@@ -3,8 +3,8 @@ import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
-import { Link2, RotateCcw, Loader2, Palette } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Link2, RotateCcw, Loader2, Palette, ChevronLeft, ChevronRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 
 export function Step02Colors() {
@@ -145,130 +145,167 @@ export function Step02Colors() {
     );
   }
 
-  // Mobile layout - split view: parts left, colors right
+  // Mobile layout - horizontal parts pills, then color grid below
   if (isMobile) {
     return (
-      <div className="flex gap-2 w-full h-full">
-        {/* LEFT: Parts list */}
-        <div className="w-24 flex-shrink-0 flex flex-col gap-1 overflow-y-auto pr-1 border-r border-border/30">
-          {sections.map((section) => (
+      <div className="flex flex-col gap-2 w-full">
+        {/* TOP: Horizontal parts selector */}
+        <div className="overflow-x-auto scrollbar-hide -mx-3 px-3">
+          <div className="inline-flex gap-1.5 pb-1">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSectionId(section.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap flex-shrink-0",
+                  activeSectionId === section.id
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/80 text-foreground hover:bg-muted",
+                )}
+              >
+                <div
+                  className="w-4 h-4 rounded-full border border-white/30 flex-shrink-0"
+                  style={{ backgroundColor: section.color }}
+                />
+                <span>{section.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Color grid - 8 columns for compact display */}
+        <div className="grid grid-cols-8 gap-1.5">
+          {PRESET_COLORS.map((color) => (
             <button
-              key={section.id}
-              onClick={() => setActiveSectionId(section.id)}
+              key={color}
+              onClick={() => handleColorChange(color)}
               className={cn(
-                "flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-medium text-left",
-                activeSectionId === section.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted",
+                "aspect-square rounded-full border",
+                activeSection?.color?.toUpperCase() === color.toUpperCase()
+                  ? "ring-2 ring-primary ring-offset-1 border-primary"
+                  : "border-border/20 hover:border-primary/50",
               )}
-            >
-              <div
-                className="w-4 h-4 rounded-full border border-white/30 flex-shrink-0"
-                style={{ backgroundColor: section.color }}
-              />
-              <span className="truncate leading-tight">{section.name}</span>
-            </button>
+              style={{ backgroundColor: color }}
+              aria-label={color}
+            />
           ))}
         </div>
 
-        {/* RIGHT: Color palette */}
-        <div className="flex-1 flex flex-col gap-2 min-w-0">
-          {/* Color grid */}
-          <div className="grid grid-cols-6 gap-1.5 flex-1">
-            {PRESET_COLORS.map((color) => (
-              <button
-                key={color}
-                onClick={() => handleColorChange(color)}
-                className={cn(
-                  "aspect-square rounded-full border",
-                  activeSection?.color?.toUpperCase() === color.toUpperCase()
-                    ? "ring-2 ring-primary ring-offset-1 border-primary"
-                    : "border-border/20",
-                )}
-                style={{ backgroundColor: color }}
-                aria-label={color}
-              />
-            ))}
-          </div>
-
-          {/* Bottom row - custom color + actions */}
-          <div className="flex items-center gap-1 pt-1 border-t">
-            <input
-              type="color"
-              value={activeSection?.color || "#ffffff"}
-              onChange={(e) => handleColorChange(e.target.value)}
-              className="w-7 h-7 rounded cursor-pointer border border-border flex-shrink-0"
-            />
-            <Input
-              type="text"
-              value={activeSection?.color || "#ffffff"}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-                  handleColorChange(val);
-                }
-              }}
-              className="h-7 text-[10px] font-mono uppercase flex-1 px-1.5"
-              placeholder="#000000"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() =>
-                activeSectionId && openSectionColorPicker(activeSectionId)
+        {/* Bottom row - custom color + actions (very compact) */}
+        <div className="flex items-center gap-1.5 pt-1 border-t border-border/30">
+          <input
+            type="color"
+            value={activeSection?.color || "#ffffff"}
+            onChange={(e) => handleColorChange(e.target.value)}
+            className="w-8 h-8 rounded-lg cursor-pointer border border-border flex-shrink-0"
+          />
+          <Input
+            type="text"
+            value={activeSection?.color || "#ffffff"}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                handleColorChange(val);
               }
-              disabled={!activeSectionId}
-            >
-              <Palette className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={handleApplyToAll}
-            >
-              <Link2 className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => updateAllSections({ color: "#ffffff" })}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </Button>
-          </div>
+            }}
+            className="h-8 text-[11px] font-mono uppercase flex-1 px-2"
+            placeholder="#000000"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2 text-[10px]"
+            onClick={() =>
+              activeSectionId && openSectionColorPicker(activeSectionId)
+            }
+            disabled={!activeSectionId}
+          >
+            <Palette className="w-3.5 h-3.5 mr-1" />
+            More
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={handleApplyToAll}
+            title="Apply to all"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => updateAllSections({ color: "#ffffff" })}
+            title="Reset all"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </Button>
         </div>
       </div>
     );
   }
 
   // Desktop layout
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -200, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 200, behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="space-y-3 w-full">
-      {/* Section pills */}
-      <div className="overflow-x-auto scrollbar-hide">
-        <div className="inline-flex gap-2 pb-2">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSectionId(section.id)}
-              className={cn(
-                "inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-xs font-semibold whitespace-nowrap flex-shrink-0",
-                activeSectionId === section.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg"
-                  : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50",
-              )}
-            >
-              <div
-                className="w-5 h-5 rounded-full border-2 border-white/40"
-                style={{ backgroundColor: section.color }}
-              />
-              <span className="max-w-[140px] truncate">{section.name}</span>
-            </button>
-          ))}
+      {/* Section pills with navigation */}
+      <div className="relative group">
+        <button
+          onClick={scrollLeft}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-background shadow-md border rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        <div
+          ref={scrollContainerRef}
+          className="overflow-x-auto scrollbar-hide mx-2"
+        >
+          <div className="inline-flex gap-2 pb-2 px-2">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSectionId(section.id)}
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all",
+                  activeSectionId === section.id
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105"
+                    : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50",
+                )}
+              >
+                <div
+                  className="w-5 h-5 rounded-full border-2 border-white/40"
+                  style={{ backgroundColor: section.color }}
+                />
+                <span className="max-w-[140px] truncate">{section.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
+
+        <button
+          onClick={scrollRight}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-background shadow-md border rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Color grid */}
