@@ -14,6 +14,7 @@ import { Download, Share2, Video } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 
 export function Step09View() {
   const currentModelUrl = useConfiguratorStore(
@@ -242,20 +243,18 @@ export function Step09View() {
 
         {/* High Resolution Toggle */}
         {(format === "png" || format === "jpg") && (
-          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-            <input
-              type="checkbox"
-              id="high-res"
-              checked={highRes}
-              onChange={(e) => setHighRes(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300"
-            />
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
             <Label htmlFor="high-res" className="text-sm cursor-pointer flex-1">
               High Resolution (2x)
               <span className="block text-xs text-muted-foreground font-normal">
                 Better for printing. Larger file size.
               </span>
             </Label>
+            <Switch
+              id="high-res"
+              checked={highRes}
+              onCheckedChange={setHighRes}
+            />
           </div>
         )}
 
