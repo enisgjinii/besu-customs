@@ -58,12 +58,54 @@ export function Step02Colors() {
 
   // Full color palette
   const PRESET_COLORS = [
-    "#FFFFFF", "#F5F5F5", "#E0E0E0", "#C0C0C0", "#808080", "#404040", "#1C1C1C", "#000000",
-    "#E3F2FD", "#90CAF9", "#42A5F5", "#1E88E5", "#1565C0", "#0D47A1", "#00274C", "#001529",
-    "#FFEBEE", "#EF9A9A", "#EF5350", "#E53935", "#C62828", "#B71C1C", "#8B0000", "#5C0000",
-    "#E8F5E9", "#A5D6A7", "#66BB6A", "#43A047", "#2E7D32", "#1B5E20", "#004D00", "#003300",
-    "#FFF8E1", "#FFE082", "#FFD54F", "#FFC107", "#FF9800", "#F57C00", "#E65100", "#BF360C",
-    "#F3E5F5", "#CE93D8", "#AB47BC", "#8E24AA", "#6A1B9A", "#4A148C", "#FF4081", "#C51162",
+    "#FFFFFF",
+    "#F5F5F5",
+    "#E0E0E0",
+    "#C0C0C0",
+    "#808080",
+    "#404040",
+    "#1C1C1C",
+    "#000000",
+    "#E3F2FD",
+    "#90CAF9",
+    "#42A5F5",
+    "#1E88E5",
+    "#1565C0",
+    "#0D47A1",
+    "#00274C",
+    "#001529",
+    "#FFEBEE",
+    "#EF9A9A",
+    "#EF5350",
+    "#E53935",
+    "#C62828",
+    "#B71C1C",
+    "#8B0000",
+    "#5C0000",
+    "#E8F5E9",
+    "#A5D6A7",
+    "#66BB6A",
+    "#43A047",
+    "#2E7D32",
+    "#1B5E20",
+    "#004D00",
+    "#003300",
+    "#FFF8E1",
+    "#FFE082",
+    "#FFD54F",
+    "#FFC107",
+    "#FF9800",
+    "#F57C00",
+    "#E65100",
+    "#BF360C",
+    "#F3E5F5",
+    "#CE93D8",
+    "#AB47BC",
+    "#8E24AA",
+    "#6A1B9A",
+    "#4A148C",
+    "#FF4081",
+    "#C51162",
   ];
 
   // Dynamic grid columns based on screen width
@@ -173,7 +215,9 @@ export function Step02Colors() {
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0"
-              onClick={() => activeSectionId && openSectionColorPicker(activeSectionId)}
+              onClick={() =>
+                activeSectionId && openSectionColorPicker(activeSectionId)
+              }
               disabled={!activeSectionId}
             >
               <Palette className="w-3.5 h-3.5" />
@@ -274,7 +318,9 @@ export function Step02Colors() {
             <Button
               variant="secondary"
               className="h-11 px-4"
-              onClick={() => activeSectionId && openSectionColorPicker(activeSectionId)}
+              onClick={() =>
+                activeSectionId && openSectionColorPicker(activeSectionId)
+              }
               disabled={!activeSectionId}
             >
               <Palette className="w-4 h-4 mr-2" />
@@ -283,7 +329,11 @@ export function Step02Colors() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="h-11 px-4" onClick={handleApplyToAll}>
+          <Button
+            variant="outline"
+            className="h-11 px-4"
+            onClick={handleApplyToAll}
+          >
             <Link2 className="w-4 h-4 mr-2" />
             Apply All
           </Button>

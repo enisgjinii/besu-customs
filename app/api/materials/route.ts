@@ -146,8 +146,7 @@ export async function GET(request: Request) {
       if (originalName === "FABRIC_1_2848") return "Front of Shorts Color";
       if (originalName === "FABRIC_1_66694") return "Shorts Side Panels Color";
       // Ble and Body materials actually control the JERSEY (user confirmed)
-      if (originalName === "Ble_66685")
-        return "Jersey Trim/Collar";
+      if (originalName === "Ble_66685") return "Jersey Trim/Collar";
       if (originalName === "Body_B_66682") return "Back of Jersey Color";
       if (originalName === "Body_F_66679") return "Front of Jersey Color";
       // Button materials - these don't seem to work per user feedback, hiding them
@@ -371,8 +370,6 @@ export async function GET(request: Request) {
       if (originalName === "Body_Front_1") return "Front Panel 1";
       if (originalName === "Body_Back_2") return "Back Panel 2";
     }
-
-
 
     // Volleyball Shorts Spandex 4 (Long Length) renaming
     if (modelParam.includes("volleyball-shorts-spandex-4.glb")) {

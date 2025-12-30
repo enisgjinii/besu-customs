@@ -2,9 +2,21 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, Palette, Check, ChevronLeft, Upload, Loader2, Wand2 } from "lucide-react";
+import {
+  X,
+  Palette,
+  Check,
+  ChevronLeft,
+  Upload,
+  Loader2,
+  Wand2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PANTONE_COLORS, findNearestPantone, type PantoneColor } from "@/lib/pantone";
+import {
+  PANTONE_COLORS,
+  findNearestPantone,
+  type PantoneColor,
+} from "@/lib/pantone";
 import { extractColors } from "@/lib/color-extractor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,15 +35,21 @@ interface ColorPickerModalProps {
 }
 
 // Group Pantones by category
-const CATEGORIZED_PANTONES = PANTONE_COLORS.reduce((acc, color) => {
-  const cat = color.category === 'coated' ? 'Standard' :
-    color.category === 'metallic' ? 'Metallic' :
-      'Other';
+const CATEGORIZED_PANTONES = PANTONE_COLORS.reduce(
+  (acc, color) => {
+    const cat =
+      color.category === "coated"
+        ? "Standard"
+        : color.category === "metallic"
+          ? "Metallic"
+          : "Other";
 
-  if (!acc[cat]) acc[cat] = [];
-  acc[cat].push(color);
-  return acc;
-}, {} as Record<string, PantoneColor[]>);
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(color);
+    return acc;
+  },
+  {} as Record<string, PantoneColor[]>,
+);
 
 export function ColorPickerModal({
   isOpen,
@@ -45,7 +63,9 @@ export function ColorPickerModal({
   footer,
 }: ColorPickerModalProps) {
   const [tempColor, setTempColor] = useState(currentColor);
-  const [selectedPantone, setSelectedPantone] = useState<PantoneColor | null>(null);
+  const [selectedPantone, setSelectedPantone] = useState<PantoneColor | null>(
+    null,
+  );
   const [isMobile, setIsMobile] = useState(false);
 
   // AI Extraction State
@@ -76,19 +96,18 @@ export function ColorPickerModal({
     if (isOpen && !isMobile) {
       const prev = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = prev || ""; };
+      return () => {
+        document.body.style.overflow = prev || "";
+      };
     }
   }, [isOpen, isMobile]);
 
-  const handleColorSelect = useCallback(
-    (color: string) => {
-      setTempColor(color);
-      // Auto-identify nearest Pantone
-      const pantone = findNearestPantone(color);
-      setSelectedPantone(pantone);
-    },
-    []
-  );
+  const handleColorSelect = useCallback((color: string) => {
+    setTempColor(color);
+    // Auto-identify nearest Pantone
+    const pantone = findNearestPantone(color);
+    setSelectedPantone(pantone);
+  }, []);
 
   const handlePantoneSelect = useCallback((pantone: PantoneColor) => {
     setTempColor(pantone.hex);
@@ -101,7 +120,9 @@ export function ColorPickerModal({
     onClose();
   }, [tempColor, onColorChange, onAddRecentColor, onClose]);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -113,11 +134,11 @@ export function ColorPickerModal({
       const extractedHexes = await extractColors(imageUrl, 5);
 
       // Match to Pantones
-      const matches = extractedHexes.map(hex => findNearestPantone(hex));
+      const matches = extractedHexes.map((hex) => findNearestPantone(hex));
 
       // Filter out duplicate Pantones
-      const uniqueMatches = matches.filter((p, index, self) =>
-        index === self.findIndex((t) => t.code === p.code)
+      const uniqueMatches = matches.filter(
+        (p, index, self) => index === self.findIndex((t) => t.code === p.code),
       );
 
       setSuggestedColors(uniqueMatches);
@@ -147,7 +168,9 @@ export function ColorPickerModal({
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <h3 className="text-sm font-bold font-mono">{tempColor.toUpperCase()}</h3>
+            <h3 className="text-sm font-bold font-mono">
+              {tempColor.toUpperCase()}
+            </h3>
           </div>
           {selectedPantone && (
             <p className="text-xs font-medium text-primary truncate">
@@ -155,14 +178,18 @@ export function ColorPickerModal({
             </p>
           )}
         </div>
-        <Button onClick={handleApplyColor} disabled={disabled} size="sm" className="shrink-0 h-9">
+        <Button
+          onClick={handleApplyColor}
+          disabled={disabled}
+          size="sm"
+          className="shrink-0 h-9"
+        >
           Apply
         </Button>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
-
           {/* Smart Match Section - Compact */}
           <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
             <div className="flex items-center justify-between mb-2">
@@ -199,10 +226,11 @@ export function ColorPickerModal({
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
+                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${
+                      selectedPantone?.code === pantone.code
                         ? "border-primary ring-1 ring-primary"
                         : "border-transparent hover:border-primary/50"
-                      }`}
+                    }`}
                   >
                     <div
                       className="absolute inset-0"
@@ -220,28 +248,37 @@ export function ColorPickerModal({
 
           <Tabs defaultValue="standard" className="w-full">
             <TabsList className="w-full mb-3 h-8">
-              <TabsTrigger value="standard" className="flex-1 text-xs h-7">Standard</TabsTrigger>
-              <TabsTrigger value="metallic" className="flex-1 text-xs h-7">Metallic</TabsTrigger>
-              <TabsTrigger value="custom" className="flex-1 text-xs h-7">Custom</TabsTrigger>
+              <TabsTrigger value="standard" className="flex-1 text-xs h-7">
+                Standard
+              </TabsTrigger>
+              <TabsTrigger value="metallic" className="flex-1 text-xs h-7">
+                Metallic
+              </TabsTrigger>
+              <TabsTrigger value="custom" className="flex-1 text-xs h-7">
+                Custom
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="standard" className="mt-0">
               <div className="grid grid-cols-3 gap-1.5">
-                {CATEGORIZED_PANTONES['Standard'].map((pantone) => (
+                {CATEGORIZED_PANTONES["Standard"].map((pantone) => (
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
+                      selectedPantone?.code === pantone.code
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:bg-muted"
-                      }`}
+                    }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
                       style={{ backgroundColor: pantone.hex }}
                     />
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold truncate">{pantone.code}</div>
+                      <div className="text-[10px] font-bold truncate">
+                        {pantone.code}
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -250,40 +287,52 @@ export function ColorPickerModal({
 
             <TabsContent value="metallic" className="mt-0">
               <div className="grid grid-cols-3 gap-1.5">
-                {CATEGORIZED_PANTONES['Metallic']?.map((pantone) => (
+                {CATEGORIZED_PANTONES["Metallic"]?.map((pantone) => (
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
+                      selectedPantone?.code === pantone.code
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:bg-muted"
-                      }`}
+                    }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
                       style={{ backgroundColor: pantone.hex }}
                     />
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold truncate">{pantone.code}</div>
+                      <div className="text-[10px] font-bold truncate">
+                        {pantone.code}
+                      </div>
                     </div>
                   </button>
-                )) || <div className="text-xs text-muted-foreground text-center py-3">No metallic colors</div>}
+                )) || (
+                  <div className="text-xs text-muted-foreground text-center py-3">
+                    No metallic colors
+                  </div>
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="custom" className="space-y-3">
               <div className="space-y-3 pt-1">
                 <div>
-                  <label className="text-xs font-medium mb-1.5 block">Custom Hex</label>
+                  <label className="text-xs font-medium mb-1.5 block">
+                    Custom Hex
+                  </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">#</div>
+                      <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">
+                        #
+                      </div>
                       <input
                         type="text"
-                        value={tempColor.replace('#', '')}
+                        value={tempColor.replace("#", "")}
                         onChange={(e) => {
-                          const val = '#' + e.target.value.replace('#', '');
-                          if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) setTempColor(val);
+                          const val = "#" + e.target.value.replace("#", "");
+                          if (/^#[0-9A-Fa-f]{0,6}$/.test(val))
+                            setTempColor(val);
                         }}
                         className="w-full pl-6 pr-2 py-1.5 rounded border text-sm font-mono uppercase h-9"
                         placeholder="000000"
@@ -303,9 +352,11 @@ export function ColorPickerModal({
 
                 {recentColors.length > 0 && (
                   <div>
-                    <label className="text-xs font-medium mb-1.5 block">Recent</label>
+                    <label className="text-xs font-medium mb-1.5 block">
+                      Recent
+                    </label>
                     <div className="flex flex-wrap gap-1.5">
-                      {recentColors.map(color => (
+                      {recentColors.map((color) => (
                         <button
                           key={color}
                           onClick={() => handleColorSelect(color)}
@@ -334,17 +385,22 @@ export function ColorPickerModal({
         <div className="absolute inset-0 bg-black/30" onClick={onClose} />
         <div className="relative bg-background rounded-t-xl shadow-xl h-[70vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200">
           <div className="flex items-center justify-between px-3 py-2 border-b">
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 text-sm">Cancel</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 text-sm"
+            >
+              Cancel
+            </Button>
             <h3 className="font-medium text-sm">{title}</h3>
             <div className="w-12" /> {/* Spacer */}
           </div>
 
-          <div className="flex-1 overflow-hidden relative">
-            {Content}
-          </div>
+          <div className="flex-1 overflow-hidden relative">{Content}</div>
         </div>
       </div>,
-      document.body
+      document.body,
     );
   }
 
@@ -357,16 +413,19 @@ export function ColorPickerModal({
             <Palette className="w-4 h-4" />
             {title}
           </h3>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8"
+          >
             <X className="w-4 h-4" />
           </Button>
         </div>
 
-        <div className="flex-1 overflow-hidden relative">
-          {Content}
-        </div>
+        <div className="flex-1 overflow-hidden relative">{Content}</div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

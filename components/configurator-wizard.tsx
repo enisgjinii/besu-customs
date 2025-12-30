@@ -53,7 +53,9 @@ export function ConfiguratorWizard() {
 
   const lockedView = useConfiguratorStore((s) => s.lockedView);
   const setLockedView = useConfiguratorStore((s) => s.setLockedView);
-  const resetAllCustomizations = useConfiguratorStore((s) => s.resetAllCustomizations);
+  const resetAllCustomizations = useConfiguratorStore(
+    (s) => s.resetAllCustomizations,
+  );
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
@@ -118,10 +120,14 @@ export function ConfiguratorWizard() {
                   )}
                   style={{ WebkitTapHighlightColor: "transparent" }}
                 >
-                  <span className={cn(
-                    "w-4 h-4 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[8px] sm:text-[9px] font-bold",
-                    isActive ? "bg-white text-black dark:bg-black dark:text-white" : "bg-gray-300 text-white",
-                  )}>
+                  <span
+                    className={cn(
+                      "w-4 h-4 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[8px] sm:text-[9px] font-bold",
+                      isActive
+                        ? "bg-white text-black dark:bg-black dark:text-white"
+                        : "bg-gray-300 text-white",
+                    )}
+                  >
                     {s.id}
                   </span>
                   <span className="hidden xs:inline sm:inline">{s.title}</span>
@@ -145,7 +151,10 @@ export function ConfiguratorWizard() {
           <Button
             size="sm"
             onClick={handleNext}
-            disabled={currentStep === STEPS.length || (currentStep === 1 && !isModelSelected)}
+            disabled={
+              currentStep === STEPS.length ||
+              (currentStep === 1 && !isModelSelected)
+            }
             className="h-8 sm:h-7 px-3 sm:px-3 rounded-full text-[10px] sm:text-[10px] font-semibold active:scale-95"
           >
             Next <ChevronRight className="w-3 h-3 ml-0.5" />
@@ -161,7 +170,9 @@ export function ConfiguratorWizard() {
           {["Front", "Back", "Left", "Right"].map((view) => (
             <button
               key={view}
-              onClick={() => setLockedView(view === lockedView ? null : (view as any))}
+              onClick={() =>
+                setLockedView(view === lockedView ? null : (view as any))
+              }
               className={cn(
                 "text-[10px] px-2 py-0.5 rounded transition-all",
                 lockedView === view
@@ -177,7 +188,10 @@ export function ConfiguratorWizard() {
 
       {/* Content Area */}
       <div className="flex-1 overflow-hidden min-h-0">
-        <div className="h-full overflow-y-auto overscroll-contain wizard-content-scroll" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div
+          className="h-full overflow-y-auto overscroll-contain wizard-content-scroll"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
           <div className="p-3 md:p-4 max-w-3xl mx-auto pb-16">
             <AnimatePresence mode="wait">
               <motion.div
@@ -216,7 +230,8 @@ export function ConfiguratorWizard() {
               Reset All?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
-              This will clear all colors, patterns, logos, and text. Cannot be undone.
+              This will clear all colors, patterns, logos, and text. Cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

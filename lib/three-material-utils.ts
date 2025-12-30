@@ -231,7 +231,9 @@ export function applyMaterialsToThreeModel(
             );
             targetMaterial.map = trimTexture;
             targetMaterial.color = new THREE.Color(0xffffff);
-            console.log(`🎨 Applied trim "${section.trimDesign}" to section "${section.name}"`);
+            console.log(
+              `🎨 Applied trim "${section.trimDesign}" to section "${section.name}"`,
+            );
           }
 
           // Apply material properties
@@ -445,7 +447,7 @@ function createTrimDesignTexture(
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.needsUpdate = true;
-  
+
   console.log(`🎨 Generated trim texture: ${trimDesign} (${size}x${size})`);
   return texture;
 }

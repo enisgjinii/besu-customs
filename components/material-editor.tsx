@@ -160,10 +160,11 @@ export function MaterialEditor() {
                       }}
                       onMouseEnter={() => setHighlightedSection(section.id)}
                       onMouseLeave={() => setHighlightedSection(null)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border transition-all whitespace-nowrap text-xs font-medium touch-manipulation min-h-[40px] flex-shrink-0 ${isSelected
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-card text-muted-foreground border-border/50 active:scale-95"
-                        } ${isLinked ? "ring-1 ring-blue-500/50" : ""}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border transition-all whitespace-nowrap text-xs font-medium touch-manipulation min-h-[40px] flex-shrink-0 ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                          : "bg-card text-muted-foreground border-border/50 active:scale-95"
+                      } ${isLinked ? "ring-1 ring-blue-500/50" : ""}`}
                       style={{ touchAction: "manipulation" }}
                     >
                       <div
@@ -227,8 +228,9 @@ export function MaterialEditor() {
                       return (
                         <div
                           key={section.id}
-                          className={`group relative rounded-lg md:rounded-2xl transition-all duration-150 ${isLinked ? "ring-1 ring-blue-500/50" : ""
-                            }`}
+                          className={`group relative rounded-lg md:rounded-2xl transition-all duration-150 ${
+                            isLinked ? "ring-1 ring-blue-500/50" : ""
+                          }`}
                           onMouseEnter={() => setHighlightedSection(section.id)}
                           onMouseLeave={() => setHighlightedSection(null)}
                         >
@@ -237,10 +239,11 @@ export function MaterialEditor() {
                               setSelectedSection(section.id);
                               setHighlightedSection(section.id);
                             }}
-                            className={`w-full text-left px-3 py-2.5 md:px-4 md:py-4 text-sm rounded-lg md:rounded-2xl transition-all duration-150 min-h-[48px] md:min-h-[48px] ${isSelected
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "bg-secondary/20 hover:bg-secondary/40 active:bg-secondary/60"
-                              }`}
+                            className={`w-full text-left px-3 py-2.5 md:px-4 md:py-4 text-sm rounded-lg md:rounded-2xl transition-all duration-150 min-h-[48px] md:min-h-[48px] ${
+                              isSelected
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-secondary/20 hover:bg-secondary/40 active:bg-secondary/60"
+                            }`}
                           >
                             <div className="flex items-center justify-start gap-3 md:gap-4">
                               <div
@@ -271,14 +274,13 @@ export function MaterialEditor() {
                             selectedSectionId !== section.id && (
                               <button
                                 onClick={() => toggleSectionLink(section.id)}
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all min-w-[36px] min-h-[36px] flex items-center justify-center ${isLinked
-                                  ? "bg-blue-500 text-white shadow-sm"
-                                  : "bg-background/80 text-muted-foreground hover:text-foreground md:opacity-60 md:group-hover:opacity-100"
-                                  }`}
-                                title={
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all min-w-[36px] min-h-[36px] flex items-center justify-center ${
                                   isLinked
-                                    ? "Click to unlink"
-                                    : "Click to link"
+                                    ? "bg-blue-500 text-white shadow-sm"
+                                    : "bg-background/80 text-muted-foreground hover:text-foreground md:opacity-60 md:group-hover:opacity-100"
+                                }`}
+                                title={
+                                  isLinked ? "Click to unlink" : "Click to link"
                                 }
                               >
                                 <Link2 className="w-4 h-4" />
@@ -400,7 +402,8 @@ export function MaterialEditor() {
                           canvas.height = 32; // Thin stripe
                           const ctx = canvas.getContext("2d");
                           if (ctx) {
-                            ctx.fillStyle = selectedSection.trimColor || "#000000";
+                            ctx.fillStyle =
+                              selectedSection.trimColor || "#000000";
                             ctx.fillRect(0, 0, 512, 32);
                             const dataUrl = canvas.toDataURL();
 
@@ -416,7 +419,9 @@ export function MaterialEditor() {
                               position: [0.5, 0.5, 0],
                               scale: [1, 0.05, 1], // Full width, thin height default
                               rotation: [0, 0, 0],
-                              order: useConfiguratorStore.getState().textureLayers.length,
+                              order:
+                                useConfiguratorStore.getState().textureLayers
+                                  .length,
                             });
                           }
                         }}
@@ -425,7 +430,8 @@ export function MaterialEditor() {
                         Add Movable Trim Line
                       </Button>
                       <p className="text-[10px] text-muted-foreground">
-                        Adds a stripe layer you can drag and resize freely on the model.
+                        Adds a stripe layer you can drag and resize freely on
+                        the model.
                       </p>
 
                       <div className="relative">
@@ -515,29 +521,32 @@ export function MaterialEditor() {
                       updateSection(selectedSection.id, {
                         gradient: enabled
                           ? {
-                            enabled: true,
-                            type: "linear",
-                            colors: [selectedSection.color, "#ffffff"],
-                            angle: 90,
-                            stops: [0, 1],
-                          }
+                              enabled: true,
+                              type: "linear",
+                              colors: [selectedSection.color, "#ffffff"],
+                              angle: 90,
+                              stops: [0, 1],
+                            }
                           : undefined,
                       });
                     }}
                     disabled={!!selectedSection.customTexture}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selectedSection.gradient?.enabled
-                      ? "bg-primary"
-                      : "bg-input"
-                      } ${selectedSection.customTexture
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      selectedSection.gradient?.enabled
+                        ? "bg-primary"
+                        : "bg-input"
+                    } ${
+                      selectedSection.customTexture
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
-                      }`}
+                    }`}
                   >
                     <span
-                      className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${selectedSection.gradient?.enabled
-                        ? "translate-x-4"
-                        : "translate-x-0.5"
-                        }`}
+                      className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                        selectedSection.gradient?.enabled
+                          ? "translate-x-4"
+                          : "translate-x-0.5"
+                      }`}
                     />
                   </button>
                 </div>

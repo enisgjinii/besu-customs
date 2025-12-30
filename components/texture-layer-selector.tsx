@@ -80,11 +80,15 @@ export function TextureLayerSelector() {
         {textureLayers.map((layer) => (
           <div key={layer.id} className="relative flex-shrink-0">
             <Button
-              variant={selectedTextureLayerId === layer.id ? "default" : "outline"}
+              variant={
+                selectedTextureLayerId === layer.id ? "default" : "outline"
+              }
               size="sm"
               onClick={() => setSelectedTextureLayerId(layer.id)}
               className={`text-[10px] h-7 gap-1 px-2 ${
-                selectedTextureLayerId === layer.id ? "" : "text-muted-foreground"
+                selectedTextureLayerId === layer.id
+                  ? ""
+                  : "text-muted-foreground"
               }`}
             >
               {layer.type === "text" ? (

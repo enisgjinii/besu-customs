@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
 import { getSchoolLogoPosition } from "@/lib/logo-positioning";
-import { compressImageForMobile, isMobile } from "@/lib/mobile-performance-utils";
+import {
+  compressImageForMobile,
+  isMobile,
+} from "@/lib/mobile-performance-utils";
 import { useRef } from "react";
 
 // Predefined school logos - no need for PatternSelector duplication
@@ -21,10 +24,16 @@ const SCHOOL_LOGOS = [
 ];
 
 export function Step04SchoolLogo() {
-  const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
+  const addTextureLayer = useConfiguratorStore(
+    (state) => state.addTextureLayer,
+  );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
-  const setSelectedTextureLayerId = useConfiguratorStore((state) => state.setSelectedTextureLayerId);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
+  const setSelectedTextureLayerId = useConfiguratorStore(
+    (state) => state.setSelectedTextureLayerId,
+  );
 
   // Track if upload is in progress to prevent duplicate uploads
   const isUploadingRef = useRef(false);
@@ -67,7 +76,7 @@ export function Step04SchoolLogo() {
       const newId = uuidv4();
 
       // Check if layer with same image URL already exists (extra safety)
-      const existingLayer = textureLayers.find(l => l.imageUrl === result);
+      const existingLayer = textureLayers.find((l) => l.imageUrl === result);
       if (existingLayer) {
         console.log("⚠️ Duplicate image detected, skipping add");
         isUploadingRef.current = false;
@@ -106,11 +115,18 @@ export function Step04SchoolLogo() {
     <div className="space-y-2">
       <div>
         <h2 className="text-sm font-semibold">Add Logo</h2>
-        <p className="text-xs text-muted-foreground">Upload your team or school logo</p>
+        <p className="text-xs text-muted-foreground">
+          Upload your team or school logo
+        </p>
       </div>
 
       {/* Upload button */}
-      <Button variant="outline" size="sm" className="w-full h-10 relative" asChild>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full h-10 relative"
+        asChild
+      >
         <label className="cursor-pointer flex items-center justify-center gap-2">
           <Upload className="w-4 h-4" />
           <span className="text-sm">Upload Logo Image</span>
@@ -144,7 +160,9 @@ export function Step04SchoolLogo() {
                       className="w-8 h-8 object-contain rounded bg-muted/50"
                     />
                   )}
-                  <span className="text-xs font-medium truncate flex-1">{layer.name}</span>
+                  <span className="text-xs font-medium truncate flex-1">
+                    {layer.name}
+                  </span>
                 </div>
                 <LayerControls layerId={layer.id} compact />
               </div>

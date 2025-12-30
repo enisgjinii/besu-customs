@@ -32,10 +32,10 @@ export function LayerControlsOverlay() {
   );
 
   // Debug logging
-  console.log('🎛️ LayerControlsOverlay:', { 
-    selectedTextureLayerId, 
+  console.log("🎛️ LayerControlsOverlay:", {
+    selectedTextureLayerId,
     selectedLayer: selectedLayer?.name,
-    layerCount: textureLayers.length 
+    layerCount: textureLayers.length,
   });
 
   // Don't render if no layer is selected

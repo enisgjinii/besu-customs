@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Environment, Center } from "@react-three/drei";
-import {
-  useConfiguratorStore,
-  MaterialSection,
-} from "@/lib/store";
+import { useConfiguratorStore, MaterialSection } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
-import { extractSectionsFromThreeModel, applyMaterialsToThreeModel } from "@/lib/three-material-utils";
+import {
+  extractSectionsFromThreeModel,
+  applyMaterialsToThreeModel,
+} from "@/lib/three-material-utils";
 import { useCachedGLTF } from "@/hooks/use-cached-gltf";
 import { getModelCache } from "@/lib/model-cache";
 import * as THREE from "three";
@@ -85,10 +85,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     // Fixed colors for each control type
     const colors: Record<string, string> = {
-      duplicate: "#8b5cf6",  // Purple
-      rotate: "#3b82f6",     // Blue
-      resize: "#22c55e",     // Green
-      delete: "#ef4444",     // Red
+      duplicate: "#8b5cf6", // Purple
+      rotate: "#3b82f6", // Blue
+      resize: "#22c55e", // Green
+      delete: "#ef4444", // Red
     };
 
     // Draw circular background with colored fill
@@ -108,7 +108,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     ctx.lineWidth = size * 0.08;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    
+
     // Use simple text symbols that render cleanly
     ctx.font = `bold ${size * 0.45}px Arial, sans-serif`;
     ctx.textAlign = "center";
@@ -152,8 +152,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     // Check if we have stripe layers (need transparent background)
-    const hasStripeLayer = visibleLayers.some(l => l.name?.includes("Side Stripe"));
-    
+    const hasStripeLayer = visibleLayers.some((l) =>
+      l.name?.includes("Side Stripe"),
+    );
+
     // Clear canvas - use transparent for stripe layers, white for regular patterns
     if (hasStripeLayer) {
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -173,8 +175,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     const renderAllLayers = () => {
       // Check if we have any stripe layers (need transparent background)
-      const hasStripeLayer = visibleLayers.some(l => l.name?.includes("Side Stripe"));
-      
+      const hasStripeLayer = visibleLayers.some((l) =>
+        l.name?.includes("Side Stripe"),
+      );
+
       // Clear canvas - use transparent for stripe layers, white for regular patterns
       if (hasStripeLayer) {
         ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -293,7 +297,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
           // Check if this should be curved text (large rotation values indicate curvature intent)
           const isCurvedText = Math.abs(rotation) > Math.PI / 4; // > 45 degrees = curved
-          
+
           if (!isCurvedText) {
             // Simple rotated text
             ctx.fillText(layer.text, 0, 0);
@@ -372,16 +376,40 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
         // Draw corner control icons directly on the texture
         // Top-left: Duplicate
-        drawControlIcon(ctx, b.x - padding, b.y - padding, "duplicate", controlSize);
+        drawControlIcon(
+          ctx,
+          b.x - padding,
+          b.y - padding,
+          "duplicate",
+          controlSize,
+        );
 
         // Top-right: Rotate
-        drawControlIcon(ctx, b.x + b.width + padding, b.y - padding, "rotate", controlSize);
+        drawControlIcon(
+          ctx,
+          b.x + b.width + padding,
+          b.y - padding,
+          "rotate",
+          controlSize,
+        );
 
         // Bottom-left: Delete
-        drawControlIcon(ctx, b.x - padding, b.y + b.height + padding, "delete", controlSize);
+        drawControlIcon(
+          ctx,
+          b.x - padding,
+          b.y + b.height + padding,
+          "delete",
+          controlSize,
+        );
 
         // Bottom-right: Resize
-        drawControlIcon(ctx, b.x + b.width + padding, b.y + b.height + padding, "resize", controlSize);
+        drawControlIcon(
+          ctx,
+          b.x + b.width + padding,
+          b.y + b.height + padding,
+          "resize",
+          controlSize,
+        );
 
         ctx.restore();
       }
@@ -463,7 +491,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture.colorSpace = THREE.SRGBColorSpace;
 
     const hasLayers = textureLayers.some((l) => l.visible);
-    const hasStripeLayer = textureLayers.some(l => l.visible && l.name?.includes("Side Stripe"));
+    const hasStripeLayer = textureLayers.some(
+      (l) => l.visible && l.name?.includes("Side Stripe"),
+    );
 
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
@@ -548,7 +578,7 @@ function Model({
   // Use cached GLTF loader for faster loading and memory management
   const { gltf, loading: gltfLoading, error: gltfError } = useCachedGLTF(url);
   const scene = gltf?.scene ?? null;
-  
+
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
   const modelRef = useRef<THREE.Group>(null);
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
@@ -569,7 +599,9 @@ function Model({
   useEffect(() => {
     if (gltf && !gltfLoading) {
       const stats = getModelCache().getStats();
-      console.log(`📊 Model cache: ${stats.cachedModels} models, ${stats.totalMemoryMB.toFixed(1)} MB`);
+      console.log(
+        `📊 Model cache: ${stats.cachedModels} models, ${stats.totalMemoryMB.toFixed(1)} MB`,
+      );
     }
   }, [gltf, gltfLoading]);
 
@@ -617,8 +649,11 @@ function Model({
   // Sync Colors - Base Layer
   useEffect(() => {
     if (!clonedScene || sections.length === 0) return;
-    
-    console.log("🎨 Applying materials with trim support to model, sections:", sections.length);
+
+    console.log(
+      "🎨 Applying materials with trim support to model, sections:",
+      sections.length,
+    );
     applyMaterialsToThreeModel(clonedScene, sections);
   }, [clonedScene, sections]);
 
@@ -631,8 +666,19 @@ function Model({
   const isResizingRef = useRef(false);
   const isRotatingRef = useRef(false);
   const dragOffsetRef = useRef<{ u: number; v: number }>({ u: 0, v: 0 });
-  const resizeStartRef = useRef<{ scale: number; startU: number; startV: number; centerU: number; centerV: number }>({ scale: 1, startU: 0, startV: 0, centerU: 0.5, centerV: 0.5 });
-  const rotateStartRef = useRef<{ rotation: number; startAngle: number; centerU: number; centerV: number }>({ rotation: 0, startAngle: 0, centerU: 0.5, centerV: 0.5 });
+  const resizeStartRef = useRef<{
+    scale: number;
+    startU: number;
+    startV: number;
+    centerU: number;
+    centerV: number;
+  }>({ scale: 1, startU: 0, startV: 0, centerU: 0.5, centerV: 0.5 });
+  const rotateStartRef = useRef<{
+    rotation: number;
+    startAngle: number;
+    centerU: number;
+    centerV: number;
+  }>({ rotation: 0, startAngle: 0, centerU: 0.5, centerV: 0.5 });
 
   // Get store functions for control actions
   const duplicateTextureLayer = useConfiguratorStore(
@@ -652,7 +698,9 @@ function Model({
     const store = useConfiguratorStore.getState();
     const selectedLayerId = store.selectedTextureLayerId;
 
-    console.log(`🔍 checkControlClickUV: click=(${clickU.toFixed(3)}, ${clickV.toFixed(3)}), selectedId=${selectedLayerId}`);
+    console.log(
+      `🔍 checkControlClickUV: click=(${clickU.toFixed(3)}, ${clickV.toFixed(3)}), selectedId=${selectedLayerId}`,
+    );
 
     if (!selectedLayerId) {
       console.log("⚠️ No selected layer, skipping control check");
@@ -803,16 +851,29 @@ function Model({
         const hitV = uv.y;
 
         const controlClicked = checkControlClickUV(hitU, hitV);
-        console.log("🎯 Control clicked:", controlClicked, "at UV:", hitU.toFixed(3), hitV.toFixed(3));
+        console.log(
+          "🎯 Control clicked:",
+          controlClicked,
+          "at UV:",
+          hitU.toFixed(3),
+          hitV.toFixed(3),
+        );
 
         if (controlClicked) {
           const store = useConfiguratorStore.getState();
           const selectedLayerId = store.selectedTextureLayerId;
 
           if (selectedLayerId) {
-            const layer = store.textureLayers.find((l) => l.id === selectedLayerId);
-            console.log("🎮 Processing control:", controlClicked, "for layer:", layer?.name);
-            
+            const layer = store.textureLayers.find(
+              (l) => l.id === selectedLayerId,
+            );
+            console.log(
+              "🎮 Processing control:",
+              controlClicked,
+              "for layer:",
+              layer?.name,
+            );
+
             switch (controlClicked) {
               case "duplicate":
                 duplicateTextureLayer(selectedLayerId);
@@ -873,7 +934,10 @@ function Model({
         if (activeLayers.length > 0) {
           const nearest = activeLayers.reduce(
             (
-              acc: { layer: (typeof activeLayers)[number] | null; dist: number },
+              acc: {
+                layer: (typeof activeLayers)[number] | null;
+                dist: number;
+              },
               layer,
             ) => {
               const layerU = layer.position?.[0] ?? 0.5;
@@ -886,7 +950,8 @@ function Model({
             { layer: null, dist: Infinity },
           );
 
-          const targetLayer = nearest.layer ?? activeLayers[activeLayers.length - 1];
+          const targetLayer =
+            nearest.layer ?? activeLayers[activeLayers.length - 1];
 
           if (targetLayer) {
             // Select the layer
@@ -910,8 +975,10 @@ function Model({
 
     const handlePointerMove = (e: PointerEvent) => {
       // Check if any interaction mode is active
-      const isAnyInteraction = isDraggingRef.current || isResizingRef.current || isRotatingRef.current;
-      if (!isAnyInteraction || !selectedLayerRef.current || !clonedScene) return;
+      const isAnyInteraction =
+        isDraggingRef.current || isResizingRef.current || isRotatingRef.current;
+      if (!isAnyInteraction || !selectedLayerRef.current || !clonedScene)
+        return;
 
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -928,17 +995,18 @@ function Model({
 
         // Handle resize dragging
         if (isResizingRef.current) {
-          const { scale, startU, startV, centerU, centerV } = resizeStartRef.current;
-          
+          const { scale, startU, startV, centerU, centerV } =
+            resizeStartRef.current;
+
           // Calculate distance from center at start and now
           const startDist = Math.hypot(startU - centerU, startV - centerV);
           const currentDist = Math.hypot(hitU - centerU, hitV - centerV);
-          
+
           // Scale proportionally
           if (startDist > 0.01) {
             const scaleFactor = currentDist / startDist;
             const newScale = Math.max(0.1, Math.min(3, scale * scaleFactor));
-            
+
             updateTextureLayer(selectedLayerRef.current, {
               scale: [newScale, newScale, 1],
             });
@@ -948,18 +1016,19 @@ function Model({
 
         // Handle rotate dragging
         if (isRotatingRef.current) {
-          const { rotation, startAngle, centerU, centerV } = rotateStartRef.current;
+          const { rotation, startAngle, centerU, centerV } =
+            rotateStartRef.current;
           const currentAngle = Math.atan2(hitV - centerV, hitU - centerU);
           const deltaAngle = currentAngle - startAngle;
           const newRotation = rotation + deltaAngle;
-          
+
           console.log("🔄 Rotating:", {
-            currentAngle: (currentAngle * 180 / Math.PI).toFixed(1) + "°",
-            startAngle: (startAngle * 180 / Math.PI).toFixed(1) + "°", 
-            deltaAngle: (deltaAngle * 180 / Math.PI).toFixed(1) + "°",
-            newRotation: (newRotation * 180 / Math.PI).toFixed(1) + "°"
+            currentAngle: ((currentAngle * 180) / Math.PI).toFixed(1) + "°",
+            startAngle: ((startAngle * 180) / Math.PI).toFixed(1) + "°",
+            deltaAngle: ((deltaAngle * 180) / Math.PI).toFixed(1) + "°",
+            newRotation: ((newRotation * 180) / Math.PI).toFixed(1) + "°",
           });
-          
+
           updateTextureLayer(selectedLayerRef.current, {
             rotation: [0, 0, newRotation],
           });
@@ -1203,7 +1272,9 @@ export function ThreeScene({
   if (initError) return <div>Error: {initError}</div>;
 
   // Adjust camera position based on screen size to account for bottom navigation
-  const cameraPosition: [number, number, number] = isMobile ? [0, 2, 8] : [0, 1.2, 8];
+  const cameraPosition: [number, number, number] = isMobile
+    ? [0, 2, 8]
+    : [0, 1.2, 8];
 
   return (
     <div className="w-full h-full relative">

@@ -265,7 +265,7 @@ export const measurePerformance = (label: string, fn: () => void) => {
 export const removeBackground = async (
   dataUrl: string,
   threshold: number = 240, // Pixels brighter than this become transparent
-  edgeFeather: number = 5 // Feather edges for smoother transition
+  edgeFeather: number = 5, // Feather edges for smoother transition
 ): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -297,7 +297,8 @@ export const removeBackground = async (
         const brightness = (r + g + b) / 3;
 
         // Check if pixel is close to white/light gray (likely background)
-        const isBackground = brightness > threshold &&
+        const isBackground =
+          brightness > threshold &&
           Math.abs(r - g) < 20 &&
           Math.abs(g - b) < 20 &&
           Math.abs(r - b) < 20;
@@ -309,9 +310,15 @@ export const removeBackground = async (
           // Keep foreground opaque
           // Apply edge softening based on how close to threshold
           const distanceFromThreshold = threshold - brightness;
-          if (distanceFromThreshold < edgeFeather * 10 && distanceFromThreshold > 0) {
+          if (
+            distanceFromThreshold < edgeFeather * 10 &&
+            distanceFromThreshold > 0
+          ) {
             // Feather the edge
-            const alpha = Math.min(255, (distanceFromThreshold / (edgeFeather * 10)) * 255);
+            const alpha = Math.min(
+              255,
+              (distanceFromThreshold / (edgeFeather * 10)) * 255,
+            );
             data[i + 3] = Math.round(alpha);
           }
         }

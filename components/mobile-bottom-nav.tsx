@@ -267,9 +267,7 @@ export function MobileBottomNav() {
 
         {/* Header - Compact */}
         <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30">
-          <h3 className="font-semibold text-sm">
-            {getTabTitle(activeTab)}
-          </h3>
+          <h3 className="font-semibold text-sm">{getTabTitle(activeTab)}</h3>
           <Button
             variant="ghost"
             size="sm"
@@ -337,7 +335,9 @@ export function MobileBottomNav() {
                   onClick={handleResetCamera}
                 >
                   <RotateCcw className="w-6 h-6 sm:w-5 sm:h-5" />
-                  <span className="text-xs sm:text-[10px] font-medium">Reset View</span>
+                  <span className="text-xs sm:text-[10px] font-medium">
+                    Reset View
+                  </span>
                 </Button>
                 <Button
                   variant={autoRotate ? "default" : "outline"}
@@ -349,7 +349,9 @@ export function MobileBottomNav() {
                   ) : (
                     <Play className="w-6 h-6 sm:w-5 sm:h-5" />
                   )}
-                  <span className="text-xs sm:text-[10px] font-medium">{autoRotate ? "Stop" : "Auto Spin"}</span>
+                  <span className="text-xs sm:text-[10px] font-medium">
+                    {autoRotate ? "Stop" : "Auto Spin"}
+                  </span>
                 </Button>
                 <Button
                   variant={showGrid ? "default" : "outline"}
@@ -357,7 +359,9 @@ export function MobileBottomNav() {
                   onClick={toggleGrid}
                 >
                   <Grid3x3 className="w-6 h-6 sm:w-5 sm:h-5" />
-                  <span className="text-xs sm:text-[10px] font-medium">Grid</span>
+                  <span className="text-xs sm:text-[10px] font-medium">
+                    Grid
+                  </span>
                 </Button>
                 <Button
                   variant="outline"
@@ -365,7 +369,9 @@ export function MobileBottomNav() {
                   onClick={handleScreenshot}
                 >
                   <FileImage className="w-6 h-6 sm:w-5 sm:h-5" />
-                  <span className="text-xs sm:text-[10px] font-medium">Save Image</span>
+                  <span className="text-xs sm:text-[10px] font-medium">
+                    Save Image
+                  </span>
                 </Button>
               </div>
             </div>
@@ -376,7 +382,10 @@ export function MobileBottomNav() {
       {/* Bottom Navigation Bar - Compact */}
       <div
         className="bg-card/98 backdrop-blur-lg border-t border-border/40 px-2 sm:px-4 py-2 flex items-center justify-around pb-safe relative z-50"
-        style={{ transform: "translateZ(0)", WebkitTapHighlightColor: "transparent" }}
+        style={{
+          transform: "translateZ(0)",
+          WebkitTapHighlightColor: "transparent",
+        }}
       >
         <NavButton
           icon={Palette}

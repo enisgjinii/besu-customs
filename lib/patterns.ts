@@ -26,16 +26,16 @@ export const PATTERN_CATEGORIES: {
   name: string;
   icon: string;
 }[] = [
-    { id: "school-logos", name: "School Logos", icon: "School" }, // Renamed
-    { id: "league", name: "League", icon: "Trophy" },
-    { id: "gallery", name: "Gallery", icon: "Image" },
-    { id: "abstract", name: "Abstract", icon: "Abstract" },
-    { id: "animal", name: "Animal", icon: "Animal" },
-    { id: "camo", name: "Camo", icon: "Camo" },
-    { id: "sports", name: "Sports", icon: "Sports" },
-    { id: "stripes", name: "Stripes", icon: "Stripes" },
-    { id: "geometric", name: "Geometric", icon: "Geometric" },
-  ];
+  { id: "school-logos", name: "School Logos", icon: "School" }, // Renamed
+  { id: "league", name: "League", icon: "Trophy" },
+  { id: "gallery", name: "Gallery", icon: "Image" },
+  { id: "abstract", name: "Abstract", icon: "Abstract" },
+  { id: "animal", name: "Animal", icon: "Animal" },
+  { id: "camo", name: "Camo", icon: "Camo" },
+  { id: "sports", name: "Sports", icon: "Sports" },
+  { id: "stripes", name: "Stripes", icon: "Stripes" },
+  { id: "geometric", name: "Geometric", icon: "Geometric" },
+];
 
 // Generate SVG pattern data URLs
 const createSVGDataUrl = (svg: string) =>
@@ -318,12 +318,12 @@ const camoPatterns: Pattern[] = [
         <rect fill="#4B5563" width="100" height="100"/>
         <g>
           ${Array.from({ length: 50 }, () => {
-      const x = Math.floor(Math.random() * 10) * 10;
-      const y = Math.floor(Math.random() * 10) * 10;
-      const colors = ["#1F2937", "#6B7280", "#374151"];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      return `<rect fill="${color}" x="${x}" y="${y}" width="10" height="10"/>`;
-    }).join("")}
+            const x = Math.floor(Math.random() * 10) * 10;
+            const y = Math.floor(Math.random() * 10) * 10;
+            const colors = ["#1F2937", "#6B7280", "#374151"];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            return `<rect fill="${color}" x="${x}" y="${y}" width="10" height="10"/>`;
+          }).join("")}
         </g>
       </svg>
     `),
@@ -746,11 +746,11 @@ const geometricPatterns: Pattern[] = [
       <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <rect fill="#3B82F6" width="100" height="100"/>
         ${Array.from({ length: 25 }, (_, i) => {
-      const x = (i % 5) * 20;
-      const y = Math.floor(i / 5) * 20;
-      const color = i % 2 === 0 ? "#1E3A8A" : "#60A5FA";
-      return `<rect fill="${color}" x="${x}" y="${y}" width="20" height="20"/>`;
-    }).join("")}
+          const x = (i % 5) * 20;
+          const y = Math.floor(i / 5) * 20;
+          const color = i % 2 === 0 ? "#1E3A8A" : "#60A5FA";
+          return `<rect fill="${color}" x="${x}" y="${y}" width="20" height="20"/>`;
+        }).join("")}
       </svg>
     `),
   },
@@ -3536,11 +3536,11 @@ const leaguePatterns: Pattern[] = [
           </radialGradient>
         </defs>
         ${Array.from({ length: 100 }, (_, i) => {
-      const cy = Math.random() * 100;
-      const cx = Math.random() * 100;
-      const r = Math.random() * 3;
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#4F46E5" opacity="${Math.random()}"/>`;
-    }).join("")}
+          const cy = Math.random() * 100;
+          const cx = Math.random() * 100;
+          const r = Math.random() * 3;
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#4F46E5" opacity="${Math.random()}"/>`;
+        }).join("")}
       </svg>
     `),
   },
@@ -3617,23 +3617,108 @@ const abstractPatternsUpdated: Pattern[] = [
 
 // Uploaded patterns
 const uploadedPatterns: Pattern[] = [
-  { id: "gallery-picture-1", name: "Picture 1", category: "gallery", thumbnail: "/Picture1.png" },
-  { id: "gallery-picture-2", name: "Picture 2", category: "gallery", thumbnail: "/Picture2.png" },
-  { id: "gallery-picture-3", name: "Picture 3", category: "gallery", thumbnail: "/Picture3.png" },
-  { id: "gallery-picture-4", name: "Picture 4", category: "gallery", thumbnail: "/Picture4.jpg" },
-  { id: "gallery-picture-5", name: "Picture 5", category: "gallery", thumbnail: "/Picture5.jpg" },
-  { id: "gallery-picture-6", name: "Picture 6", category: "gallery", thumbnail: "/Picture6.jpg" },
-  { id: "gallery-picture-7", name: "Picture 7", category: "gallery", thumbnail: "/Picture7.jpg" },
-  { id: "gallery-picture-8", name: "Picture 8", category: "gallery", thumbnail: "/Picture8.png" },
-  { id: "gallery-picture-9", name: "Picture 9", category: "gallery", thumbnail: "/Picture9.jpg" },
-  { id: "gallery-picture-10", name: "Picture 10", category: "gallery", thumbnail: "/Picture10.png" },
-  { id: "gallery-picture-11", name: "Picture 11", category: "gallery", thumbnail: "/Picture11.png" },
-  { id: "gallery-picture-12", name: "Picture 12", category: "gallery", thumbnail: "/Picture12.png" },
-  { id: "gallery-picture-14", name: "Picture 14", category: "gallery", thumbnail: "/Picture14.png" },
-  { id: "gallery-picture-15", name: "Picture 15", category: "gallery", thumbnail: "/Picture15.png" },
-  { id: "gallery-picture-16", name: "Picture 16", category: "gallery", thumbnail: "/Picture16.png" },
-  { id: "gallery-picture-17", name: "Picture 17", category: "gallery", thumbnail: "/Picture17.png" },
-  { id: "gallery-picture-18", name: "Picture 18", category: "gallery", thumbnail: "/Picture18.png" },
+  {
+    id: "gallery-picture-1",
+    name: "Picture 1",
+    category: "gallery",
+    thumbnail: "/Picture1.png",
+  },
+  {
+    id: "gallery-picture-2",
+    name: "Picture 2",
+    category: "gallery",
+    thumbnail: "/Picture2.png",
+  },
+  {
+    id: "gallery-picture-3",
+    name: "Picture 3",
+    category: "gallery",
+    thumbnail: "/Picture3.png",
+  },
+  {
+    id: "gallery-picture-4",
+    name: "Picture 4",
+    category: "gallery",
+    thumbnail: "/Picture4.jpg",
+  },
+  {
+    id: "gallery-picture-5",
+    name: "Picture 5",
+    category: "gallery",
+    thumbnail: "/Picture5.jpg",
+  },
+  {
+    id: "gallery-picture-6",
+    name: "Picture 6",
+    category: "gallery",
+    thumbnail: "/Picture6.jpg",
+  },
+  {
+    id: "gallery-picture-7",
+    name: "Picture 7",
+    category: "gallery",
+    thumbnail: "/Picture7.jpg",
+  },
+  {
+    id: "gallery-picture-8",
+    name: "Picture 8",
+    category: "gallery",
+    thumbnail: "/Picture8.png",
+  },
+  {
+    id: "gallery-picture-9",
+    name: "Picture 9",
+    category: "gallery",
+    thumbnail: "/Picture9.jpg",
+  },
+  {
+    id: "gallery-picture-10",
+    name: "Picture 10",
+    category: "gallery",
+    thumbnail: "/Picture10.png",
+  },
+  {
+    id: "gallery-picture-11",
+    name: "Picture 11",
+    category: "gallery",
+    thumbnail: "/Picture11.png",
+  },
+  {
+    id: "gallery-picture-12",
+    name: "Picture 12",
+    category: "gallery",
+    thumbnail: "/Picture12.png",
+  },
+  {
+    id: "gallery-picture-14",
+    name: "Picture 14",
+    category: "gallery",
+    thumbnail: "/Picture14.png",
+  },
+  {
+    id: "gallery-picture-15",
+    name: "Picture 15",
+    category: "gallery",
+    thumbnail: "/Picture15.png",
+  },
+  {
+    id: "gallery-picture-16",
+    name: "Picture 16",
+    category: "gallery",
+    thumbnail: "/Picture16.png",
+  },
+  {
+    id: "gallery-picture-17",
+    name: "Picture 17",
+    category: "gallery",
+    thumbnail: "/Picture17.png",
+  },
+  {
+    id: "gallery-picture-18",
+    name: "Picture 18",
+    category: "gallery",
+    thumbnail: "/Picture18.png",
+  },
 ];
 
 // Combine all patterns

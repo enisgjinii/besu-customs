@@ -185,7 +185,10 @@ export function AIImageGenerator() {
       {!previewMode && (
         <>
           <div className="space-y-1.5">
-            <Label htmlFor="ai-prompt" className="flex items-center gap-2 text-xs">
+            <Label
+              htmlFor="ai-prompt"
+              className="flex items-center gap-2 text-xs"
+            >
               <Sparkles className="w-3.5 h-3.5" />
               Describe your design
             </Label>
@@ -207,10 +210,11 @@ export function AIImageGenerator() {
           {/* Usage Information */}
           {usage && (
             <div
-              className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
+              className={`text-[10px] p-2 rounded-md ${
+                usage.remaining === 0
                   ? "text-destructive bg-destructive/10 border border-destructive/20"
                   : "text-muted-foreground bg-secondary/20"
-                }`}
+              }`}
             >
               <div className="flex items-center gap-1">
                 {usage.remaining === 0 ? (

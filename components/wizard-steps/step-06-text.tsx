@@ -17,17 +17,40 @@ import { v4 as uuidv4 } from "uuid";
 
 // Popular Google Fonts
 const FONT_FAMILIES = [
-  "Roboto", "Open Sans", "Montserrat", "Oswald", "Poppins", "Bebas Neue",
-  "Anton", "Lobster", "Pacifico", "Bangers", "Permanent Marker", "Russo One",
-  "Righteous", "Orbitron", "Press Start 2P", "Inter", "Outfit", "Space Grotesk",
+  "Roboto",
+  "Open Sans",
+  "Montserrat",
+  "Oswald",
+  "Poppins",
+  "Bebas Neue",
+  "Anton",
+  "Lobster",
+  "Pacifico",
+  "Bangers",
+  "Permanent Marker",
+  "Russo One",
+  "Righteous",
+  "Orbitron",
+  "Press Start 2P",
+  "Inter",
+  "Outfit",
+  "Space Grotesk",
 ];
 
 export function Step06Text() {
-  const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
-  const updateTextureLayer = useConfiguratorStore((state) => state.updateTextureLayer);
-  const removeTextureLayer = useConfiguratorStore((state) => state.removeTextureLayer);
+  const addTextureLayer = useConfiguratorStore(
+    (state) => state.addTextureLayer,
+  );
+  const updateTextureLayer = useConfiguratorStore(
+    (state) => state.updateTextureLayer,
+  );
+  const removeTextureLayer = useConfiguratorStore(
+    (state) => state.removeTextureLayer,
+  );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
-  const setSelectedTextureLayerId = useConfiguratorStore((state) => state.setSelectedTextureLayerId);
+  const setSelectedTextureLayerId = useConfiguratorStore(
+    (state) => state.setSelectedTextureLayerId,
+  );
 
   const [textInput, setTextInput] = useState("");
   const [textColor, setTextColor] = useState("#000000");
@@ -35,7 +58,9 @@ export function Step06Text() {
 
   // Load Google Fonts
   useEffect(() => {
-    const link = document.getElementById("google-fonts-link") as HTMLLinkElement;
+    const link = document.getElementById(
+      "google-fonts-link",
+    ) as HTMLLinkElement;
     if (!link) {
       const newLink = document.createElement("link");
       newLink.id = "google-fonts-link";
@@ -50,7 +75,7 @@ export function Step06Text() {
       toast.error("Please enter some text");
       return;
     }
-    
+
     const newId = uuidv4();
     const newLayer = {
       id: newId,
@@ -84,7 +109,7 @@ export function Step06Text() {
         return;
       }
     }
-    
+
     try {
       removeTextureLayer(id);
       if (selectedTextId === id) {
@@ -114,7 +139,9 @@ export function Step06Text() {
     <div className="space-y-2">
       <div>
         <h2 className="text-sm font-semibold">Add Text</h2>
-        <p className="text-xs text-muted-foreground">Add custom text to your design</p>
+        <p className="text-xs text-muted-foreground">
+          Add custom text to your design
+        </p>
       </div>
 
       {/* Quick Add */}
@@ -132,7 +159,11 @@ export function Step06Text() {
           onChange={(e) => setTextColor(e.target.value)}
           className="w-9 h-9 p-0.5 border rounded cursor-pointer shrink-0"
         />
-        <Button onClick={handleAddText} size="icon" className="h-9 w-9 shrink-0">
+        <Button
+          onClick={handleAddText}
+          size="icon"
+          className="h-9 w-9 shrink-0"
+        >
           <Plus className="w-4 h-4" />
         </Button>
       </div>
@@ -148,13 +179,20 @@ export function Step06Text() {
                 setSelectedTextureLayerId(layer.id);
               }}
               className={`p-2 rounded-lg border cursor-pointer transition-colors ${
-                selectedTextId === layer.id ? "bg-primary/10 border-primary" : "bg-card border-border hover:border-primary/50"
+                selectedTextId === layer.id
+                  ? "bg-primary/10 border-primary"
+                  : "bg-card border-border hover:border-primary/50"
               }`}
             >
               <div className="flex items-center gap-2 justify-between">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-4 h-4 rounded flex-shrink-0 border" style={{ backgroundColor: layer.textColor }} />
-                  <span className="text-xs font-medium truncate">{layer.text}</span>
+                  <div
+                    className="w-4 h-4 rounded flex-shrink-0 border"
+                    style={{ backgroundColor: layer.textColor }}
+                  />
+                  <span className="text-xs font-medium truncate">
+                    {layer.text}
+                  </span>
                 </div>
                 <Button
                   size="icon"
@@ -174,14 +212,24 @@ export function Step06Text() {
                   {/* Font */}
                   <Select
                     value={layer.fontFamily || "Roboto"}
-                    onValueChange={(val) => updateTextureLayer(layer.id, { fontFamily: val })}
+                    onValueChange={(val) =>
+                      updateTextureLayer(layer.id, { fontFamily: val })
+                    }
                   >
-                    <SelectTrigger className="h-8 text-xs" style={{ fontFamily: layer.fontFamily }}>
+                    <SelectTrigger
+                      className="h-8 text-xs"
+                      style={{ fontFamily: layer.fontFamily }}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-[200px]">
                       {FONT_FAMILIES.map((font) => (
-                        <SelectItem key={font} value={font} style={{ fontFamily: font }} className="text-sm">
+                        <SelectItem
+                          key={font}
+                          value={font}
+                          style={{ fontFamily: font }}
+                          className="text-sm"
+                        >
                           {font}
                         </SelectItem>
                       ))}
@@ -193,20 +241,28 @@ export function Step06Text() {
                     <input
                       type="color"
                       value={layer.textColor || "#000000"}
-                      onChange={(e) => updateTextureLayer(layer.id, { textColor: e.target.value })}
+                      onChange={(e) =>
+                        updateTextureLayer(layer.id, {
+                          textColor: e.target.value,
+                        })
+                      }
                       className="w-8 h-8 p-0.5 border rounded cursor-pointer"
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => decreaseSize(layer.id, layer.fontSize || 80)}
+                      onClick={() =>
+                        decreaseSize(layer.id, layer.fontSize || 80)
+                      }
                       className="h-7 w-7"
                     >
                       <Minus className="w-3 h-3" />
                     </Button>
                     <Slider
                       value={[layer.fontSize || 80]}
-                      onValueChange={(v) => updateTextureLayer(layer.id, { fontSize: v[0] })}
+                      onValueChange={(v) =>
+                        updateTextureLayer(layer.id, { fontSize: v[0] })
+                      }
                       min={20}
                       max={200}
                       step={5}
@@ -215,12 +271,16 @@ export function Step06Text() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => increaseSize(layer.id, layer.fontSize || 80)}
+                      onClick={() =>
+                        increaseSize(layer.id, layer.fontSize || 80)
+                      }
                       className="h-7 w-7"
                     >
                       <Plus className="w-3 h-3" />
                     </Button>
-                    <span className="text-[10px] text-muted-foreground w-10">{layer.fontSize}px</span>
+                    <span className="text-[10px] text-muted-foreground w-10">
+                      {layer.fontSize}px
+                    </span>
                   </div>
 
                   {/* Quick Position Buttons */}
@@ -236,9 +296,16 @@ export function Step06Text() {
                         key={label}
                         size="sm"
                         variant={
-                          layer.position?.[0] === pos[0] && layer.position?.[1] === pos[1] ? "default" : "outline"
+                          layer.position?.[0] === pos[0] &&
+                          layer.position?.[1] === pos[1]
+                            ? "default"
+                            : "outline"
                         }
-                        onClick={() => updateTextureLayer(layer.id, { position: pos as [number, number, number] })}
+                        onClick={() =>
+                          updateTextureLayer(layer.id, {
+                            position: pos as [number, number, number],
+                          })
+                        }
                         className="text-[9px] h-6 px-1"
                       >
                         {label}

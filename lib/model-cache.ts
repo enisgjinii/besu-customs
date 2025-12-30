@@ -17,7 +17,7 @@ interface GLTFResult {
 
 /**
  * Model Cache System for Three.js
- * 
+ *
  * Provides:
  * - LRU cache for loaded GLTF models
  * - Memory management to prevent GC during editing
@@ -62,7 +62,7 @@ class ModelCache {
       this.gltfLoader = new GLTFLoader();
       this.dracoLoader = new DRACOLoader();
       this.dracoLoader.setDecoderPath(
-        "https://www.gstatic.com/draco/versioned/decoders/1.5.6/"
+        "https://www.gstatic.com/draco/versioned/decoders/1.5.6/",
       );
       this.dracoLoader.setDecoderConfig({ type: "js" });
       this.gltfLoader.setDRACOLoader(this.dracoLoader);
@@ -75,11 +75,11 @@ class ModelCache {
    */
   private estimateModelSize(gltf: GLTFResult): number {
     let size = 0;
-    
+
     gltf.scene.traverse((node) => {
       if ((node as THREE.Mesh).isMesh) {
         const mesh = node as THREE.Mesh;
-        
+
         // Geometry size
         if (mesh.geometry) {
           const geo = mesh.geometry;
@@ -96,13 +96,13 @@ class ModelCache {
             size += geo.index.array.byteLength;
           }
         }
-        
+
         // Material textures
         if (mesh.material) {
-          const materials = Array.isArray(mesh.material) 
-            ? mesh.material 
+          const materials = Array.isArray(mesh.material)
+            ? mesh.material
             : [mesh.material];
-          
+
           materials.forEach((mat) => {
             if ((mat as THREE.MeshStandardMaterial).map) {
               const tex = (mat as THREE.MeshStandardMaterial).map;
@@ -116,7 +116,7 @@ class ModelCache {
         }
       }
     });
-    
+
     return size;
   }
 
@@ -138,9 +138,12 @@ class ModelCache {
    */
   private evictIfNeeded(): void {
     const maxMemoryBytes = this.config.maxMemoryMB * 1024 * 1024;
-    
+
     // Check if we need to evict
-    if (this.cache.size <= this.config.maxModels && this.totalMemory <= maxMemoryBytes) {
+    if (
+      this.cache.size <= this.config.maxModels &&
+      this.totalMemory <= maxMemoryBytes
+    ) {
       return;
     }
 
@@ -151,10 +154,13 @@ class ModelCache {
 
     // Evict until we're under limits
     for (const [key, cached] of entries) {
-      if (this.cache.size <= this.config.maxModels && this.totalMemory <= maxMemoryBytes) {
+      if (
+        this.cache.size <= this.config.maxModels &&
+        this.totalMemory <= maxMemoryBytes
+      ) {
         break;
       }
-      
+
       console.log(`🗑️ Evicting cached model: ${key}`);
       this.disposeModel(cached.gltf);
       this.totalMemory -= cached.size;
@@ -169,16 +175,16 @@ class ModelCache {
     gltf.scene.traverse((node) => {
       if ((node as THREE.Mesh).isMesh) {
         const mesh = node as THREE.Mesh;
-        
+
         if (mesh.geometry) {
           mesh.geometry.dispose();
         }
-        
+
         if (mesh.material) {
-          const materials = Array.isArray(mesh.material) 
-            ? mesh.material 
+          const materials = Array.isArray(mesh.material)
+            ? mesh.material
             : [mesh.material];
-          
+
           materials.forEach((mat) => {
             // Dispose textures
             Object.values(mat).forEach((value) => {
@@ -196,9 +202,12 @@ class ModelCache {
   /**
    * Load a model (from cache or network)
    */
-  async load(url: string, onProgress?: (percent: number) => void): Promise<GLTFResult> {
+  async load(
+    url: string,
+    onProgress?: (percent: number) => void,
+  ): Promise<GLTFResult> {
     const cacheKey = this.normalizeUrl(url);
-    
+
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached) {
@@ -218,7 +227,7 @@ class ModelCache {
     // Load from network
     console.log(`📥 Loading model: ${url}`);
     const loader = this.initializeLoaders();
-    
+
     // Encode URL if needed
     const encodedUrl = this.isUrlEncoded(url) ? url : encodeURI(url);
 
@@ -236,9 +245,9 @@ class ModelCache {
             parser: gltf.parser,
             userData: gltf.userData,
           };
-          
+
           const size = this.estimateModelSize(result);
-          
+
           // Add to cache
           this.cache.set(cacheKey, {
             gltf: result,
@@ -248,12 +257,14 @@ class ModelCache {
             refCount: 1,
           });
           this.totalMemory += size;
-          
-          console.log(`✅ Cached model: ${url} (${(size / 1024 / 1024).toFixed(2)} MB)`);
-          
+
+          console.log(
+            `✅ Cached model: ${url} (${(size / 1024 / 1024).toFixed(2)} MB)`,
+          );
+
           // Evict old models if needed
           this.evictIfNeeded();
-          
+
           this.loadingPromises.delete(cacheKey);
           resolve(result);
         },
@@ -265,7 +276,7 @@ class ModelCache {
         (error) => {
           this.loadingPromises.delete(cacheKey);
           reject(error);
-        }
+        },
       );
     });
 
@@ -300,7 +311,7 @@ class ModelCache {
    */
   preload(url: string): void {
     if (!this.config.preloadEnabled) return;
-    
+
     const cacheKey = this.normalizeUrl(url);
     if (this.cache.has(cacheKey) || this.loadingPromises.has(cacheKey)) {
       return; // Already cached or loading
@@ -329,9 +340,9 @@ class ModelCache {
   /**
    * Get cache statistics
    */
-  getStats(): { 
-    cachedModels: number; 
-    totalMemoryMB: number; 
+  getStats(): {
+    cachedModels: number;
+    totalMemoryMB: number;
     models: string[];
   } {
     return {
@@ -390,8 +401,8 @@ export type { GLTFResult };
  * Hook-friendly function to load a model with caching
  */
 export async function loadCachedModel(
-  url: string, 
-  onProgress?: (percent: number) => void
+  url: string,
+  onProgress?: (percent: number) => void,
 ): Promise<GLTFResult> {
   return getModelCache().load(url, onProgress);
 }

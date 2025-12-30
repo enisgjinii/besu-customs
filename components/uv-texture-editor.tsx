@@ -523,22 +523,23 @@ export function UVTextureEditor() {
       const deleteHandler = (eventData: any, transform: any) => {
         const target = transform.target;
         const canvasObj = target.canvas;
-        const removeTextureLayer = useConfiguratorStore.getState().removeTextureLayer;
-        
+        const removeTextureLayer =
+          useConfiguratorStore.getState().removeTextureLayer;
+
         // Add confirmation on mobile for better UX
         if (window.innerWidth < 768) {
           if (!confirm("Delete this design? This action cannot be undone.")) {
             return false;
           }
         }
-        
+
         // Remove from store if it has a UUID (texture layer)
         if (target._uuid) {
           removeTextureLayer(target._uuid);
           console.log("🗑️ Removed texture layer from store:", target._uuid);
           toast.success("Design deleted");
         }
-        
+
         canvasObj.remove(target);
         canvasObj.requestRenderAll();
         return true;
@@ -1280,24 +1281,26 @@ export function UVTextureEditor() {
     if (!fabricCanvasRef.current) return;
     const canvas = fabricCanvasRef.current;
     const activeObjects = canvas.getActiveObjects();
-    const removeTextureLayer = useConfiguratorStore.getState().removeTextureLayer;
+    const removeTextureLayer =
+      useConfiguratorStore.getState().removeTextureLayer;
 
     if (activeObjects.length > 0) {
       // Add confirmation on mobile for better UX
       if (window.innerWidth < 768) {
         const count = activeObjects.length;
-        const message = count === 1 
-          ? "Delete this design? This action cannot be undone."
-          : `Delete ${count} designs? This action cannot be undone.`;
+        const message =
+          count === 1
+            ? "Delete this design? This action cannot be undone."
+            : `Delete ${count} designs? This action cannot be undone.`;
         if (!confirm(message)) {
           return;
         }
       }
-      
+
       activeObjects.forEach((obj: any) => {
         // Remove from canvas
         canvas.remove(obj);
-        
+
         // Remove from store if it has a UUID (texture layer)
         if (obj._uuid) {
           removeTextureLayer(obj._uuid);

@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useConfiguratorStore } from "@/lib/store";
-import { Copy, FlipHorizontal, RotateCw, Trash2, ZoomIn, Minus, Plus } from "lucide-react";
+import {
+  Copy,
+  FlipHorizontal,
+  RotateCw,
+  Trash2,
+  ZoomIn,
+  Minus,
+  Plus,
+} from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -143,7 +151,9 @@ export function LayerControls({
           onClick={() => {
             // Add confirmation on mobile for better UX
             if (window.innerWidth < 768) {
-              if (!confirm("Delete this design? This action cannot be undone.")) {
+              if (
+                !confirm("Delete this design? This action cannot be undone.")
+              ) {
                 return;
               }
             }

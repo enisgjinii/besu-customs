@@ -49,7 +49,7 @@ function generateStripeTexture(
   color: string,
   pattern: string,
   width: number,
-  side: "left" | "right" | "both"
+  side: "left" | "right" | "both",
 ): string {
   const SIZE = 1024; // Higher resolution for better quality
   const canvas = document.createElement("canvas");
@@ -101,7 +101,8 @@ function generateStripeTexture(
         const frequency = SIZE / 80;
         ctx.moveTo(x + stripeWidth / 2, 0);
         for (let y = 0; y <= SIZE; y += 2) {
-          const waveX = x + stripeWidth / 2 + Math.sin(y / frequency) * amplitude;
+          const waveX =
+            x + stripeWidth / 2 + Math.sin(y / frequency) * amplitude;
           ctx.lineTo(waveX, y);
         }
         ctx.lineTo(x + stripeWidth, SIZE);
@@ -120,7 +121,12 @@ function generateStripeTexture(
         ctx.fillRect(x, 0, stripeWidth, SIZE);
         break;
       case "embossed":
-        const embossGradient = ctx.createLinearGradient(x, 0, x + stripeWidth, 0);
+        const embossGradient = ctx.createLinearGradient(
+          x,
+          0,
+          x + stripeWidth,
+          0,
+        );
         embossGradient.addColorStop(0, "rgba(255,255,255,0.3)");
         embossGradient.addColorStop(0.5, color);
         embossGradient.addColorStop(1, "rgba(0,0,0,0.3)");
@@ -146,22 +152,22 @@ function generateStripeTexture(
     // Left edge positions
     drawStripe(0);
     drawStripe(Math.round(SIZE * 0.05));
-    drawStripe(Math.round(SIZE * 0.10));
+    drawStripe(Math.round(SIZE * 0.1));
     drawStripe(Math.round(SIZE * 0.15));
     // Mid-left positions (some models map sides here)
     drawStripe(Math.round(SIZE * 0.25));
-    drawStripe(Math.round(SIZE * 0.30));
+    drawStripe(Math.round(SIZE * 0.3));
     drawStripe(Math.round(SIZE * 0.35));
   }
   if (side === "right" || side === "both") {
     // Right edge positions
     drawStripe(SIZE - stripeWidth);
     drawStripe(Math.round(SIZE * 0.95) - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.90) - stripeWidth);
+    drawStripe(Math.round(SIZE * 0.9) - stripeWidth);
     drawStripe(Math.round(SIZE * 0.85) - stripeWidth);
     // Mid-right positions
     drawStripe(Math.round(SIZE * 0.75) - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.70) - stripeWidth);
+    drawStripe(Math.round(SIZE * 0.7) - stripeWidth);
     drawStripe(Math.round(SIZE * 0.65) - stripeWidth);
   }
 
@@ -171,9 +177,13 @@ function generateStripeTexture(
 export function Step03bTrimLines() {
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
-  const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
+  const addTextureLayer = useConfiguratorStore(
+    (state) => state.addTextureLayer,
+  );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
-  const removeTextureLayer = useConfiguratorStore((state) => state.removeTextureLayer);
+  const removeTextureLayer = useConfiguratorStore(
+    (state) => state.removeTextureLayer,
+  );
 
   const [trimPattern, setTrimPattern] = useState("solid");
   const [trimColor, setTrimColor] = useState("#000000");
@@ -193,11 +203,24 @@ export function Step03bTrimLines() {
     }
 
     // Handle side stripe locations as texture layers
-    if (trimLocation === "left-side-stripe" || trimLocation === "right-side-stripe" || trimLocation === "both-side-stripes") {
-      const side = trimLocation === "left-side-stripe" ? "left" :
-        trimLocation === "right-side-stripe" ? "right" : "both";
+    if (
+      trimLocation === "left-side-stripe" ||
+      trimLocation === "right-side-stripe" ||
+      trimLocation === "both-side-stripes"
+    ) {
+      const side =
+        trimLocation === "left-side-stripe"
+          ? "left"
+          : trimLocation === "right-side-stripe"
+            ? "right"
+            : "both";
 
-      const stripeTexture = generateStripeTexture(trimColor, trimPattern, trimWidth, side);
+      const stripeTexture = generateStripeTexture(
+        trimColor,
+        trimPattern,
+        trimWidth,
+        side,
+      );
 
       const layerId = `side-stripe-${side}-${uuidv4().slice(0, 8)}`;
       addTextureLayer({
@@ -215,7 +238,9 @@ export function Step03bTrimLines() {
         scale: [1, 1, 1],
       });
 
-      toast.success(`Side stripe added! Visible on ${side === "both" ? "both sides" : side + " side"} of jersey/pants.`);
+      toast.success(
+        `Side stripe added! Visible on ${side === "both" ? "both sides" : side + " side"} of jersey/pants.`,
+      );
       return;
     }
 
@@ -230,30 +255,39 @@ export function Step03bTrimLines() {
         (trimLocation === "waist" && sectionName.includes("waist")) ||
         (trimLocation === "bottom" && sectionName.includes("bottom")) ||
         (trimLocation === "placket" && sectionName.includes("placket")) ||
-        (trimLocation === "sides" && (sectionName.includes("side") || sectionName.includes("panel"))) ||
+        (trimLocation === "sides" &&
+          (sectionName.includes("side") || sectionName.includes("panel"))) ||
         // Also match trim/piping sections for jersey top/bottom
-        (sectionName.includes("trim") || sectionName.includes("piping"))
+        sectionName.includes("trim") ||
+        sectionName.includes("piping")
       );
     });
 
     if (sectionsToUpdate.length === 0) {
       toast.error(
-        `No sections found matching "${TRIM_LOCATIONS.find(l => l.id === trimLocation)?.name}". Try "Side Stripes" for jersey/pants side lines.`,
+        `No sections found matching "${TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name}". Try "Side Stripes" for jersey/pants side lines.`,
       );
       return;
     }
 
     try {
       sectionsToUpdate.forEach((section) => {
-        console.log(`🎨 Applying trim to section: "${section.name}" (${section.id})`);
+        console.log(
+          `🎨 Applying trim to section: "${section.name}" (${section.id})`,
+        );
         updateSection(section.id, {
           trimDesign: trimPattern,
           trimColor: trimColor,
         });
       });
 
-      console.log(`✅ Trim applied to ${sectionsToUpdate.length} sections:`, sectionsToUpdate.map(s => s.name));
-      toast.success(`Trim applied to ${sectionsToUpdate.length} section(s): ${sectionsToUpdate.map(s => s.name).join(", ")}`);
+      console.log(
+        `✅ Trim applied to ${sectionsToUpdate.length} sections:`,
+        sectionsToUpdate.map((s) => s.name),
+      );
+      toast.success(
+        `Trim applied to ${sectionsToUpdate.length} section(s): ${sectionsToUpdate.map((s) => s.name).join(", ")}`,
+      );
     } catch (error) {
       console.error("❌ Failed to apply trim:", error);
       toast.error("Failed to apply trim. Please try again.");
@@ -264,7 +298,9 @@ export function Step03bTrimLines() {
   const sectionsWithTrims = sections.filter((s) => s.trimDesign);
 
   // Show side stripe layers
-  const sideStripeLayers = textureLayers.filter((l) => l.name.includes("Side Stripe"));
+  const sideStripeLayers = textureLayers.filter((l) =>
+    l.name.includes("Side Stripe"),
+  );
 
   return (
     <div className="space-y-6">
@@ -286,8 +322,11 @@ export function Step03bTrimLines() {
               width: "80%",
               borderRadius: trimPattern === "wave" ? "50% 50%" : "0",
               boxShadow:
-                trimPattern === "shadow" ? "0 2px 4px rgba(0,0,0,0.2)" :
-                  trimPattern === "embossed" ? "inset 0 2px 4px rgba(0,0,0,0.3)" : "",
+                trimPattern === "shadow"
+                  ? "0 2px 4px rgba(0,0,0,0.2)"
+                  : trimPattern === "embossed"
+                    ? "inset 0 2px 4px rgba(0,0,0,0.3)"
+                    : "",
               backgroundImage:
                 trimPattern === "dashed"
                   ? `repeating-linear-gradient(90deg, ${trimColor} 0, ${trimColor} 10px, transparent 10px, transparent 20px)`
@@ -302,7 +341,7 @@ export function Step03bTrimLines() {
           />
         </div>
         <p className="text-xs text-muted-foreground text-center">
-          {TRIM_PATTERNS.find(p => p.id === trimPattern)?.description}
+          {TRIM_PATTERNS.find((p) => p.id === trimPattern)?.description}
         </p>
       </div>
 
@@ -373,9 +412,12 @@ export function Step03bTrimLines() {
       </div>
 
       {/* Apply Button */}
-      <Button onClick={handleAddTrim} className="w-full h-12 touch-manipulation">
+      <Button
+        onClick={handleAddTrim}
+        className="w-full h-12 touch-manipulation"
+      >
         <Plus className="w-4 h-4 mr-2" />
-        Add Trim to {TRIM_LOCATIONS.find(l => l.id === trimLocation)?.name}
+        Add Trim to {TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name}
       </Button>
 
       {/* Show Applied Trims */}
@@ -500,7 +542,9 @@ export function Step03bTrimLines() {
       )}
 
       <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded text-xs text-blue-900 dark:text-blue-200">
-        <strong>💡 Tip:</strong> Use "Side Stripes" options to add vertical stripes on the sides of jerseys and pants. These appear as texture overlays on the garment.
+        <strong>💡 Tip:</strong> Use "Side Stripes" options to add vertical
+        stripes on the sides of jerseys and pants. These appear as texture
+        overlays on the garment.
       </div>
     </div>
   );

@@ -62,9 +62,15 @@ export function Step08AIImages() {
         ];
 
         // Average the sample colors
-        const rBg = Math.round(samplePoints.reduce((s, c) => s + c[0], 0) / samplePoints.length);
-        const gBg = Math.round(samplePoints.reduce((s, c) => s + c[1], 0) / samplePoints.length);
-        const bBg = Math.round(samplePoints.reduce((s, c) => s + c[2], 0) / samplePoints.length);
+        const rBg = Math.round(
+          samplePoints.reduce((s, c) => s + c[0], 0) / samplePoints.length,
+        );
+        const gBg = Math.round(
+          samplePoints.reduce((s, c) => s + c[1], 0) / samplePoints.length,
+        );
+        const bBg = Math.round(
+          samplePoints.reduce((s, c) => s + c[2], 0) / samplePoints.length,
+        );
 
         // Higher tolerance for better background removal
         const tolerance = 80;
@@ -134,7 +140,7 @@ export function Step08AIImages() {
           scale: [scale, scale, 1],
           flipX: false,
         });
-        
+
         setSelectedTextureLayerId(newId);
         toast.success("AI Image added! Adjust size and position as needed.");
       } catch (err) {
@@ -176,20 +182,22 @@ export function Step08AIImages() {
           </span>
           <div className="max-h-[100px] overflow-y-auto space-y-1.5">
             {aiLayers.map((layer) => (
-              <div 
-                key={layer.id} 
+              <div
+                key={layer.id}
                 className="p-2 rounded-lg border bg-card"
                 onClick={() => setSelectedTextureLayerId(layer.id)}
               >
                 <div className="flex items-center gap-2 mb-1.5">
                   {layer.imageUrl && (
-                    <img 
-                      src={layer.imageUrl} 
-                      alt={layer.name} 
-                      className="w-8 h-8 object-contain rounded bg-muted/50" 
+                    <img
+                      src={layer.imageUrl}
+                      alt={layer.name}
+                      className="w-8 h-8 object-contain rounded bg-muted/50"
                     />
                   )}
-                  <span className="text-xs font-medium truncate flex-1">{layer.name}</span>
+                  <span className="text-xs font-medium truncate flex-1">
+                    {layer.name}
+                  </span>
                 </div>
                 <LayerControls layerId={layer.id} compact />
               </div>

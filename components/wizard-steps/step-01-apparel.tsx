@@ -30,19 +30,22 @@ export function Step01Apparel() {
   }, []);
 
   // Preload first few models when dropdown opens
-  const handleDropdownOpen = useCallback((open: boolean) => {
-    if (open && products.length > 0) {
-      // Preload first 3 models for instant switching
-      const modelsToPreload = products
-        .filter(p => p.modelUrl)
-        .slice(0, 3)
-        .map(p => p.modelUrl!);
-      
-      modelsToPreload.forEach(url => {
-        getModelCache().preload(url);
-      });
-    }
-  }, [products]);
+  const handleDropdownOpen = useCallback(
+    (open: boolean) => {
+      if (open && products.length > 0) {
+        // Preload first 3 models for instant switching
+        const modelsToPreload = products
+          .filter((p) => p.modelUrl)
+          .slice(0, 3)
+          .map((p) => p.modelUrl!);
+
+        modelsToPreload.forEach((url) => {
+          getModelCache().preload(url);
+        });
+      }
+    },
+    [products],
+  );
 
   // Group products by category
   const groupedProducts = products
@@ -91,11 +94,13 @@ export function Step01Apparel() {
     <div className="space-y-3">
       <div>
         <h2 className="text-sm font-semibold">Choose Apparel</h2>
-        <p className="text-xs text-muted-foreground">Select a product to customize</p>
+        <p className="text-xs text-muted-foreground">
+          Select a product to customize
+        </p>
       </div>
 
-      <Select 
-        value={selectedProductId || ""} 
+      <Select
+        value={selectedProductId || ""}
         onValueChange={setSelectedProduct}
         onOpenChange={handleDropdownOpen}
       >
@@ -109,9 +114,9 @@ export function Step01Apparel() {
                 {category}
               </div>
               {items.map((product) => (
-                <SelectItem 
-                  key={product.id} 
-                  value={product.id} 
+                <SelectItem
+                  key={product.id}
+                  value={product.id}
                   className="text-sm py-2"
                   onMouseEnter={() => handleProductHover(product)}
                   onFocus={() => handleProductHover(product)}

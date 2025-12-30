@@ -82,7 +82,9 @@ export function PatternSelector({
   );
 
   const currentPatterns = getPatternsByCategory(activeCategory);
-  const categoriesToShow = lockedCategory ? [{ id: lockedCategory, name: lockedCategory }] : FILTERED_CATEGORIES;
+  const categoriesToShow = lockedCategory
+    ? [{ id: lockedCategory, name: lockedCategory }]
+    : FILTERED_CATEGORIES;
   const showTabs = !lockedCategory && categoriesToShow.length > 1;
 
   return (
@@ -167,7 +169,7 @@ function CategoryGrid({
                 src={pattern.thumbnail}
                 alt={pattern.name}
                 className="w-full h-full object-cover"
-                style={{ 
+                style={{
                   imageRendering: "auto",
                   WebkitBackfaceVisibility: "hidden",
                   backfaceVisibility: "hidden",
