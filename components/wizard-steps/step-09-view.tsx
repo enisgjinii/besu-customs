@@ -34,6 +34,38 @@ export function Step09View() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [highRes, setHighRes] = useState(true); // Enable high-res by default
 
+  // Helper to record video as a Promise
+  const recordVideo = async (canvas: HTMLCanvasElement): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      // Small delay to ensure UI updates
+      setTimeout(() => {
+        const stream = canvas.captureStream(30);
+        const chunks: BlobPart[] = [];
+        const mimeType = MediaRecorder.isTypeSupported("video/mp4") ? "video/mp4" : "video/webm";
+        const recorder = new MediaRecorder(stream, { mimeType });
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: mimeType });
+          resolve(blob);
+          setAutoRotate(false); // Stop rotation
+        };
+
+        // Start recording and rotation
+        setAutoRotate(true);
+        recorder.start();
+
+        // Record for 4 seconds (approx 360 deg)
+        setTimeout(() => {
+          recorder.stop();
+        }, 4000);
+      }, 100);
+    });
+  };
+
   const handleSendEmail = async (data: { recipientEmail: string; clientEmails: string[]; message: string }) => {
     setIsSendingEmail(true);
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
@@ -45,17 +77,120 @@ export function Step09View() {
     }
 
     try {
-      // Capture PNG for email
-      const dataUrl = canvas.toDataURL("image/png", 1.0);
+      toast.info("Generating assets... (This may take a moment)");
 
-      // Prepare files - for now sending just the main preview
-      // In a real scenario, you might generate PDF on the server or multiple views
+      // 1. Capture High-Res Image
+      const imgDataUrl = canvas.toDataURL("image/png", 1.0);
+
+      // 2. Generate Video
+      let videoBlob: Blob | null = null;
+      try {
+        toast.info("Recording 360° video preview...");
+        videoBlob = await recordVideo(canvas);
+      } catch (e) {
+        console.error("Video generation failed:", e);
+        toast.error("Could not generate video preview, skipping...");
+      }
+
+      // 3. Generate PDF Spec Sheet
+      toast.info("Generating PDF Spec Sheet...");
+      // Dynamic import to avoid SSR issues
+      const jsPDFModule = await import("jspdf");
+      const jsPDF = jsPDFModule.default;
+      const doc = new jsPDF();
+
+      // Header
+      doc.setFontSize(22);
+      doc.text("Besu Customs - Design Spec", 20, 20);
+
+      doc.setFontSize(12);
+      doc.text(`Design Name: ${fileName}`, 20, 30);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 36);
+
+      // Design Preview Image in PDF
+      // Aspect ratio of canvas
+      const imgProps = doc.getImageProperties(imgDataUrl);
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const imgWidth = 100;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      doc.addImage(imgDataUrl, "PNG", 20, 45, imgWidth, imgHeight);
+
+      // Material Details
+      let yPos = 45 + imgHeight + 15;
+      doc.setFontSize(16);
+      doc.text("Material Configuration", 20, yPos);
+      yPos += 10;
+
+      doc.setFontSize(10);
+      const sections = useConfiguratorStore.getState().sections;
+      sections.forEach((section) => {
+        const colorName = section.color; // You could map hex to name if you had a utility
+        doc.text(`${section.name}: ${colorName}`, 20, yPos);
+        yPos += 6;
+      });
+
+      // Decals / Elements
+      yPos += 10;
+      doc.setFontSize(16);
+      doc.text("Applied Elements", 20, yPos);
+      yPos += 10;
+
+      doc.setFontSize(10);
+      if (textureLayers.length === 0) {
+        doc.text("No custom elements applied.", 20, yPos);
+      } else {
+        textureLayers.forEach((layer, idx) => {
+          let desc = `${idx + 1}. [${layer.type.toUpperCase()}]`;
+          if (layer.type === 'text') desc += ` Text: "${layer.text}"`;
+          if (layer.type === 'image') desc += ` Image Upload`;
+          doc.text(desc, 20, yPos);
+          yPos += 6;
+        });
+      }
+
+      // Notes
+      if (deliveryNotes) {
+        yPos += 10;
+        doc.setFontSize(16);
+        doc.text("Production Notes", 20, yPos);
+        yPos += 10;
+        doc.setFontSize(10);
+        const splitNotes = doc.splitTextToSize(deliveryNotes, 170);
+        doc.text(splitNotes, 20, yPos);
+      }
+
+      const pdfBase64 = doc.output("datauristring");
+
+      // Prepare files payload
       const files = [
         {
-          filename: `${fileName}.png`,
-          content: dataUrl
+          filename: `${fileName}-preview.png`,
+          content: imgDataUrl, // Data URL
+        },
+        {
+          filename: `${fileName}-specs.pdf`,
+          content: pdfBase64, // Data URL
         }
       ];
+
+      // Convert video blob to base64 if it exists
+      if (videoBlob) {
+        const reader = new FileReader();
+        reader.readAsDataURL(videoBlob);
+        await new Promise<void>((resolve) => {
+          reader.onloadend = () => {
+            if (reader.result) {
+              files.push({
+                filename: `${fileName}-360.${videoBlob!.type === 'video/mp4' ? 'mp4' : 'webm'}`,
+                content: reader.result as string
+              });
+            }
+            resolve();
+          };
+        });
+      }
+
+      toast.info("Sending email...");
 
       const response = await fetch("/api/send-design", {
         method: "POST",
@@ -64,23 +199,30 @@ export function Step09View() {
           recipientEmail: data.recipientEmail,
           clientEmails: data.clientEmails,
           files,
-          message: data.message
+          message: data.message,
+          designName: fileName, // Pass extra metadata for template
+          orderDetails: {
+            materials: sections.map(s => ({ name: s.name, color: s.color })),
+            decals: textureLayers.length,
+            notes: deliveryNotes
+          }
         })
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        toast.success("Email sent successfully!");
+        toast.success("Design package sent successfully!");
         setEmailOpen(false);
       } else {
         toast.error(result.error || "Failed to send email");
       }
     } catch (e) {
       console.error(e);
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred while processing assets");
     } finally {
       setIsSendingEmail(false);
+      setAutoRotate(false);
     }
   };
 
