@@ -145,6 +145,21 @@ export function Step02Colors() {
     );
   }
 
+  // Scroll handlers (Must be unconditional)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -200, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 200, behavior: "smooth" });
+    }
+  };
+
   // Mobile layout - horizontal parts pills, then color grid below
   if (isMobile) {
     return (
@@ -247,20 +262,6 @@ export function Step02Colors() {
   }
 
   // Desktop layout
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -200, behavior: "smooth" });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 200, behavior: "smooth" });
-    }
-  };
-
   return (
     <div className="space-y-3 w-full">
       {/* Section pills with navigation */}
