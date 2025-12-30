@@ -188,44 +188,42 @@ export function Step03bTrimLines() {
       return;
     }
 
-    // Handle side stripe locations as texture layers
+    // Handle side stripe locations by finding and coloring side panel sections
+    // (Using texture overlays was causing the entire model to get striped)
     if (
       trimLocation === "left-side-stripe" ||
       trimLocation === "right-side-stripe" ||
       trimLocation === "both-side-stripes"
     ) {
-      const side =
-        trimLocation === "left-side-stripe"
-          ? "left"
-          : trimLocation === "right-side-stripe"
-            ? "right"
-            : "both";
+      // Find sections that are related to side panels
+      const sideSections = sections.filter((s) => {
+        const name = s.name.toLowerCase();
+        return (
+          name.includes("side") ||
+          name.includes("panel") ||
+          name.includes("stripe")
+        );
+      });
 
-      const stripeTexture = generateStripeTexture(
-        trimColor,
-        trimPattern,
-        trimWidth,
-        side,
-      );
+      if (sideSections.length === 0) {
+        toast.error(
+          "No side panel sections found on this model. Side stripes may not be available for this garment type."
+        );
+        return;
+      }
 
-      const layerId = `side-stripe-${side}-${uuidv4().slice(0, 8)}`;
-      addTextureLayer({
-        id: layerId,
-        name: `Side Stripe (${side})`,
-        type: "pattern",
-        visible: true,
-        locked: false,
-        opacity: 1,
-        blendMode: "normal", // Use normal blend so transparent areas stay transparent
-        order: textureLayers.length,
-        imageUrl: stripeTexture,
-        position: [0.5, 0.5, 0],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
+      // Apply the trim color to side panel sections
+      sideSections.forEach((section) => {
+        console.log(`🎨 Applying side stripe color to: "${section.name}"`);
+        updateSection(section.id, {
+          color: trimColor,
+          trimDesign: trimPattern,
+          trimColor: trimColor,
+        });
       });
 
       toast.success(
-        `Side stripe added! Visible on ${side === "both" ? "both sides" : side + " side"} of jersey/pants.`,
+        `Side stripe color applied to ${sideSections.length} panel(s): ${sideSections.map((s) => s.name).join(", ")}`
       );
       return;
     }
