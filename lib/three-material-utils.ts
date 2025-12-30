@@ -15,10 +15,27 @@ function parseMaterialName(name: string, modelUrl?: string): string {
   // Model-specific overrides
   if (modelUrl) {
     if (modelUrl.includes("basketball-jersey-top-and-long-shorts") || modelUrl.includes("basketball-jersey-and-shorts")) {
-      if (lowerName.includes("body_f") || lowerName.includes("front")) return "Jersey Front";
-      if (lowerName.includes("body_b") || lowerName.includes("back")) return "Jersey Back";
+      // Buttons should be hidden
+      if (lowerName.includes("button")) return "HIDDEN";
+
+      // Specific Fabric mappings based on ID
+      if (name.includes("2842")) return "Pants Waist Trim";
+      if (name.includes("2845")) return "Back of Shorts";
+      if (name.includes("2848")) return "Front of Shorts";
+
+      // Jersey parts
+      if (lowerName.includes("body_f") || lowerName.includes("front")) return "Front of Jersey";
+      if (lowerName.includes("body_b") || lowerName.includes("back")) return "Back of Jersey";
+
+      // "Ble" matches usually indicate trim/binding in some exports or it might be the 4th fabric
+      // If the user said "Ble", and we have a 4th fabric "66694", let's name it carefully or generic
+      if (name.includes("66694")) return "Inner Waist";
+
+      // Catch-all for "Ble" if it appears as a name
+      if (lowerName.includes("ble")) return "Jersey Sleeve & Collar Trim";
+
       if (lowerName.includes("fabric_1") || lowerName === "fabric 1") return "Shorts";
-      if (lowerName.includes("waist")) return "Waistband";
+      if (lowerName.includes("waist")) return "Waistband"; // Keep existing waistband mapping
     }
 
     // Volleyball specific
@@ -110,11 +127,26 @@ export function extractSectionsFromThreeModel(
           color = "#" + material.color.getHexString();
         }
 
+        const sectionName = parseMaterialName(material.name, modelUrl);
+
+        // Skip hidden sections
+        if (sectionName === "HIDDEN") return;
+
+        // Determine category based on name and model
+        let category = "Other";
+        if (modelUrl?.includes("basketball-jersey")) {
+          if (sectionName.includes("Jersey") || sectionName.includes("Sleeve") || sectionName.includes("Collar")) {
+            category = "Jersey";
+          } else if (sectionName.includes("Shorts") || sectionName.includes("Waist") || sectionName.includes("Pants")) {
+            category = "Shorts";
+          }
+        }
+
         const section: MaterialSection = {
           id: material.name,
-          name: parseMaterialName(material.name, modelUrl),
+          name: sectionName,
           originalName: material.name,
-          category: "Other",
+          category,
           color,
           roughness:
             material instanceof THREE.MeshStandardMaterial
