@@ -1113,14 +1113,23 @@ function Model({
       if (controls) (controls as any).enabled = true;
     };
 
+    const handlePointerCancel = () => {
+      handlePointerUp(); // Treat cancel as up (reset state)
+    };
+
     gl.domElement.addEventListener("pointerdown", handlePointerDown);
     gl.domElement.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
 
     return () => {
       gl.domElement.removeEventListener("pointerdown", handlePointerDown);
       gl.domElement.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+
+      // Safety: ensure controls are enabled when effect cleans up
+      if (controls) (controls as any).enabled = true;
     };
   }, [
     clonedScene,
