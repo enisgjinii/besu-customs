@@ -145,30 +145,16 @@ function generateStripeTexture(
     }
   };
 
-  // Draw stripes at multiple positions to cover different UV layouts
-  // Jersey/pants models map side panels to various UV positions
-  // We'll draw at multiple locations to ensure visibility on most models
+  // Draw stripes only at the very edges of the UV map
+  // Most UV layouts have side panels at the far edges
+  // Being conservative to avoid stripes appearing on unintended areas
   if (side === "left" || side === "both") {
-    // Left edge positions
+    // Only draw at the leftmost edge
     drawStripe(0);
-    drawStripe(Math.round(SIZE * 0.05));
-    drawStripe(Math.round(SIZE * 0.1));
-    drawStripe(Math.round(SIZE * 0.15));
-    // Mid-left positions (some models map sides here)
-    drawStripe(Math.round(SIZE * 0.25));
-    drawStripe(Math.round(SIZE * 0.3));
-    drawStripe(Math.round(SIZE * 0.35));
   }
   if (side === "right" || side === "both") {
-    // Right edge positions
+    // Only draw at the rightmost edge
     drawStripe(SIZE - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.95) - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.9) - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.85) - stripeWidth);
-    // Mid-right positions
-    drawStripe(Math.round(SIZE * 0.75) - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.7) - stripeWidth);
-    drawStripe(Math.round(SIZE * 0.65) - stripeWidth);
   }
 
   return canvas.toDataURL("image/png");
