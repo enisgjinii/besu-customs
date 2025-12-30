@@ -37,76 +37,53 @@ export function Step04SchoolLogo() {
 
   // Track if upload is in progress to prevent duplicate uploads
   const isUploadingRef = useRef(false);
-  const lastUploadTimeRef = useRef(0);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Reset the input value immediately to allow re-uploading same file
-    const target = e.target;
-    const files = target.files;
-    target.value = "";
+    // Prevent duplicate uploads
+    if (isUploadingRef.current) return;
 
-    // Prevent duplicate uploads with multiple guards
-    const now = Date.now();
-    if (isUploadingRef.current) {
-      console.log("⚠️ Upload already in progress, skipping");
-      return;
+    const file = e.target.files?.[0];
+    if (file) {
+      isUploadingRef.current = true;
+
+      const logoPreset = getSchoolLogoPosition(currentModelUrl);
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        let result = event.target?.result as string;
+
+        // Compress on mobile for better performance
+        if (isMobile()) {
+          result = await compressImageForMobile(result, 512, 0.85);
+        }
+
+        const newId = uuidv4();
+        addTextureLayer({
+          id: newId,
+          name: file.name,
+          type: "image",
+          visible: true,
+          locked: false,
+          opacity: 1,
+          blendMode: "normal",
+          order: textureLayers.length,
+          imageUrl: result,
+          // Center of chest position for better initial placement
+          position: [0.5, 0.35, 0],
+          rotation: [0, 0, 0],
+          scale: [0.35, 0.35, 1], // Larger initial size for easier adjustment
+        });
+        setSelectedTextureLayerId(newId);
+        toast.success("Logo added to center - drag to position");
+
+        // Reset upload flag after a short delay
+        setTimeout(() => {
+          isUploadingRef.current = false;
+        }, 500);
+      };
+      reader.readAsDataURL(file);
     }
-    // Debounce: ignore if last upload was within 2 seconds
-    if (now - lastUploadTimeRef.current < 2000) {
-      console.log("⚠️ Upload too soon after last upload, skipping");
-      return;
-    }
-
-    const file = files?.[0];
-    if (!file) return;
-
-    isUploadingRef.current = true;
-    lastUploadTimeRef.current = now;
-
-    const logoPreset = getSchoolLogoPosition(currentModelUrl);
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      let result = event.target?.result as string;
-
-      // Compress on mobile for better performance
-      if (isMobile()) {
-        result = await compressImageForMobile(result, 512, 0.85);
-      }
-
-      const newId = uuidv4();
-
-      // Check if layer with same image URL already exists (extra safety)
-      const existingLayer = textureLayers.find((l) => l.imageUrl === result);
-      if (existingLayer) {
-        console.log("⚠️ Duplicate image detected, skipping add");
-        isUploadingRef.current = false;
-        return;
-      }
-
-      addTextureLayer({
-        id: newId,
-        name: file.name,
-        type: "image",
-        visible: true,
-        locked: false,
-        opacity: 1,
-        blendMode: "normal",
-        order: textureLayers.length,
-        imageUrl: result,
-        // Center of chest position for better initial placement
-        position: [0.5, 0.35, 0],
-        rotation: [0, 0, 0],
-        scale: [0.35, 0.35, 1], // Larger initial size for easier adjustment
-      });
-      setSelectedTextureLayerId(newId);
-      toast.success("Logo added to center - drag to position");
-
-      // Reset upload flag after a short delay
-      setTimeout(() => {
-        isUploadingRef.current = false;
-      }, 1000);
-    };
-    reader.readAsDataURL(file);
+    // Reset the input value to allow re-uploading the same file
+    e.target.value = "";
   };
 
   const logos = textureLayers.filter((l) => l.type === "image");
