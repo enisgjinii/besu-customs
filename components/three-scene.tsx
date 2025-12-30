@@ -15,6 +15,8 @@ import { useCachedGLTF } from "@/hooks/use-cached-gltf";
 import { getModelCache } from "@/lib/model-cache";
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
 
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
@@ -832,6 +834,40 @@ function Model({
     const handlePointerDown = (e: PointerEvent) => {
       if (!clonedScene) return;
 
+      // Handle Placement Mode (Click to Place)
+      const store = useConfiguratorStore.getState();
+      if (store.isPlacementMode && store.pendingLayer) {
+        const rect = gl.domElement.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+        const intersects = raycaster.intersectObject(clonedScene, true);
+        const hit = intersects.find((i) => i.uv);
+
+        if (hit?.uv) {
+          const newId = uuidv4();
+          // Merge pending layer with clicked position
+          store.addTextureLayer({
+            ...(store.pendingLayer as any),
+            id: newId,
+            position: [hit.uv.x, hit.uv.y, 0],
+            // Ensure essential defaults if missing
+            visible: true,
+            opacity: 1,
+            blendMode: "normal",
+            order: store.textureLayers.length,
+            scale: store.pendingLayer.scale || [0.35, 0.35, 1],
+            rotation: store.pendingLayer.rotation || [0, 0, 0],
+          });
+
+          store.setPlacementMode(false);
+          store.setPendingLayer(null);
+          toast.success("Placed successfully!");
+        }
+        return; // Stop propagation
+      }
+
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1165,6 +1201,7 @@ export function ThreeScene({
   const setModelLoading = useConfiguratorStore((s) => s.setModelLoading);
   const setModelError = useConfiguratorStore((s) => s.setModelError);
   const setSections = useConfiguratorStore((s) => s.setSections);
+  const isPlacementMode = useConfiguratorStore((s) => s.isPlacementMode);
   const perfConfig = useMobilePerformance();
 
   // Check if mobile for camera positioning
@@ -1274,7 +1311,10 @@ export function ThreeScene({
     : [0, 1.2, 8];
 
   return (
-    <div className="w-full h-full relative">
+    <div
+      className="w-full h-full relative"
+      style={{ cursor: isPlacementMode ? "crosshair" : "auto" }}
+    >
       <Canvas
         shadows={!perfConfig.isLowEndDevice && perfConfig.shadowsEnabled}
         dpr={[1, Math.min(perfConfig.pixelRatio, 2)]}

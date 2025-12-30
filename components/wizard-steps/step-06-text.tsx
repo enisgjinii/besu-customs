@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
-import { PlacementSelector } from "@/components/placement-selector";
-import { LogoPreset } from "@/lib/logo-positioning";
+
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -72,46 +71,33 @@ export function Step06Text() {
     }
   }, []);
 
-  const [showPlacement, setShowPlacement] = useState(false);
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const setPlacementMode = useConfiguratorStore((state) => state.setPlacementMode);
+  const setPendingLayer = useConfiguratorStore((state) => state.setPendingLayer);
+  const isPlacementMode = useConfiguratorStore((state) => state.isPlacementMode);
 
   const handleAddText = () => {
     if (!textInput.trim()) {
       toast.error("Please enter some text");
       return;
     }
-    // Show placement selector instead of adding immediately
-    setShowPlacement(true);
-  };
 
-  const handlePlacementSelect = (preset: LogoPreset) => {
-    if (!textInput.trim()) return;
-
-    const newId = uuidv4();
-    const newLayer = {
-      id: newId,
-      name: `Text: ${textInput}`,
-      type: "text" as const,
-      visible: true,
-      locked: false,
-      opacity: 1,
-      blendMode: "normal" as const,
-      order: textureLayers.length + 1,
+    // Set pending layer and enable placement mode
+    setPendingLayer({
+      type: "text",
       text: textInput,
+      name: `Text: ${textInput}`,
       textColor: textColor,
       fontSize: 80,
       fontFamily: "Roboto",
-      position: preset.position,
-      rotation: preset.rotation,
-      scale: preset.scale,
-    };
-    addTextureLayer(newLayer);
-    setSelectedTextId(newId);
-    setSelectedTextureLayerId(newId);
-    setTextInput("");
-    setShowPlacement(false);
-    toast.success("Text added successfully");
+      scale: [1, 1, 1],
+      rotation: [0, 0, 0]
+    });
+    setPlacementMode(true);
+    setTextInput(""); // Clear input
+    toast.info("Click anywhere on the model to place the text");
   };
+
+
 
   const handleDeleteText = (id: string) => {
     // Add confirmation on mobile for better UX
@@ -157,12 +143,21 @@ export function Step06Text() {
 
       {/* Quick Add */}
       {/* Quick Add or Placement Selector */}
-      {showPlacement ? (
-        <PlacementSelector
-          modelUrl={currentModelUrl}
-          onSelect={handlePlacementSelect}
-          onCancel={() => setShowPlacement(false)}
-        />
+      {isPlacementMode ? (
+        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center animate-pulse">
+          <p className="text-sm font-medium text-primary mb-1">Placement Mode Active</p>
+          <p className="text-xs text-muted-foreground mb-2">Click on the model to place your text</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPlacementMode(false);
+              setPendingLayer(null);
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
       ) : (
         <div className="flex gap-2">
           <Input

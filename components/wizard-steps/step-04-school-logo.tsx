@@ -11,8 +11,7 @@ import {
   isMobile,
 } from "@/lib/mobile-performance-utils";
 import { useRef, useState } from "react";
-import { PlacementSelector } from "@/components/placement-selector";
-import { LogoPreset } from "@/lib/logo-positioning";
+
 
 // Predefined school logos - no need for PatternSelector duplication
 const SCHOOL_LOGOS = [
@@ -32,6 +31,9 @@ export function Step04SchoolLogo() {
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
+  const setPlacementMode = useConfiguratorStore((state) => state.setPlacementMode);
+  const setPendingLayer = useConfiguratorStore((state) => state.setPendingLayer);
+  const isPlacementMode = useConfiguratorStore((state) => state.isPlacementMode);
   const setSelectedTextureLayerId = useConfiguratorStore(
     (state) => state.setSelectedTextureLayerId,
   );
@@ -62,10 +64,17 @@ export function Step04SchoolLogo() {
           result = await compressImageForMobile(result, 512, 0.85);
         }
 
-        // Store as pending to allow placement selection
-        setPendingFile({ file, result });
+        // Store as pending and enable placement mode
+        setPendingLayer({
+          type: "image",
+          imageUrl: result,
+          name: file.name,
+          scale: [0.35, 0.35, 1],
+          rotation: [0, 0, 0]
+        });
+        setPlacementMode(true);
         uploadLockRef.current = false;
-        toast.info("Select where to place the logo");
+        toast.info("Click anywhere on the model to place the logo");
       };
       reader.readAsDataURL(file);
     }
@@ -73,28 +82,7 @@ export function Step04SchoolLogo() {
     e.target.value = "";
   };
 
-  const handlePlacementSelect = (preset: LogoPreset) => {
-    if (!pendingFile) return;
 
-    const newId = uuidv4();
-    addTextureLayer({
-      id: newId,
-      name: pendingFile.file.name,
-      type: "image",
-      visible: true,
-      locked: false,
-      opacity: 1,
-      blendMode: "normal",
-      order: textureLayers.length,
-      imageUrl: pendingFile.result,
-      position: preset.position,
-      rotation: preset.rotation,
-      scale: preset.scale,
-    });
-    setSelectedTextureLayerId(newId);
-    setPendingFile(null);
-    toast.success("Logo added successfully");
-  };
 
   const logos = textureLayers.filter((l) => l.type === "image");
 
@@ -107,12 +95,21 @@ export function Step04SchoolLogo() {
         </p>
       </div>
 
-      {pendingFile ? (
-        <PlacementSelector
-          modelUrl={currentModelUrl}
-          onSelect={handlePlacementSelect}
-          onCancel={() => setPendingFile(null)}
-        />
+      {isPlacementMode ? (
+        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center animate-pulse">
+          <p className="text-sm font-medium text-primary mb-1">Placement Mode Active</p>
+          <p className="text-xs text-muted-foreground mb-2">Click on the model to place your logo</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPlacementMode(false);
+              setPendingLayer(null);
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
       ) : (
         /* Upload button */
         <Button

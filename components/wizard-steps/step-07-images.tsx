@@ -11,8 +11,7 @@ import {
   isMobile,
 } from "@/lib/mobile-performance-utils";
 import { useRef, useState } from "react";
-import { PlacementSelector } from "@/components/placement-selector";
-import { LogoPreset } from "@/lib/logo-positioning";
+
 
 // Helper to remove background from images
 const removeBackground = async (imageUrl: string): Promise<string> => {
@@ -99,6 +98,10 @@ export function Step07Images() {
     (state) => state.updateTextureLayer,
   );
 
+  const setPlacementMode = useConfiguratorStore((state) => state.setPlacementMode);
+  const setPendingLayer = useConfiguratorStore((state) => state.setPendingLayer);
+  const isPlacementMode = useConfiguratorStore((state) => state.isPlacementMode);
+
   // Track if upload is in progress to prevent duplicate uploads
   const isUploadingRef = useRef(false);
   const [autoRemoveBg, setAutoRemoveBg] = useState(true);
@@ -131,10 +134,17 @@ export function Step07Images() {
           result = await compressImageForMobile(result, 1024, 0.85);
         }
 
-        // Store as pending for placement selection
-        setPendingFile({ file, result });
+        // Store as pending and enable placement mode
+        setPendingLayer({
+          type: "image",
+          imageUrl: result,
+          name: file.name,
+          scale: [0.35, 0.35, 1],
+          rotation: [0, 0, 0]
+        });
+        setPlacementMode(true);
         isUploadingRef.current = false;
-        toast.info("Select where to place the image");
+        toast.info("Click anywhere on the model to place the image");
       };
       reader.readAsDataURL(file);
     }
@@ -144,28 +154,7 @@ export function Step07Images() {
 
   const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
 
-  const handlePlacementSelect = (preset: LogoPreset) => {
-    if (!pendingFile) return;
 
-    const newId = uuidv4();
-    addTextureLayer({
-      id: newId,
-      name: pendingFile.file.name,
-      type: "image",
-      visible: true,
-      locked: false,
-      opacity: 1,
-      blendMode: "normal",
-      order: textureLayers.length,
-      imageUrl: pendingFile.result,
-      position: preset.position,
-      rotation: preset.rotation,
-      scale: preset.scale,
-    });
-    setSelectedTextureLayerId(newId);
-    setPendingFile(null);
-    toast.success("Image added successfully");
-  };
 
   // Function to manually remove background from existing layer
   const handleRemoveBackground = async (layerId: string) => {
@@ -214,12 +203,21 @@ export function Step07Images() {
       </div>
 
       {/* Upload or Placement Selector */}
-      {pendingFile ? (
-        <PlacementSelector
-          modelUrl={currentModelUrl}
-          onSelect={handlePlacementSelect}
-          onCancel={() => setPendingFile(null)}
-        />
+      {isPlacementMode ? (
+        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center animate-pulse">
+          <p className="text-sm font-medium text-primary mb-1">Placement Mode Active</p>
+          <p className="text-xs text-muted-foreground mb-2">Click on the model to place your image</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPlacementMode(false);
+              setPendingLayer(null);
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
       ) : (
         <Button variant="outline" className="w-full h-10 relative" asChild>
           <label className="cursor-pointer flex items-center justify-center gap-2">
