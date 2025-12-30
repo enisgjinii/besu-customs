@@ -225,12 +225,12 @@ export function ConfiguratorWizard() {
       {isModelSelected && (
         <Button
           onClick={() => setShowResetDialog(true)}
-          variant="destructive"
+          variant="outline"
           size="icon"
-          className="absolute bottom-2 right-2 h-8 w-8 rounded-full shadow-lg z-10"
+          className="absolute bottom-4 right-4 h-10 w-10 rounded-full shadow-lg z-10 bg-white dark:bg-gray-800 border overflow-hidden"
           title="Reset"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-4 h-4 text-muted-foreground hover:text-destructive transition-colors" />
         </Button>
       )}
 

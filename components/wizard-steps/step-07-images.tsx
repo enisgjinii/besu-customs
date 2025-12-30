@@ -2,6 +2,8 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Upload, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -154,8 +156,6 @@ export function Step07Images() {
 
   const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
 
-
-
   // Function to manually remove background from existing layer
   const handleRemoveBackground = async (layerId: string) => {
     const layer = textureLayers.find((l) => l.id === layerId);
@@ -176,53 +176,39 @@ export function Step07Images() {
   );
 
   return (
-    <div className="space-y-2">
-      <div>
-        <h2 className="text-sm font-semibold">Add Images</h2>
-        <p className="text-xs text-muted-foreground">
-          Upload custom images for your design
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight">Upload Images</h2>
+        <p className="text-sm text-muted-foreground">
+          Personalize with your own logos and graphics
         </p>
       </div>
 
-      {/* Auto Remove Background Toggle */}
-      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-        <div className="flex items-center gap-2">
-          <Wand2 className="w-4 h-4 text-primary" />
-          <span className="text-xs font-medium">Auto Remove Background</span>
-        </div>
-        <button
-          onClick={() => setAutoRemoveBg(!autoRemoveBg)}
-          className={`w-10 h-5 rounded-full transition-colors ${autoRemoveBg ? "bg-primary" : "bg-muted"
-            }`}
-        >
-          <div
-            className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${autoRemoveBg ? "translate-x-5" : "translate-x-0.5"
-              }`}
-          />
-        </button>
-      </div>
-
-      {/* Upload or Placement Selector */}
+      {/* Upload Zone */}
       {isPlacementMode ? (
-        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center animate-pulse">
-          <p className="text-sm font-medium text-primary mb-1">Placement Mode Active</p>
-          <p className="text-xs text-muted-foreground mb-2">Click on the model to place your image</p>
+        <div className="p-6 bg-primary/5 border-2 border-primary/20 border-dashed rounded-xl text-center animate-pulse">
+          <Wand2 className="w-8 h-8 text-primary mx-auto mb-3" />
+          <p className="text-base font-medium text-primary mb-1">Placement Mode Active</p>
+          <p className="text-sm text-muted-foreground mb-4">Tap anywhere on the 3D model to place your image</p>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => {
               setPlacementMode(false);
               setPendingLayer(null);
             }}
+            className="w-full sm:w-auto"
           >
-            Cancel
+            Cancel Placement
           </Button>
         </div>
       ) : (
-        <Button variant="outline" className="w-full h-10 relative" asChild>
-          <label className="cursor-pointer flex items-center justify-center gap-2">
-            <Upload className="w-4 h-4" />
-            <span className="text-sm">Upload Image</span>
+        <div className="space-y-4">
+          <label className="group relative flex flex-col items-center justify-center p-8 border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/5 hover:bg-muted/10 rounded-xl transition-all cursor-pointer">
+            <div className="bg-background p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform duration-300">
+              <Upload className="w-6 h-6 text-primary" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Click to Upload</p>
+            <p className="text-xs text-muted-foreground mt-1">PNG, JPG recommended</p>
             <Input
               type="file"
               accept="image/*"
@@ -230,57 +216,77 @@ export function Step07Images() {
               onChange={handleFileUpload}
             />
           </label>
-        </Button>
-      )}
 
-      {/* Layers with improved controls */}
-      {layers.length > 0 && (
-        <div className="space-y-1.5">
-          <span className="text-[10px] text-muted-foreground font-medium">
-            Images ({layers.length}) - Tap to edit
-          </span>
-          <div className="max-h-[150px] overflow-y-auto space-y-1.5">
-            {layers.map((layer) => (
-              <div
-                key={layer.id}
-                className="p-2 rounded-lg border bg-card hover:border-primary/50 transition-colors"
-                onClick={() => setSelectedTextureLayerId(layer.id)}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  {layer.imageUrl && (
-                    <img
-                      src={layer.imageUrl}
-                      alt={layer.name}
-                      className="w-8 h-8 object-contain rounded bg-muted/50"
-                    />
-                  )}
-                  <span className="text-xs font-medium truncate flex-1">
-                    {layer.name}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-[10px]"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveBackground(layer.id);
-                    }}
-                  >
-                    <Wand2 className="w-3 h-3 mr-1" />
-                    Remove BG
-                  </Button>
-                </div>
-                <LayerControls layerId={layer.id} compact />
+          {/* Smart Feature Card */}
+          <div className="flex items-center justify-between p-4 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/10 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+            <div className="flex items-start gap-3">
+              <div className="bg-white dark:bg-indigo-950 p-2 rounded-lg shadow-sm mt-0.5">
+                <Wand2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               </div>
-            ))}
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="auto-bg-switch" className="text-sm font-semibold cursor-pointer">Magic Removal</Label>
+                <span className="text-xs text-muted-foreground">Auto-remove backgrounds</span>
+              </div>
+            </div>
+            <Switch
+              id="auto-bg-switch"
+              checked={autoRemoveBg}
+              onCheckedChange={setAutoRemoveBg}
+            />
           </div>
         </div>
       )}
 
-      {layers.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center py-2">
-          No images added yet. Upload an image to get started.
-        </p>
+      {/* Layers List */}
+      {layers.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+            Your Uploads ({layers.length})
+          </h3>
+          <div className="grid gap-2">
+            {layers.map((layer) => (
+              <div
+                key={layer.id}
+                className="group relative flex items-center gap-3 p-3 rounded-xl border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer"
+                onClick={() => setSelectedTextureLayerId(layer.id)}
+              >
+                <div className="relative w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
+                  {layer.imageUrl ? (
+                    <img
+                      src={layer.imageUrl}
+                      alt={layer.name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <Upload className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate mb-1">{layer.name}</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-6 px-2 text-[10px] bg-secondary/50 hover:bg-secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveBackground(layer.id);
+                      }}
+                    >
+                      <Wand2 className="w-3 h-3 mr-1" />
+                      Clean BG
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <LayerControls layerId={layer.id} compact />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
