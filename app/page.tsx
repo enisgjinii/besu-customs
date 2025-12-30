@@ -69,7 +69,7 @@ export default function Home() {
     return (
       <div className="h-[100dvh] w-screen bg-white dark:bg-black flex flex-col overflow-hidden">
         {/* 3D Viewer - 40% of viewport height */}
-        <div className="h-[40dvh] min-h-[200px] flex-shrink-0 relative bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
+        <div className="h-[40vh] min-h-[200px] flex-shrink-0 relative bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
           <Scene />
         </div>
 
