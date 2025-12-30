@@ -29,7 +29,7 @@ function parseMaterialName(name: string, modelUrl?: string): string {
 
       // "Ble" matches usually indicate trim/binding in some exports or it might be the 4th fabric
       // If the user said "Ble", and we have a 4th fabric "66694", let's name it carefully or generic
-      if (name.includes("66694")) return "Inner Waist";
+      if (name.includes("66694")) return "Shorts Side Panels";
 
       // Catch-all for "Ble" if it appears as a name
       if (lowerName.includes("ble")) return "Jersey Sleeve & Collar Trim";

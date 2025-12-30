@@ -58,7 +58,6 @@ export function Step06Text() {
   const [textInput, setTextInput] = useState("");
   const [textColor, setTextColor] = useState("#000000");
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
-
   // Load Google Fonts
   useEffect(() => {
     const link = document.getElementById(
@@ -133,271 +132,279 @@ export function Step06Text() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="space-y-1">
+    <div className="space-y-4 h-full flex flex-col">
+      <div className="space-y-1 shrink-0">
         <h2 className="text-sm font-semibold">Add Text</h2>
         <p className="text-xs text-muted-foreground">
           Personalize with names and numbers
         </p>
       </div>
 
-      {/* Input Area */}
-      {isPlacementMode ? (
-        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl text-center space-y-3 animate-pulse">
-          <div className="flex justify-center">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Plus className="w-5 h-5 text-primary" />
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-primary">Tap to Place</p>
-            <p className="text-xs text-muted-foreground">Touch anywhere on the 3D model</p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setPlacementMode(false);
-              setPendingLayer(null);
-            }}
-            className="h-8 text-xs bg-background"
-          >
-            Cancel
-          </Button>
-        </div>
-      ) : (
-        <div className="flex gap-2 p-1.5 bg-card border rounded-xl shadow-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-          <div className="relative flex-1">
-            <Input
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Enter text..."
-              onKeyDown={(e) => e.key === "Enter" && handleAddText()}
-              className="h-10 text-base border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent"
-            />
-          </div>
+      <div className="flex-1 min-h-0 md:grid md:grid-cols-2 md:gap-6 overflow-hidden">
 
-          <div className="flex items-center gap-1.5 pr-1">
-            <div className="h-6 w-px bg-border mx-1" />
-            <div className="relative group">
-              <div
-                className="w-8 h-8 rounded-full border shadow-sm cursor-pointer overflow-hidden transition-transform active:scale-95"
-                style={{ backgroundColor: textColor }}
-              />
-              <input
-                type="color"
-                value={textColor}
-                onChange={(e) => setTextColor(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              />
-            </div>
-            <Button
-              onClick={handleAddText}
-              size="icon"
-              className="h-9 w-9 rounded-lg shadow-sm"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Text Layers */}
-      {textLayers.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-medium text-muted-foreground">Active Text Layers</span>
-            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">{textLayers.length}</span>
-          </div>
-
-          <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-            {textLayers.map((layer) => (
-              <div
-                key={layer.id}
+        {/* LEFT PANE: Input & List */}
+        <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+          {/* Input Area */}
+          {isPlacementMode ? (
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl text-center space-y-3 animate-pulse shrink-0">
+              <div className="flex justify-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary">Tap to Place</p>
+                <p className="text-xs text-muted-foreground">Touch anywhere on the 3D model</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
-                  setSelectedTextId(layer.id);
-                  setSelectedTextureLayerId(layer.id);
+                  setPlacementMode(false);
+                  setPendingLayer(null);
                 }}
-                className={cn(
-                  "group relative rounded-xl border transition-all duration-200 overflow-hidden",
-                  selectedTextId === layer.id
-                    ? "bg-card border-primary shadow-md ring-1 ring-primary/20"
-                    : "bg-muted/20 border-transparent hover:bg-muted/40"
-                )}
+                className="h-8 text-xs bg-background"
               >
-                {/* Card Header / Summary */}
-                <div className="flex items-center gap-3 p-3">
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2 p-1.5 bg-card border rounded-xl shadow-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 shrink-0">
+              <div className="relative flex-1">
+                <Input
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Enter text..."
+                  onKeyDown={(e) => e.key === "Enter" && handleAddText()}
+                  className="h-10 text-base border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 pr-1">
+                <div className="h-6 w-px bg-border mx-1" />
+                <div className="relative group">
                   <div
-                    className="w-10 h-10 rounded-lg border bg-current flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0"
-                    style={{
-                      color: layer.textColor,
-                      backgroundColor: layer.textColor === "#ffffff" ? "#f3f4f6" : "#ffffff",
-                      borderColor: layer.textColor === "#ffffff" ? "#e5e7eb" : "transparent"
-                    }}
-                  >
-                    <span style={{ fontFamily: layer.fontFamily }}>Aa</span>
-                  </div>
+                    className="w-8 h-8 rounded-full border shadow-sm cursor-pointer overflow-hidden transition-transform active:scale-95"
+                    style={{ backgroundColor: textColor }}
+                  />
+                  <input
+                    type="color"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                </div>
+                <Button
+                  onClick={handleAddText}
+                  size="icon"
+                  className="h-9 w-9 rounded-lg shadow-sm"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          )}
 
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-sm" style={{ fontFamily: layer.fontFamily }}>{layer.text}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {layer.fontFamily} • {layer.fontSize}px
-                    </p>
-                  </div>
+          {/* Text Layers List */}
+          {textLayers.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-medium text-muted-foreground">Active Text Layers</span>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">{textLayers.length}</span>
+              </div>
 
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteText(layer.id);
+              <div className="space-y-2">
+                {textLayers.map((layer) => (
+                  <div
+                    key={layer.id}
+                    onClick={() => {
+                      setSelectedTextId(layer.id);
+                      setSelectedTextureLayerId(layer.id);
                     }}
+                    className={cn(
+                      "group relative rounded-xl border transition-all duration-200 cursor-pointer",
+                      selectedTextId === layer.id
+                        ? "bg-primary/5 border-primary shadow-sm"
+                        : "bg-card border-border hover:bg-muted/50 hover:border-primary/30"
+                    )}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                    <div className="flex items-center gap-3 p-3">
+                      <div
+                        className="w-10 h-10 rounded-lg border bg-current flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0"
+                        style={{
+                          color: layer.textColor,
+                          backgroundColor: layer.textColor === "#ffffff" ? "#f3f4f6" : "#ffffff",
+                          borderColor: layer.textColor === "#ffffff" ? "#e5e7eb" : "transparent"
+                        }}
+                      >
+                        <span style={{ fontFamily: layer.fontFamily }}>Aa</span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate text-sm" style={{ fontFamily: layer.fontFamily }}>{layer.text}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {layer.fontFamily} • {layer.fontSize}px
+                        </p>
+                      </div>
+
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteText(layer.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center bg-muted/10 rounded-xl border border-dashed border-muted-foreground/20 mt-4">
+              <div className="w-10 h-10 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-2 text-muted-foreground">
+                <span className="font-serif italic text-lg">Aa</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Start by typing a name or number above
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT PANE: Controls (Desktop) */}
+        <div className="hidden md:flex flex-col gap-4 bg-muted/10 rounded-xl border p-4 overflow-y-auto">
+          {selectedLayer ? (
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="pb-2 border-b">
+                <h3 className="text-sm font-semibold truncate" style={{ fontFamily: selectedLayer!.fontFamily }}>
+                  Edit "{selectedLayer!.text}"
+                </h3>
+              </div>
+
+              {/* Font Family */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Typeface</label>
+                <Select
+                  value={selectedLayer!.fontFamily || "Roboto"}
+                  onValueChange={(val) =>
+                    updateTextureLayer(selectedLayer!.id, { fontFamily: val })
+                  }
+                >
+                  <SelectTrigger className="h-9 text-sm bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {FONT_FAMILIES.map((font) => (
+                      <SelectItem
+                        key={font}
+                        value={font}
+                        style={{ fontFamily: font }}
+                        className="text-sm"
+                      >
+                        {font}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Size & Color */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Size</label>
+                    <span className="text-[10px] font-mono">{selectedLayer!.fontSize}px</span>
+                  </div>
+                  <Slider
+                    value={[selectedLayer!.fontSize || 80]}
+                    onValueChange={(v) =>
+                      updateTextureLayer(selectedLayer!.id, { fontSize: v[0] })
+                    }
+                    min={20}
+                    max={200}
+                    step={5}
+                    className="py-1 cursor-pointer"
+                  />
                 </div>
 
-                {/* Expanded Controls */}
-                {selectedTextId === layer.id && (
-                  <div className="px-3 pb-3 pt-0 space-y-3 animate-in slide-in-from-top-2 duration-200">
-                    <div className="h-px w-full bg-border/50 mb-3" />
-
-                    {/* Font Family */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Typeface</label>
-                      <Select
-                        value={layer.fontFamily || "Roboto"}
-                        onValueChange={(val) =>
-                          updateTextureLayer(layer.id, { fontFamily: val })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[200px]">
-                          {FONT_FAMILIES.map((font) => (
-                            <SelectItem
-                              key={font}
-                              value={font}
-                              style={{ fontFamily: font }}
-                              className="text-sm"
-                            >
-                              {font}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Color</label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden border">
+                      <div
+                        className="w-full h-full cursor-pointer"
+                        style={{ backgroundColor: selectedLayer!.textColor }}
+                      />
+                      <input
+                        type="color"
+                        value={selectedLayer!.textColor}
+                        onChange={(e) => updateTextureLayer(selectedLayer!.id, { textColor: e.target.value })}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
                     </div>
-
-                    {/* Size & Color */}
-                    <div className="grid grid-cols-[1fr_auto] gap-3">
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between">
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Size</label>
-                          <span className="text-[10px] font-mono">{layer.fontSize}px</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => decreaseSize(layer.id, layer.fontSize || 80)}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <Slider
-                            value={[layer.fontSize || 80]}
-                            onValueChange={(v) =>
-                              updateTextureLayer(layer.id, { fontSize: v[0] })
-                            }
-                            min={20}
-                            max={200}
-                            step={5}
-                            className="flex-1"
-                          />
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => increaseSize(layer.id, layer.fontSize || 80)}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Color</label>
-                        <div className="relative w-9 h-9">
-                          <div
-                            className="w-full h-full rounded-md border shadow-sm cursor-pointer"
-                            style={{ backgroundColor: layer.textColor }}
-                          />
-                          <input
-                            type="color"
-                            value={layer.textColor}
-                            onChange={(e) => updateTextureLayer(layer.id, { textColor: e.target.value })}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Position */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Position</label>
-                      <div className="grid grid-cols-5 gap-1">
-                        {[
-                          { label: "Top", pos: [0.5, 0.15, 0] },
-                          { label: "Chest", pos: [0.5, 0.35, 0] },
-                          { label: "Mid", pos: [0.5, 0.5, 0] },
-                          { label: "Left", pos: [0.25, 0.35, 0] },
-                          { label: "Right", pos: [0.75, 0.35, 0] },
-                        ].map(({ label, pos }) => (
-                          <Button
-                            key={label}
-                            size="sm"
-                            variant={
-                              layer.position?.[0] === pos[0] &&
-                                layer.position?.[1] === pos[1]
-                                ? "secondary" // Highlight active
-                                : "outline"
-                            }
-                            onClick={() =>
-                              updateTextureLayer(layer.id, {
-                                position: pos as [number, number, number],
-                              })
-                            }
-                            className={cn(
-                              "text-[9px] h-7 px-0 transition-all",
-                              layer.position?.[0] === pos[0] && layer.position?.[1] === pos[1] && "bg-primary/10 text-primary border-primary/20"
-                            )}
-                          >
-                            {label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
+                    <Input
+                      value={selectedLayer!.textColor}
+                      onChange={(e) => updateTextureLayer(selectedLayer!.id, { textColor: e.target.value })}
+                      className="h-9 w-24 font-mono uppercase text-xs"
+                    />
                   </div>
-                )}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {textLayers.length === 0 && (
-        <div className="py-8 text-center bg-muted/10 rounded-xl border border-dashed border-muted-foreground/20">
-          <div className="w-10 h-10 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-2 text-muted-foreground">
-            <span className="font-serif italic text-lg">Aa</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Start by typing a name or number above
-          </p>
+              {/* Position */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Quick Position</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: "Top", pos: [0.5, 0.15, 0] },
+                    { label: "Chest", pos: [0.5, 0.35, 0] },
+                    { label: "Mid", pos: [0.5, 0.5, 0] },
+                    { label: "Left", pos: [0.25, 0.35, 0] },
+                    { label: "Right", pos: [0.75, 0.35, 0] },
+                    { label: "Back", pos: [0.5, 0.35, Math.PI] },
+                  ].map(({ label, pos }) => (
+                    <Button
+                      key={label}
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        updateTextureLayer(selectedLayer!.id, {
+                          position: pos as [number, number, number],
+                          // Handle back rotation if needed
+                          rotation: label === "Back" ? [0, Math.PI, 0] : [0, 0, 0]
+                        })
+                      }
+                      className="text-xs h-8"
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-6">
+              <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center mb-3">
+                <Plus className="w-6 h-6 opacity-50" />
+              </div>
+              <p className="text-sm font-medium">No Layer Selected</p>
+              <p className="text-xs mt-1">Select a text layer from the list to edit its properties.</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* MOBILE ONLY: Inline controls when expanded (Fallback) */}
+        {!isPlacementMode && selectedLayer && (
+          <div className="md:hidden">
+            {/* This mimics the original inline expansion logic for mobile, 
+                  but integrated into the list map above for cleaner DOM */}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

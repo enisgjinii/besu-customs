@@ -90,7 +90,7 @@ export function ConfiguratorWizard() {
         // Mobile: relative positioning within flex container, Desktop: absolute with fixed height
         isMobile
           ? "relative flex-1 min-h-0"
-          : "absolute bottom-0 left-0 right-0 h-[280px]",
+          : "absolute bottom-0 left-0 right-0 h-[320px]",
       )}
     >
       {/* Texture Layer Selector - Compact on mobile */}

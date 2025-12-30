@@ -17,6 +17,7 @@ import * as THREE from "three";
 import { GLTF } from "three-stdlib";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
+import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
@@ -687,6 +688,63 @@ function Model({
   const setSelectedTextureLayerId = useConfiguratorStore(
     (s) => s.setSelectedTextureLayerId,
   );
+
+  // --- Pinch to Zoom / Scale for Mobile ---
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (gl.domElement) {
+      canvasRef.current = gl.domElement;
+    }
+  }, [gl]);
+
+  const pinchStartScaleRef = useRef<number>(1);
+  const selectedLayerId = useConfiguratorStore((s) => s.selectedTextureLayerId);
+  const getLayer = (id: string) => useConfiguratorStore.getState().textureLayers.find(l => l.id === id);
+
+  usePinchZoom(canvasRef, {
+    enabled: !!selectedLayerId,
+    onPinchStart: () => {
+      if (selectedLayerId && controls) {
+        // Disable camera controls during pinch interaction
+        (controls as any).enabled = false;
+
+        const layer = getLayer(selectedLayerId);
+        if (layer) {
+          // Store initial scale (average of x/y or just x)
+          pinchStartScaleRef.current = layer.scale?.[0] ?? (layer.type === 'text' ? 1 : 0.3);
+        }
+      }
+    },
+    onPinch: ({ scale }: { scale: number }) => {
+      if (selectedLayerId) {
+        // Calculate new scale based on pinch delta
+        const layer = getLayer(selectedLayerId);
+        if (!layer) return;
+
+        const initial = pinchStartScaleRef.current;
+        // Apply sensitivity factor to make it feel 1:1
+        let newScale = initial * scale;
+
+        // Clamp limits
+        if (layer.type === 'text') {
+          newScale = Math.min(Math.max(newScale, 0.5), 5.0);
+        } else {
+          newScale = Math.min(Math.max(newScale, 0.05), 2.0);
+        }
+
+        updateTextureLayer(selectedLayerId, {
+          scale: [newScale, newScale, 1],
+          // For text, we might also want to scale fontSize visually if we weren't using scale transform
+          // But our texture compositor uses scale for text too.
+        });
+      }
+    },
+    onPinchEnd: () => {
+      if (controls) {
+        (controls as any).enabled = true;
+      }
+    }
+  });
 
   // Check if UV click is on a control icon (works in UV space 0-1)
   // Must match EXACTLY how TextureCompositor draws controls on canvas

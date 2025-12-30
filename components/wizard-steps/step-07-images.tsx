@@ -243,7 +243,7 @@ export function Step07Images() {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
             Your Uploads ({layers.length})
           </h3>
-          <div className="grid gap-2">
+          <div className="grid gap-2 md:grid-cols-2">
             {layers.map((layer) => (
               <div
                 key={layer.id}

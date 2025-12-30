@@ -269,7 +269,7 @@ export function Step08AIImages() {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
             Generated Designs ({aiLayers.length})
           </h3>
-          <div className="grid gap-2">
+          <div className="grid gap-2 md:grid-cols-2">
             {aiLayers.map((layer) => (
               <div
                 key={layer.id}

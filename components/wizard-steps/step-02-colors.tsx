@@ -263,12 +263,12 @@ export function Step02Colors() {
 
   // Desktop layout
   return (
-    <div className="space-y-3 w-full">
-      {/* Section pills with navigation */}
-      <div className="relative group">
+    <div className="space-y-4 w-full h-full flex flex-col">
+      {/* Section pills with navigation - Clean & Visible */}
+      <div className="relative group shrink-0">
         <button
           onClick={scrollLeft}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-background shadow-md border rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background shadow-sm border rounded-full p-1.5 text-muted-foreground hover:text-foreground transition-all"
           aria-label="Scroll left"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -276,25 +276,25 @@ export function Step02Colors() {
 
         <div
           ref={scrollContainerRef}
-          className="overflow-x-auto scrollbar-hide mx-2"
+          className="overflow-x-auto scrollbar-hide mx-6"
         >
-          <div className="inline-flex gap-2 pb-2 px-2">
+          <div className="inline-flex gap-2 pb-1 px-1">
             {sections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => setActiveSectionId(section.id)}
                 className={cn(
-                  "inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all",
+                  "inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all",
                   activeSectionId === section.id
-                    ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105"
-                    : "bg-card text-muted-foreground border-border/50 hover:bg-muted hover:border-primary/50",
+                    ? "bg-primary/10 text-primary border-primary shadow-sm"
+                    : "bg-background text-muted-foreground border-border hover:bg-muted hover:border-primary/30",
                 )}
               >
                 <div
-                  className="w-5 h-5 rounded-full border-2 border-white/40"
+                  className="w-4 h-4 rounded-full border border-black/10 shadow-sm flex-shrink-0"
                   style={{ backgroundColor: section.color }}
                 />
-                <span className="max-w-[140px] truncate">{section.name}</span>
+                <span className="max-w-[120px] truncate">{section.name}</span>
               </button>
             ))}
           </div>
@@ -302,87 +302,116 @@ export function Step02Colors() {
 
         <button
           onClick={scrollRight}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-background shadow-md border rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background shadow-sm border rounded-full p-1.5 text-muted-foreground hover:text-foreground transition-all"
           aria-label="Scroll right"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Color grid */}
-      <div className="grid grid-cols-8 gap-3">
-        {PRESET_COLORS.map((color) => (
-          <button
-            key={color}
-            onClick={() => handleColorChange(color)}
-            className={cn(
-              "aspect-square rounded-full border transition-all",
-              activeSection?.color?.toUpperCase() === color.toUpperCase()
-                ? "ring-2 ring-primary ring-offset-2 border-primary scale-110 shadow-lg"
-                : "border-border/30 hover:scale-105 hover:border-primary/50 hover:shadow-md",
-            )}
-            style={{ backgroundColor: color }}
-            aria-label={color}
-          />
-        ))}
-      </div>
+      <div className="flex gap-6 h-full min-h-0">
+        {/* Left: Color Grid (Scrollable) */}
+        <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3 sticky top-0 bg-white dark:bg-black py-1 z-10">Usage Palette</h3>
+          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
+            {PRESET_COLORS.map((color) => (
+              <button
+                key={color}
+                onClick={() => handleColorChange(color)}
+                className={cn(
+                  "aspect-square rounded-full border transition-all relative group",
+                  activeSection?.color?.toUpperCase() === color.toUpperCase()
+                    ? "ring-2 ring-primary ring-offset-2 border-primary z-10"
+                    : "border-border/30 hover:border-primary/50 hover:scale-110",
+                )}
+                style={{ backgroundColor: color }}
+                title={color}
+              >
+                {activeSection?.color?.toUpperCase() === color.toUpperCase() && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Custom color + actions */}
-      <div className="flex items-center gap-2 pt-3 border-t">
-        <input
-          type="color"
-          value={activeSection?.color || "#ffffff"}
-          onChange={(e) => handleColorChange(e.target.value)}
-          className="w-12 h-12 rounded-xl cursor-pointer border-2 border-border"
-          style={{ padding: "4px" }}
-        />
-        <div className="flex-1">
-          <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
-            Custom Color
-          </label>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              value={activeSection?.color || "#ffffff"}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-                  handleColorChange(val);
-                }
-              }}
-              className="h-11 font-mono uppercase font-semibold flex-1"
-              placeholder="#000000"
-            />
+        {/* Right: Actions Panel (Fixed) */}
+        <div className="w-64 shrink-0 flex flex-col gap-4 border-l pl-6">
+
+          {/* Custom Color Input Group */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-foreground">Custom Color</label>
+            <div className="flex gap-2">
+              <div className="relative w-12 h-12 shrink-0">
+                <input
+                  type="color"
+                  value={activeSection?.color || "#ffffff"}
+                  onChange={(e) => handleColorChange(e.target.value)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <div
+                  className="w-full h-full rounded-lg border shadow-sm"
+                  style={{ backgroundColor: activeSection?.color || "#ffffff" }}
+                />
+              </div>
+              <div className="flex-1 flex flex-col gap-1">
+                <Input
+                  type="text"
+                  value={activeSection?.color || "#ffffff"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                      handleColorChange(val);
+                    }
+                  }}
+                  className="h-7 text-xs font-mono uppercase"
+                  placeholder="#000000"
+                />
+                <span className="text-[10px] text-muted-foreground px-1">Hex Code</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Advanced Tools */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-foreground">Tools</label>
             <Button
-              variant="secondary"
-              className="h-11 px-4"
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs h-8"
               onClick={() =>
                 activeSectionId && openSectionColorPicker(activeSectionId)
               }
               disabled={!activeSectionId}
             >
-              <Palette className="w-4 h-4 mr-2" />
-              Pantone / AI
+              <Palette className="w-3.5 h-3.5 mr-2" />
+              Detailed Picker
             </Button>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="h-11 px-4"
-            onClick={handleApplyToAll}
-          >
-            <Link2 className="w-4 h-4 mr-2" />
-            Apply All
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-11 w-11"
-            onClick={() => updateAllSections({ color: "#ffffff" })}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </Button>
+
+          {/* Global Actions */}
+          <div className="pt-2 border-t mt-auto space-y-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full justify-start text-xs h-8"
+              onClick={handleApplyToAll}
+            >
+              <Link2 className="w-3.5 h-3.5 mr-2" />
+              Apply to All Parts
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-xs h-8 text-muted-foreground hover:text-destructive"
+              onClick={() => updateAllSections({ color: "#ffffff" })}
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-2" />
+              Reset Colors
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -287,253 +287,214 @@ export function Step03bTrimLines() {
   );
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold">Add Trim Lines</h2>
+    <div className="space-y-4 h-full flex flex-col">
+      <div className="space-y-1 shrink-0">
+        <h2 className="text-sm font-semibold">Trim Lines</h2>
         <p className="text-xs text-muted-foreground">
           Add decorative lines to edges
         </p>
       </div>
 
-      {/* Compact Preview */}
-      <div className="p-3 bg-muted/20 rounded-lg border space-y-1.5">
-        <div className="flex justify-between items-center">
-          <Label className="text-xs font-semibold">Preview</Label>
-          <span className="text-[10px] text-muted-foreground">
-            {TRIM_PATTERNS.find((p) => p.id === trimPattern)?.name}
-          </span>
-        </div>
-        <div className="h-10 bg-white rounded border flex items-center justify-center relative overflow-hidden">
-          <div
-            style={{
-              height: `${trimWidth}px`,
-              backgroundColor: trimColor,
-              width: "80%",
-              borderRadius: trimPattern === "wave" ? "50% 50%" : "0",
-              boxShadow:
-                trimPattern === "shadow"
-                  ? "0 2px 4px rgba(0,0,0,0.2)"
-                  : trimPattern === "embossed"
-                    ? "inset 0 2px 4px rgba(0,0,0,0.3)"
-                    : "",
-              backgroundImage:
-                trimPattern === "dashed"
-                  ? `repeating-linear-gradient(90deg, ${trimColor} 0, ${trimColor} 10px, transparent 10px, transparent 20px)`
-                  : trimPattern === "dotted"
-                    ? `radial-gradient(circle, ${trimColor} 30%, transparent 30%)`
-                    : trimPattern === "gradient"
-                      ? `linear-gradient(90deg, transparent 0%, ${trimColor} 50%, transparent 100%)`
-                      : trimPattern === "double"
-                        ? `repeating-linear-gradient(0deg, ${trimColor} 0, ${trimColor} 2px, transparent 2px, transparent 8px, ${trimColor} 8px, ${trimColor} 10px, transparent 10px, transparent 16px)`
-                        : undefined,
-            }}
-          />
-        </div>
-      </div>
+      {/* Main Content Area - Split for Desktop */}
+      <div className="flex-1 min-h-0 md:grid md:grid-cols-2 md:gap-6 overflow-y-auto">
 
-      {/* Grid for Pattern and Location */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Style</Label>
-          <Select value={trimPattern} onValueChange={setTrimPattern}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Pattern" />
-            </SelectTrigger>
-            <SelectContent>
-              {TRIM_PATTERNS.map((pattern) => (
-                <SelectItem key={pattern.id} value={pattern.id} className="text-xs">
-                  {pattern.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Location</Label>
-          <Select value={trimLocation} onValueChange={setTrimLocation}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Apply to..." />
-            </SelectTrigger>
-            <SelectContent>
-              {TRIM_LOCATIONS.map((loc) => (
-                <SelectItem key={loc.id} value={loc.id} className="text-xs">
-                  {loc.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Color & Width Controls */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold">Appearance</Label>
-        <div className="flex gap-3 items-center p-2 border rounded-lg bg-card">
-          <div className="shrink-0">
-            <input
-              type="color"
-              value={trimColor}
-              onChange={(e) => setTrimColor(e.target.value)}
-              className="w-8 h-8 rounded-full border-none p-0 cursor-pointer overflow-hidden"
-              style={{ padding: 0 }}
-            />
-          </div>
-
-          <div className="h-8 w-px bg-border mx-1" />
-
-          <div className="flex-1 space-y-1.5">
-            <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-wider">
-              <span>Width</span>
-              <span>{trimWidth}px</span>
+        {/* LEFT COLUMN: Controls */}
+        <div className="space-y-4">
+          {/* Grid for Pattern and Location */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Style</Label>
+              <Select value={trimPattern} onValueChange={setTrimPattern}>
+                <SelectTrigger className="h-9 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-primary/20" />
+                    <SelectValue placeholder="Pattern" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIM_PATTERNS.map((pattern) => (
+                    <SelectItem key={pattern.id} value={pattern.id} className="text-xs">
+                      {pattern.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Slider
-              value={[trimWidth]}
-              onValueChange={(v) => setTrimWidth(v[0])}
-              min={2}
-              max={30}
-              step={1}
-              className="touch-manipulation py-1"
-            />
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Location</Label>
+              <Select value={trimLocation} onValueChange={setTrimLocation}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Apply to..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIM_LOCATIONS.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id} className="text-xs">
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Color & Width Controls */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Appearance</Label>
+            <div className="flex gap-3 items-center p-2 border rounded-lg bg-card shadow-sm">
+              <div className="shrink-0">
+                <input
+                  type="color"
+                  value={trimColor}
+                  onChange={(e) => setTrimColor(e.target.value)}
+                  className="w-9 h-9 rounded-lg border cursor-pointer"
+                  style={{ padding: 0 }}
+                />
+              </div>
+
+              <div className="h-8 w-px bg-border mx-1" />
+
+              <div className="flex-1 space-y-2">
+                <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-wider">
+                  <span>Width</span>
+                  <span>{trimWidth}px</span>
+                </div>
+                <Slider
+                  value={[trimWidth]}
+                  onValueChange={(v) => setTrimWidth(v[0])}
+                  min={2}
+                  max={30}
+                  step={1}
+                  className="touch-manipulation py-1"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Apply Button */}
+          <Button
+            onClick={handleAddTrim}
+            className="w-full h-10 touch-manipulation text-sm font-semibold"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Apply to {TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name.split(" ")[0]}
+          </Button>
+
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded text-xs text-blue-900 dark:text-blue-200 mt-2">
+            <strong>💡 Tip:</strong> Use "Side Stripes" options to add vertical
+            stripes on the sides of jerseys and pants.
           </div>
         </div>
-      </div>
 
-      {/* Apply Button */}
-      <Button
-        onClick={handleAddTrim}
-        className="w-full h-10 touch-manipulation text-sm font-semibold"
-        size="sm"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        Apply to {TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name.split(" ")[0]}
-      </Button>
-
-      {/* Show Applied Trims */}
-      {sectionsWithTrims.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold">
-              Applied Trims ({sectionsWithTrims.length})
-            </Label>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                sectionsWithTrims.forEach((section) => {
-                  updateSection(section.id, {
-                    trimDesign: undefined,
-                    trimColor: undefined,
-                  });
-                });
-                toast.success("All trims removed");
-              }}
-              className="h-8 text-xs touch-manipulation"
-            >
-              Clear All
-            </Button>
-          </div>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {sectionsWithTrims.map((section) => (
+        {/* RIGHT COLUMN: Preview & Lists */}
+        <div className="space-y-4 mt-6 md:mt-0">
+          {/* Preview Card */}
+          <div className="p-3 bg-muted/30 rounded-lg border space-y-2">
+            <div className="flex justify-between items-center">
+              <Label className="text-xs font-semibold">Preview</Label>
+              <span className="text-[10px] text-muted-foreground uppercase">
+                {TRIM_PATTERNS.find((p) => p.id === trimPattern)?.name}
+              </span>
+            </div>
+            <div className="h-12 bg-background rounded border flex items-center justify-center relative overflow-hidden shadow-sm">
               <div
-                key={section.id}
-                className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border text-sm"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+                style={{
+                  height: `${trimWidth}px`,
+                  backgroundColor: trimColor,
+                  width: "100%",
+                  borderRadius: trimPattern === "wave" ? "50% 50%" : "0",
+                  boxShadow:
+                    trimPattern === "shadow"
+                      ? "0 2px 4px rgba(0,0,0,0.2)"
+                      : trimPattern === "embossed"
+                        ? "inset 0 2px 4px rgba(0,0,0,0.3)"
+                        : "",
+                  backgroundImage:
+                    trimPattern === "dashed"
+                      ? `repeating-linear-gradient(90deg, ${trimColor} 0, ${trimColor} 10px, transparent 10px, transparent 20px)`
+                      : trimPattern === "dotted"
+                        ? `radial-gradient(circle, ${trimColor} 30%, transparent 30%)`
+                        : trimPattern === "gradient"
+                          ? `linear-gradient(90deg, transparent 0%, ${trimColor} 50%, transparent 100%)`
+                          : trimPattern === "double"
+                            ? `repeating-linear-gradient(0deg, ${trimColor} 0, ${trimColor} 2px, transparent 2px, transparent 8px, ${trimColor} 8px, ${trimColor} 10px, transparent 10px, transparent 16px)`
+                            : undefined,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Applied Trims List */}
+          {(sectionsWithTrims.length > 0 || sideStripeLayers.length > 0) && (
+            <div className="space-y-3 border-t pt-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Active Trims
+                </Label>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    // Clear Logic if needed
+                  }}
+                  className="h-6 text-[10px] px-2 text-muted-foreground hover:text-destructive"
+                >
+                  Clear All
+                </Button>
+              </div>
+
+              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                {/* Regular Trims */}
+                {sectionsWithTrims.map((section) => (
                   <div
-                    className="w-6 h-6 rounded border-2 border-white shadow-sm flex-shrink-0"
-                    style={{ backgroundColor: section.trimColor || "#000" }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{section.name}</div>
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {section.trimDesign} pattern
+                    key={section.id}
+                    className="flex items-center justify-between p-2 bg-card rounded-lg border text-xs shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div
+                        className="w-5 h-5 rounded border border-black/10 flex-shrink-0"
+                        style={{ backgroundColor: section.trimColor || "#000" }}
+                      />
+                      <span className="truncate font-medium">{section.name}</span>
                     </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 shrink-0 hover:bg-destructive/10"
+                      onClick={() => updateSection(section.id, { trimDesign: undefined, trimColor: undefined })}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                    </Button>
                   </div>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 shrink-0 hover:bg-destructive/10 touch-manipulation mobile-delete-btn"
-                  onClick={() => {
-                    updateSection(section.id, {
-                      trimDesign: undefined,
-                      trimColor: undefined,
-                    });
-                    toast.success("Trim removed");
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                ))}
 
-      {/* Show Side Stripe Layers */}
-      {sideStripeLayers.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold">
-              Side Stripes ({sideStripeLayers.length})
-            </Label>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                sideStripeLayers.forEach((layer) => {
-                  removeTextureLayer(layer.id);
-                });
-                toast.success("All side stripes removed");
-              }}
-              className="h-8 text-xs touch-manipulation"
-            >
-              Clear All
-            </Button>
-          </div>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {sideStripeLayers.map((layer) => (
-              <div
-                key={layer.id}
-                className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-sm"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {layer.imageUrl && (
-                    <img
-                      src={layer.imageUrl}
-                      alt={layer.name}
-                      className="w-8 h-8 object-contain rounded bg-white"
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{layer.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Texture layer stripe
+                {/* Side Stripes */}
+                {sideStripeLayers.map((layer) => (
+                  <div
+                    key={layer.id}
+                    className="flex items-center justify-between p-2 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900 text-xs"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-[10px]">
+                        S
+                      </div>
+                      <span className="truncate font-medium">{layer.name}</span>
                     </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => removeTextureLayer(layer.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-blue-900 dark:text-blue-300" />
+                    </Button>
                   </div>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 shrink-0 hover:bg-destructive/10 touch-manipulation"
-                  onClick={() => {
-                    removeTextureLayer(layer.id);
-                    toast.success("Side stripe removed");
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
-      )}
-
-      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded text-xs text-blue-900 dark:text-blue-200">
-        <strong>💡 Tip:</strong> Use "Side Stripes" options to add vertical
-        stripes on the sides of jerseys and pants. These appear as texture
-        overlays on the garment.
       </div>
     </div>
   );
