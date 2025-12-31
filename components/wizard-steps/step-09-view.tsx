@@ -148,20 +148,10 @@ export function Step09View() {
     try {
       toast.info("Generating assets... (This may take a moment)");
 
-      // 1. Capture all views (Front, Back, Left, Right) in multiple formats (PNG, JPG, SVG)
+      // 1. Capture all views (Front, Back, Left, Right)
       const viewCaptures = await captureMultipleViews(canvas);
 
-      // 2. Generate Video (optional - may fail on some browsers)
-      let videoBlob: Blob | null = null;
-      try {
-        toast.info("Recording 360° video preview...");
-        videoBlob = await recordVideo(canvas);
-      } catch (e) {
-        console.error("Video generation failed:", e);
-        toast.warning("Could not generate video preview, skipping...");
-      }
-
-      // 3. Generate comprehensive PDF Spec Sheet with all views
+      // 2. Generate comprehensive PDF Spec Sheet with all views
       toast.info("Generating PDF Spec Sheet with all views...");
       const jsPDFModule = await import("jspdf");
       const jsPDF = jsPDFModule.default;
@@ -387,49 +377,29 @@ export function Step09View() {
 
       const pdfBase64 = doc.output("datauristring");
 
-      // ===== PREPARE ALL FILE ATTACHMENTS =====
+      // ===== PREPARE FILE ATTACHMENTS =====
+      // Only send PNG views + PDF to avoid payload size limits
+      // Users can download other formats manually if needed
       const files: { filename: string; content: string }[] = [];
 
-      // All views in all formats (PNG, JPG, SVG)
+      // PNG views only (4 files) - most important for production
       viewCaptures.forEach((capture) => {
         files.push({
           filename: `${fileName}-${capture.view.toLowerCase()}.png`,
           content: capture.png,
         });
-        files.push({
-          filename: `${fileName}-${capture.view.toLowerCase()}.jpg`,
-          content: capture.jpg,
-        });
-        files.push({
-          filename: `${fileName}-${capture.view.toLowerCase()}.svg`,
-          content: capture.svg,
-        });
       });
 
-      // PDF Spec Sheet
+      // PDF Spec Sheet with all color codes
       files.push({
         filename: `${fileName}-specs.pdf`,
         content: pdfBase64,
       });
 
-      // Video (if generated)
-      if (videoBlob) {
-        const reader = new FileReader();
-        reader.readAsDataURL(videoBlob);
-        await new Promise<void>((resolve) => {
-          reader.onloadend = () => {
-            if (reader.result) {
-              files.push({
-                filename: `${fileName}-360.${videoBlob!.type === "video/mp4" ? "mp4" : "webm"}`,
-                content: reader.result as string,
-              });
-            }
-            resolve();
-          };
-        });
-      }
+      // Note: Video removed from email to reduce payload
+      // Users can use the 360° Video button to download separately
 
-      toast.info("Sending email with all assets...");
+      toast.info("Sending email with design package...");
 
       const response = await fetch("/api/send-design", {
         method: "POST",

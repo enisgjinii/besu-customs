@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
+// Increase body size limit for large attachments (multiple image views)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "50mb",
+    },
+  },
+};
+
+// For App Router, also export runtime config
+export const maxDuration = 60; // seconds
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -105,9 +117,8 @@ export async function POST(req: NextRequest) {
 
                     <p>Attached you will find the <strong>complete design package</strong> for your custom design configuration. This package includes:</p>
                     <ul style="color: #4b5563; margin-bottom: 20px;">
-                        <li>📸 <strong>4 High-Resolution Views</strong> (Front, Back, Left, Right) in PNG, JPG, and SVG formats</li>
+                        <li>📸 <strong>4 High-Resolution Views</strong> (Front, Back, Left, Right) in PNG format</li>
                         <li>📄 <strong>Specification Sheet</strong> (PDF) with all views and color codes</li>
-                        ${attachments.some((a: any) => a.filename.endsWith(".mp4") || a.filename.endsWith(".webm")) ? "<li>📽️ <strong>360° Video Preview</strong></li>" : ""}
                     </ul>
 
                     <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin-bottom: 25px;">
