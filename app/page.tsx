@@ -68,12 +68,12 @@ export default function Home() {
   if (isMobile) {
     return (
       <div className="h-[100dvh] w-screen bg-white dark:bg-black flex flex-col overflow-hidden">
-        {/* 3D Viewer - 40% of viewport height */}
-        <div className="h-[40vh] min-h-[200px] flex-shrink-0 relative bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
+        {/* 3D Viewer - 45% of viewport height (increased from 40%) */}
+        <div className="h-[45vh] min-h-[250px] flex-shrink-0 relative bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
           <Scene />
         </div>
 
-        {/* Controls Area - 60% of viewport, scrollable */}
+        {/* Controls Area - 55% of viewport, scrollable */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <ConfiguratorWizard />
         </div>

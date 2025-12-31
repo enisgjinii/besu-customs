@@ -81,18 +81,27 @@ export function Step04SchoolLogo() {
 
   // Handle selecting a predefined school logo
   const handleLogoSelect = (logo: Pattern) => {
-    setSelectedLogoId(logo.id);
-
-    // Enter placement mode with this logo
-    setPendingLayer({
-      type: "image",
-      imageUrl: logo.thumbnail,
+    // Immediately add to center chest instead of placement mode
+    // This restores the "easier" workflow users preferred
+    const newId = uuidv4();
+    addTextureLayer({
+      id: newId,
       name: logo.name,
+      type: "image",
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      order: textureLayers.length,
+      imageUrl: logo.thumbnail,
+      position: [0.5, 0.35, 0], // Center chest
+      rotation: [0, 0, 0],
       scale: [0.3, 0.3, 1],
-      rotation: [0, 0, 0]
+      flipX: false,
     });
-    setPlacementMode(true);
-    toast.info(`Click on the model to place "${logo.name}"`);
+
+    setSelectedTextureLayerId(newId);
+    toast.success(`Added "${logo.name}" to model`);
   };
 
   const logos = textureLayers.filter((l) => l.type === "image");

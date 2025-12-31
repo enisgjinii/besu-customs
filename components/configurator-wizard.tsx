@@ -224,7 +224,7 @@ export function ConfiguratorWizard() {
           className="h-full overflow-y-auto overscroll-y-auto"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <div className="p-4 max-w-3xl mx-auto pb-20">
+          <div className="p-4 max-w-3xl mx-auto pb-32">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}

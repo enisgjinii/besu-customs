@@ -143,7 +143,7 @@ export function Step06Text() {
       <div className="flex-1 min-h-0 md:grid md:grid-cols-2 md:gap-6 overflow-hidden">
 
         {/* LEFT PANE: Input & List */}
-        <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-6 overflow-y-auto pr-1">
           {/* Input Area */}
           {isPlacementMode ? (
             <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl text-center space-y-3 animate-pulse shrink-0">
