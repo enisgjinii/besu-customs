@@ -148,7 +148,7 @@ export const removeBackgroundAdvanced = async (
     } = options;
 
     const defaultConfig: Partial<Config> = {
-        publicPath: "/imgly-background-removal/", // Use local assets
+        publicPath: "/imgly-background-removal/package/dist/", // Use local assets
         debug: process.env.NODE_ENV === "development",
     };
 
@@ -308,7 +308,7 @@ export const preloadBackgroundRemovalModel = async (
                 try {
                     await imglyRemoveBackground(blob, {
                         ...qualityConfigs[quality],
-                        publicPath: "/imgly-background-removal/",
+                        publicPath: "/imgly-background-removal/package/dist/",
                         debug: process.env.NODE_ENV === "development",
                     });
                 } catch {
