@@ -59,21 +59,29 @@ export function Step07Images() {
         if (autoRemoveBg) {
           setIsProcessing(true);
           setBgRemovalProgress(0);
-          const toastId = toast.loading("AI removing background... 0%");
+          const toastId = toast.loading("Loading AI model... 0%");
           try {
             // Use fast model on mobile, balanced on desktop
             const removalResult = await removeBackgroundAdvanced(result, {
               quality: isMobile() ? "fast" : "balanced",
               onProgress: (progress) => {
                 setBgRemovalProgress(progress);
-                toast.loading(`AI removing background... ${progress}%`, { id: toastId });
+                const message = progress < 15 
+                  ? `Loading AI model... ${progress}%` 
+                  : `AI removing background... ${progress}%`;
+                toast.loading(message, { id: toastId });
               },
             });
             result = removalResult.dataUrl;
             toast.success(`Background removed in ${(removalResult.processingTime / 1000).toFixed(1)}s`, { id: toastId });
           } catch (error) {
             console.error("Background removal failed:", error);
-            toast.error("Background removal failed, using original image", { id: toastId });
+            const errorMessage = error instanceof Error ? error.message : "Background removal failed";
+            toast.error(errorMessage.includes("timed out") 
+              ? "AI model download timed out. Try again on WiFi." 
+              : "Background removal failed, using original image", 
+              { id: toastId }
+            );
           } finally {
             setIsProcessing(false);
             setBgRemovalProgress(0);
@@ -110,20 +118,28 @@ export function Step07Images() {
     if (layer?.imageUrl) {
       setIsProcessing(true);
       setBgRemovalProgress(0);
-      const toastId = toast.loading("AI removing background... 0%");
+      const toastId = toast.loading("Loading AI model... 0%");
       try {
         const removalResult = await removeBackgroundAdvanced(layer.imageUrl, {
           quality: isMobile() ? "fast" : "balanced",
           onProgress: (progress) => {
             setBgRemovalProgress(progress);
-            toast.loading(`AI removing background... ${progress}%`, { id: toastId });
+            const message = progress < 15 
+              ? `Loading AI model... ${progress}%` 
+              : `AI removing background... ${progress}%`;
+            toast.loading(message, { id: toastId });
           },
         });
         updateTextureLayer(layerId, { imageUrl: removalResult.dataUrl });
         toast.success(`Background removed in ${(removalResult.processingTime / 1000).toFixed(1)}s`, { id: toastId });
       } catch (error) {
         console.error("Background removal failed:", error);
-        toast.error("Background removal failed", { id: toastId });
+        const errorMessage = error instanceof Error ? error.message : "Background removal failed";
+        toast.error(errorMessage.includes("timed out") 
+          ? "AI model download timed out. Try again on WiFi." 
+          : "Background removal failed", 
+          { id: toastId }
+        );
       } finally {
         setIsProcessing(false);
         setBgRemovalProgress(0);

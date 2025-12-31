@@ -145,7 +145,8 @@ export const removeBackgroundAdvanced = async (
         onProgress,
         useCache = true,
         outputFormat = "png",
-    } = options;
+        timeout = 120000, // 2 minute timeout default
+    } = options as RemovalOptions & { timeout?: number };
 
     const defaultConfig: Partial<Config> = {
         publicPath: "/imgly-background-removal/package/dist/", // Use local assets
@@ -181,43 +182,94 @@ export const removeBackgroundAdvanced = async (
     // Get quality configuration
     const config = qualityConfigs[quality];
 
-    // Process with @imgly/background-removal
-    const resultBlob = await imglyRemoveBackground(inputBlob, {
-        ...defaultConfig,
-        ...config,
-        output: {
-            format: outputFormat === "webp" ? "image/webp" : "image/png",
-            quality: config.output?.quality ?? 0.9,
-        },
-        progress: (key: string, current: number, total: number) => {
-            if (onProgress) {
-                const progress = Math.round((current / total) * 100);
-                onProgress(progress);
+    // Track if we've received any progress updates
+    let hasReceivedProgress = false;
+    let lastProgressTime = Date.now();
+    
+    // Create a fake progress indicator for model loading phase
+    let fakeProgressInterval: ReturnType<typeof setInterval> | null = null;
+    let fakeProgress = 0;
+    
+    if (onProgress) {
+        // Show loading progress while model downloads (before real progress starts)
+        fakeProgressInterval = setInterval(() => {
+            if (!hasReceivedProgress && fakeProgress < 15) {
+                fakeProgress += 1;
+                onProgress(fakeProgress);
             }
-        },
-    });
-
-    // Convert result to data URL
-    const dataUrl = await blobToDataUrl(resultBlob);
-
-    // Cache the result
-    if (useCache && cacheKey) {
-        // Manage cache size
-        if (resultCache.size >= MAX_CACHE_SIZE) {
-            const firstKey = resultCache.keys().next().value;
-            if (firstKey) resultCache.delete(firstKey);
-        }
-        resultCache.set(cacheKey, dataUrl);
+        }, 2000); // Increment every 2 seconds during model load
     }
 
-    const processingTime = performance.now() - startTime;
+    // Create timeout promise
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+            reject(new Error(`Background removal timed out after ${timeout / 1000}s. The AI model may still be downloading. Try again or use a smaller image.`));
+        }, timeout);
+    });
 
-    return {
-        dataUrl,
-        processingTime,
-        fromCache: false,
-        originalSize,
-    };
+    try {
+        // Process with @imgly/background-removal with timeout
+        const resultBlob = await Promise.race([
+            imglyRemoveBackground(inputBlob, {
+                ...defaultConfig,
+                ...config,
+                output: {
+                    format: outputFormat === "webp" ? "image/webp" : "image/png",
+                    quality: config.output?.quality ?? 0.9,
+                },
+                progress: (key: string, current: number, total: number) => {
+                    hasReceivedProgress = true;
+                    lastProgressTime = Date.now();
+                    
+                    // Clear fake progress once real progress starts
+                    if (fakeProgressInterval) {
+                        clearInterval(fakeProgressInterval);
+                        fakeProgressInterval = null;
+                    }
+                    
+                    if (onProgress) {
+                        // Map progress to 15-100 range (0-15 was model loading)
+                        const progress = 15 + Math.round((current / total) * 85);
+                        onProgress(Math.min(progress, 100));
+                    }
+                },
+            }),
+            timeoutPromise,
+        ]);
+
+        // Clear fake progress interval
+        if (fakeProgressInterval) {
+            clearInterval(fakeProgressInterval);
+        }
+
+        // Convert result to data URL
+        const dataUrl = await blobToDataUrl(resultBlob);
+
+        // Cache the result
+        if (useCache && cacheKey) {
+            // Manage cache size
+            if (resultCache.size >= MAX_CACHE_SIZE) {
+                const firstKey = resultCache.keys().next().value;
+                if (firstKey) resultCache.delete(firstKey);
+            }
+            resultCache.set(cacheKey, dataUrl);
+        }
+
+        const processingTime = performance.now() - startTime;
+
+        return {
+            dataUrl,
+            processingTime,
+            fromCache: false,
+            originalSize,
+        };
+    } catch (error) {
+        // Clear fake progress interval on error
+        if (fakeProgressInterval) {
+            clearInterval(fakeProgressInterval);
+        }
+        throw error;
+    }
 };
 
 /**

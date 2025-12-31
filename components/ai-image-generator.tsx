@@ -96,7 +96,7 @@ export function AIImageGenerator() {
   const handleApplyImage = async () => {
     if (!generatedImage) return;
 
-    const toastId = toast.loading("AI removing background... 0%");
+    const toastId = toast.loading("Loading AI model... 0%");
 
     // Apply AI background removal to make the image blend better with garments
     let processedUrl = generatedImage.imageURL;
@@ -109,14 +109,23 @@ export function AIImageGenerator() {
       const result = await removeBackgroundAdvanced(blob, {
         quality: "balanced",
         onProgress: (progress) => {
-          toast.loading(`AI removing background... ${progress}%`, { id: toastId });
+          const message = progress < 15 
+            ? `Loading AI model... ${progress}%` 
+            : `AI removing background... ${progress}%`;
+          toast.loading(message, { id: toastId });
         },
       });
       processedUrl = result.dataUrl;
       console.log(`✅ Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`);
+      toast.success(`Background removed!`, { id: toastId });
     } catch (error) {
       console.warn("Background removal failed, using original image:", error);
-      toast.error("Background removal failed, using original", { id: toastId });
+      const errorMessage = error instanceof Error ? error.message : "Background removal failed";
+      toast.error(errorMessage.includes("timed out") 
+        ? "AI model download timed out. Try again on WiFi." 
+        : "Background removal failed, using original", 
+        { id: toastId }
+      );
     }
 
     // Dispatch event for other components to pick up
