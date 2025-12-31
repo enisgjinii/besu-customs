@@ -43,6 +43,65 @@ export function Step09View() {
     XS: 0, S: 0, M: 0, L: 0, XL: 0, "2XL": 0, "3XL": 0
   });
 
+  // Get store function for camera view control
+  const setLockedView = useConfiguratorStore((state) => state.setLockedView);
+
+  // Helper to wait for camera animation to complete
+  const waitForCameraAnimation = (ms: number = 400): Promise<void> => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  };
+
+  // Helper to capture canvas as PNG data URL
+  const captureCanvasPNG = (canvas: HTMLCanvasElement): string => {
+    return canvas.toDataURL("image/png", 1.0);
+  };
+
+  // Helper to capture canvas as JPG data URL
+  const captureCanvasJPG = (canvas: HTMLCanvasElement): string => {
+    return canvas.toDataURL("image/jpeg", 0.92);
+  };
+
+  // Helper to create SVG wrapper from PNG
+  const createSVGFromPNG = (pngDataUrl: string, width: number, height: number): string => {
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+      <image href="${pngDataUrl}" x="0" y="0" width="${width}" height="${height}" />
+    </svg>`;
+    return `data:image/svg+xml;base64,${btoa(svgContent)}`;
+  };
+
+  // Capture all views (front, back, left, right) in multiple formats
+  const captureMultipleViews = async (canvas: HTMLCanvasElement): Promise<{
+    view: string;
+    png: string;
+    jpg: string;
+    svg: string;
+  }[]> => {
+    const views = ["Front", "Back", "Left", "Right"];
+    const results: { view: string; png: string; jpg: string; svg: string }[] = [];
+
+    for (const view of views) {
+      toast.info(`Capturing ${view} view...`);
+
+      // Set camera to this view
+      setLockedView(view);
+
+      // Wait for camera to animate to position
+      await waitForCameraAnimation(500);
+
+      // Capture in all formats
+      const png = captureCanvasPNG(canvas);
+      const jpg = captureCanvasJPG(canvas);
+      const svg = createSVGFromPNG(png, canvas.width, canvas.height);
+
+      results.push({ view, png, jpg, svg });
+    }
+
+    // Reset camera view
+    setLockedView(null);
+
+    return results;
+  };
+
   // Helper to record video as a Promise
   const recordVideo = async (canvas: HTMLCanvasElement): Promise<Blob | null> => {
     return new Promise((resolve) => {
@@ -75,6 +134,7 @@ export function Step09View() {
     });
   };
 
+
   const handleSendEmail = async (data: { recipientEmail: string; clientEmails: string[]; message: string }) => {
     setIsSendingEmail(true);
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
@@ -88,125 +148,120 @@ export function Step09View() {
     try {
       toast.info("Generating assets... (This may take a moment)");
 
-      // 1. Capture High-Res Image
-      const imgDataUrl = canvas.toDataURL("image/png", 1.0);
+      // 1. Capture all views (Front, Back, Left, Right) in multiple formats (PNG, JPG, SVG)
+      const viewCaptures = await captureMultipleViews(canvas);
 
-      // 2. Generate Video
+      // 2. Generate Video (optional - may fail on some browsers)
       let videoBlob: Blob | null = null;
       try {
         toast.info("Recording 360° video preview...");
         videoBlob = await recordVideo(canvas);
       } catch (e) {
         console.error("Video generation failed:", e);
-        toast.error("Could not generate video preview, skipping...");
+        toast.warning("Could not generate video preview, skipping...");
       }
 
-      // 3. Generate PDF Spec Sheet
-      toast.info("Generating PDF Spec Sheet...");
-      // Dynamic import to avoid SSR issues
+      // 3. Generate comprehensive PDF Spec Sheet with all views
+      toast.info("Generating PDF Spec Sheet with all views...");
       const jsPDFModule = await import("jspdf");
       const jsPDF = jsPDFModule.default;
       const doc = new jsPDF();
 
-      // Header
-      doc.setFontSize(22);
-      doc.text("Besu Customs - Design Spec", 20, 20);
-
-      doc.setFontSize(12);
-      doc.text(`Design Name: ${fileName}`, 20, 30);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 36);
-
-      // --- NEW: Team & Order Info ---
-      if (teamName || contactName) {
-        doc.setFontSize(14);
-        doc.text("Team Information", 120, 30);
-        doc.setFontSize(10);
-
-        let infoY = 36;
-        if (teamName) {
-          doc.text(`Team: ${teamName}`, 120, infoY);
-          infoY += 5;
-        }
-        if (contactName) {
-          doc.text(`Contact: ${contactName}`, 120, infoY);
-          infoY += 5;
-        }
-        if (phoneNumber) {
-          doc.text(`Phone: ${phoneNumber}`, 120, infoY);
-        }
-      }
-
-      // --- NEW: Size Breakdown Table ---
-      doc.setDrawColor(200, 200, 200);
-      doc.setFillColor(245, 245, 245);
-      doc.rect(120, 55, 80, 45, "F");
-
-      doc.setFontSize(11);
-      doc.text("Size Breakdown", 125, 62);
-
-      doc.setFontSize(9);
-      let sizeY = 70;
-      let col = 0;
-      let totalQty = 0;
-
-      Object.entries(sizes).forEach(([size, qty]) => {
-        const x = 125 + (col * 18);
-        // Label
-        doc.setTextColor(100, 100, 100);
-        doc.text(size, x, sizeY);
-        // Qty
-        doc.setTextColor(0, 0, 0);
-        doc.setFont("helvetica", "bold");
-        doc.text(((qty || 0).toString()), x, sizeY + 5);
-        doc.setFont("helvetica", "normal");
-
-        totalQty += (qty || 0);
-
-        col++;
-        if (col > 3) {
-          col = 0;
-          sizeY += 12;
-        }
-      });
-
-      // Total
-      doc.setFontSize(10);
-      doc.text(`Total Qty: ${totalQty}`, 125, 95);
-
-      // Design Preview Image in PDF
-      // Aspect ratio of canvas
-      const imgProps = (doc as any).getImageProperties(imgDataUrl);
-      const pdfWidth = doc.internal.pageSize.getWidth();
-      const imgWidth = 100;
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-      doc.addImage(imgDataUrl, "PNG", 20, 45, imgWidth, imgHeight);
-
-      // --- PDF GENERATION START ---
-      // Material Details Table
-      let yPos = 45 + imgHeight + 15;
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Material Configuration", 20, yPos);
-      yPos += 10;
-
-      // Table Header
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text("PART", 20, yPos);
-      doc.text("COLOR NAME", 80, yPos);
-      doc.text("HEX", 130, yPos);
-      doc.text("PANTONE MATCH", 160, yPos);
-
-      yPos += 4;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, yPos - 1, 190, yPos - 1);
-      yPos += 6;
-
-      doc.setTextColor(0, 0, 0);
       const sections = useConfiguratorStore.getState().sections;
 
+      // ===== PAGE 1: HEADER & 4-VIEW GRID =====
+      doc.setFontSize(24);
+      doc.setTextColor(17, 24, 39); // Dark gray
+      doc.text("BESU CUSTOMS", 20, 20);
+
+      doc.setFontSize(14);
+      doc.setTextColor(59, 130, 246); // Blue accent
+      doc.text("Design Specification Sheet", 20, 28);
+
+      doc.setFontSize(10);
+      doc.setTextColor(107, 114, 128); // Muted
+      doc.text(`Design: ${fileName}`, 20, 38);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 44);
+
+      // Team Info (right side)
+      if (teamName || contactName) {
+        doc.setFontSize(11);
+        doc.setTextColor(17, 24, 39);
+        doc.text("Team Information", 130, 38);
+        doc.setFontSize(9);
+        doc.setTextColor(75, 85, 99);
+        let infoY = 44;
+        if (teamName) { doc.text(`Team: ${teamName}`, 130, infoY); infoY += 5; }
+        if (contactName) { doc.text(`Contact: ${contactName}`, 130, infoY); infoY += 5; }
+        if (phoneNumber) { doc.text(`Phone: ${phoneNumber}`, 130, infoY); }
+      }
+
+      // 4-View Grid
+      doc.setFontSize(12);
+      doc.setTextColor(17, 24, 39);
+      doc.text("Design Views", 20, 58);
+      doc.setDrawColor(229, 231, 235);
+      doc.line(20, 61, 190, 61);
+
+      // Grid positions for 4 views (2x2 grid)
+      const viewGrid = [
+        { label: "Front", x: 20, y: 68 },
+        { label: "Back", x: 105, y: 68 },
+        { label: "Left", x: 20, y: 135 },
+        { label: "Right", x: 105, y: 135 },
+      ];
+
+      viewCaptures.forEach((capture, i) => {
+        const grid = viewGrid[i];
+        const imgProps = (doc as any).getImageProperties(capture.png);
+        const maxWidth = 75;
+        const maxHeight = 60;
+        const ratio = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
+        const imgW = imgProps.width * ratio;
+        const imgH = imgProps.height * ratio;
+
+        // View label
+        doc.setFontSize(9);
+        doc.setTextColor(107, 114, 128);
+        doc.text(grid.label, grid.x, grid.y - 2);
+
+        // Image with border
+        doc.setDrawColor(229, 231, 235);
+        doc.rect(grid.x, grid.y, maxWidth, maxHeight);
+        doc.addImage(capture.png, "PNG", grid.x + (maxWidth - imgW) / 2, grid.y + (maxHeight - imgH) / 2, imgW, imgH);
+      });
+
+      // ===== PAGE 2: COLOR SPECIFICATIONS =====
+      doc.addPage();
+      doc.setFontSize(18);
+      doc.setTextColor(17, 24, 39);
+      doc.text("Color Specifications", 20, 20);
+
+      doc.setFontSize(10);
+      doc.setTextColor(220, 38, 38); // Red for important
+      doc.text("⚠️ USE THESE PANTONE CODES FOR PRINTING", 20, 28);
+
+      // Color Table Header
+      let yPos = 40;
+      doc.setFillColor(243, 244, 246);
+      doc.rect(20, yPos - 5, 170, 10, "F");
+
+      doc.setFontSize(9);
+      doc.setTextColor(75, 85, 99);
+      doc.setFont("helvetica", "bold");
+      doc.text("PART / ZONE", 22, yPos);
+      doc.text("PANTONE CODE", 70, yPos);
+      doc.text("HEX CODE", 115, yPos);
+      doc.text("COLOR NAME", 145, yPos);
+      doc.setFont("helvetica", "normal");
+
+      yPos += 10;
+      doc.setDrawColor(229, 231, 235);
+      doc.line(20, yPos - 2, 190, yPos - 2);
+
+      // Color rows
+      doc.setTextColor(17, 24, 39);
       sections.forEach((section) => {
-        // Check page break
         if (yPos > 270) {
           doc.addPage();
           yPos = 20;
@@ -214,50 +269,88 @@ export function Step09View() {
 
         const pantone = findNearestPantone(section.color);
 
-        doc.text(section.name, 20, yPos);
-        doc.text(pantone.name, 80, yPos);
-        doc.text(section.color.toUpperCase(), 130, yPos);
-        doc.text(pantone.code, 160, yPos);
+        // Draw color swatch
+        const hexColor = section.color.replace("#", "");
+        const r = parseInt(hexColor.substring(0, 2), 16);
+        const g = parseInt(hexColor.substring(2, 4), 16);
+        const b = parseInt(hexColor.substring(4, 6), 16);
+        doc.setFillColor(r, g, b);
+        doc.rect(22, yPos - 3, 8, 6, "F");
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(22, yPos - 3, 8, 6, "S");
 
-        yPos += 7;
+        doc.setFontSize(9);
+        const safeName = section.name.length > 18 ? section.name.substring(0, 16) + "..." : section.name;
+        doc.text(safeName, 32, yPos);
+        doc.setFont("helvetica", "bold");
+        doc.text(pantone.code, 70, yPos);
+        doc.setFont("helvetica", "normal");
+        doc.text(section.color.toUpperCase(), 115, yPos);
+        const safePantoneName = pantone.name.length > 15 ? pantone.name.substring(0, 13) + "..." : pantone.name;
+        doc.text(safePantoneName, 145, yPos);
+
+        yPos += 9;
       });
 
-      yPos += 5;
-
-      // Decals / Elements Table
-      doc.setFontSize(16);
-      doc.text("Applied Elements", 20, yPos);
-      yPos += 10;
-
-      if (textureLayers.length === 0) {
-        doc.setFontSize(10);
-        doc.text("No custom elements applied.", 20, yPos);
+      // Size Breakdown (if quantities provided)
+      const totalQty = Object.values(sizes).reduce((a, b) => a + (b || 0), 0);
+      if (totalQty > 0) {
         yPos += 10;
-      } else {
-        // Table Header
+        doc.setFontSize(14);
+        doc.setTextColor(17, 24, 39);
+        doc.text("Size Breakdown", 20, yPos);
+        yPos += 8;
+
+        doc.setFillColor(249, 250, 251);
+        const sizeBoxHeight = 25;
+        doc.rect(20, yPos - 3, 170, sizeBoxHeight, "F");
+
+        let col = 0;
+        doc.setFontSize(8);
+        Object.entries(sizes).forEach(([size, qty]) => {
+          const x = 25 + col * 22;
+          doc.setTextColor(107, 114, 128);
+          doc.text(size, x, yPos + 4);
+          doc.setTextColor(17, 24, 39);
+          doc.setFont("helvetica", "bold");
+          doc.text(String(qty || 0), x, yPos + 11);
+          doc.setFont("helvetica", "normal");
+          col++;
+        });
+
+        // Total
         doc.setFontSize(10);
-        doc.setTextColor(100, 100, 100);
-        doc.text("TYPE", 20, yPos);
-        doc.text("CONTENT / NAME", 50, yPos);
+        doc.setTextColor(59, 130, 246);
+        doc.text(`TOTAL: ${totalQty}`, 150, yPos + 8);
+        yPos += sizeBoxHeight + 5;
+      }
+
+      // Applied Elements Table
+      if (textureLayers.length > 0) {
+        yPos += 10;
+        doc.setFontSize(14);
+        doc.setTextColor(17, 24, 39);
+        doc.text("Applied Elements", 20, yPos);
+        yPos += 10;
+
+        doc.setFontSize(8);
+        doc.setTextColor(107, 114, 128);
+        doc.text("TYPE", 22, yPos);
+        doc.text("CONTENT", 50, yPos);
         doc.text("DETAILS", 110, yPos);
-
-        yPos += 4;
+        yPos += 5;
         doc.line(20, yPos - 1, 190, yPos - 1);
-        yPos += 6;
+        yPos += 5;
 
-        doc.setTextColor(0, 0, 0);
-
+        doc.setTextColor(17, 24, 39);
         textureLayers.forEach((layer) => {
-          if (yPos > 270) {
-            doc.addPage();
-            yPos = 20;
-          }
+          if (yPos > 270) { doc.addPage(); yPos = 20; }
 
           const typeStr = layer.type.toUpperCase();
-          let contentStr = layer.name;
+          let contentStr = layer.name || "";
           let detailsStr = "";
 
-          if (layer.type === 'text') {
+          if (layer.type === "text") {
             contentStr = `"${layer.text}"`;
             const textPantone = findNearestPantone(layer.textColor || "#000000");
             detailsStr = `Font: ${layer.fontFamily}, Color: ${textPantone.code} (${layer.textColor})`;
@@ -265,58 +358,61 @@ export function Step09View() {
             detailsStr = `Scale: ${(layer.scale?.[0] || 1).toFixed(2)}x`;
           }
 
-          doc.text(typeStr, 20, yPos);
-          // Truncate content if too long
+          doc.setFontSize(8);
+          doc.text(typeStr, 22, yPos);
           const safeContent = contentStr.length > 25 ? contentStr.substring(0, 22) + "..." : contentStr;
           doc.text(safeContent, 50, yPos);
-
-          // Allow details to wrap or truncate
-          const splitDetails = doc.splitTextToSize(detailsStr, 80);
+          const splitDetails = doc.splitTextToSize(detailsStr, 75);
           doc.text(splitDetails, 110, yPos);
-
-          yPos += (splitDetails.length * 5) + 4;
+          yPos += Math.max(splitDetails.length * 4, 6) + 3;
         });
       }
 
-      // Notes
+      // Notes section
       if (deliveryNotes) {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
-        } else {
-          yPos += 10;
-        }
+        if (yPos > 250) { doc.addPage(); yPos = 20; } else { yPos += 10; }
 
-        doc.setFontSize(16);
+        doc.setFontSize(14);
+        doc.setTextColor(17, 24, 39);
         doc.text("Production Notes", 20, yPos);
-        yPos += 10;
-        doc.setFontSize(10);
+        yPos += 8;
 
-        // Draw box for notes
-        const splitNotes = doc.splitTextToSize(deliveryNotes, 170);
-        doc.setDrawColor(200, 200, 200);
-        doc.setFillColor(250, 250, 250);
-        doc.rect(20, yPos - 5, 170, (splitNotes.length * 5) + 10, "FD");
-
-        doc.text(splitNotes, 25, yPos);
+        doc.setFontSize(9);
+        const splitNotes = doc.splitTextToSize(deliveryNotes, 165);
+        doc.setFillColor(254, 249, 195); // Yellow highlight
+        doc.rect(20, yPos - 3, 170, splitNotes.length * 5 + 8, "F");
+        doc.setTextColor(75, 85, 99);
+        doc.text(splitNotes, 25, yPos + 3);
       }
-      // --- PDF GENERATION END ---
 
       const pdfBase64 = doc.output("datauristring");
 
-      // Prepare files payload
-      const files = [
-        {
-          filename: `${fileName}-preview.png`,
-          content: imgDataUrl, // Data URL
-        },
-        {
-          filename: `${fileName}-specs.pdf`,
-          content: pdfBase64, // Data URL
-        }
-      ];
+      // ===== PREPARE ALL FILE ATTACHMENTS =====
+      const files: { filename: string; content: string }[] = [];
 
-      // Convert video blob to base64 if it exists
+      // All views in all formats (PNG, JPG, SVG)
+      viewCaptures.forEach((capture) => {
+        files.push({
+          filename: `${fileName}-${capture.view.toLowerCase()}.png`,
+          content: capture.png,
+        });
+        files.push({
+          filename: `${fileName}-${capture.view.toLowerCase()}.jpg`,
+          content: capture.jpg,
+        });
+        files.push({
+          filename: `${fileName}-${capture.view.toLowerCase()}.svg`,
+          content: capture.svg,
+        });
+      });
+
+      // PDF Spec Sheet
+      files.push({
+        filename: `${fileName}-specs.pdf`,
+        content: pdfBase64,
+      });
+
+      // Video (if generated)
       if (videoBlob) {
         const reader = new FileReader();
         reader.readAsDataURL(videoBlob);
@@ -324,8 +420,8 @@ export function Step09View() {
           reader.onloadend = () => {
             if (reader.result) {
               files.push({
-                filename: `${fileName}-360.${videoBlob!.type === 'video/mp4' ? 'mp4' : 'webm'}`,
-                content: reader.result as string
+                filename: `${fileName}-360.${videoBlob!.type === "video/mp4" ? "mp4" : "webm"}`,
+                content: reader.result as string,
               });
             }
             resolve();
@@ -333,7 +429,7 @@ export function Step09View() {
         });
       }
 
-      toast.info("Sending email...");
+      toast.info("Sending email with all assets...");
 
       const response = await fetch("/api/send-design", {
         method: "POST",
@@ -343,32 +439,32 @@ export function Step09View() {
           clientEmails: data.clientEmails,
           files,
           message: data.message,
-          designName: fileName, // Pass extra metadata for template
+          designName: fileName,
           orderMetadata: {
             teamName,
             contactName,
             phoneNumber,
-            sizes
+            sizes,
           },
           orderDetails: {
-            materials: sections.map(s => {
+            materials: sections.map((s) => {
               const p = findNearestPantone(s.color);
               return { name: s.name, color: s.color, pantone: p.code, pantoneName: p.name };
             }),
-            elements: textureLayers.map(l => ({
+            elements: textureLayers.map((l) => ({
               type: l.type,
               name: l.name,
-              detail: l.type === 'text' ? `"${l.text}"` : 'Image'
+              detail: l.type === "text" ? `"${l.text}"` : "Image",
             })),
-            notes: deliveryNotes
-          }
-        })
+            notes: deliveryNotes,
+          },
+        }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        toast.success("Design package sent successfully!");
+        toast.success(`Design package sent! (${files.length} attachments)`);
         setEmailOpen(false);
       } else {
         toast.error(result.error || "Failed to send email");
@@ -379,6 +475,7 @@ export function Step09View() {
     } finally {
       setIsSendingEmail(false);
       setAutoRotate(false);
+      setLockedView(null); // Reset camera view
     }
   };
 

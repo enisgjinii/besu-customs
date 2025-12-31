@@ -103,12 +103,18 @@ export async function POST(req: NextRequest) {
         : ""
       }
 
-                    <p>Attached you will find the assets for your custom design configuration. This package includes:</p>
-                    <ul style="color: #4b5563; margin-bottom: 30px;">
-                        <li>📸 <strong>High-Resolution Preview</strong> (PNG)</li>
-                        <li>📄 <strong>Specification Sheet</strong> (PDF)</li>
+                    <p>Attached you will find the <strong>complete design package</strong> for your custom design configuration. This package includes:</p>
+                    <ul style="color: #4b5563; margin-bottom: 20px;">
+                        <li>📸 <strong>4 High-Resolution Views</strong> (Front, Back, Left, Right) in PNG, JPG, and SVG formats</li>
+                        <li>📄 <strong>Specification Sheet</strong> (PDF) with all views and color codes</li>
                         ${attachments.some((a: any) => a.filename.endsWith(".mp4") || a.filename.endsWith(".webm")) ? "<li>📽️ <strong>360° Video Preview</strong></li>" : ""}
                     </ul>
+
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin-bottom: 25px;">
+                        <strong style="display: block; color: #92400e; font-size: 14px; margin-bottom: 8px;">⚠️ IMPORTANT: COLOR CODES FOR PRINTING</strong>
+                        <p style="margin: 0; color: #78350f; font-size: 13px;">Use the Pantone codes below for accurate color reproduction. The PDF spec sheet contains a complete color reference with swatches.</p>
+                    </div>
+
 
                     ${orderMetadata ? `
                     <h3>Order Information</h3>
@@ -164,10 +170,16 @@ export async function POST(req: NextRequest) {
           .map(
             (m: any) => `
                             <tr>
-                                <td>${m.name}</td>
+                                <td style="vertical-align: middle;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 20px; height: 20px; background-color: ${m.color}; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                        <span>${m.name}</span>
+                                    </div>
+                                </td>
                                 <td>
-                                    <div><strong>${m.pantone}</strong> (${m.pantoneName})</div>
-                                    <div style="font-size:11px; color:#666;">Hex: ${m.color}</div>
+                                    <div style="font-size: 16px; font-weight: 700; color: #1e40af;">${m.pantone}</div>
+                                    <div style="font-size: 12px; color: #374151;">${m.pantoneName}</div>
+                                    <div style="font-size: 11px; color: #6b7280; font-family: monospace;">HEX: ${m.color.toUpperCase()}</div>
                                 </td>
                             </tr>`,
           )
