@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
       message,
       designName,
       orderDetails,
+      orderMetadata,
     } = body;
 
     if (!recipientEmail) {
@@ -108,6 +109,38 @@ export async function POST(req: NextRequest) {
                         <li>📄 <strong>Specification Sheet</strong> (PDF)</li>
                         ${attachments.some((a: any) => a.filename.endsWith(".mp4") || a.filename.endsWith(".webm")) ? "<li>📽️ <strong>360° Video Preview</strong></li>" : ""}
                     </ul>
+
+                    ${orderMetadata ? `
+                    <h3>Order Information</h3>
+                    <div style="background:#f3f4f6; padding:15px; border-radius:6px; margin-bottom:20px; font-size:14px;">
+                        <table style="width:100%;">
+                            <tr>
+                                <td style="padding-bottom:8px; width:50%;"><strong>Team Name:</strong> ${orderMetadata.teamName || "N/A"}</td>
+                                <td style="padding-bottom:8px; width:50%;"><strong>Contact:</strong> ${orderMetadata.contactName || "N/A"}</td>
+                            </tr>
+                            <tr>
+                                <td style="width:50%;"><strong>Phone:</strong> ${orderMetadata.phoneNumber || "N/A"}</td>
+                                <td style="width:50%;"><strong>Email:</strong> ${recipientEmail}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <h3>Size Breakdown</h3>
+                     <table class="details-table" style="text-align:center;">
+                        <thead>
+                            <tr style="background:#e5e7eb;">
+                                ${Object.keys(orderMetadata.sizes || {}).map((s: string) => `<th style="text-align:center; padding:8px;">${s}</th>`).join('')}
+                                <th style="text-align:center; padding:8px;">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                ${Object.values(orderMetadata.sizes || {}).map((q: any) => `<td style="font-size:16px; font-weight:500;">${q || 0}</td>`).join('')}
+                                <td style="font-size:16px; font-weight:bold; color:#2563eb;">${Object.values(orderMetadata.sizes || {}).reduce((a: any, b: any) => a + (parseInt(b) || 0), 0)}</td>
+                            </tr>
+                        </tbody>
+                     </table>
+                    ` : ''}
 
                     <h3>Design Specifications</h3>
                     <table class="details-table">

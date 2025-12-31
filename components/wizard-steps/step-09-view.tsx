@@ -35,6 +35,14 @@ export function Step09View() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [highRes, setHighRes] = useState(true); // Enable high-res by default
 
+  // Order Details State
+  const [teamName, setTeamName] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [sizes, setSizes] = useState<Record<string, number>>({
+    XS: 0, S: 0, M: 0, L: 0, XL: 0, "2XL": 0, "3XL": 0
+  });
+
   // Helper to record video as a Promise
   const recordVideo = async (canvas: HTMLCanvasElement): Promise<Blob | null> => {
     return new Promise((resolve) => {
@@ -279,6 +287,12 @@ export function Step09View() {
           files,
           message: data.message,
           designName: fileName, // Pass extra metadata for template
+          orderMetadata: {
+            teamName,
+            contactName,
+            phoneNumber,
+            sizes
+          },
           orderDetails: {
             materials: sections.map(s => {
               const p = findNearestPantone(s.color);
@@ -501,6 +515,63 @@ export function Step09View() {
             </div>
           </div>
         )}
+
+        {/* Team & Order Details */}
+        <div className="space-y-4 pt-4 border-t">
+          <h3 className="text-sm font-semibold tracking-tight">Team Information</h3>
+
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Team Name</Label>
+                <Input
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  placeholder="e.g. Wildcats"
+                  className="h-9 bg-card"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Contact Name</Label>
+                <Input
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  placeholder="Coach Smith"
+                  className="h-9 bg-card"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Phone Number</Label>
+              <Input
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="(555) 123-4567"
+                type="tel"
+                className="h-9 bg-card"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Size Breakdown (Quantity)</Label>
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              {Object.entries(sizes).map(([size, qty]) => (
+                <div key={size} className="flex flex-col gap-1 items-center bg-muted/20 p-2 rounded-lg border">
+                  <Label className="text-xs font-bold text-muted-foreground">{size}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={qty || ""}
+                    onChange={(e) => setSizes(prev => ({ ...prev, [size]: parseInt(e.target.value) || 0 }))}
+                    className="h-8 text-center bg-background w-full px-1 text-xs"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Notes</Label>
