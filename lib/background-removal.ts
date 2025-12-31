@@ -147,6 +147,11 @@ export const removeBackgroundAdvanced = async (
         outputFormat = "png",
     } = options;
 
+    const defaultConfig: Partial<Config> = {
+        publicPath: "/imgly-background-removal/", // Use local assets
+        debug: process.env.NODE_ENV === "development",
+    };
+
     const startTime = performance.now();
 
     // Generate cache key if caching enabled
@@ -178,6 +183,7 @@ export const removeBackgroundAdvanced = async (
 
     // Process with @imgly/background-removal
     const resultBlob = await imglyRemoveBackground(inputBlob, {
+        ...defaultConfig,
         ...config,
         output: {
             format: outputFormat === "webp" ? "image/webp" : "image/png",
@@ -300,7 +306,11 @@ export const preloadBackgroundRemovalModel = async (
         canvas.toBlob(async (blob) => {
             if (blob) {
                 try {
-                    await imglyRemoveBackground(blob, qualityConfigs[quality]);
+                    await imglyRemoveBackground(blob, {
+                        ...qualityConfigs[quality],
+                        publicPath: "/imgly-background-removal/",
+                        debug: process.env.NODE_ENV === "development",
+                    });
                 } catch {
                     // Ignore errors during preload
                 }
