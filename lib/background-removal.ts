@@ -1,15 +1,16 @@
 /**
- * Advanced AI-Powered Background Removal
+ * AI-Powered Background Removal
  * Uses @imgly/background-removal for professional-grade background removal
+ * https://www.npmjs.com/package/@imgly/background-removal
+ * 
  * Features:
- * - Multiple quality presets
- * - Progress tracking
+ * - Uses IMG.LY CDN for fast model delivery
+ * - Multiple quality presets (small model for mobile)
+ * - Progress tracking with download progress
  * - Result caching
- * - Mobile optimization
- * - Edge refinement options
  */
 
-import { removeBackground as imglyRemoveBackground, Config } from "@imgly/background-removal";
+import { removeBackground as imglyRemoveBackground, preload, Config } from "@imgly/background-removal";
 
 // Quality presets for different use cases
 export type QualityPreset = "fast" | "balanced" | "quality" | "ultra";
@@ -23,8 +24,8 @@ export interface RemovalOptions {
     useCache?: boolean;
     /** Output format */
     outputFormat?: "png" | "webp";
-    /** Custom ONNX model path (optional) */
-    modelPath?: string;
+    /** Timeout in ms (default 180000 = 3 minutes) */
+    timeout?: number;
 }
 
 export interface RemovalResult {
@@ -53,9 +54,10 @@ const hashString = (str: string): string => {
     return hash.toString(36);
 };
 
-// Quality preset configurations
+// Quality preset configurations - using smaller models for faster loading
 const qualityConfigs: Record<QualityPreset, Partial<Config>> = {
     fast: {
+        // Smallest model (~44MB) - best for mobile
         model: "isnet_quint8",
         output: {
             format: "image/png",
@@ -63,6 +65,7 @@ const qualityConfigs: Record<QualityPreset, Partial<Config>> = {
         },
     },
     balanced: {
+        // Medium model (~88MB) - good balance
         model: "isnet_fp16",
         output: {
             format: "image/png",
@@ -70,6 +73,7 @@ const qualityConfigs: Record<QualityPreset, Partial<Config>> = {
         },
     },
     quality: {
+        // Full model (~176MB) - best quality
         model: "isnet",
         output: {
             format: "image/png",
@@ -91,7 +95,12 @@ const qualityConfigs: Record<QualityPreset, Partial<Config>> = {
 const getImageDimensions = (source: string | Blob): Promise<{ width: number; height: number }> => {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve({ width: img.width, height: img.height });
+        img.onload = () => {
+            resolve({ width: img.width, height: img.height });
+            if (typeof source !== "string") {
+                URL.revokeObjectURL(img.src);
+            }
+        };
         img.onerror = reject;
         if (typeof source === "string") {
             img.src = source;
@@ -134,7 +143,7 @@ const blobToDataUrl = (blob: Blob): Promise<string> => {
 
 /**
  * Advanced AI-powered background removal
- * Uses neural networks for professional-grade results
+ * Uses IMG.LY CDN for model delivery (default, no publicPath needed)
  */
 export const removeBackgroundAdvanced = async (
     input: string | Blob | File,
@@ -145,13 +154,8 @@ export const removeBackgroundAdvanced = async (
         onProgress,
         useCache = true,
         outputFormat = "png",
-        timeout = 120000, // 2 minute timeout default
-    } = options as RemovalOptions & { timeout?: number };
-
-    const defaultConfig: Partial<Config> = {
-        publicPath: "/imgly-background-removal/package/dist/", // Use local assets
-        debug: process.env.NODE_ENV === "development",
-    };
+        timeout = 180000, // 3 minute timeout
+    } = options;
 
     const startTime = performance.now();
 
@@ -182,72 +186,38 @@ export const removeBackgroundAdvanced = async (
     // Get quality configuration
     const config = qualityConfigs[quality];
 
-    // Track if we've received any progress updates
-    let hasReceivedProgress = false;
-    let lastProgressTime = Date.now();
-    
-    // Create a fake progress indicator for model loading phase
-    let fakeProgressInterval: ReturnType<typeof setInterval> | null = null;
-    let fakeProgress = 0;
-    
-    if (onProgress) {
-        // Show loading progress while model downloads (before real progress starts)
-        fakeProgressInterval = setInterval(() => {
-            if (!hasReceivedProgress && fakeProgress < 15) {
-                fakeProgress += 1;
-                onProgress(fakeProgress);
-            }
-        }, 2000); // Increment every 2 seconds during model load
-    }
-
     // Create timeout promise
     const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-            reject(new Error(`Background removal timed out after ${timeout / 1000}s. The AI model may still be downloading. Try again or use a smaller image.`));
+            reject(new Error(`Background removal timed out after ${timeout / 1000}s. Try again on a faster connection.`));
         }, timeout);
     });
 
     try {
-        // Process with @imgly/background-removal with timeout
+        // Process with @imgly/background-removal
+        // Uses IMG.LY CDN by default (no publicPath = uses their CDN)
         const resultBlob = await Promise.race([
             imglyRemoveBackground(inputBlob, {
-                ...defaultConfig,
                 ...config,
                 output: {
                     format: outputFormat === "webp" ? "image/webp" : "image/png",
                     quality: config.output?.quality ?? 0.9,
                 },
                 progress: (key: string, current: number, total: number) => {
-                    hasReceivedProgress = true;
-                    lastProgressTime = Date.now();
-                    
-                    // Clear fake progress once real progress starts
-                    if (fakeProgressInterval) {
-                        clearInterval(fakeProgressInterval);
-                        fakeProgressInterval = null;
-                    }
-                    
                     if (onProgress) {
-                        // Map progress to 15-100 range (0-15 was model loading)
-                        const progress = 15 + Math.round((current / total) * 85);
-                        onProgress(Math.min(progress, 100));
+                        const progress = Math.round((current / total) * 100);
+                        onProgress(progress);
                     }
                 },
             }),
             timeoutPromise,
         ]);
 
-        // Clear fake progress interval
-        if (fakeProgressInterval) {
-            clearInterval(fakeProgressInterval);
-        }
-
         // Convert result to data URL
         const dataUrl = await blobToDataUrl(resultBlob);
 
         // Cache the result
         if (useCache && cacheKey) {
-            // Manage cache size
             if (resultCache.size >= MAX_CACHE_SIZE) {
                 const firstKey = resultCache.keys().next().value;
                 if (firstKey) resultCache.delete(firstKey);
@@ -264,17 +234,12 @@ export const removeBackgroundAdvanced = async (
             originalSize,
         };
     } catch (error) {
-        // Clear fake progress interval on error
-        if (fakeProgressInterval) {
-            clearInterval(fakeProgressInterval);
-        }
         throw error;
     }
 };
 
 /**
- * Simple wrapper for easy migration from old implementation
- * Returns just the data URL for backward compatibility
+ * Simple wrapper - returns just the data URL
  */
 export const removeBackground = async (
     input: string | Blob | File,
@@ -288,7 +253,7 @@ export const removeBackground = async (
 };
 
 /**
- * Remove background with fast preset (mobile-optimized)
+ * Remove background with fast preset (mobile-optimized, smallest model)
  */
 export const removeBackgroundFast = async (
     input: string | Blob | File,
@@ -324,15 +289,11 @@ export const clearBackgroundRemovalCache = (): void => {
 
 /**
  * Check if the browser supports background removal
- * (requires WebAssembly and modern browser features)
  */
 export const isBackgroundRemovalSupported = (): boolean => {
     if (typeof window === "undefined") return false;
-
-    // Check for WebAssembly support
     if (typeof WebAssembly === "undefined") return false;
 
-    // Check for canvas support
     try {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
@@ -347,27 +308,12 @@ export const isBackgroundRemovalSupported = (): boolean => {
  * Call this early to reduce first-use latency
  */
 export const preloadBackgroundRemovalModel = async (
-    quality: QualityPreset = "balanced"
+    quality: QualityPreset = "fast"
 ): Promise<void> => {
-    // Create a tiny 1x1 transparent image to trigger model loading
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-
-    return new Promise((resolve) => {
-        canvas.toBlob(async (blob) => {
-            if (blob) {
-                try {
-                    await imglyRemoveBackground(blob, {
-                        ...qualityConfigs[quality],
-                        publicPath: "/imgly-background-removal/package/dist/",
-                        debug: process.env.NODE_ENV === "development",
-                    });
-                } catch {
-                    // Ignore errors during preload
-                }
-            }
-            resolve();
-        });
-    });
+    try {
+        const config = qualityConfigs[quality];
+        await preload({ model: config.model });
+    } catch (error) {
+        console.warn("Failed to preload background removal model:", error);
+    }
 };
