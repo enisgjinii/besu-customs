@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { LayerControls } from "@/components/layer-controls";
 
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -259,6 +260,77 @@ export function Step06Text() {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
+                    {/* Mobile Edit Controls */}
+                    {selectedTextId === layer.id && (
+                      <div className="md:hidden p-3 pt-0 border-t mt-2 animate-in slide-in-from-top-2 fade-in duration-200" onClick={(e) => e.stopPropagation()}>
+                        <div className="space-y-4 pt-2">
+                          {/* Font Family */}
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Typeface</label>
+                            <Select
+                              value={layer.fontFamily || "Roboto"}
+                              onValueChange={(val) =>
+                                updateTextureLayer(layer.id, { fontFamily: val })
+                              }
+                            >
+                              <SelectTrigger className="h-9 text-sm bg-background w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[250px]">
+                                {FONT_FAMILIES.map((font) => (
+                                  <SelectItem
+                                    key={font}
+                                    value={font}
+                                    style={{ fontFamily: font }}
+                                    className="text-sm"
+                                  >
+                                    {font}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Size & Color Row */}
+                          <div className="flex gap-3">
+                            <div className="flex-1 space-y-1">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Size ({layer.fontSize}px)</label>
+                              <Slider
+                                value={[layer.fontSize || 80]}
+                                onValueChange={(v) =>
+                                  updateTextureLayer(layer.id, { fontSize: v[0] })
+                                }
+                                min={20}
+                                max={200}
+                                step={5}
+                                className="py-2"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Color</label>
+                              <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden border">
+                                <div
+                                  className="w-full h-full cursor-pointer"
+                                  style={{ backgroundColor: layer.textColor }}
+                                />
+                                <input
+                                  type="color"
+                                  value={layer.textColor}
+                                  onChange={(e) => updateTextureLayer(layer.id, { textColor: e.target.value })}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons (Rotate, Duplicate, etc.) */}
+                          <LayerControls
+                            layerId={layer.id}
+                            compact={true}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
