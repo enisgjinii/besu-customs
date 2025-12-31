@@ -116,6 +116,63 @@ export function Step09View() {
       doc.text(`Design Name: ${fileName}`, 20, 30);
       doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 36);
 
+      // --- NEW: Team & Order Info ---
+      if (teamName || contactName) {
+        doc.setFontSize(14);
+        doc.text("Team Information", 120, 30);
+        doc.setFontSize(10);
+
+        let infoY = 36;
+        if (teamName) {
+          doc.text(`Team: ${teamName}`, 120, infoY);
+          infoY += 5;
+        }
+        if (contactName) {
+          doc.text(`Contact: ${contactName}`, 120, infoY);
+          infoY += 5;
+        }
+        if (phoneNumber) {
+          doc.text(`Phone: ${phoneNumber}`, 120, infoY);
+        }
+      }
+
+      // --- NEW: Size Breakdown Table ---
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(245, 245, 245);
+      doc.rect(120, 55, 80, 45, "F");
+
+      doc.setFontSize(11);
+      doc.text("Size Breakdown", 125, 62);
+
+      doc.setFontSize(9);
+      let sizeY = 70;
+      let col = 0;
+      let totalQty = 0;
+
+      Object.entries(sizes).forEach(([size, qty]) => {
+        const x = 125 + (col * 18);
+        // Label
+        doc.setTextColor(100, 100, 100);
+        doc.text(size, x, sizeY);
+        // Qty
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "bold");
+        doc.text(((qty || 0).toString()), x, sizeY + 5);
+        doc.setFont("helvetica", "normal");
+
+        totalQty += (qty || 0);
+
+        col++;
+        if (col > 3) {
+          col = 0;
+          sizeY += 12;
+        }
+      });
+
+      // Total
+      doc.setFontSize(10);
+      doc.text(`Total Qty: ${totalQty}`, 125, 95);
+
       // Design Preview Image in PDF
       // Aspect ratio of canvas
       const imgProps = (doc as any).getImageProperties(imgDataUrl);

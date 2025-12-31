@@ -13,6 +13,7 @@ import {
 import { Plus, Trash2, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { LayerControls } from "@/components/layer-controls";
+import { ColorPickerModal } from "@/components/color-picker-modal";
 
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -59,6 +60,8 @@ export function Step06Text() {
   const [textInput, setTextInput] = useState("");
   const [textColor, setTextColor] = useState("#000000");
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [activeColorLayerId, setActiveColorLayerId] = useState<string | null>(null); // null = new text, string = layer id
   // Load Google Fonts
   useEffect(() => {
     const link = document.getElementById(
@@ -187,12 +190,10 @@ export function Step06Text() {
                   <div
                     className="w-8 h-8 rounded-full border shadow-sm cursor-pointer overflow-hidden transition-transform active:scale-95"
                     style={{ backgroundColor: textColor }}
-                  />
-                  <input
-                    type="color"
-                    value={textColor}
-                    onChange={(e) => setTextColor(e.target.value)}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    onClick={() => {
+                      setActiveColorLayerId(null); // New text mode
+                      setColorPickerOpen(true);
+                    }}
                   />
                 </div>
                 <Button
@@ -312,12 +313,11 @@ export function Step06Text() {
                                 <div
                                   className="w-full h-full cursor-pointer"
                                   style={{ backgroundColor: layer.textColor }}
-                                />
-                                <input
-                                  type="color"
-                                  value={layer.textColor}
-                                  onChange={(e) => updateTextureLayer(layer.id, { textColor: e.target.value })}
-                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveColorLayerId(layer.id);
+                                    setColorPickerOpen(true);
+                                  }}
                                 />
                               </div>
                             </div>
@@ -410,12 +410,10 @@ export function Step06Text() {
                       <div
                         className="w-full h-full cursor-pointer"
                         style={{ backgroundColor: selectedLayer!.textColor }}
-                      />
-                      <input
-                        type="color"
-                        value={selectedLayer!.textColor}
-                        onChange={(e) => updateTextureLayer(selectedLayer!.id, { textColor: e.target.value })}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        onClick={() => {
+                          setActiveColorLayerId(selectedLayer!.id);
+                          setColorPickerOpen(true);
+                        }}
                       />
                     </div>
                     <Input
@@ -477,6 +475,24 @@ export function Step06Text() {
           </div>
         )}
       </div>
+
+      <ColorPickerModal
+        isOpen={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+        currentColor={
+          activeColorLayerId
+            ? textureLayers.find(l => l.id === activeColorLayerId)?.textColor || "#000000"
+            : textColor
+        }
+        onColorChange={(color) => {
+          if (activeColorLayerId) {
+            updateTextureLayer(activeColorLayerId, { textColor: color });
+          } else {
+            setTextColor(color);
+          }
+        }}
+        title="Text Color"
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Palette, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { ColorPickerModal } from "@/components/color-picker-modal";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -175,6 +176,7 @@ export function Step03bTrimLines() {
   const [trimColor, setTrimColor] = useState("#000000");
   const [trimWidth, setTrimWidth] = useState(10); // pixels
   const [trimLocation, setTrimLocation] = useState("collar");
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   const handleAddTrim = () => {
     // Validate inputs
@@ -343,12 +345,10 @@ export function Step03bTrimLines() {
             <Label className="text-xs font-semibold">Appearance</Label>
             <div className="flex gap-3 items-center p-2 border rounded-lg bg-card shadow-sm">
               <div className="shrink-0">
-                <input
-                  type="color"
-                  value={trimColor}
-                  onChange={(e) => setTrimColor(e.target.value)}
-                  className="w-9 h-9 rounded-lg border cursor-pointer"
-                  style={{ padding: 0 }}
+                <div
+                  className="w-9 h-9 rounded-lg border cursor-pointer shadow-sm relative overflow-hidden"
+                  style={{ backgroundColor: trimColor }}
+                  onClick={() => setColorPickerOpen(true)}
                 />
               </div>
 
@@ -496,6 +496,14 @@ export function Step03bTrimLines() {
           )}
         </div>
       </div>
+
+      <ColorPickerModal
+        isOpen={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+        currentColor={trimColor}
+        onColorChange={setTrimColor}
+        title="Trim Color"
+      />
     </div>
   );
 }
