@@ -226,11 +226,10 @@ export function ColorPickerModal({
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${
-                      selectedPantone?.code === pantone.code
+                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
                         ? "border-primary ring-1 ring-primary"
                         : "border-transparent hover:border-primary/50"
-                    }`}
+                      }`}
                   >
                     <div
                       className="absolute inset-0"
@@ -265,11 +264,10 @@ export function ColorPickerModal({
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
-                      selectedPantone?.code === pantone.code
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:bg-muted"
-                    }`}
+                      }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
@@ -291,11 +289,10 @@ export function ColorPickerModal({
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
-                      selectedPantone?.code === pantone.code
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:bg-muted"
-                    }`}
+                      }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
@@ -308,10 +305,10 @@ export function ColorPickerModal({
                     </div>
                   </button>
                 )) || (
-                  <div className="text-xs text-muted-foreground text-center py-3">
-                    No metallic colors
-                  </div>
-                )}
+                    <div className="text-xs text-muted-foreground text-center py-3">
+                      No metallic colors
+                    </div>
+                  )}
               </div>
             </TabsContent>
 
@@ -319,9 +316,9 @@ export function ColorPickerModal({
               <div className="space-y-3 pt-1">
                 <div>
                   <label className="text-xs font-medium mb-1.5 block">
-                    Custom Hex
+                    Hex Color Code
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <div className="relative flex-1">
                       <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">
                         #
@@ -336,17 +333,77 @@ export function ColorPickerModal({
                         }}
                         className="w-full pl-6 pr-2 py-1.5 rounded border text-sm font-mono uppercase h-9"
                         placeholder="000000"
+                        maxLength={6}
                       />
                     </div>
-                    <input
-                      type="color"
-                      value={tempColor}
-                      onChange={(e) => {
-                        setTempColor(e.target.value);
-                        setSelectedPantone(null);
-                      }}
-                      className="w-9 h-9 rounded border cursor-pointer p-0.5"
+                    <div
+                      className="w-9 h-9 rounded border shadow-sm flex-shrink-0"
+                      style={{ backgroundColor: tempColor }}
+                      title="Color preview"
                     />
+                  </div>
+                </div>
+
+                {/* RGB Input Fields */}
+                <div>
+                  <label className="text-xs font-medium mb-1.5 block">
+                    RGB Values
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground">R</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="255"
+                        value={parseInt(tempColor.slice(1, 3), 16) || 0}
+                        onChange={(e) => {
+                          const r = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                          const g = parseInt(tempColor.slice(3, 5), 16) || 0;
+                          const b = parseInt(tempColor.slice(5, 7), 16) || 0;
+                          setTempColor(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                          setSelectedPantone(null);
+                        }}
+                        className="w-full py-1.5 px-2 rounded border text-sm font-mono h-9 text-center"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground">G</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="255"
+                        value={parseInt(tempColor.slice(3, 5), 16) || 0}
+                        onChange={(e) => {
+                          const r = parseInt(tempColor.slice(1, 3), 16) || 0;
+                          const g = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                          const b = parseInt(tempColor.slice(5, 7), 16) || 0;
+                          setTempColor(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                          setSelectedPantone(null);
+                        }}
+                        className="w-full py-1.5 px-2 rounded border text-sm font-mono h-9 text-center"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground">B</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="255"
+                        value={parseInt(tempColor.slice(5, 7), 16) || 0}
+                        onChange={(e) => {
+                          const r = parseInt(tempColor.slice(1, 3), 16) || 0;
+                          const g = parseInt(tempColor.slice(3, 5), 16) || 0;
+                          const b = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                          setTempColor(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                          setSelectedPantone(null);
+                        }}
+                        className="w-full py-1.5 px-2 rounded border text-sm font-mono h-9 text-center"
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
                 </div>
 

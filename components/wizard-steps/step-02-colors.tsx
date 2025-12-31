@@ -208,11 +208,10 @@ export function Step02Colors() {
 
         {/* Bottom row - custom color + actions (very compact) */}
         <div className="flex items-center gap-1.5 pt-1 border-t border-border/30">
-          <input
-            type="color"
-            value={activeSection?.color || "#ffffff"}
-            onChange={(e) => handleColorChange(e.target.value)}
-            className="w-8 h-8 rounded-lg cursor-pointer border border-border flex-shrink-0"
+          <div
+            className="w-8 h-8 rounded-lg border border-border flex-shrink-0 shadow-sm"
+            style={{ backgroundColor: activeSection?.color || "#ffffff" }}
+            title="Color preview"
           />
           <Input
             type="text"
@@ -344,18 +343,11 @@ export function Step02Colors() {
           <div className="space-y-2">
             <label className="text-xs font-semibold text-foreground">Custom Color</label>
             <div className="flex gap-2">
-              <div className="relative w-12 h-12 shrink-0">
-                <input
-                  type="color"
-                  value={activeSection?.color || "#ffffff"}
-                  onChange={(e) => handleColorChange(e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div
-                  className="w-full h-full rounded-lg border shadow-sm"
-                  style={{ backgroundColor: activeSection?.color || "#ffffff" }}
-                />
-              </div>
+              <div
+                className="w-12 h-12 rounded-lg border shadow-sm flex-shrink-0"
+                style={{ backgroundColor: activeSection?.color || "#ffffff" }}
+                title="Color preview"
+              />
               <div className="flex-1 flex flex-col gap-1">
                 <Input
                   type="text"
