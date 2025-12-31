@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfiguratorStore } from "@/lib/store";
-import { removeBackground } from "@/lib/mobile-performance-utils";
+import { removeBackgroundAdvanced } from "@/lib/background-removal";
 
 export function AIImageGenerator() {
   const [prompt, setPrompt] = useState("");
@@ -96,25 +96,27 @@ export function AIImageGenerator() {
   const handleApplyImage = async () => {
     if (!generatedImage) return;
 
-    toast.loading("Processing image...");
+    const toastId = toast.loading("AI removing background... 0%");
 
-    // Apply background removal to make the image blend better with garments
+    // Apply AI background removal to make the image blend better with garments
     let processedUrl = generatedImage.imageURL;
     try {
-      // Fetch the image and convert to data URL for processing
+      // Fetch the image and convert to blob for processing
       const response = await fetch(generatedImage.imageURL);
       const blob = await response.blob();
-      const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
 
-      // Remove white/light background
-      processedUrl = await removeBackground(dataUrl, 235, 5);
-      console.log("✅ Background removed from AI image");
+      // Use advanced AI background removal
+      const result = await removeBackgroundAdvanced(blob, {
+        quality: "balanced",
+        onProgress: (progress) => {
+          toast.loading(`AI removing background... ${progress}%`, { id: toastId });
+        },
+      });
+      processedUrl = result.dataUrl;
+      console.log(`✅ Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`);
     } catch (error) {
       console.warn("Background removal failed, using original image:", error);
+      toast.error("Background removal failed, using original", { id: toastId });
     }
 
     // Dispatch event for other components to pick up
@@ -140,8 +142,7 @@ export function AIImageGenerator() {
       }),
     );
 
-    toast.dismiss();
-    toast.success("AI Image applied with background removed!");
+    toast.success("AI Image applied with background removed!", { id: toastId });
     setPreviewMode(false);
     setGeneratedImage(null);
   };
@@ -210,11 +211,10 @@ export function AIImageGenerator() {
           {/* Usage Information */}
           {usage && (
             <div
-              className={`text-[10px] p-2 rounded-md ${
-                usage.remaining === 0
+              className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
                   ? "text-destructive bg-destructive/10 border border-destructive/20"
                   : "text-muted-foreground bg-secondary/20"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-1">
                 {usage.remaining === 0 ? (
