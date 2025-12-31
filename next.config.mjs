@@ -6,11 +6,19 @@ const nextConfig = {
     unoptimized: true,
   },
   turbopack: {},
+  // Exclude large client-only packages from server bundles
+  serverExternalPackages: [
+    "@imgly/background-removal",
+    "onnxruntime-web",
+  ],
   outputFileTracingExcludes: {
     "*": [
       "node_modules/@swc/core-linux-x64-gnu",
       "node_modules/@swc/core-linux-x64-musl",
       "node_modules/@esbuild/linux-x64",
+      "node_modules/@imgly/**",
+      "node_modules/onnxruntime-web/**",
+      "public/imgly-background-removal/**",
     ],
   },
   webpack: (config, { isServer }) => {
@@ -23,9 +31,14 @@ const nextConfig = {
       },
     });
 
-    // Exclude Three.js from server bundle (client-only)
+    // Exclude Three.js and heavy client-only packages from server bundle
     if (isServer) {
-      config.externals = [...(config.externals || []), "three"];
+      config.externals = [
+        ...(config.externals || []), 
+        "three",
+        "@imgly/background-removal",
+        "onnxruntime-web",
+      ];
     }
 
     return config;

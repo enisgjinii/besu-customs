@@ -2,7 +2,7 @@
   "functions": {
     "app/api/**": {
       "maxDuration": 10,
-      "excludeFiles": "{public/models/**,node_modules/@babylonjs/**}"
+      "excludeFiles": "{public/**,node_modules/@babylonjs/**,node_modules/@imgly/**,node_modules/onnxruntime-web/**,node_modules/sharp/**}"
     }
   },
   "outputDirectory": ".next",
