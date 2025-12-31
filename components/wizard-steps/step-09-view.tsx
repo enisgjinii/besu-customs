@@ -99,11 +99,24 @@ export function Step09View() {
       // Set camera to this view
       setLockedView(view);
 
-      // Wait for camera to animate to position
-      await waitForCameraAnimation(500);
+      // Wait for camera animation + render (increased for reliability)
+      await waitForCameraAnimation(1000);
+
+      // Wait for one more animation frame to ensure canvas is updated
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      });
 
       // Capture and resize for email (max 800px, JPEG 80% quality)
       const dataUrl = captureAndResize(canvas, 800, 0.8);
+
+      // Debug: log the size
+      console.log(`📸 ${view} view captured, size: ${Math.round(dataUrl.length / 1024)}KB`);
+
       results.push({ view, dataUrl });
     }
 
