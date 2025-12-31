@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
 
                     <p>Attached you will find the <strong>complete design package</strong> for your custom design configuration. This package includes:</p>
                     <ul style="color: #4b5563; margin-bottom: 20px;">
-                        <li>📸 <strong>4 High-Resolution Views</strong> (Front, Back, Left, Right) in PNG format</li>
+                        <li>📸 <strong>4 High-Resolution Views</strong> (Front, Back, Left, Right) in JPG format</li>
                         <li>📄 <strong>Specification Sheet</strong> (PDF) with all views and color codes</li>
                     </ul>
 

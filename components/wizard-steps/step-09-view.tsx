@@ -51,33 +51,47 @@ export function Step09View() {
     return new Promise((resolve) => setTimeout(resolve, ms));
   };
 
-  // Helper to capture canvas as PNG data URL
-  const captureCanvasPNG = (canvas: HTMLCanvasElement): string => {
-    return canvas.toDataURL("image/png", 1.0);
+  // Helper to resize and compress canvas for email-friendly size
+  const captureAndResize = (canvas: HTMLCanvasElement, maxSize: number = 800, quality: number = 0.8): string => {
+    // Calculate new dimensions while maintaining aspect ratio
+    let width = canvas.width;
+    let height = canvas.height;
+
+    if (width > height) {
+      if (width > maxSize) {
+        height = Math.round((height * maxSize) / width);
+        width = maxSize;
+      }
+    } else {
+      if (height > maxSize) {
+        width = Math.round((width * maxSize) / height);
+        height = maxSize;
+      }
+    }
+
+    // Create resized canvas
+    const resizedCanvas = document.createElement("canvas");
+    resizedCanvas.width = width;
+    resizedCanvas.height = height;
+    const ctx = resizedCanvas.getContext("2d");
+
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(canvas, 0, 0, width, height);
+    }
+
+    // Return as JPEG for smaller file size
+    return resizedCanvas.toDataURL("image/jpeg", quality);
   };
 
-  // Helper to capture canvas as JPG data URL
-  const captureCanvasJPG = (canvas: HTMLCanvasElement): string => {
-    return canvas.toDataURL("image/jpeg", 0.92);
-  };
-
-  // Helper to create SVG wrapper from PNG
-  const createSVGFromPNG = (pngDataUrl: string, width: number, height: number): string => {
-    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-      <image href="${pngDataUrl}" x="0" y="0" width="${width}" height="${height}" />
-    </svg>`;
-    return `data:image/svg+xml;base64,${btoa(svgContent)}`;
-  };
-
-  // Capture all views (front, back, left, right) in multiple formats
+  // Capture all views (front, back, left, right) - optimized for email
   const captureMultipleViews = async (canvas: HTMLCanvasElement): Promise<{
     view: string;
-    png: string;
-    jpg: string;
-    svg: string;
+    dataUrl: string;
   }[]> => {
     const views = ["Front", "Back", "Left", "Right"];
-    const results: { view: string; png: string; jpg: string; svg: string }[] = [];
+    const results: { view: string; dataUrl: string }[] = [];
 
     for (const view of views) {
       toast.info(`Capturing ${view} view...`);
@@ -88,12 +102,9 @@ export function Step09View() {
       // Wait for camera to animate to position
       await waitForCameraAnimation(500);
 
-      // Capture in all formats
-      const png = captureCanvasPNG(canvas);
-      const jpg = captureCanvasJPG(canvas);
-      const svg = createSVGFromPNG(png, canvas.width, canvas.height);
-
-      results.push({ view, png, jpg, svg });
+      // Capture and resize for email (max 800px, JPEG 80% quality)
+      const dataUrl = captureAndResize(canvas, 800, 0.8);
+      results.push({ view, dataUrl });
     }
 
     // Reset camera view
@@ -203,7 +214,7 @@ export function Step09View() {
 
       viewCaptures.forEach((capture, i) => {
         const grid = viewGrid[i];
-        const imgProps = (doc as any).getImageProperties(capture.png);
+        const imgProps = (doc as any).getImageProperties(capture.dataUrl);
         const maxWidth = 75;
         const maxHeight = 60;
         const ratio = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
@@ -218,7 +229,7 @@ export function Step09View() {
         // Image with border
         doc.setDrawColor(229, 231, 235);
         doc.rect(grid.x, grid.y, maxWidth, maxHeight);
-        doc.addImage(capture.png, "PNG", grid.x + (maxWidth - imgW) / 2, grid.y + (maxHeight - imgH) / 2, imgW, imgH);
+        doc.addImage(capture.dataUrl, "JPEG", grid.x + (maxWidth - imgW) / 2, grid.y + (maxHeight - imgH) / 2, imgW, imgH);
       });
 
       // ===== PAGE 2: COLOR SPECIFICATIONS =====
@@ -382,11 +393,11 @@ export function Step09View() {
       // Users can download other formats manually if needed
       const files: { filename: string; content: string }[] = [];
 
-      // PNG views only (4 files) - most important for production
+      // JPEG views (4 files) - compressed for email, high quality
       viewCaptures.forEach((capture) => {
         files.push({
-          filename: `${fileName}-${capture.view.toLowerCase()}.png`,
-          content: capture.png,
+          filename: `${fileName}-${capture.view.toLowerCase()}.jpg`,
+          content: capture.dataUrl,
         });
       });
 
