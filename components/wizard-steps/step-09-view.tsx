@@ -15,6 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { findNearestPantone } from "@/lib/pantone";
 
 export function Step09View() {
   const currentModelUrl = useConfiguratorStore(
@@ -109,55 +110,132 @@ export function Step09View() {
 
       // Design Preview Image in PDF
       // Aspect ratio of canvas
-      const imgProps = doc.getImageProperties(imgDataUrl);
+      const imgProps = (doc as any).getImageProperties(imgDataUrl);
       const pdfWidth = doc.internal.pageSize.getWidth();
       const imgWidth = 100;
       const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
       doc.addImage(imgDataUrl, "PNG", 20, 45, imgWidth, imgHeight);
 
-      // Material Details
+      // --- PDF GENERATION START ---
+      // Material Details Table
       let yPos = 45 + imgHeight + 15;
       doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
       doc.text("Material Configuration", 20, yPos);
       yPos += 10;
 
+      // Table Header
       doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text("PART", 20, yPos);
+      doc.text("COLOR NAME", 80, yPos);
+      doc.text("HEX", 130, yPos);
+      doc.text("PANTONE MATCH", 160, yPos);
+
+      yPos += 4;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, yPos - 1, 190, yPos - 1);
+      yPos += 6;
+
+      doc.setTextColor(0, 0, 0);
       const sections = useConfiguratorStore.getState().sections;
+
       sections.forEach((section) => {
-        const colorName = section.color; // You could map hex to name if you had a utility
-        doc.text(`${section.name}: ${colorName}`, 20, yPos);
-        yPos += 6;
+        // Check page break
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        const pantone = findNearestPantone(section.color);
+
+        doc.text(section.name, 20, yPos);
+        doc.text(pantone.name, 80, yPos);
+        doc.text(section.color.toUpperCase(), 130, yPos);
+        doc.text(pantone.code, 160, yPos);
+
+        yPos += 7;
       });
 
-      // Decals / Elements
-      yPos += 10;
+      yPos += 5;
+
+      // Decals / Elements Table
       doc.setFontSize(16);
       doc.text("Applied Elements", 20, yPos);
       yPos += 10;
 
-      doc.setFontSize(10);
       if (textureLayers.length === 0) {
+        doc.setFontSize(10);
         doc.text("No custom elements applied.", 20, yPos);
+        yPos += 10;
       } else {
-        textureLayers.forEach((layer, idx) => {
-          let desc = `${idx + 1}. [${layer.type.toUpperCase()}]`;
-          if (layer.type === 'text') desc += ` Text: "${layer.text}"`;
-          if (layer.type === 'image') desc += ` Image Upload`;
-          doc.text(desc, 20, yPos);
-          yPos += 6;
+        // Table Header
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text("TYPE", 20, yPos);
+        doc.text("CONTENT / NAME", 50, yPos);
+        doc.text("DETAILS", 110, yPos);
+
+        yPos += 4;
+        doc.line(20, yPos - 1, 190, yPos - 1);
+        yPos += 6;
+
+        doc.setTextColor(0, 0, 0);
+
+        textureLayers.forEach((layer) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          const typeStr = layer.type.toUpperCase();
+          let contentStr = layer.name;
+          let detailsStr = "";
+
+          if (layer.type === 'text') {
+            contentStr = `"${layer.text}"`;
+            const textPantone = findNearestPantone(layer.textColor || "#000000");
+            detailsStr = `Font: ${layer.fontFamily}, Color: ${textPantone.code} (${layer.textColor})`;
+          } else {
+            detailsStr = `Scale: ${(layer.scale?.[0] || 1).toFixed(2)}x`;
+          }
+
+          doc.text(typeStr, 20, yPos);
+          // Truncate content if too long
+          const safeContent = contentStr.length > 25 ? contentStr.substring(0, 22) + "..." : contentStr;
+          doc.text(safeContent, 50, yPos);
+
+          // Allow details to wrap or truncate
+          const splitDetails = doc.splitTextToSize(detailsStr, 80);
+          doc.text(splitDetails, 110, yPos);
+
+          yPos += (splitDetails.length * 5) + 4;
         });
       }
 
       // Notes
       if (deliveryNotes) {
-        yPos += 10;
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        } else {
+          yPos += 10;
+        }
+
         doc.setFontSize(16);
         doc.text("Production Notes", 20, yPos);
         yPos += 10;
         doc.setFontSize(10);
+
+        // Draw box for notes
         const splitNotes = doc.splitTextToSize(deliveryNotes, 170);
-        doc.text(splitNotes, 20, yPos);
+        doc.setDrawColor(200, 200, 200);
+        doc.setFillColor(250, 250, 250);
+        doc.rect(20, yPos - 5, 170, (splitNotes.length * 5) + 10, "FD");
+
+        doc.text(splitNotes, 25, yPos);
       }
+      // --- PDF GENERATION END ---
 
       const pdfBase64 = doc.output("datauristring");
 
@@ -202,8 +280,15 @@ export function Step09View() {
           message: data.message,
           designName: fileName, // Pass extra metadata for template
           orderDetails: {
-            materials: sections.map(s => ({ name: s.name, color: s.color })),
-            decals: textureLayers.length,
+            materials: sections.map(s => {
+              const p = findNearestPantone(s.color);
+              return { name: s.name, color: s.color, pantone: p.code, pantoneName: p.name };
+            }),
+            elements: textureLayers.map(l => ({
+              type: l.type,
+              name: l.name,
+              detail: l.type === 'text' ? `"${l.text}"` : 'Image'
+            })),
             notes: deliveryNotes
           }
         })

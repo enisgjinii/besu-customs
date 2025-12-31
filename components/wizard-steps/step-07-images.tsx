@@ -33,7 +33,7 @@ export function Step07Images() {
 
   // Track if upload is in progress to prevent duplicate uploads
   const isUploadingRef = useRef(false);
-  const [autoRemoveBg, setAutoRemoveBg] = useState(true);
+  const [autoRemoveBg, setAutoRemoveBg] = useState(false);
   const [bgRemovalProgress, setBgRemovalProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -189,7 +189,7 @@ export function Step07Images() {
               </div>
               <div className="flex flex-col gap-0.5">
                 <Label htmlFor="auto-bg-switch" className="text-sm font-semibold cursor-pointer">Magic Removal</Label>
-                <span className="text-xs text-muted-foreground">Auto-remove backgrounds</span>
+                <span className="text-xs text-muted-foreground">Optional: Remove background with AI</span>
               </div>
             </div>
             <Switch

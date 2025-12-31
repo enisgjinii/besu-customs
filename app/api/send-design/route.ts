@@ -93,15 +93,14 @@ export async function POST(req: NextRequest) {
                 <div class="content">
                     <h2 style="margin-top: 0; color: #111827;">Your Design: <span class="highlight">${designName || "Custom Jersey"}</span></h2>
                     
-                    ${
-                      message
-                        ? `
+                    ${message
+        ? `
                     <div class="message-box">
                         <strong style="display:block; margin-bottom:5px; color:#374151;">Message from Designer:</strong>
                         "${message}"
                     </div>`
-                        : ""
-                    }
+        : ""
+      }
 
                     <p>Attached you will find the assets for your custom design configuration. This package includes:</p>
                     <ul style="color: #4b5563; margin-bottom: 30px;">
@@ -120,33 +119,36 @@ export async function POST(req: NextRequest) {
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>Decals/Logos</strong></td>
-                                <td>${orderDetails?.decals || 0} applied</td>
+                                <td><strong>Applied Elements</strong></td>
+                                <td>
+                                    ${orderDetails?.elements?.length > 0
+        ? orderDetails.elements.map((e: any) => `<div>• [${e.type.toUpperCase()}] ${e.name} ${e.detail ? `(${e.detail})` : ''}</div>`).join('')
+        : 'None'}
+                                </td>
                             </tr>
-                            ${
-                              orderDetails?.materials
-                                ? orderDetails.materials
-                                    .slice(0, 5)
-                                    .map(
-                                      (m: any) => `
+                            ${orderDetails?.materials
+        ? orderDetails.materials
+          .map(
+            (m: any) => `
                             <tr>
                                 <td>${m.name}</td>
-                                <td>${m.color}</td>
+                                <td>
+                                    <div><strong>${m.pantone}</strong> (${m.pantoneName})</div>
+                                    <div style="font-size:11px; color:#666;">Hex: ${m.color}</div>
+                                </td>
                             </tr>`,
-                                    )
-                                    .join("")
-                                : ""
-                            }
-                            ${orderDetails?.materials?.length > 5 ? `<tr><td>...and others</td><td></td></tr>` : ""}
-                            ${
-                              orderDetails?.notes
-                                ? `
+          )
+          .join("")
+        : ""
+      }
+                            ${orderDetails?.notes
+        ? `
                             <tr>
                                 <td><strong>Notes</strong></td>
                                 <td>${orderDetails.notes}</td>
                             </tr>`
-                                : ""
-                            }
+        : ""
+      }
                         </tbody>
                     </table>
 

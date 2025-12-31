@@ -76,67 +76,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   // Track loaded images to avoid reloading
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Helper function to draw a control icon (simple Lucide-style icons)
-  const drawControlIcon = (
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    iconType: "duplicate" | "rotate" | "resize" | "delete",
-    size: number,
-  ) => {
-    const radius = size / 2;
-
-    // Fixed colors for each control type
-    const colors: Record<string, string> = {
-      duplicate: "#8b5cf6", // Purple
-      rotate: "#3b82f6", // Blue
-      resize: "#22c55e", // Green
-      delete: "#ef4444", // Red
-    };
-
-    // Draw circular background with colored fill
-    ctx.save();
-    ctx.fillStyle = colors[iconType];
-    ctx.shadowColor = "rgba(0,0,0,0.3)";
-    ctx.shadowBlur = size * 0.2;
-    ctx.shadowOffsetY = size * 0.05;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowColor = "transparent";
-
-    // Draw white icon/symbol
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = size * 0.08;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    // Use simple text symbols that render cleanly
-    ctx.font = `bold ${size * 0.45}px Arial, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    if (iconType === "duplicate") {
-      // Plus symbol for duplicate/add
-      ctx.font = `bold ${size * 0.55}px Arial, sans-serif`;
-      ctx.fillText("+", x, y);
-    } else if (iconType === "rotate") {
-      // Circular arrow using Unicode
-      ctx.font = `${size * 0.5}px Arial, sans-serif`;
-      ctx.fillText("↻", x, y + size * 0.02);
-    } else if (iconType === "resize") {
-      // Diagonal resize arrows
-      ctx.font = `${size * 0.45}px Arial, sans-serif`;
-      ctx.fillText("⤡", x, y);
-    } else if (iconType === "delete") {
-      // X symbol for delete
-      ctx.font = `bold ${size * 0.5}px Arial, sans-serif`;
-      ctx.fillText("×", x, y);
-    }
-
-    ctx.restore();
-  };
+  // Control icons removed as per UX request (moved to bottom panel only)
+  const drawControlIcon = () => { }; // No-op
 
   useEffect(() => {
     const ctx = canvas.getContext("2d", {
@@ -378,6 +319,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         );
         ctx.setLineDash([]);
 
+        // Controls removed - only showing selection border
+        /*
         // Draw corner control icons directly on the texture
         // Top-left: Duplicate
         drawControlIcon(
@@ -414,6 +357,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           "resize",
           controlSize,
         );
+        */
 
         ctx.restore();
       }
@@ -748,144 +692,9 @@ function Model({
 
   // Check if UV click is on a control icon (works in UV space 0-1)
   // Must match EXACTLY how TextureCompositor draws controls on canvas
-  const checkControlClickUV = (
-    clickU: number,
-    clickV: number,
-  ): string | null => {
-    const store = useConfiguratorStore.getState();
-    const selectedLayerId = store.selectedTextureLayerId;
-
-    console.log(
-      `🔍 checkControlClickUV: click=(${clickU.toFixed(3)}, ${clickV.toFixed(3)}), selectedId=${selectedLayerId}`,
-    );
-
-    if (!selectedLayerId) {
-      console.log("⚠️ No selected layer, skipping control check");
-      return null;
-    }
-
-    const layer = store.textureLayers.find((l) => l.id === selectedLayerId);
-    if (!layer || !layer.visible) {
-      console.log("⚠️ Layer not found or not visible");
-      return null;
-    }
-
-    // Convert click UV to canvas pixel coordinates (matching TextureCompositor)
-    // Since texture.flipY = false, use direct UV mapping
-    // UV: u=0 left, u=1 right, v=0 top, v=1 bottom (same as canvas)
-    // Canvas: x=0 left, x=CANVAS_SIZE right, y=0 top, y=CANVAS_SIZE bottom
-    // TextureCompositor uses: x = u * CANVAS_SIZE, y = v * CANVAS_SIZE
-    const activeBounds = store.activeLayerBounds;
-    const CANVAS_SIZE = activeBounds?.canvasSize ?? 4096;
-    const clickX = clickU * CANVAS_SIZE;
-
-    let padding = activeBounds?.padding ?? 15;
-    let controlSize =
-      activeBounds?.controlSize ?? Math.max(30, CANVAS_SIZE * 0.025);
-    // drawControlIcon draws a circle with radius=controlSize/2.
-    // Use a forgiving hit area since raycast UVs can be noisy.
-    let hitRadius = Math.max((controlSize / 2) * 1.8, controlSize * 0.9);
-
-    let bx: number;
-    let by: number;
-    let bw: number;
-    let bh: number;
-
-    if (activeBounds && activeBounds.layerId === selectedLayerId) {
-      bx = activeBounds.bounds.x;
-      by = activeBounds.bounds.y;
-      bw = activeBounds.bounds.width;
-      bh = activeBounds.bounds.height;
-    } else {
-      // Fall back to approximated geometry
-      const layerU = layer.position?.[0] ?? 0.5;
-      const layerV = layer.position?.[1] ?? 0.5;
-      const layerX = layerU * CANVAS_SIZE;
-      const layerY = layerV * CANVAS_SIZE;
-
-      let halfWidth: number;
-      let halfHeight: number;
-
-      if (layer.type === "image") {
-        const scaleX = layer.scale?.[0] ?? 0.3;
-        const scaleY = layer.scale?.[1] ?? 0.3;
-        halfWidth = (CANVAS_SIZE * scaleX) / 2;
-        halfHeight = (CANVAS_SIZE * scaleY) / 2;
-      } else if (layer.type === "text" && layer.text) {
-        const scaleMultiplier = layer.scale?.[0] ?? 1;
-        const baseFontSize = (layer.fontSize ?? 100) * (CANVAS_SIZE / 512);
-        const fontSize = baseFontSize * scaleMultiplier;
-        halfWidth = (layer.text.length * fontSize * 0.6) / 2 + 10;
-        halfHeight = (fontSize * 1.2) / 2 + 10;
-      } else {
-        halfWidth = 100;
-        halfHeight = 50;
-      }
-
-      bx = layerX - halfWidth;
-      by = layerY - halfHeight;
-      bw = halfWidth * 2;
-      bh = halfHeight * 2;
-      hitRadius = controlSize * 1.5;
-    }
-
-    const controls_px = {
-      duplicate: { x: bx - padding, y: by - padding },
-      rotate: { x: bx + bw + padding, y: by - padding },
-      delete: { x: bx - padding, y: by + bh + padding },
-      resize: { x: bx + bw + padding, y: by + bh + padding },
-    };
-
-    console.log(
-      `📍 Layer: "${layer.name}" bounds=(${bx.toFixed(0)}, ${by.toFixed(
-        0,
-      )}, ${bw.toFixed(0)}, ${bh.toFixed(0)}) [canvas=${CANVAS_SIZE}]`,
-    );
-    console.log(`📏 Hit radius: ${hitRadius.toFixed(0)}px`);
-
-    const testClick = (clickY: number): string | null => {
-      console.log(
-        `🖱️ Click at canvas(${clickX.toFixed(0)}, ${clickY.toFixed(0)})`,
-      );
-
-      let nearest: { name: string; dist: number } | null = null;
-
-      // Check distance to each control in pixel space
-      for (const [name, pos] of Object.entries(controls_px)) {
-        const dist = Math.hypot(clickX - pos.x, clickY - pos.y);
-        console.log(
-          `  → ${name}: pos=(${pos.x.toFixed(0)}, ${pos.y.toFixed(
-            0,
-          )}), dist=${dist.toFixed(0)}px (need < ${hitRadius.toFixed(0)})`,
-        );
-        if (!nearest || dist < nearest.dist) {
-          nearest = { name, dist };
-        }
-        if (dist < hitRadius) {
-          console.log(`🎯 HIT! Control: ${name}`);
-          return name;
-        }
-      }
-
-      // If click is within the selection border, snap to nearest control
-      const withinSelection =
-        clickX >= bx - padding - controlSize &&
-        clickX <= bx + bw + padding + controlSize &&
-        clickY >= by - padding - controlSize &&
-        clickY <= by + bh + padding + controlSize;
-
-      if (withinSelection && nearest && nearest.dist < hitRadius * 2) {
-        console.log(`🎯 SNAP HIT! Control: ${nearest.name}`);
-        return nearest.name;
-      }
-
-      return null;
-    };
-
-    // Since we're using consistent UV mapping (flipY = false), only test direct mapping
-    const clickY = clickV * CANVAS_SIZE;
-
-    return testClick(clickY);
+  // Control clicks disabled - always return null
+  const checkControlClickUV = (clickU: number, clickV: number) => {
+    return null;
   };
 
   useEffect(() => {
