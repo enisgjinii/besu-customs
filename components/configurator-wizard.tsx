@@ -34,14 +34,14 @@ import { Step09View } from "./wizard-steps/step-09-view";
 
 const STEPS = [
   { id: 1, title: "APPAREL", component: Step01Apparel },
-  { id: 2, title: "COLORS", component: Step02Colors },
-  { id: 3, title: "STYLE", component: Step03Style },
-  { id: 4, title: "TRIM", component: Step03bTrimLines },
-  { id: 5, title: "LOGO", component: Step04SchoolLogo },
-  { id: 6, title: "PATTERNS", component: Step05Patterns },
-  { id: 7, title: "TEXT", component: Step06Text },
-  { id: 8, title: "IMAGES", component: Step07Images },
-  { id: 9, title: "AI", component: Step08AIImages },
+  { id: 2, title: "AI DESIGN", component: Step08AIImages }, // Moved early for base design generation
+  { id: 3, title: "COLORS", component: Step02Colors },
+  { id: 4, title: "STYLE", component: Step03Style },
+  { id: 5, title: "TRIM", component: Step03bTrimLines },
+  { id: 6, title: "LOGO", component: Step04SchoolLogo },
+  { id: 7, title: "PATTERNS", component: Step05Patterns },
+  { id: 8, title: "TEXT", component: Step06Text },
+  { id: 9, title: "IMAGES", component: Step07Images },
   { id: 10, title: "REVIEW", component: Step09View },
 ];
 
@@ -81,7 +81,7 @@ export function ConfiguratorWizard() {
   const CurrentComponent = STEPS[currentStep - 1].component;
   if (!isMounted) return null;
 
-  const showViewLock = [5, 7, 8].includes(currentStep);
+  const showViewLock = [6, 8, 9].includes(currentStep); // LOGO, TEXT, IMAGES steps
 
   return (
     <div

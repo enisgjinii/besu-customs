@@ -118,9 +118,9 @@ export function AIImageGenerator() {
     } catch (error) {
       console.warn("Background removal failed, using original image:", error);
       const errorMessage = error instanceof Error ? error.message : "Background removal failed";
-      toast.error(errorMessage.includes("timed out") 
-        ? "Timed out. Try again on WiFi." 
-        : "Background removal failed, using original", 
+      toast.error(errorMessage.includes("timed out")
+        ? "Timed out. Try again on WiFi."
+        : "Background removal failed, using original",
         { id: toastId }
       );
     }
@@ -212,14 +212,35 @@ export function AIImageGenerator() {
               disabled={loading}
               className="text-sm h-9"
             />
+
+            {/* Prompt Examples */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                "Futuristic orange and black cobra pattern",
+                "Minimalist geometric lines",
+                "Flame gradient effects",
+                "Abstract wave design",
+                "Lightning bolt pattern",
+                "Galaxy space theme"
+              ].map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  onClick={() => setPrompt(example)}
+                  className="px-2 py-0.5 text-[10px] bg-muted hover:bg-muted/80 text-muted-foreground rounded-full border border-transparent hover:border-primary/30 transition-colors"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Usage Information */}
           {usage && (
             <div
               className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
-                  ? "text-destructive bg-destructive/10 border border-destructive/20"
-                  : "text-muted-foreground bg-secondary/20"
+                ? "text-destructive bg-destructive/10 border border-destructive/20"
+                : "text-muted-foreground bg-secondary/20"
                 }`}
             >
               <div className="flex items-center gap-1">

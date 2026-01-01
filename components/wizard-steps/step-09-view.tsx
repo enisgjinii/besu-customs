@@ -48,10 +48,10 @@ export function Step09View() {
 
   // Generate UV map with all texture layers composited
   const generateUvMapDataUrl = async (): Promise<string | null> => {
-    if (textureLayers.length === 0) return null;
-
-    // Try to get the actual UV canvas from the 3D scene first
+    // Try to get the actual UV canvas from the 3D scene first (this is the real rendered texture)
     const globalUvCanvas = (window as any).__uvMapCanvas as HTMLCanvasElement | null;
+    console.log("📐 Global UV canvas check:", globalUvCanvas ? `found (${globalUvCanvas.width}x${globalUvCanvas.height})` : "not found");
+
     if (globalUvCanvas && globalUvCanvas.width > 0) {
       console.log("📐 Using real UV canvas from 3D scene");
       // Create a high-res copy for production
@@ -66,6 +66,12 @@ export function Step09View() {
         ctx.drawImage(globalUvCanvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
         return exportCanvas.toDataURL("image/png", 1.0);
       }
+    }
+
+    // Fallback: recompose from layers if no global canvas
+    if (textureLayers.length === 0) {
+      console.log("📐 No texture layers and no global canvas - skipping UV map");
+      return null;
     }
 
     console.log("📐 Fallback: Recomposing UV map from layers");
@@ -539,16 +545,19 @@ export function Step09View() {
       });
 
       // Generate UV Map with all composited layers (for production use only, not displayed in UI)
-      if (textureLayers.length > 0) {
-        toast.info("Generating UV Map...");
-        const uvMapDataUrl = await generateUvMapDataUrl();
-        if (uvMapDataUrl) {
-          files.push({
-            filename: `${fileName}-uv-map.png`,
-            content: uvMapDataUrl,
-          });
-          console.log(`📐 UV Map generated, size: ${Math.round(uvMapDataUrl.length / 1024)}KB`);
-        }
+      console.log(`📐 Texture layers count: ${textureLayers.length}`);
+      console.log(`📐 Global UV canvas available: ${!!(window as any).__uvMapCanvas}`);
+
+      toast.info("Generating UV Map...");
+      const uvMapDataUrl = await generateUvMapDataUrl();
+      if (uvMapDataUrl) {
+        files.push({
+          filename: `${fileName}-uv-map.png`,
+          content: uvMapDataUrl,
+        });
+        console.log(`📐 UV Map generated successfully, size: ${Math.round(uvMapDataUrl.length / 1024)}KB`);
+      } else {
+        console.log("📐 UV Map generation returned null - no layers or canvas issue");
       }
 
       // Note: Video removed from email to reduce payload

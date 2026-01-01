@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Product } from "@/lib/store";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getModelCache } from "@/lib/model-cache";
 
 export function Step01Apparel() {
@@ -20,14 +20,58 @@ export function Step01Apparel() {
   const setSelectedProduct = useConfiguratorStore(
     (state) => state.setSelectedProduct,
   );
+  const setCurrentModelUrl = useConfiguratorStore(
+    (state) => state.setCurrentModelUrl,
+  );
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
   const [productsLoaded, setProductsLoaded] = useState(false);
+  const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousModelRef = useRef<string | null>(null);
 
-  // Preload model on hover for faster switching
+  // Preview model on hover (with debounce to prevent flicker)
   const handleProductHover = useCallback((product: Product) => {
     if (product.modelUrl) {
+      // Preload the model
       getModelCache().preload(product.modelUrl);
+
+      // Clear any pending hover timeout
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+
+      // Store current model before preview (if not already stored)
+      if (!previousModelRef.current && currentModelUrl) {
+        previousModelRef.current = currentModelUrl;
+      }
+
+      // Debounce the preview to prevent rapid switching
+      hoverTimeoutRef.current = setTimeout(() => {
+        setHoveredProductId(product.id);
+        // Temporarily show this model
+        setCurrentModelUrl(product.modelUrl!);
+      }, 150);
     }
-  }, []);
+  }, [currentModelUrl, setCurrentModelUrl]);
+
+  // Restore previous model when hover ends (if not selected)
+  const handleProductLeave = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setHoveredProductId(null);
+
+    // Restore the originally selected model
+    if (previousModelRef.current && selectedProductId) {
+      const selectedProduct = products.find(p => p.id === selectedProductId);
+      if (selectedProduct?.modelUrl) {
+        setCurrentModelUrl(selectedProduct.modelUrl);
+      }
+    }
+    previousModelRef.current = null;
+  }, [selectedProductId, products, setCurrentModelUrl]);
 
   // Preload first few models when dropdown opens
   const handleDropdownOpen = useCallback(
@@ -107,7 +151,7 @@ export function Step01Apparel() {
         <SelectTrigger className="w-full h-12 text-base">
           <SelectValue placeholder="Select a product..." />
         </SelectTrigger>
-        <SelectContent className="max-h-[300px]">
+        <SelectContent className="max-h-[300px]" onMouseLeave={handleProductLeave}>
           {Object.entries(groupedProducts).map(([category, items]) => (
             <div key={category} className="py-1">
               <div className="px-3 py-2 text-xs font-bold text-muted-foreground bg-muted/50 uppercase tracking-wide">
@@ -117,7 +161,7 @@ export function Step01Apparel() {
                 <SelectItem
                   key={product.id}
                   value={product.id}
-                  className="text-sm py-3 px-3"
+                  className={`text-sm py-3 px-3 ${hoveredProductId === product.id ? 'bg-accent' : ''}`}
                   onMouseEnter={() => handleProductHover(product)}
                   onFocus={() => handleProductHover(product)}
                 >
