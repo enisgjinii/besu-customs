@@ -246,6 +246,18 @@ export interface ConfiguratorState {
   // Delivery notes for orders
   deliveryNotes: string;
   setDeliveryNotes: (notes: string) => void;
+
+  // Roster management (Source of Truth for player data)
+  roster: {
+    teamName: string;
+    players: Array<{
+      id: string;
+      nameOnJersey: string;
+      jerseyNumber: string;
+      sizes: { top: string; shorts: string };
+    }>;
+  };
+  setRoster: (roster: ConfiguratorState["roster"]) => void;
 }
 
 // Generate all possible products (for fallback and reference)
@@ -869,6 +881,10 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       deliveryNotes: "",
       setDeliveryNotes: (notes: string) => set({ deliveryNotes: notes }),
 
+      // Roster management
+      roster: { teamName: "", players: [] },
+      setRoster: (roster) => set({ roster }),
+
       // ensure the store stays valid
     }),
     {
@@ -882,6 +898,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         selectedProductId: state.selectedProductId,
         currentModelUrl: state.currentModelUrl,
         deliveryNotes: state.deliveryNotes,
+        roster: state.roster,
       }),
     },
   ),

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { findNearestPantone } from "@/lib/pantone";
+import { RosterInput, RosterData } from "@/components/roster-input";
 
 export function Step09View() {
   const currentModelUrl = useConfiguratorStore(
@@ -27,6 +28,8 @@ export function Step09View() {
     (state) => state.setDeliveryNotes,
   );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
+  const roster = useConfiguratorStore((state) => state.roster);
+  const setRoster = useConfiguratorStore((state) => state.setRoster);
 
   const [format, setFormat] = useState<"png" | "svg" | "pdf" | "jpg">("png");
   const [fileName, setFileName] = useState("my-besu-design");
@@ -35,13 +38,9 @@ export function Step09View() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [highRes, setHighRes] = useState(true); // Enable high-res by default
 
-  // Order Details State
-  const [teamName, setTeamName] = useState("");
+  // Order Details State (contact info only - roster handles player data)
   const [contactName, setContactName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [sizes, setSizes] = useState<Record<string, number>>({
-    XS: 0, S: 0, M: 0, L: 0, XL: 0, "2XL": 0, "3XL": 0
-  });
 
   // Get store function for camera view control
   const setLockedView = useConfiguratorStore((state) => state.setLockedView);
@@ -322,14 +321,14 @@ export function Step09View() {
       doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 44);
 
       // Team Info (right side)
-      if (teamName || contactName) {
+      if (roster.teamName || contactName) {
         doc.setFontSize(11);
         doc.setTextColor(17, 24, 39);
         doc.text("Team Information", 130, 38);
         doc.setFontSize(9);
         doc.setTextColor(75, 85, 99);
         let infoY = 44;
-        if (teamName) { doc.text(`Team: ${teamName}`, 130, infoY); infoY += 5; }
+        if (roster.teamName) { doc.text(`Team: ${roster.teamName}`, 130, infoY); infoY += 5; }
         if (contactName) { doc.text(`Contact: ${contactName}`, 130, infoY); infoY += 5; }
         if (phoneNumber) { doc.text(`Phone: ${phoneNumber}`, 130, infoY); }
       }
@@ -430,37 +429,44 @@ export function Step09View() {
         yPos += 9;
       });
 
-      // Size Breakdown (if quantities provided)
-      const totalQty = Object.values(sizes).reduce((a, b) => a + (b || 0), 0);
-      if (totalQty > 0) {
+      // Roster Breakdown (if players provided)
+      if (roster.players.length > 0) {
         yPos += 10;
         doc.setFontSize(14);
         doc.setTextColor(17, 24, 39);
-        doc.text("Size Breakdown", 20, yPos);
+        doc.text(`Roster (${roster.players.length} players)`, 20, yPos);
         yPos += 8;
 
+        // Header row
         doc.setFillColor(249, 250, 251);
-        const sizeBoxHeight = 25;
-        doc.rect(20, yPos - 3, 170, sizeBoxHeight, "F");
-
-        let col = 0;
+        doc.rect(20, yPos - 3, 170, 8, "F");
         doc.setFontSize(8);
-        Object.entries(sizes).forEach(([size, qty]) => {
-          const x = 25 + col * 22;
-          doc.setTextColor(107, 114, 128);
-          doc.text(size, x, yPos + 4);
+        doc.setTextColor(107, 114, 128);
+        doc.text("#", 25, yPos + 2);
+        doc.text("NAME", 35, yPos + 2);
+        doc.text("NUMBER", 100, yPos + 2);
+        doc.text("TOP", 130, yPos + 2);
+        doc.text("SHORTS", 155, yPos + 2);
+        yPos += 8;
+
+        // Player rows
+        doc.setFontSize(9);
+        roster.players.forEach((player, idx) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.setTextColor(75, 85, 99);
+          doc.text(String(idx + 1), 25, yPos);
           doc.setTextColor(17, 24, 39);
           doc.setFont("helvetica", "bold");
-          doc.text(String(qty || 0), x, yPos + 11);
+          doc.text(player.nameOnJersey || "-", 35, yPos);
           doc.setFont("helvetica", "normal");
-          col++;
+          doc.text(player.jerseyNumber || "-", 100, yPos);
+          doc.text(player.sizes.top, 130, yPos);
+          doc.text(player.sizes.shorts, 155, yPos);
+          yPos += 6;
         });
-
-        // Total
-        doc.setFontSize(10);
-        doc.setTextColor(59, 130, 246);
-        doc.text(`TOTAL: ${totalQty}`, 150, yPos + 8);
-        yPos += sizeBoxHeight + 5;
       }
 
       // Applied Elements Table
@@ -575,10 +581,10 @@ export function Step09View() {
           message: data.message,
           designName: fileName,
           orderMetadata: {
-            teamName,
+            teamName: roster.teamName,
             contactName,
             phoneNumber,
-            sizes,
+            roster: roster.players,
           },
           orderDetails: {
             materials: sections.map((s) => {
@@ -806,28 +812,18 @@ export function Step09View() {
 
         {/* Team & Order Details */}
         <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-sm font-semibold tracking-tight">Team Information</h3>
+          <h3 className="text-sm font-semibold tracking-tight">Order Information</h3>
 
-          <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Team Name</Label>
-                <Input
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="e.g. Wildcats"
-                  className="h-9 bg-card"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Contact Name</Label>
-                <Input
-                  value={contactName}
-                  onChange={(e) => setContactName(e.target.value)}
-                  placeholder="Coach Smith"
-                  className="h-9 bg-card"
-                />
-              </div>
+          {/* Contact Info */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Contact Name</Label>
+              <Input
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                placeholder="Coach Smith"
+                className="h-9 bg-card"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Phone Number</Label>
@@ -841,24 +837,11 @@ export function Step09View() {
             </div>
           </div>
 
-          <div className="space-y-2 pt-1">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Size Breakdown (Quantity)</Label>
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-              {Object.entries(sizes).map(([size, qty]) => (
-                <div key={size} className="flex flex-col gap-1 items-center bg-muted/20 p-2 rounded-lg border">
-                  <Label className="text-xs font-bold text-muted-foreground">{size}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={qty || ""}
-                    onChange={(e) => setSizes(prev => ({ ...prev, [size]: parseInt(e.target.value) || 0 }))}
-                    className="h-8 text-center bg-background w-full px-1 text-xs"
-                    placeholder="0"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Roster Input - Source of Truth for player data */}
+          <RosterInput
+            value={roster}
+            onChange={setRoster}
+          />
         </div>
 
         <div className="space-y-1.5">

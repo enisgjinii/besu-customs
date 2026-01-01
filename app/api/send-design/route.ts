@@ -79,134 +79,132 @@ export async function POST(req: NextRequest) {
         <head>
             <style>
                 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f5; margin: 0; padding: 0; }
-                .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-                .header { background: #111827; color: white; padding: 30px; text-align: center; }
-                .header h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+                .container { max-width: 680px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+                .header { background: #000000; color: white; padding: 30px; text-align: center; }
+                .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
                 .content { padding: 40px 30px; }
-                .message-box { background: #f9fafb; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 4px; margin-bottom: 30px; }
-                .details-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px; }
-                .details-table th { text-align: left; padding: 12px; border-bottom: 2px solid #e5e7eb; color: #6b7280; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-                .details-table td { padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
-                .btn { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; font-size: 16px; margin-top: 20px; text-align: center; }
-                .footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
-                .highlight { color: #3b82f6; font-weight: 600; }
+                
+                .section-title { font-size: 18px; font-weight: 700; color: #111827; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
+                
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+                .info-item label { display: block; font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
+                .info-item div { font-size: 15px; font-weight: 500; color: #111827; }
+
+                .roster-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 25px; }
+                .roster-table th { background: #f3f4f6; text-align: left; padding: 10px; font-weight: 600; color: #374151; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
+                .roster-table td { padding: 10px; border-bottom: 1px solid #e5e7eb; color: #4b5563; }
+                .roster-table tr:last-child td { border-bottom: none; }
+                
+                .materials-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+                .material-row td { background: #f9fafb; padding: 12px; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+                .material-row td:first-child { border-left: 1px solid #e5e7eb; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+                .material-row td:last-child { border-right: 1px solid #e5e7eb; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+                
+                .footer { background: #f9fafb; padding: 25px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+                .btn { display: inline-block; background: #000000; color: white; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 20px; }
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>Besu Customs</h1>
+                    <h1>BESU CUSTOMS</h1>
+                    <div style="font-size: 13px; color: #9ca3af; margin-top: 5px;">OFFICIAL ORDER SPECIFICATIONS</div>
                 </div>
                 <div class="content">
-                    <h2 style="margin-top: 0; color: #111827;">Your Design: <span class="highlight">${designName || "Custom Jersey"}</span></h2>
+                    <h2 style="margin-top: 0; font-size: 22px; color: #111827;">Design: <span style="color: #2563eb;">${designName || "Custom Jersey"}</span></h2>
                     
-                    ${message
-        ? `
-                    <div class="message-box">
-                        <strong style="display:block; margin-bottom:5px; color:#374151;">Message from Designer:</strong>
-                        "${message}"
-                    </div>`
-        : ""
-      }
+                    ${message ? `
+                    <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 4px; margin-bottom: 30px;">
+                        <strong style="display:block; margin-bottom:5px; color:#1e40af; font-size: 12px; text-transform: uppercase;">Note from Designer</strong>
+                        <div style="color: #1e3a8a;">"${message}"</div>
+                    </div>` : ""}
 
-                    <p>Attached you will find the <strong>complete design package</strong> for your custom design configuration. This package includes:</p>
-                    <ul style="color: #4b5563; margin-bottom: 20px;">
-                        <li>📸 <strong>4 High-Resolution Views</strong> (Front, Back, Left, Right) in JPG format</li>
-                        <li>📄 <strong>Specification Sheet</strong> (PDF) with all views and color codes</li>
-                    </ul>
-
-                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin-bottom: 25px;">
-                        <strong style="display: block; color: #92400e; font-size: 14px; margin-bottom: 8px;">⚠️ IMPORTANT: COLOR CODES FOR PRINTING</strong>
-                        <p style="margin: 0; color: #78350f; font-size: 13px;">Use the Pantone codes below for accurate color reproduction. The PDF spec sheet contains a complete color reference with swatches.</p>
+                    <!-- KEY DETAILS -->
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Team Name</label>
+                            <div>${orderMetadata?.teamName || "N/A"}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Contact Person</label>
+                            <div>${orderMetadata?.contactName || "N/A"}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Phone Number</label>
+                            <div>${orderMetadata?.phoneNumber || "N/A"}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Recipient</label>
+                            <div>${recipientEmail}</div>
+                        </div>
                     </div>
 
-
-                    ${orderMetadata ? `
-                    <h3>Order Information</h3>
-                    <div style="background:#f3f4f6; padding:15px; border-radius:6px; margin-bottom:20px; font-size:14px;">
-                        <table style="width:100%;">
-                            <tr>
-                                <td style="padding-bottom:8px; width:50%;"><strong>Team Name:</strong> ${orderMetadata.teamName || "N/A"}</td>
-                                <td style="padding-bottom:8px; width:50%;"><strong>Contact:</strong> ${orderMetadata.contactName || "N/A"}</td>
-                            </tr>
-                            <tr>
-                                <td style="width:50%;"><strong>Phone:</strong> ${orderMetadata.phoneNumber || "N/A"}</td>
-                                <td style="width:50%;"><strong>Email:</strong> ${recipientEmail}</td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    <h3>Size Breakdown</h3>
-                     <table class="details-table" style="text-align:center;">
+                    <!-- ROSTER TABLE -->
+                    ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
+                    <div class="section-title">Team Roster & Sizing</div>
+                    <table class="roster-table">
                         <thead>
-                            <tr style="background:#e5e7eb;">
-                                ${Object.keys(orderMetadata.sizes || {}).map((s: string) => `<th style="text-align:center; padding:8px;">${s}</th>`).join('')}
-                                <th style="text-align:center; padding:8px;">TOTAL</th>
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th>Name on Jersey</th>
+                                <th style="text-align: center;">Number</th>
+                                <th style="text-align: center;">Top Size</th>
+                                <th style="text-align: center;">Shorts Size</th>
                             </tr>
                         </thead>
                         <tbody>
+                            ${orderMetadata.roster.map((p: any, i: number) => `
                             <tr>
-                                ${Object.values(orderMetadata.sizes || {}).map((q: any) => `<td style="font-size:16px; font-weight:500;">${q || 0}</td>`).join('')}
-                                <td style="font-size:16px; font-weight:bold; color:#2563eb;">${Object.values(orderMetadata.sizes || {}).reduce((a: any, b: any) => a + (parseInt(b) || 0), 0)}</td>
+                                <td style="color: #9ca3af;">${i + 1}</td>
+                                <td style="font-weight: 600; color: #111827;">${p.nameOnJersey || "-"}</td>
+                                <td style="text-align: center; font-family: monospace; font-size: 14px;">${p.jerseyNumber || "-"}</td>
+                                <td style="text-align: center;"><span style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">${p.sizes.top}</span></td>
+                                <td style="text-align: center;"><span style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">${p.sizes.shorts}</span></td>
                             </tr>
+                            `).join('')}
                         </tbody>
-                     </table>
-                    ` : ''}
+                    </table>
+                    <div style="text-align: right; font-size: 13px; color: #6b7280; margin-bottom: 30px;">
+                        Total Players: <strong>${orderMetadata.roster.length}</strong>
+                    </div>
+                    ` : ""}
 
-                    <h3>Design Specifications</h3>
-                    <table class="details-table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
+                    <!-- MATERIALS & COLORS -->
+                    <div class="section-title">Materials & Colors</div>
+                    <table class="materials-table">
                         <tbody>
-                            <tr>
-                                <td><strong>Applied Elements</strong></td>
-                                <td>
-                                    ${orderDetails?.elements?.length > 0
-        ? orderDetails.elements.map((e: any) => `<div>• [${e.type.toUpperCase()}] ${e.name} ${e.detail ? `(${e.detail})` : ''}</div>`).join('')
-        : 'None'}
+                            ${orderDetails?.materials ? orderDetails.materials.map((m: any) => `
+                            <tr class="material-row">
+                                <td style="width: 40%; vertical-align: middle;">
+                                    <div style="font-weight: 600; color: #374151;">${m.name}</div>
                                 </td>
-                            </tr>
-                            ${orderDetails?.materials
-        ? orderDetails.materials
-          .map(
-            (m: any) => `
-                            <tr>
-                                <td style="vertical-align: middle;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div style="width: 20px; height: 20px; background-color: ${m.color}; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                        <span>${m.name}</span>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 15px;">
+                                        <div style="width: 30px; height: 30px; background-color: ${m.color}; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
+                                        <div>
+                                            <div style="font-weight: 700; color: #111827; font-size: 14px;">${m.pantone}</div>
+                                            <div style="font-size: 12px; color: #6b7280;">${m.pantoneName}</div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td>
-                                    <div style="font-size: 16px; font-weight: 700; color: #1e40af;">${m.pantone}</div>
-                                    <div style="font-size: 12px; color: #374151;">${m.pantoneName}</div>
-                                    <div style="font-size: 11px; color: #6b7280; font-family: monospace;">HEX: ${m.color.toUpperCase()}</div>
-                                </td>
-                            </tr>`,
-          )
-          .join("")
-        : ""
-      }
-                            ${orderDetails?.notes
-        ? `
-                            <tr>
-                                <td><strong>Notes</strong></td>
-                                <td>${orderDetails.notes}</td>
-                            </tr>`
-        : ""
-      }
+                            </tr>`).join("") : ""}
                         </tbody>
                     </table>
 
-                    <p style="text-align: center;">
+                    <!-- DELIVERY NOTES -->
+                    ${orderDetails?.notes ? `
+                    <div class="section-title">Delivery Notes</div>
+                    <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 15px; border-radius: 6px; color: #92400e; font-size: 14px;">
+                        ${orderDetails.notes}
+                    </div>
+                    ` : ""}
+
+                    <div style="text-align: center; margin-top: 40px;">
                         <a href="https://besu-customs.vercel.app" class="btn">Start New Design</a>
-                    </p>
+                    </div>
                 </div>
                 <div class="footer">
+                    <p>Generated by Besu Customs 3D Configurator</p>
                     <p>&copy; ${new Date().getFullYear()} Besu Customs. All rights reserved.</p>
                 </div>
             </div>
