@@ -135,6 +135,11 @@ export function Step06Text() {
     updateTextureLayer(layerId, { fontSize: Math.max(20, currentSize - 10) });
   };
 
+  const handleScaleChange = (layerId: string, values: number[]) => {
+    const s = values[0];
+    updateTextureLayer(layerId, { scale: [s, s, 1] });
+  };
+
   return (
     <div className="space-y-4 h-full flex flex-col">
       <div className="space-y-1 shrink-0">
@@ -307,6 +312,17 @@ export function Step06Text() {
                                 className="py-2"
                               />
                             </div>
+                            <div className="flex-1 space-y-1">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Scale ({((layer.scale?.[0] || 1)).toFixed(1)}x)</label>
+                              <Slider
+                                value={[layer.scale?.[0] || 1]}
+                                onValueChange={(v) => handleScaleChange(layer.id, v)}
+                                min={0.5}
+                                max={3}
+                                step={0.1}
+                                className="py-2"
+                              />
+                            </div>
                             <div className="space-y-1">
                               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Color</label>
                               <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden border">
@@ -399,6 +415,21 @@ export function Step06Text() {
                     min={20}
                     max={200}
                     step={5}
+                    className="py-1 cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Scale</label>
+                    <span className="text-[10px] font-mono">{(selectedLayer!.scale?.[0] || 1).toFixed(1)}x</span>
+                  </div>
+                  <Slider
+                    value={[selectedLayer!.scale?.[0] || 1]}
+                    onValueChange={(v) => handleScaleChange(selectedLayer!.id, v)}
+                    min={0.5}
+                    max={3}
+                    step={0.1}
                     className="py-1 cursor-pointer"
                   />
                 </div>

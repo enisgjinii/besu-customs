@@ -46,6 +46,124 @@ export function Step09View() {
   // Get store function for camera view control
   const setLockedView = useConfiguratorStore((state) => state.setLockedView);
 
+  // Generate UV map with all texture layers composited
+  const generateUvMapDataUrl = async (): Promise<string | null> => {
+    if (textureLayers.length === 0) return null;
+
+    // Try to get the actual UV canvas from the 3D scene first
+    const globalUvCanvas = (window as any).__uvMapCanvas as HTMLCanvasElement | null;
+    if (globalUvCanvas && globalUvCanvas.width > 0) {
+      console.log("📐 Using real UV canvas from 3D scene");
+      // Create a high-res copy for production
+      const CANVAS_SIZE = 2048;
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = CANVAS_SIZE;
+      exportCanvas.height = CANVAS_SIZE;
+      const ctx = exportCanvas.getContext("2d");
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(globalUvCanvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        return exportCanvas.toDataURL("image/png", 1.0);
+      }
+    }
+
+    console.log("📐 Fallback: Recomposing UV map from layers");
+    const CANVAS_SIZE = 2048; // High resolution for production
+    const canvas = document.createElement("canvas");
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    // White background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    // Sort layers by order
+    const visibleLayers = [...textureLayers]
+      .filter((l) => l.visible)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // Load all images first
+    const loadImage = (url: string): Promise<HTMLImageElement | null> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    };
+
+    // Process each layer
+    for (const layer of visibleLayers) {
+      ctx.save();
+      ctx.globalAlpha = layer.opacity ?? 1;
+
+      // Set blend mode
+      switch (layer.blendMode) {
+        case "multiply":
+          ctx.globalCompositeOperation = "multiply";
+          break;
+        case "screen":
+          ctx.globalCompositeOperation = "screen";
+          break;
+        case "overlay":
+          ctx.globalCompositeOperation = "overlay";
+          break;
+        case "add":
+          ctx.globalCompositeOperation = "lighter";
+          break;
+        default:
+          ctx.globalCompositeOperation = "source-over";
+      }
+
+      if (layer.type === "text" && layer.text) {
+        // Render text directly
+        const fontSize = layer.fontSize || 80;
+        const fontFamily = layer.fontFamily || "Arial";
+        ctx.fillStyle = layer.textColor || "#000000";
+        ctx.font = `bold ${fontSize * 2}px ${fontFamily}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const u = layer.position?.[0] ?? 0.5;
+        const v = layer.position?.[1] ?? 0.5;
+        const x = u * CANVAS_SIZE;
+        const y = v * CANVAS_SIZE;
+
+        ctx.translate(x, y);
+        const rotation = layer.rotation?.[2] ?? 0;
+        ctx.rotate(rotation);
+        ctx.fillText(layer.text, 0, 0);
+      } else if (layer.imageUrl) {
+        const img = await loadImage(layer.imageUrl);
+        if (img) {
+          const u = layer.position?.[0] ?? 0.5;
+          const v = layer.position?.[1] ?? 0.5;
+          const scaleX = layer.scale?.[0] ?? 0.3;
+          const scaleY = layer.scale?.[1] ?? 0.3;
+          const rotation = layer.rotation?.[2] ?? 0;
+
+          const imgWidth = CANVAS_SIZE * scaleX;
+          const imgHeight = CANVAS_SIZE * scaleY;
+          const x = u * CANVAS_SIZE;
+          const y = v * CANVAS_SIZE;
+
+          ctx.translate(x, y);
+          ctx.rotate(rotation);
+          if (layer.flipX) ctx.scale(-1, 1);
+          ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+        }
+      }
+
+      ctx.restore();
+    }
+
+    return canvas.toDataURL("image/png", 1.0);
+  };
+
   // Helper to wait for camera animation to complete
   const waitForCameraAnimation = (ms: number = 400): Promise<void> => {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -419,6 +537,19 @@ export function Step09View() {
         filename: `${fileName}-specs.pdf`,
         content: pdfBase64,
       });
+
+      // Generate UV Map with all composited layers (for production use only, not displayed in UI)
+      if (textureLayers.length > 0) {
+        toast.info("Generating UV Map...");
+        const uvMapDataUrl = await generateUvMapDataUrl();
+        if (uvMapDataUrl) {
+          files.push({
+            filename: `${fileName}-uv-map.png`,
+            content: uvMapDataUrl,
+          });
+          console.log(`📐 UV Map generated, size: ${Math.round(uvMapDataUrl.length / 1024)}KB`);
+        }
+      }
 
       // Note: Video removed from email to reduce payload
       // Users can use the 360° Video button to download separately
@@ -797,6 +928,11 @@ function EmailDialog({
 
     // Split emails by comma or whitespace and filter empty
     const clients = clientEmails.split(/[,\s]+/).filter(e => e.trim().length > 0);
+
+    // Always add besucustoms@gmail.com if not already present
+    if (!clients.includes("besucustoms@gmail.com") && recipientEmail !== "besucustoms@gmail.com") {
+      clients.push("besucustoms@gmail.com");
+    }
 
     onSend({
       recipientEmail,

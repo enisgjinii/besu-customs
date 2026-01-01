@@ -150,7 +150,7 @@ export const removeBackgroundAdvanced = async (
     options: RemovalOptions = {}
 ): Promise<RemovalResult> => {
     const {
-        quality = "balanced",
+        quality = "fast",
         onProgress,
         useCache = true,
         outputFormat = "png",
@@ -246,7 +246,7 @@ export const removeBackground = async (
     onProgress?: (progress: number) => void
 ): Promise<string> => {
     const result = await removeBackgroundAdvanced(input, {
-        quality: "balanced",
+        quality: "fast",
         onProgress,
     });
     return result.dataUrl;

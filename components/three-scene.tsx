@@ -458,6 +458,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     });
   }, [scene, texture, textureLayers]);
 
+  // Expose canvas to global for UV map capture (email export)
+  useEffect(() => {
+    (window as any).__uvMapCanvas = canvas;
+    return () => {
+      (window as any).__uvMapCanvas = null;
+    };
+  }, [canvas]);
+
   return null;
 }
 

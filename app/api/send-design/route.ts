@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-// Increase body size limit for large attachments (multiple image views)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "50mb",
-    },
-  },
-};
-
-// For App Router, also export runtime config
+// Next.js App Router route segment config
+// Note: Body size limit is configured in next.config (experimental.serverActions.bodySizeLimit)
+// or handled by the runtime/deploy provider (e.g., Vercel has a 4.5MB limit)
+export const dynamic = "force-dynamic";
 export const maxDuration = 60; // seconds
 
 export async function POST(req: NextRequest) {
