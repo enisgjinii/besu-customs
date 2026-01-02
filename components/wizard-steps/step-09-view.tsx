@@ -153,7 +153,7 @@ export function Step09View(): React.JSX.Element {
           }),
         );
       });
-      const dataUrl = captureAndResize(canvas, 800, 0.85);
+      const dataUrl = captureAndResize(canvas, 1200, 0.95);
       results.push({ view, dataUrl });
     }
     setLockedView(null);
@@ -257,14 +257,14 @@ export function Step09View(): React.JSX.Element {
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.text("Official Design Specification", margin, 32);
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - margin, 32, { align: "right" });
+        doc.text(`Generated: ${new Date().toLocaleString("en-US", { dateStyle: "full", timeStyle: "medium" })}`, pageWidth - margin, 32, { align: "right" });
 
         // Order Summary
         doc.setTextColor(30, 30, 30);
         doc.setFontSize(10);
         doc.text(`Team: ${roster.teamName || "Custom Team"}`, margin, 55);
         doc.text(`Contact: ${firstName} ${lastName}`, margin, 60);
-        doc.text(`Ref: Custom Order`, margin, 65);
+        doc.text(`Order ID: #${Date.now().toString().slice(-8)}`, margin, 65);
 
         // 4-VIEW GRID
         const pdfFront = viewCaptures.find(v => v.view === "Front")?.dataUrl;

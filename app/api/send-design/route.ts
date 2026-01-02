@@ -207,24 +207,28 @@ export async function POST(req: NextRequest) {
         : ""
       }
 
-                    <!-- MATERIALS & COLORS -->
                     <div class="section-title">Selected Materials</div>
-                    <table class="materials-table">
+                    <!-- Reuse roster-table class for consistent styling -->
+                    <table class="roster-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%">Material Position</th>
+                                <th>Color Specification</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             ${orderDetails?.materials
         ? orderDetails.materials
           .map(
             (m: any) => `
-                            <tr class="material-row">
-                                <td style="width: 40%; vertical-align: middle;">
-                                    <div style="font-weight: 600; color: #374151;">${m.name}</div>
-                                </td>
+                            <tr>
+                                <td style="vertical-align: middle; font-weight: 600; color: #374151;">${m.name}</td>
                                 <td>
-                                    <div style="display: flex; align-items: center; gap: 15px;">
-                                        <div style="width: 30px; height: 30px; background-color: ${m.color}; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="width: 24px; height: 24px; background-color: ${m.color}; border: 1px solid #d1d5db; border-radius: 4px;"></div>
                                         <div>
-                                            <div style="font-weight: 700; color: #111827; font-size: 14px;">${m.pantone}</div>
-                                            <div style="font-size: 12px; color: #6b7280;">${m.pantoneName}</div>
+                                            <div style="font-weight: 700; color: #111827; font-size: 13px;">${m.pantone}</div>
+                                            <div style="font-size: 11px; color: #6b7280;">${m.pantoneName}</div>
                                         </div>
                                     </div>
                                 </td>
