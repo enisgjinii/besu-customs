@@ -32,6 +32,7 @@ export function Step09View() {
   const updateTextureLayer = useConfiguratorStore((state) => state.updateTextureLayer);
   const roster = useConfiguratorStore((state) => state.roster);
   const setRoster = useConfiguratorStore((state) => state.setRoster);
+  const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
 
   const [format, setFormat] = useState<"png" | "svg" | "pdf" | "jpg">("png");
   const [fileName, setFileName] = useState("my-besu-design");
@@ -705,6 +706,14 @@ export function Step09View() {
         console.log(`📐 UV Map generated successfully, size: ${Math.round(uvMapDataUrl.length / 1024)}KB`);
       } else {
         console.log("📐 UV Map generation returned null - no layers or canvas issue");
+      }
+
+      // Add UV Map Reference (Wireframe) if available
+      if (completeUVMap) {
+        files.push({
+          filename: `${fileName}-uv-reference-wireframe.png`,
+          content: completeUVMap,
+        });
       }
 
       // ===== ROSTER PLAYER IMAGES =====
