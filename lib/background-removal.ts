@@ -209,6 +209,7 @@ export const removeBackgroundAdvanced = async (
     const resultBlob = await Promise.race([
       imglyRemoveBackground(inputBlob, {
         // No publicPath - use bundled assets from node_modules
+        ...config,
         output: {
           format: outputFormat === "webp" ? "image/webp" : "image/png",
           quality: config.output?.quality ?? 0.9,
