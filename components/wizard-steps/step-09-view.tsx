@@ -113,22 +113,14 @@ export function Step09View(): React.JSX.Element {
       setLockedView("Front");
       await new Promise((r) => setTimeout(r, 500));
 
+
       for (let i = 0; i < roster.players.length; i++) {
         const player = roster.players[i];
         setBatchProgress({ current: i + 1, total: roster.players.length });
         toast.info(`Capturing ${player.nameOnJersey || `Player ${i + 1}`}...`);
 
-        // Swap name text layers
-        for (const layer of nameLayers) {
-          updateTextureLayer(layer.id, {
-            text: player.nameOnJersey || "PLAYER",
-          });
-        }
-
-        // Swap number text layers
-        for (const layer of numberLayers) {
-          updateTextureLayer(layer.id, { text: player.jerseyNumber || "00" });
-        }
+        // NOTE: Text layers are NOT swapped - capturing generic placeholder state
+        // Player names/numbers are stored in roster data for email/PDF only
 
         // Wait for render to update
         await new Promise((r) => setTimeout(r, 300));
@@ -169,13 +161,7 @@ export function Step09View(): React.JSX.Element {
         await new Promise((r) => setTimeout(r, 300));
       }
 
-      // Restore original text values
-      for (const { id, text } of originalNameTexts) {
-        updateTextureLayer(id, { text });
-      }
-      for (const { id, text } of originalNumberTexts) {
-        updateTextureLayer(id, { text });
-      }
+      // No need to restore text values since we didn't modify them
 
       // Generate and download zip
       toast.info("Creating ZIP file...");
@@ -1043,27 +1029,8 @@ export function Step09View(): React.JSX.Element {
               `Capturing player ${i + 1}/${rosterToCapture.length}...`,
             );
 
-            // Swap name text layers
-            nameLayers.forEach((layer) => {
-              updateTextureLayer(layer.id, { text: player.nameOnJersey });
-            });
-
-            // Swap number text layers
-            numberLayers.forEach((layer) => {
-              updateTextureLayer(layer.id, { text: player.jerseyNumber });
-            });
-
-            // Fallback distribution
-            if (nameLayers.length === 0 && numberLayers.length === 0) {
-              if (allTextLayers[0])
-                updateTextureLayer(allTextLayers[0].id, {
-                  text: player.nameOnJersey,
-                });
-              if (allTextLayers[1])
-                updateTextureLayer(allTextLayers[1].id, {
-                  text: player.jerseyNumber,
-                });
-            }
+            // NOTE: Text layers are NOT swapped - capturing generic placeholder state
+            // Player names/numbers are stored in roster data for email/PDF only
 
             // Wait for render
             await waitForCameraAnimation(300);
@@ -1102,13 +1069,7 @@ export function Step09View(): React.JSX.Element {
             await waitForCameraAnimation(300);
           }
 
-          // Restore original text values
-          for (const { id, text } of originalNameTexts) {
-            updateTextureLayer(id, { text });
-          }
-          for (const { id, text } of originalNumberTexts) {
-            updateTextureLayer(id, { text });
-          }
+          // No need to restore text values since we didn't modify them
 
           console.log(
             `📸 Generated ${roster.players.length * 2} roster images`,
