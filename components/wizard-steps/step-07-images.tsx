@@ -12,7 +12,10 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
-import { removeBackgroundAdvanced, removeBackgroundFast } from "@/lib/background-removal";
+import {
+  removeBackgroundAdvanced,
+  removeBackgroundFast,
+} from "@/lib/background-removal";
 import { useRef, useState } from "react";
 
 export function Step07Images() {
@@ -27,9 +30,15 @@ export function Step07Images() {
     (state) => state.updateTextureLayer,
   );
 
-  const setPlacementMode = useConfiguratorStore((state) => state.setPlacementMode);
-  const setPendingLayer = useConfiguratorStore((state) => state.setPendingLayer);
-  const isPlacementMode = useConfiguratorStore((state) => state.isPlacementMode);
+  const setPlacementMode = useConfiguratorStore(
+    (state) => state.setPlacementMode,
+  );
+  const setPendingLayer = useConfiguratorStore(
+    (state) => state.setPendingLayer,
+  );
+  const isPlacementMode = useConfiguratorStore(
+    (state) => state.isPlacementMode,
+  );
 
   // Track if upload is in progress to prevent duplicate uploads
   const isUploadingRef = useRef(false);
@@ -66,18 +75,27 @@ export function Step07Images() {
               quality: isMobile() ? "fast" : "balanced",
               onProgress: (progress) => {
                 setBgRemovalProgress(progress);
-                toast.loading(`AI removing background... ${progress}%`, { id: toastId });
+                toast.loading(`AI removing background... ${progress}%`, {
+                  id: toastId,
+                });
               },
             });
             result = removalResult.dataUrl;
-            toast.success(`Background removed in ${(removalResult.processingTime / 1000).toFixed(1)}s`, { id: toastId });
+            toast.success(
+              `Background removed in ${(removalResult.processingTime / 1000).toFixed(1)}s`,
+              { id: toastId },
+            );
           } catch (error) {
             console.error("Background removal failed:", error);
-            const errorMessage = error instanceof Error ? error.message : "Background removal failed";
-            toast.error(errorMessage.includes("timed out") 
-              ? "Timed out. Try again on WiFi." 
-              : "Background removal failed, using original image", 
-              { id: toastId }
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Background removal failed";
+            toast.error(
+              errorMessage.includes("timed out")
+                ? "Timed out. Try again on WiFi."
+                : "Background removal failed, using original image",
+              { id: toastId },
             );
           } finally {
             setIsProcessing(false);
@@ -95,7 +113,7 @@ export function Step07Images() {
           imageUrl: result,
           name: file.name,
           scale: [0.35, 0.35, 1],
-          rotation: [0, 0, 0]
+          rotation: [0, 0, 0],
         });
         setPlacementMode(true);
         isUploadingRef.current = false;
@@ -107,7 +125,9 @@ export function Step07Images() {
     e.target.value = "";
   };
 
-  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
 
   // Function to manually remove background from existing layer using AI
   const handleRemoveBackground = async (layerId: string) => {
@@ -121,18 +141,25 @@ export function Step07Images() {
           quality: isMobile() ? "fast" : "balanced",
           onProgress: (progress) => {
             setBgRemovalProgress(progress);
-            toast.loading(`AI removing background... ${progress}%`, { id: toastId });
+            toast.loading(`AI removing background... ${progress}%`, {
+              id: toastId,
+            });
           },
         });
         updateTextureLayer(layerId, { imageUrl: removalResult.dataUrl });
-        toast.success(`Background removed in ${(removalResult.processingTime / 1000).toFixed(1)}s`, { id: toastId });
+        toast.success(
+          `Background removed in ${(removalResult.processingTime / 1000).toFixed(1)}s`,
+          { id: toastId },
+        );
       } catch (error) {
         console.error("Background removal failed:", error);
-        const errorMessage = error instanceof Error ? error.message : "Background removal failed";
-        toast.error(errorMessage.includes("timed out") 
-          ? "Timed out. Try again on WiFi." 
-          : "Background removal failed", 
-          { id: toastId }
+        const errorMessage =
+          error instanceof Error ? error.message : "Background removal failed";
+        toast.error(
+          errorMessage.includes("timed out")
+            ? "Timed out. Try again on WiFi."
+            : "Background removal failed",
+          { id: toastId },
         );
       } finally {
         setIsProcessing(false);
@@ -162,8 +189,12 @@ export function Step07Images() {
       {isPlacementMode ? (
         <div className="p-6 bg-primary/5 border-2 border-primary/20 border-dashed rounded-xl text-center animate-pulse">
           <Wand2 className="w-8 h-8 text-primary mx-auto mb-3" />
-          <p className="text-base font-medium text-primary mb-1">Placement Mode Active</p>
-          <p className="text-sm text-muted-foreground mb-4">Tap anywhere on the 3D model to place your image</p>
+          <p className="text-base font-medium text-primary mb-1">
+            Placement Mode Active
+          </p>
+          <p className="text-sm text-muted-foreground mb-4">
+            Tap anywhere on the 3D model to place your image
+          </p>
           <Button
             variant="outline"
             onClick={() => {
@@ -181,8 +212,12 @@ export function Step07Images() {
             <div className="bg-background p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform duration-300">
               <Upload className="w-6 h-6 text-primary" />
             </div>
-            <p className="text-sm font-medium text-foreground">Click to Upload</p>
-            <p className="text-xs text-muted-foreground mt-1">PNG, JPG recommended</p>
+            <p className="text-sm font-medium text-foreground">
+              Click to Upload
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              PNG, JPG recommended
+            </p>
             <Input
               type="file"
               accept="image/*"
@@ -198,8 +233,15 @@ export function Step07Images() {
                 <Wand2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="flex flex-col gap-0.5">
-                <Label htmlFor="auto-bg-switch" className="text-sm font-semibold cursor-pointer">Magic Removal</Label>
-                <span className="text-xs text-muted-foreground">Optional: Remove background with AI</span>
+                <Label
+                  htmlFor="auto-bg-switch"
+                  className="text-sm font-semibold cursor-pointer"
+                >
+                  Magic Removal
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Optional: Remove background with AI
+                </span>
               </div>
             </div>
             <Switch
@@ -237,7 +279,9 @@ export function Step07Images() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate mb-1">{layer.name}</p>
+                  <p className="text-sm font-medium truncate mb-1">
+                    {layer.name}
+                  </p>
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"

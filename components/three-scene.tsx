@@ -78,7 +78,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
   // Control icons removed as per UX request (moved to bottom panel only)
-  const drawControlIcon = () => { }; // No-op
+  const drawControlIcon = () => {}; // No-op
 
   useEffect(() => {
     const ctx = canvas.getContext("2d", {
@@ -659,7 +659,8 @@ function Model({
 
   const pinchStartScaleRef = useRef<number>(1);
   const selectedLayerId = useConfiguratorStore((s) => s.selectedTextureLayerId);
-  const getLayer = (id: string) => useConfiguratorStore.getState().textureLayers.find(l => l.id === id);
+  const getLayer = (id: string) =>
+    useConfiguratorStore.getState().textureLayers.find((l) => l.id === id);
 
   usePinchZoom(canvasRef, {
     enabled: !!selectedLayerId,
@@ -671,7 +672,8 @@ function Model({
         const layer = getLayer(selectedLayerId);
         if (layer) {
           // Store initial scale (average of x/y or just x)
-          pinchStartScaleRef.current = layer.scale?.[0] ?? (layer.type === 'text' ? 1 : 0.3);
+          pinchStartScaleRef.current =
+            layer.scale?.[0] ?? (layer.type === "text" ? 1 : 0.3);
         }
       }
     },
@@ -686,7 +688,7 @@ function Model({
         let newScale = initial * scale;
 
         // Clamp limits
-        if (layer.type === 'text') {
+        if (layer.type === "text") {
           newScale = Math.min(Math.max(newScale, 0.5), 5.0);
         } else {
           newScale = Math.min(Math.max(newScale, 0.05), 2.0);
@@ -703,7 +705,7 @@ function Model({
       if (controls) {
         (controls as any).enabled = true;
       }
-    }
+    },
   });
 
   // Check if UV click is on a control icon (works in UV space 0-1)
@@ -1277,8 +1279,9 @@ export function ThreeScene({
 
       {/* Loading Transition Overlay */}
       <div
-        className={`absolute inset-0 flex flex-col items-center justify-center bg-background z-20 transition-opacity duration-700 ease-in-out ${modelLoading ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+        className={`absolute inset-0 flex flex-col items-center justify-center bg-background z-20 transition-opacity duration-700 ease-in-out ${
+          modelLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
       >
         <Spinner className="text-primary w-12 h-12 mb-4" />
         <p className="text-sm text-muted-foreground animate-pulse">

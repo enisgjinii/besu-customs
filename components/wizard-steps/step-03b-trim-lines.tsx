@@ -22,13 +22,13 @@ const TRIM_PATTERNS = [
     id: "solid",
     name: "Solid Line",
     description: "Single solid color line",
-    icon: "━━━━━━━━━━"
+    icon: "━━━━━━━━━━",
   },
   {
     id: "double",
     name: "Double Line",
     description: "Double parallel lines with customizable gap",
-    icon: "═══════════"
+    icon: "═══════════",
   },
 ];
 
@@ -37,15 +37,31 @@ const EDGE_STYLES = [
   { id: "sharp", name: "Sharp", description: "Clean sharp edges" },
   { id: "rounded", name: "Rounded", description: "Soft rounded edges" },
   { id: "beveled", name: "Beveled", description: "Angled beveled edges" },
-  { id: "gradient-fade", name: "Gradient Fade", description: "Fades at the edges" },
+  {
+    id: "gradient-fade",
+    name: "Gradient Fade",
+    description: "Fades at the edges",
+  },
 ];
 
 // Double line variations
 const DOUBLE_LINE_STYLES = [
   { id: "equal", name: "Equal", description: "Both lines same thickness" },
-  { id: "thick-thin", name: "Thick-Thin", description: "Outer thick, inner thin" },
-  { id: "thin-thick", name: "Thin-Thick", description: "Outer thin, inner thick" },
-  { id: "outlined", name: "Outlined", description: "Lines with center gap color" },
+  {
+    id: "thick-thin",
+    name: "Thick-Thin",
+    description: "Outer thick, inner thin",
+  },
+  {
+    id: "thin-thick",
+    name: "Thin-Thick",
+    description: "Outer thin, inner thick",
+  },
+  {
+    id: "outlined",
+    name: "Outlined",
+    description: "Lines with center gap color",
+  },
 ];
 
 // Trim locations on jersey - including sides for jersey top/bottom
@@ -198,7 +214,8 @@ export function Step03bTrimLines() {
   const [trimWidth, setTrimWidth] = useState(10); // pixels
   const [trimLocation, setTrimLocation] = useState("collar");
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [secondaryColorPickerOpen, setSecondaryColorPickerOpen] = useState(false);
+  const [secondaryColorPickerOpen, setSecondaryColorPickerOpen] =
+    useState(false);
 
   // Advanced options for Solid Line
   const [edgeStyle, setEdgeStyle] = useState("sharp");
@@ -238,7 +255,7 @@ export function Step03bTrimLines() {
 
       if (sideSections.length === 0) {
         toast.error(
-          "No side panel sections found on this model. Side stripes may not be available for this garment type."
+          "No side panel sections found on this model. Side stripes may not be available for this garment type.",
         );
         return;
       }
@@ -254,7 +271,7 @@ export function Step03bTrimLines() {
       });
 
       toast.success(
-        `Side stripe color applied to ${sideSections.length} panel(s): ${sideSections.map((s) => s.name).join(", ")}`
+        `Side stripe color applied to ${sideSections.length} panel(s): ${sideSections.map((s) => s.name).join(", ")}`,
       );
       return;
     }
@@ -328,7 +345,6 @@ export function Step03bTrimLines() {
 
       {/* Main Content Area - Split for Desktop */}
       <div className="flex-1 min-h-0 md:grid md:grid-cols-2 md:gap-6 overflow-y-auto">
-
         {/* LEFT COLUMN: Controls */}
         <div className="space-y-4">
           {/* Grid for Pattern and Location */}
@@ -344,7 +360,11 @@ export function Step03bTrimLines() {
                 </SelectTrigger>
                 <SelectContent>
                   {TRIM_PATTERNS.map((pattern) => (
-                    <SelectItem key={pattern.id} value={pattern.id} className="text-xs">
+                    <SelectItem
+                      key={pattern.id}
+                      value={pattern.id}
+                      className="text-xs"
+                    >
                       {pattern.name}
                     </SelectItem>
                   ))}
@@ -402,22 +422,27 @@ export function Step03bTrimLines() {
 
           {/* Advanced Options - Pattern-specific */}
           <div className="space-y-3 p-3 border rounded-lg bg-muted/20">
-            <Label className="text-xs font-semibold text-primary">Advanced Options</Label>
+            <Label className="text-xs font-semibold text-primary">
+              Advanced Options
+            </Label>
 
             {/* Solid Line Options */}
             {trimPattern === "solid" && (
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Edge Style</Label>
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                    Edge Style
+                  </Label>
                   <div className="grid grid-cols-4 gap-1.5">
                     {EDGE_STYLES.map((style) => (
                       <button
                         key={style.id}
                         onClick={() => setEdgeStyle(style.id)}
-                        className={`p-2 text-[10px] rounded border transition-all ${edgeStyle === style.id
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background hover:bg-muted border-border"
-                          }`}
+                        className={`p-2 text-[10px] rounded border transition-all ${
+                          edgeStyle === style.id
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted border-border"
+                        }`}
                       >
                         {style.name}
                       </button>
@@ -431,16 +456,19 @@ export function Step03bTrimLines() {
             {trimPattern === "double" && (
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Line Style</Label>
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                    Line Style
+                  </Label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {DOUBLE_LINE_STYLES.map((style) => (
                       <button
                         key={style.id}
                         onClick={() => setDoubleLineStyle(style.id)}
-                        className={`p-2 text-[10px] rounded border transition-all ${doubleLineStyle === style.id
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background hover:bg-muted border-border"
-                          }`}
+                        className={`p-2 text-[10px] rounded border transition-all ${
+                          doubleLineStyle === style.id
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted border-border"
+                        }`}
                       >
                         {style.name}
                       </button>
@@ -467,14 +495,18 @@ export function Step03bTrimLines() {
                 {/* Secondary Color for outlined style */}
                 {doubleLineStyle === "outlined" && (
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Center Gap Color</Label>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                      Center Gap Color
+                    </Label>
                     <div className="flex gap-2 items-center">
                       <div
                         className="w-8 h-8 rounded border cursor-pointer shadow-sm"
                         style={{ backgroundColor: trimSecondaryColor }}
                         onClick={() => setSecondaryColorPickerOpen(true)}
                       />
-                      <span className="text-xs font-mono">{trimSecondaryColor}</span>
+                      <span className="text-xs font-mono">
+                        {trimSecondaryColor}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -489,7 +521,12 @@ export function Step03bTrimLines() {
             size="sm"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Apply to {TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name.split(" ")[0]}
+            Apply to{" "}
+            {
+              TRIM_LOCATIONS.find((l) => l.id === trimLocation)?.name.split(
+                " ",
+              )[0]
+            }
           </Button>
 
           <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded text-xs text-blue-900 dark:text-blue-200 mt-2">
@@ -516,15 +553,24 @@ export function Step03bTrimLines() {
                     height: `${trimWidth}px`,
                     backgroundColor: trimColor,
                     width: "100%",
-                    borderRadius: edgeStyle === "rounded" ? `${trimWidth / 2}px` : edgeStyle === "beveled" ? "2px" : "0",
-                    background: edgeStyle === "gradient-fade"
-                      ? `linear-gradient(90deg, transparent 0%, ${trimColor} 15%, ${trimColor} 85%, transparent 100%)`
-                      : trimColor,
+                    borderRadius:
+                      edgeStyle === "rounded"
+                        ? `${trimWidth / 2}px`
+                        : edgeStyle === "beveled"
+                          ? "2px"
+                          : "0",
+                    background:
+                      edgeStyle === "gradient-fade"
+                        ? `linear-gradient(90deg, transparent 0%, ${trimColor} 15%, ${trimColor} 85%, transparent 100%)`
+                        : trimColor,
                   }}
                 />
               )}
               {trimPattern === "double" && (
-                <div className="flex flex-col justify-center gap-[2px] w-full" style={{ gap: `${lineGap}px` }}>
+                <div
+                  className="flex flex-col justify-center gap-[2px] w-full"
+                  style={{ gap: `${lineGap}px` }}
+                >
                   <div
                     style={{
                       height: `${doubleLineStyle === "thick-thin" ? trimWidth * 0.6 : doubleLineStyle === "thin-thick" ? trimWidth * 0.4 : trimWidth * 0.5}px`,
@@ -566,7 +612,10 @@ export function Step03bTrimLines() {
                   onClick={() => {
                     // Clear all regular trims
                     sectionsWithTrims.forEach((section) => {
-                      updateSection(section.id, { trimDesign: undefined, trimColor: undefined });
+                      updateSection(section.id, {
+                        trimDesign: undefined,
+                        trimColor: undefined,
+                      });
                     });
 
                     // Clear all side stripes
@@ -594,13 +643,20 @@ export function Step03bTrimLines() {
                         className="w-5 h-5 rounded border border-black/10 flex-shrink-0"
                         style={{ backgroundColor: section.trimColor || "#000" }}
                       />
-                      <span className="truncate font-medium">{section.name}</span>
+                      <span className="truncate font-medium">
+                        {section.name}
+                      </span>
                     </div>
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-6 w-6 shrink-0 hover:bg-destructive/10"
-                      onClick={() => updateSection(section.id, { trimDesign: undefined, trimColor: undefined })}
+                      onClick={() =>
+                        updateSection(section.id, {
+                          trimDesign: undefined,
+                          trimColor: undefined,
+                        })
+                      }
                     >
                       <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
                     </Button>

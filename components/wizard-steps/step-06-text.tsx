@@ -61,7 +61,9 @@ export function Step06Text() {
   const [textColor, setTextColor] = useState("#000000");
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [activeColorLayerId, setActiveColorLayerId] = useState<string | null>(null); // null = new text, string = layer id
+  const [activeColorLayerId, setActiveColorLayerId] = useState<string | null>(
+    null,
+  ); // null = new text, string = layer id
   // Load Google Fonts
   useEffect(() => {
     const link = document.getElementById(
@@ -76,9 +78,15 @@ export function Step06Text() {
     }
   }, []);
 
-  const setPlacementMode = useConfiguratorStore((state) => state.setPlacementMode);
-  const setPendingLayer = useConfiguratorStore((state) => state.setPendingLayer);
-  const isPlacementMode = useConfiguratorStore((state) => state.isPlacementMode);
+  const setPlacementMode = useConfiguratorStore(
+    (state) => state.setPlacementMode,
+  );
+  const setPendingLayer = useConfiguratorStore(
+    (state) => state.setPendingLayer,
+  );
+  const isPlacementMode = useConfiguratorStore(
+    (state) => state.isPlacementMode,
+  );
 
   const handleAddText = () => {
     if (!textInput.trim()) {
@@ -95,7 +103,7 @@ export function Step06Text() {
       fontSize: 80,
       fontFamily: "Roboto",
       scale: [1, 1, 1],
-      rotation: [0, 0, 0]
+      rotation: [0, 0, 0],
     });
     setPlacementMode(true);
     setTextInput(""); // Clear input
@@ -150,7 +158,6 @@ export function Step06Text() {
       </div>
 
       <div className="flex-1 min-h-0 md:grid md:grid-cols-2 md:gap-6 overflow-hidden">
-
         {/* LEFT PANE: Input & List */}
         <div className="flex flex-col gap-6 overflow-y-auto pr-1">
           {/* Input Area */}
@@ -163,7 +170,9 @@ export function Step06Text() {
               </div>
               <div>
                 <p className="text-sm font-medium text-primary">Tap to Place</p>
-                <p className="text-xs text-muted-foreground">Touch anywhere on the 3D model</p>
+                <p className="text-xs text-muted-foreground">
+                  Touch anywhere on the 3D model
+                </p>
               </div>
               <Button
                 variant="outline"
@@ -216,8 +225,12 @@ export function Step06Text() {
           {textLayers.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-medium text-muted-foreground">Active Text Layers</span>
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">{textLayers.length}</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Active Text Layers
+                </span>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
+                  {textLayers.length}
+                </span>
               </div>
 
               <div className="space-y-2">
@@ -232,7 +245,7 @@ export function Step06Text() {
                       "group relative rounded-xl border transition-all duration-200 cursor-pointer",
                       selectedTextId === layer.id
                         ? "bg-primary/5 border-primary shadow-sm"
-                        : "bg-card border-border hover:bg-muted/50 hover:border-primary/30"
+                        : "bg-card border-border hover:bg-muted/50 hover:border-primary/30",
                     )}
                   >
                     <div className="flex items-center gap-3 p-3">
@@ -240,15 +253,26 @@ export function Step06Text() {
                         className="w-10 h-10 rounded-lg border bg-current flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0"
                         style={{
                           color: layer.textColor,
-                          backgroundColor: layer.textColor === "#ffffff" ? "#f3f4f6" : "#ffffff",
-                          borderColor: layer.textColor === "#ffffff" ? "#e5e7eb" : "transparent"
+                          backgroundColor:
+                            layer.textColor === "#ffffff"
+                              ? "#f3f4f6"
+                              : "#ffffff",
+                          borderColor:
+                            layer.textColor === "#ffffff"
+                              ? "#e5e7eb"
+                              : "transparent",
                         }}
                       >
                         <span style={{ fontFamily: layer.fontFamily }}>Aa</span>
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate text-sm" style={{ fontFamily: layer.fontFamily }}>{layer.text}</p>
+                        <p
+                          className="font-medium truncate text-sm"
+                          style={{ fontFamily: layer.fontFamily }}
+                        >
+                          {layer.text}
+                        </p>
                         <p className="text-[10px] text-muted-foreground truncate">
                           {layer.fontFamily} • {layer.fontSize}px
                         </p>
@@ -268,15 +292,22 @@ export function Step06Text() {
                     </div>
                     {/* Mobile Edit Controls */}
                     {selectedTextId === layer.id && (
-                      <div className="md:hidden p-3 pt-0 border-t mt-2 animate-in slide-in-from-top-2 fade-in duration-200" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="md:hidden p-3 pt-0 border-t mt-2 animate-in slide-in-from-top-2 fade-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="space-y-4 pt-2">
                           {/* Font Family */}
                           <div className="space-y-1.5">
-                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Typeface</label>
+                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                              Typeface
+                            </label>
                             <Select
                               value={layer.fontFamily || "Roboto"}
                               onValueChange={(val) =>
-                                updateTextureLayer(layer.id, { fontFamily: val })
+                                updateTextureLayer(layer.id, {
+                                  fontFamily: val,
+                                })
                               }
                             >
                               <SelectTrigger className="h-9 text-sm bg-background w-full">
@@ -300,11 +331,15 @@ export function Step06Text() {
                           {/* Size & Color Row */}
                           <div className="flex gap-3">
                             <div className="flex-1 space-y-1">
-                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Size ({layer.fontSize}px)</label>
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                Size ({layer.fontSize}px)
+                              </label>
                               <Slider
                                 value={[layer.fontSize || 80]}
                                 onValueChange={(v) =>
-                                  updateTextureLayer(layer.id, { fontSize: v[0] })
+                                  updateTextureLayer(layer.id, {
+                                    fontSize: v[0],
+                                  })
                                 }
                                 min={20}
                                 max={200}
@@ -313,10 +348,14 @@ export function Step06Text() {
                               />
                             </div>
                             <div className="flex-1 space-y-1">
-                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Scale ({((layer.scale?.[0] || 1)).toFixed(1)}x)</label>
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                Scale ({(layer.scale?.[0] || 1).toFixed(1)}x)
+                              </label>
                               <Slider
                                 value={[layer.scale?.[0] || 1]}
-                                onValueChange={(v) => handleScaleChange(layer.id, v)}
+                                onValueChange={(v) =>
+                                  handleScaleChange(layer.id, v)
+                                }
                                 min={0.5}
                                 max={3}
                                 step={0.1}
@@ -324,7 +363,9 @@ export function Step06Text() {
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Color</label>
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                Color
+                              </label>
                               <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden border">
                                 <div
                                   className="w-full h-full cursor-pointer"
@@ -340,10 +381,7 @@ export function Step06Text() {
                           </div>
 
                           {/* Action Buttons (Rotate, Duplicate, etc.) */}
-                          <LayerControls
-                            layerId={layer.id}
-                            compact={true}
-                          />
+                          <LayerControls layerId={layer.id} compact={true} />
                         </div>
                       </div>
                     )}
@@ -368,14 +406,19 @@ export function Step06Text() {
           {selectedLayer ? (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="pb-2 border-b">
-                <h3 className="text-sm font-semibold truncate" style={{ fontFamily: selectedLayer!.fontFamily }}>
+                <h3
+                  className="text-sm font-semibold truncate"
+                  style={{ fontFamily: selectedLayer!.fontFamily }}
+                >
                   Edit "{selectedLayer!.text}"
                 </h3>
               </div>
 
               {/* Font Family */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Typeface</label>
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Typeface
+                </label>
                 <Select
                   value={selectedLayer!.fontFamily || "Roboto"}
                   onValueChange={(val) =>
@@ -404,8 +447,12 @@ export function Step06Text() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Size</label>
-                    <span className="text-[10px] font-mono">{selectedLayer!.fontSize}px</span>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Size
+                    </label>
+                    <span className="text-[10px] font-mono">
+                      {selectedLayer!.fontSize}px
+                    </span>
                   </div>
                   <Slider
                     value={[selectedLayer!.fontSize || 80]}
@@ -421,12 +468,18 @@ export function Step06Text() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Scale</label>
-                    <span className="text-[10px] font-mono">{(selectedLayer!.scale?.[0] || 1).toFixed(1)}x</span>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Scale
+                    </label>
+                    <span className="text-[10px] font-mono">
+                      {(selectedLayer!.scale?.[0] || 1).toFixed(1)}x
+                    </span>
                   </div>
                   <Slider
                     value={[selectedLayer!.scale?.[0] || 1]}
-                    onValueChange={(v) => handleScaleChange(selectedLayer!.id, v)}
+                    onValueChange={(v) =>
+                      handleScaleChange(selectedLayer!.id, v)
+                    }
                     min={0.5}
                     max={3}
                     step={0.1}
@@ -435,7 +488,9 @@ export function Step06Text() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Color</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                    Color
+                  </label>
                   <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden border">
                       <div
@@ -449,7 +504,11 @@ export function Step06Text() {
                     </div>
                     <Input
                       value={selectedLayer!.textColor}
-                      onChange={(e) => updateTextureLayer(selectedLayer!.id, { textColor: e.target.value })}
+                      onChange={(e) =>
+                        updateTextureLayer(selectedLayer!.id, {
+                          textColor: e.target.value,
+                        })
+                      }
                       className="h-9 w-24 font-mono uppercase text-xs"
                     />
                   </div>
@@ -458,7 +517,9 @@ export function Step06Text() {
 
               {/* Position */}
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Quick Position</label>
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Quick Position
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { label: "Top", pos: [0.5, 0.15, 0] },
@@ -476,7 +537,8 @@ export function Step06Text() {
                         updateTextureLayer(selectedLayer!.id, {
                           position: pos as [number, number, number],
                           // Handle back rotation if needed
-                          rotation: label === "Back" ? [0, Math.PI, 0] : [0, 0, 0]
+                          rotation:
+                            label === "Back" ? [0, Math.PI, 0] : [0, 0, 0],
                         })
                       }
                       className="text-xs h-8"
@@ -493,7 +555,9 @@ export function Step06Text() {
                 <Plus className="w-6 h-6 opacity-50" />
               </div>
               <p className="text-sm font-medium">No Layer Selected</p>
-              <p className="text-xs mt-1">Select a text layer from the list to edit its properties.</p>
+              <p className="text-xs mt-1">
+                Select a text layer from the list to edit its properties.
+              </p>
             </div>
           )}
         </div>
@@ -512,7 +576,8 @@ export function Step06Text() {
         onClose={() => setColorPickerOpen(false)}
         currentColor={
           activeColorLayerId
-            ? textureLayers.find(l => l.id === activeColorLayerId)?.textColor || "#000000"
+            ? textureLayers.find((l) => l.id === activeColorLayerId)
+                ?.textColor || "#000000"
             : textColor
         }
         onColorChange={(color) => {

@@ -1,5 +1,6 @@
 "use client";
 import { useConfiguratorStore } from "@/lib/store";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,7 @@ import { findNearestPantone } from "@/lib/pantone";
 import { RosterInput, RosterData } from "@/components/roster-input";
 import JSZip from "jszip";
 
-export function Step09View() {
+export function Step09View(): React.JSX.Element {
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
@@ -29,7 +30,9 @@ export function Step09View() {
     (state) => state.setDeliveryNotes,
   );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
-  const updateTextureLayer = useConfiguratorStore((state) => state.updateTextureLayer);
+  const updateTextureLayer = useConfiguratorStore(
+    (state) => state.updateTextureLayer,
+  );
   const roster = useConfiguratorStore((state) => state.roster);
   const setRoster = useConfiguratorStore((state) => state.setRoster);
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
@@ -55,9 +58,9 @@ export function Step09View() {
   // Find text layers - use all text layers for swapping
   // First text layer = name, second text layer = number (or both get swapped to name if only 1 layer)
   const findTextLayers = useCallback(() => {
-    const allTextLayers = textureLayers.filter(
-      (l) => l.type === "text" && l.text
-    ).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const allTextLayers = textureLayers
+      .filter((l) => l.type === "text" && l.text)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     // First layer is for names, second (if exists) is for numbers
     const nameLayers = allTextLayers.length > 0 ? [allTextLayers[0]] : [];
@@ -85,14 +88,22 @@ export function Step09View() {
       return;
     }
 
-    toast.info(`Found ${allTextLayers.length} text layer(s). Using first for NAME, second for NUMBER.`);
+    toast.info(
+      `Found ${allTextLayers.length} text layer(s). Using first for NAME, second for NUMBER.`,
+    );
 
     setIsBatchCapturing(true);
     setBatchProgress({ current: 0, total: roster.players.length });
 
     // Store original text values to restore later
-    const originalNameTexts = nameLayers.map((l) => ({ id: l.id, text: l.text }));
-    const originalNumberTexts = numberLayers.map((l) => ({ id: l.id, text: l.text }));
+    const originalNameTexts = nameLayers.map((l) => ({
+      id: l.id,
+      text: l.text,
+    }));
+    const originalNumberTexts = numberLayers.map((l) => ({
+      id: l.id,
+      text: l.text,
+    }));
 
     try {
       const zip = new JSZip();
@@ -109,7 +120,9 @@ export function Step09View() {
 
         // Swap name text layers
         for (const layer of nameLayers) {
-          updateTextureLayer(layer.id, { text: player.nameOnJersey || "PLAYER" });
+          updateTextureLayer(layer.id, {
+            text: player.nameOnJersey || "PLAYER",
+          });
         }
 
         // Swap number text layers
@@ -128,7 +141,11 @@ export function Step09View() {
         // Capture front view
         const frontDataUrl = canvas.toDataURL("image/png", 1.0);
         const frontBase64 = frontDataUrl.split(",")[1];
-        folder.file(`${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_front.png`, frontBase64, { base64: true });
+        folder.file(
+          `${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_front.png`,
+          frontBase64,
+          { base64: true },
+        );
 
         // Capture back view
         setLockedView("Back");
@@ -141,7 +158,11 @@ export function Step09View() {
 
         const backDataUrl = canvas.toDataURL("image/png", 1.0);
         const backBase64 = backDataUrl.split(",")[1];
-        folder.file(`${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_back.png`, backBase64, { base64: true });
+        folder.file(
+          `${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_back.png`,
+          backBase64,
+          { base64: true },
+        );
 
         // Reset to front for next player
         setLockedView("Front");
@@ -185,13 +206,26 @@ export function Step09View() {
       setBatchProgress({ current: 0, total: 0 });
       setLockedView(null);
     }
-  }, [roster.players, textureLayers, findTextLayers, updateTextureLayer, fileName, setLockedView]);
+  }, [
+    roster.players,
+    textureLayers,
+    findTextLayers,
+    updateTextureLayer,
+    fileName,
+    setLockedView,
+  ]);
 
   // Generate UV map with all texture layers composited
   const generateUvMapDataUrl = async (): Promise<string | null> => {
     // Try to get the actual UV canvas from the 3D scene first (this is the real rendered texture)
-    const globalUvCanvas = (window as any).__uvMapCanvas as HTMLCanvasElement | null;
-    console.log("📐 Global UV canvas check:", globalUvCanvas ? `found (${globalUvCanvas.width}x${globalUvCanvas.height})` : "not found");
+    const globalUvCanvas = (window as any)
+      .__uvMapCanvas as HTMLCanvasElement | null;
+    console.log(
+      "📐 Global UV canvas check:",
+      globalUvCanvas
+        ? `found (${globalUvCanvas.width}x${globalUvCanvas.height})`
+        : "not found",
+    );
 
     if (globalUvCanvas && globalUvCanvas.width > 0) {
       console.log("📐 Using real UV canvas from 3D scene");
@@ -211,7 +245,9 @@ export function Step09View() {
 
     // Fallback: recompose from layers if no global canvas
     if (textureLayers.length === 0) {
-      console.log("📐 No texture layers and no global canvas - skipping UV map");
+      console.log(
+        "📐 No texture layers and no global canvas - skipping UV map",
+      );
       return null;
     }
 
@@ -301,7 +337,13 @@ export function Step09View() {
           ctx.translate(x, y);
           ctx.rotate(rotation);
           if (layer.flipX) ctx.scale(-1, 1);
-          ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+          ctx.drawImage(
+            img,
+            -imgWidth / 2,
+            -imgHeight / 2,
+            imgWidth,
+            imgHeight,
+          );
         }
       }
 
@@ -317,7 +359,11 @@ export function Step09View() {
   };
 
   // Helper to resize and compress canvas for email-friendly size
-  const captureAndResize = (canvas: HTMLCanvasElement, maxSize: number = 800, quality: number = 0.8): string => {
+  const captureAndResize = (
+    canvas: HTMLCanvasElement,
+    maxSize: number = 800,
+    quality: number = 0.8,
+  ): string => {
     // Calculate new dimensions while maintaining aspect ratio
     let width = canvas.width;
     let height = canvas.height;
@@ -351,10 +397,14 @@ export function Step09View() {
   };
 
   // Capture all views (front, back, left, right) - optimized for email
-  const captureMultipleViews = async (canvas: HTMLCanvasElement): Promise<{
-    view: string;
-    dataUrl: string;
-  }[]> => {
+  const captureMultipleViews = async (
+    canvas: HTMLCanvasElement,
+  ): Promise<
+    {
+      view: string;
+      dataUrl: string;
+    }[]
+  > => {
     const views = ["Front", "Back", "Left", "Right"];
     const results: { view: string; dataUrl: string }[] = [];
 
@@ -375,30 +425,52 @@ export function Step09View() {
           });
         });
       });
+      // Capture front
+      setLockedView("Front");
+      await waitForCameraAnimation(500);
+      // Tuned for high quality but strictly < 4.5MB total payload
+      // 1024px @ 0.85 quality is excellent but smaller than 0.9
+      const frontDataUrl = captureAndResize(canvas, 1024, 0.85);
+      results.push({ view: "Front", dataUrl: frontDataUrl });
 
-      // Capture and resize for email (max 800px, JPEG 80% quality)
-      const dataUrl = captureAndResize(canvas, 800, 0.8);
+      // Capture back
+      setLockedView("Back");
+      await waitForCameraAnimation(500);
+      const backDataUrl = captureAndResize(canvas, 1024, 0.85);
+      results.push({ view: "Back", dataUrl: backDataUrl });
 
-      // Debug: log the size
-      console.log(`📸 ${view} view captured, size: ${Math.round(dataUrl.length / 1024)}KB`);
+      // Capture left
+      setLockedView("Left");
+      await waitForCameraAnimation(500);
+      const leftDataUrl = captureAndResize(canvas, 1024, 0.85);
+      results.push({ view: "Left", dataUrl: leftDataUrl });
 
-      results.push({ view, dataUrl });
+      // Capture right
+      setLockedView("Right");
+      await waitForCameraAnimation(500);
+      const rightDataUrl = captureAndResize(canvas, 1024, 0.85);
+      results.push({ view: "Right", dataUrl: rightDataUrl });
+
+      // Reset camera view
+      setLockedView(null);
+
+      return results;
     }
-
-    // Reset camera view
-    setLockedView(null);
-
     return results;
   };
 
   // Helper to record video as a Promise
-  const recordVideo = async (canvas: HTMLCanvasElement): Promise<Blob | null> => {
+  const recordVideo = async (
+    canvas: HTMLCanvasElement,
+  ): Promise<Blob | null> => {
     return new Promise((resolve) => {
       // Small delay to ensure UI updates
       setTimeout(() => {
         const stream = canvas.captureStream(30);
         const chunks: BlobPart[] = [];
-        const mimeType = MediaRecorder.isTypeSupported("video/mp4") ? "video/mp4" : "video/webm";
+        const mimeType = MediaRecorder.isTypeSupported("video/mp4")
+          ? "video/mp4"
+          : "video/webm";
         const recorder = new MediaRecorder(stream, { mimeType });
 
         recorder.ondataavailable = (e) => {
@@ -423,8 +495,11 @@ export function Step09View() {
     });
   };
 
-
-  const handleSendEmail = async (data: { recipientEmail: string; clientEmails: string[]; message: string }) => {
+  const handleSendEmail = async (data: {
+    recipientEmail: string;
+    clientEmails: string[];
+    message: string;
+  }) => {
     setIsSendingEmail(true);
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
 
@@ -470,9 +545,17 @@ export function Step09View() {
         doc.setFontSize(9);
         doc.setTextColor(75, 85, 99);
         let infoY = 44;
-        if (roster.teamName) { doc.text(`Team: ${roster.teamName}`, 130, infoY); infoY += 5; }
-        if (contactName) { doc.text(`Contact: ${contactName}`, 130, infoY); infoY += 5; }
-        if (phoneNumber) { doc.text(`Phone: ${phoneNumber}`, 130, infoY); }
+        if (roster.teamName) {
+          doc.text(`Team: ${roster.teamName}`, 130, infoY);
+          infoY += 5;
+        }
+        if (contactName) {
+          doc.text(`Contact: ${contactName}`, 130, infoY);
+          infoY += 5;
+        }
+        if (phoneNumber) {
+          doc.text(`Phone: ${phoneNumber}`, 130, infoY);
+        }
       }
 
       // 4-View Grid
@@ -495,7 +578,10 @@ export function Step09View() {
         const imgProps = (doc as any).getImageProperties(capture.dataUrl);
         const maxWidth = 75;
         const maxHeight = 60;
-        const ratio = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
+        const ratio = Math.min(
+          maxWidth / imgProps.width,
+          maxHeight / imgProps.height,
+        );
         const imgW = imgProps.width * ratio;
         const imgH = imgProps.height * ratio;
 
@@ -507,7 +593,14 @@ export function Step09View() {
         // Image with border
         doc.setDrawColor(229, 231, 235);
         doc.rect(grid.x, grid.y, maxWidth, maxHeight);
-        doc.addImage(capture.dataUrl, "JPEG", grid.x + (maxWidth - imgW) / 2, grid.y + (maxHeight - imgH) / 2, imgW, imgH);
+        doc.addImage(
+          capture.dataUrl,
+          "JPEG",
+          grid.x + (maxWidth - imgW) / 2,
+          grid.y + (maxHeight - imgH) / 2,
+          imgW,
+          imgH,
+        );
       });
 
       // ===== PAGE 2: COLOR SPECIFICATIONS =====
@@ -559,13 +652,19 @@ export function Step09View() {
         doc.rect(22, yPos - 3, 8, 6, "S");
 
         doc.setFontSize(9);
-        const safeName = section.name.length > 18 ? section.name.substring(0, 16) + "..." : section.name;
+        const safeName =
+          section.name.length > 18
+            ? section.name.substring(0, 16) + "..."
+            : section.name;
         doc.text(safeName, 32, yPos);
         doc.setFont("helvetica", "bold");
         doc.text(pantone.code, 70, yPos);
         doc.setFont("helvetica", "normal");
         doc.text(section.color.toUpperCase(), 115, yPos);
-        const safePantoneName = pantone.name.length > 15 ? pantone.name.substring(0, 13) + "..." : pantone.name;
+        const safePantoneName =
+          pantone.name.length > 15
+            ? pantone.name.substring(0, 13) + "..."
+            : pantone.name;
         doc.text(safePantoneName, 145, yPos);
 
         yPos += 9;
@@ -630,7 +729,10 @@ export function Step09View() {
 
         doc.setTextColor(17, 24, 39);
         textureLayers.forEach((layer) => {
-          if (yPos > 270) { doc.addPage(); yPos = 20; }
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
 
           const typeStr = layer.type.toUpperCase();
           let contentStr = layer.name || "";
@@ -638,7 +740,9 @@ export function Step09View() {
 
           if (layer.type === "text") {
             contentStr = `"${layer.text}"`;
-            const textPantone = findNearestPantone(layer.textColor || "#000000");
+            const textPantone = findNearestPantone(
+              layer.textColor || "#000000",
+            );
             detailsStr = `Font: ${layer.fontFamily}, Color: ${textPantone.code} (${layer.textColor})`;
           } else {
             detailsStr = `Scale: ${(layer.scale?.[0] || 1).toFixed(2)}x`;
@@ -646,7 +750,10 @@ export function Step09View() {
 
           doc.setFontSize(8);
           doc.text(typeStr, 22, yPos);
-          const safeContent = contentStr.length > 25 ? contentStr.substring(0, 22) + "..." : contentStr;
+          const safeContent =
+            contentStr.length > 25
+              ? contentStr.substring(0, 22) + "..."
+              : contentStr;
           doc.text(safeContent, 50, yPos);
           const splitDetails = doc.splitTextToSize(detailsStr, 75);
           doc.text(splitDetails, 110, yPos);
@@ -656,7 +763,12 @@ export function Step09View() {
 
       // Notes section
       if (deliveryNotes) {
-        if (yPos > 250) { doc.addPage(); yPos = 20; } else { yPos += 10; }
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        } else {
+          yPos += 10;
+        }
 
         doc.setFontSize(14);
         doc.setTextColor(17, 24, 39);
@@ -671,14 +783,13 @@ export function Step09View() {
         doc.text(splitNotes, 25, yPos + 3);
       }
 
+      // Generate PDF
       const pdfBase64 = doc.output("datauristring");
 
       // ===== PREPARE FILE ATTACHMENTS =====
-      // Only send PNG views + PDF to avoid payload size limits
-      // Users can download other formats manually if needed
       const files: { filename: string; content: string }[] = [];
 
-      // JPEG views (4 files) - compressed for email, high quality
+      // JPEG views (4 files)
       viewCaptures.forEach((capture) => {
         files.push({
           filename: `${fileName}-${capture.view.toLowerCase()}.jpg`,
@@ -686,16 +797,13 @@ export function Step09View() {
         });
       });
 
-      // PDF Spec Sheet with all color codes
+      // PDF Spec Sheet
       files.push({
         filename: `${fileName}-specs.pdf`,
         content: pdfBase64,
       });
 
-      // Generate UV Map with all composited layers (for production use only, not displayed in UI)
-      console.log(`📐 Texture layers count: ${textureLayers.length}`);
-      console.log(`📐 Global UV canvas available: ${!!(window as any).__uvMapCanvas}`);
-
+      // Generate UV Map (if available)
       toast.info("Generating UV Map...");
       const uvMapDataUrl = await generateUvMapDataUrl();
       if (uvMapDataUrl) {
@@ -703,9 +811,6 @@ export function Step09View() {
           filename: `${fileName}-uv-map.png`,
           content: uvMapDataUrl,
         });
-        console.log(`📐 UV Map generated successfully, size: ${Math.round(uvMapDataUrl.length / 1024)}KB`);
-      } else {
-        console.log("📐 UV Map generation returned null - no layers or canvas issue");
       }
 
       // Add UV Map Reference (Wireframe) if available
@@ -718,8 +823,8 @@ export function Step09View() {
 
       // ===== ROSTER PLAYER IMAGES =====
       // Generate individual images for each player in the roster
-      // Limit to 10 players to avoid payload size issues
-      const maxRosterForEmail = 10;
+      // STRICT LIMIT: 3 players max for email to prevent 413 Payload Too Large
+      const maxRosterForEmail = 3;
       const rosterToCapture = roster.players.slice(0, maxRosterForEmail);
 
       if (rosterToCapture.length > 0) {
@@ -727,13 +832,23 @@ export function Step09View() {
 
         if (allTextLayers.length > 0) {
           if (roster.players.length > maxRosterForEmail) {
-            toast.warning(`Email limited to ${maxRosterForEmail} players. Use "Generate Player Images" button to download all.`);
+            toast.warning(
+              `Email limited to first ${maxRosterForEmail} players to ensure delivery. Use "Generate Player Images" to download all.`,
+            );
           }
-          toast.info(`Generating images for ${rosterToCapture.length} players...`);
+          toast.info(
+            `Generating roster images for ${rosterToCapture.length} players...`,
+          );
 
           // Store original text values
-          const originalNameTexts = nameLayers.map((l) => ({ id: l.id, text: l.text }));
-          const originalNumberTexts = numberLayers.map((l) => ({ id: l.id, text: l.text }));
+          const originalNameTexts = nameLayers.map((l) => ({
+            id: l.id,
+            text: l.text,
+          }));
+          const originalNumberTexts = numberLayers.map((l) => ({
+            id: l.id,
+            text: l.text,
+          }));
 
           // Set camera to front view
           setLockedView("Front");
@@ -741,26 +856,43 @@ export function Step09View() {
 
           for (let i = 0; i < rosterToCapture.length; i++) {
             const player = rosterToCapture[i];
-            toast.info(`Capturing player ${i + 1}/${roster.players.length}...`);
+            toast.info(
+              `Capturing player ${i + 1}/${rosterToCapture.length}...`,
+            );
 
             // Swap name text layers
-            for (const layer of nameLayers) {
-              updateTextureLayer(layer.id, { text: player.nameOnJersey || "PLAYER" });
-            }
+            nameLayers.forEach((layer) => {
+              updateTextureLayer(layer.id, { text: player.nameOnJersey });
+            });
 
             // Swap number text layers
-            for (const layer of numberLayers) {
-              updateTextureLayer(layer.id, { text: player.jerseyNumber || "00" });
+            numberLayers.forEach((layer) => {
+              updateTextureLayer(layer.id, { text: player.jerseyNumber });
+            });
+
+            // Fallback distribution
+            if (nameLayers.length === 0 && numberLayers.length === 0) {
+              if (allTextLayers[0])
+                updateTextureLayer(allTextLayers[0].id, {
+                  text: player.nameOnJersey,
+                });
+              if (allTextLayers[1])
+                updateTextureLayer(allTextLayers[1].id, {
+                  text: player.jerseyNumber,
+                });
             }
 
             // Wait for render
             await waitForCameraAnimation(300);
             await new Promise<void>((resolve) => {
-              requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve()),
+              );
             });
 
-            // Capture front (smaller size for email - 400px, 60% quality)
-            const frontDataUrl = captureAndResize(canvas, 400, 0.6);
+            // Capture front (Good Quality - 600px, 80% quality)
+            // Reduced size/quality slightly to ensure < 4.5MB payload
+            const frontDataUrl = captureAndResize(canvas, 600, 0.8);
             files.push({
               filename: `roster/${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_front.jpg`,
               content: frontDataUrl,
@@ -770,11 +902,13 @@ export function Step09View() {
             setLockedView("Back");
             await waitForCameraAnimation(500);
             await new Promise<void>((resolve) => {
-              requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve()),
+              );
             });
 
-            // Capture back (smaller size for email - 400px, 60% quality)
-            const backDataUrl = captureAndResize(canvas, 400, 0.6);
+            // Capture back (Good Quality - 600px, 80% quality)
+            const backDataUrl = captureAndResize(canvas, 600, 0.8);
             files.push({
               filename: `roster/${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_back.jpg`,
               content: backDataUrl,
@@ -793,12 +927,11 @@ export function Step09View() {
             updateTextureLayer(id, { text });
           }
 
-          console.log(`📸 Generated ${roster.players.length * 2} roster images`);
+          console.log(
+            `📸 Generated ${roster.players.length * 2} roster images`,
+          );
         }
       }
-
-      // Note: Video removed from email to reduce payload
-      // Users can use the 360° Video button to download separately
 
       toast.info("Sending email with design package...");
 
@@ -820,7 +953,12 @@ export function Step09View() {
           orderDetails: {
             materials: sections.map((s) => {
               const p = findNearestPantone(s.color);
-              return { name: s.name, color: s.color, pantone: p.code, pantoneName: p.name };
+              return {
+                name: s.name,
+                color: s.color,
+                pantone: p.code,
+                pantoneName: p.name,
+              };
             }),
             elements: textureLayers.map((l) => ({
               type: l.type,
@@ -982,7 +1120,9 @@ export function Step09View() {
       <div className="space-y-5">
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Order Details</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+              Order Details
+            </Label>
             <Input
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
@@ -1014,8 +1154,15 @@ export function Step09View() {
                 <Download className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="flex flex-col gap-0.5">
-                <Label htmlFor="high-res" className="text-sm font-semibold cursor-pointer">Ultra High-Res</Label>
-                <span className="text-xs text-muted-foreground">Export at 2x resolution (4K)</span>
+                <Label
+                  htmlFor="high-res"
+                  className="text-sm font-semibold cursor-pointer"
+                >
+                  Ultra High-Res
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Export at 2x resolution (4K)
+                </span>
               </div>
             </div>
             <Switch
@@ -1030,7 +1177,9 @@ export function Step09View() {
         {textureLayers.length > 0 && (
           <div className="flex items-center gap-3 p-3 bg-muted/30 border rounded-lg">
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-primary">{textureLayers.length}</span>
+              <span className="text-xs font-bold text-primary">
+                {textureLayers.length}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">Applied Elements</p>
@@ -1043,12 +1192,16 @@ export function Step09View() {
 
         {/* Team & Order Details */}
         <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-sm font-semibold tracking-tight">Order Information</h3>
+          <h3 className="text-sm font-semibold tracking-tight">
+            Order Information
+          </h3>
 
           {/* Contact Info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Contact Name</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+                Contact Name
+              </Label>
               <Input
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
@@ -1057,7 +1210,9 @@ export function Step09View() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Phone Number</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+                Phone Number
+              </Label>
               <Input
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
@@ -1069,10 +1224,7 @@ export function Step09View() {
           </div>
 
           {/* Roster Input - Source of Truth for player data */}
-          <RosterInput
-            value={roster}
-            onChange={setRoster}
-          />
+          <RosterInput value={roster} onChange={setRoster} />
 
           {/* Batch Capture Button */}
           {roster.players.length > 0 && (
@@ -1086,8 +1238,9 @@ export function Step09View() {
                     Generate All Player Images
                   </h4>
                   <p className="text-xs text-green-700/70 dark:text-green-400/70">
-                    Auto-capture front & back views for each player in your roster.
-                    Make sure you have "NAME" text and a number on your jersey.
+                    Auto-capture front & back views for each player in your
+                    roster. Make sure you have "NAME" text and a number on your
+                    jersey.
                   </p>
                 </div>
               </div>
@@ -1113,7 +1266,9 @@ export function Step09View() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Notes</Label>
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
+            Notes
+          </Label>
           <Textarea
             placeholder="Special instructions for production (colors, sizing, etc.)"
             value={deliveryNotes}
@@ -1173,7 +1328,11 @@ function EmailDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSend: (data: { recipientEmail: string; clientEmails: string[]; message: string }) => void;
+  onSend: (data: {
+    recipientEmail: string;
+    clientEmails: string[];
+    message: string;
+  }) => void;
   loading: boolean;
 }) {
   const [recipientEmail, setRecipientEmail] = useState("");
@@ -1187,17 +1346,22 @@ function EmailDialog({
     }
 
     // Split emails by comma or whitespace and filter empty
-    const clients = clientEmails.split(/[,\s]+/).filter(e => e.trim().length > 0);
+    const clients = clientEmails
+      .split(/[,\s]+/)
+      .filter((e) => e.trim().length > 0);
 
     // Always add besucustoms@gmail.com if not already present
-    if (!clients.includes("besucustoms@gmail.com") && recipientEmail !== "besucustoms@gmail.com") {
+    if (
+      !clients.includes("besucustoms@gmail.com") &&
+      recipientEmail !== "besucustoms@gmail.com"
+    ) {
       clients.push("besucustoms@gmail.com");
     }
 
     onSend({
       recipientEmail,
       clientEmails: clients,
-      message
+      message,
     });
   };
 
@@ -1235,7 +1399,9 @@ function EmailDialog({
                 value={clientEmails}
                 onChange={(e) => setClientEmails(e.target.value)}
               />
-              <p className="text-[10px] text-muted-foreground">Separate multiple emails with commas</p>
+              <p className="text-[10px] text-muted-foreground">
+                Separate multiple emails with commas
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -1249,7 +1415,11 @@ function EmailDialog({
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button onClick={handleSubmit} disabled={loading}>
@@ -1260,5 +1430,5 @@ function EmailDialog({
         </div>
       )}
     </div>
-  )
+  );
 }

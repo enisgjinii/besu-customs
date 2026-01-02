@@ -112,7 +112,9 @@ export function ColorPickerModal({
   }, []);
 
   /* New state for preview revert */
-  const [previewRevertColor, setPreviewRevertColor] = useState<string | null>(null);
+  const [previewRevertColor, setPreviewRevertColor] = useState<string | null>(
+    null,
+  );
 
   const handleMouseEnter = (color: string) => {
     if (!previewRevertColor) {
@@ -250,10 +252,11 @@ export function ColorPickerModal({
                     onClick={() => handlePantoneSelect(pantone)}
                     onMouseEnter={() => handleMouseEnter(pantone.hex)}
                     onMouseLeave={handleMouseLeave}
-                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
-                      ? "border-primary ring-1 ring-primary"
-                      : "border-transparent hover:border-primary/50"
-                      }`}
+                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${
+                      selectedPantone?.code === pantone.code
+                        ? "border-primary ring-1 ring-primary"
+                        : "border-transparent hover:border-primary/50"
+                    }`}
                   >
                     <div
                       className="absolute inset-0"
@@ -290,10 +293,11 @@ export function ColorPickerModal({
                     onClick={() => handlePantoneSelect(pantone)}
                     onMouseEnter={() => handleMouseEnter(pantone.hex)}
                     onMouseLeave={handleMouseLeave}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
-                      ? "border-primary bg-primary/5"
-                      : "border-transparent hover:bg-muted"
-                      }`}
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
+                      selectedPantone?.code === pantone.code
+                        ? "border-primary bg-primary/5"
+                        : "border-transparent hover:bg-muted"
+                    }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
@@ -317,10 +321,11 @@ export function ColorPickerModal({
                     onClick={() => handlePantoneSelect(pantone)}
                     onMouseEnter={() => handleMouseEnter(pantone.hex)}
                     onMouseLeave={handleMouseLeave}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
-                      ? "border-primary bg-primary/5"
-                      : "border-transparent hover:bg-muted"
-                      }`}
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
+                      selectedPantone?.code === pantone.code
+                        ? "border-primary bg-primary/5"
+                        : "border-transparent hover:bg-muted"
+                    }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
@@ -333,10 +338,10 @@ export function ColorPickerModal({
                     </div>
                   </button>
                 )) || (
-                    <div className="text-xs text-muted-foreground text-center py-3">
-                      No metallic colors
-                    </div>
-                  )}
+                  <div className="text-xs text-muted-foreground text-center py-3">
+                    No metallic colors
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -379,17 +384,24 @@ export function ColorPickerModal({
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground">R</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        R
+                      </span>
                       <input
                         type="number"
                         min="0"
                         max="255"
                         value={parseInt(tempColor.slice(1, 3), 16) || 0}
                         onChange={(e) => {
-                          const r = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                          const r = Math.min(
+                            255,
+                            Math.max(0, parseInt(e.target.value) || 0),
+                          );
                           const g = parseInt(tempColor.slice(3, 5), 16) || 0;
                           const b = parseInt(tempColor.slice(5, 7), 16) || 0;
-                          setTempColor(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                          setTempColor(
+                            `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`,
+                          );
                           setSelectedPantone(null);
                         }}
                         className="w-full py-1.5 px-2 rounded border text-sm font-mono h-9 text-center"
@@ -397,7 +409,9 @@ export function ColorPickerModal({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground">G</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        G
+                      </span>
                       <input
                         type="number"
                         min="0"
@@ -405,9 +419,14 @@ export function ColorPickerModal({
                         value={parseInt(tempColor.slice(3, 5), 16) || 0}
                         onChange={(e) => {
                           const r = parseInt(tempColor.slice(1, 3), 16) || 0;
-                          const g = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                          const g = Math.min(
+                            255,
+                            Math.max(0, parseInt(e.target.value) || 0),
+                          );
                           const b = parseInt(tempColor.slice(5, 7), 16) || 0;
-                          setTempColor(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                          setTempColor(
+                            `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`,
+                          );
                           setSelectedPantone(null);
                         }}
                         className="w-full py-1.5 px-2 rounded border text-sm font-mono h-9 text-center"
@@ -415,7 +434,9 @@ export function ColorPickerModal({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground">B</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        B
+                      </span>
                       <input
                         type="number"
                         min="0"
@@ -424,8 +445,13 @@ export function ColorPickerModal({
                         onChange={(e) => {
                           const r = parseInt(tempColor.slice(1, 3), 16) || 0;
                           const g = parseInt(tempColor.slice(3, 5), 16) || 0;
-                          const b = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-                          setTempColor(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                          const b = Math.min(
+                            255,
+                            Math.max(0, parseInt(e.target.value) || 0),
+                          );
+                          setTempColor(
+                            `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`,
+                          );
                           setSelectedPantone(null);
                         }}
                         className="w-full py-1.5 px-2 rounded border text-sm font-mono h-9 text-center"

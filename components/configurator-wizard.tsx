@@ -5,7 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronRight, ChevronLeft, Lock, RotateCcw, GripHorizontal } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronLeft,
+  Lock,
+  RotateCcw,
+  GripHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -76,36 +82,42 @@ export function ConfiguratorWizard() {
   }, []);
 
   // Desktop drag handlers
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    isDraggingRef.current = true;
-    dragStartY.current = e.clientY;
-    dragStartHeight.current = panelHeight;
-    document.body.style.cursor = 'ns-resize';
-    document.body.style.userSelect = 'none';
-  }, [panelHeight]);
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      isDraggingRef.current = true;
+      dragStartY.current = e.clientY;
+      dragStartHeight.current = panelHeight;
+      document.body.style.cursor = "ns-resize";
+      document.body.style.userSelect = "none";
+    },
+    [panelHeight],
+  );
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
 
       const deltaY = dragStartY.current - e.clientY;
-      const newHeight = Math.min(600, Math.max(200, dragStartHeight.current + deltaY));
+      const newHeight = Math.min(
+        600,
+        Math.max(200, dragStartHeight.current + deltaY),
+      );
       setPanelHeight(newHeight);
     };
 
     const handleMouseUp = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
       }
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 

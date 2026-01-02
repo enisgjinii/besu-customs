@@ -191,8 +191,8 @@ export function ConfiguratorBottomBar() {
 
   const selectedColorName = currentSection
     ? COLOR_PALETTE.find(
-      (c) => c.hex.toLowerCase() === currentSection.color?.toLowerCase(),
-    )?.name || "Custom"
+        (c) => c.hex.toLowerCase() === currentSection.color?.toLowerCase(),
+      )?.name || "Custom"
     : "";
 
   if (!mounted) {
@@ -250,10 +250,11 @@ export function ConfiguratorBottomBar() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveMode(mode.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${activeMode === mode.id
-                ? "bg-black dark:bg-white text-white dark:text-black"
-                : "bg-white border border-gray-200 dark:border-gray-700 text-gray-600 hover:border-black"
-                }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                activeMode === mode.id
+                  ? "bg-black dark:bg-white text-white dark:text-black"
+                  : "bg-white border border-gray-200 dark:border-gray-700 text-gray-600 hover:border-black"
+              }`}
             >
               <Icon className="w-3.5 h-3.5" />
               {mode.label}
@@ -286,10 +287,11 @@ export function ConfiguratorBottomBar() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setLockedView(lockedView === view ? null : view)}
-              className={`w-6 h-6 rounded text-xs font-medium ${lockedView === view
-                ? "bg-black dark:bg-white text-white dark:text-black"
-                : "bg-white border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
-                }`}
+              className={`w-6 h-6 rounded text-xs font-medium ${
+                lockedView === view
+                  ? "bg-black dark:bg-white text-white dark:text-black"
+                  : "bg-white border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
+              }`}
             >
               {view[0]}
             </motion.button>
@@ -376,11 +378,12 @@ export function ConfiguratorBottomBar() {
                     whileHover={{ scale: 1.15 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleColorSelect(c.hex)}
-                    className={`w-8 h-8 rounded-full border-2 ${currentSection?.color?.toLowerCase() ===
+                    className={`w-8 h-8 rounded-full border-2 ${
+                      currentSection?.color?.toLowerCase() ===
                       c.hex.toLowerCase()
-                      ? "border-black ring-2 ring-black/20"
-                      : "border-gray-200 dark:border-gray-700"
-                      }`}
+                        ? "border-black ring-2 ring-black/20"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
                     style={{ backgroundColor: c.hex }}
                     title={c.name}
                   />
@@ -627,10 +630,11 @@ export function ConfiguratorBottomBar() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setLockedView(view)}
-                  className={`px-4 py-2 text-xs font-medium border rounded-lg hover:border-black ${lockedView === view
+                  className={`px-4 py-2 text-xs font-medium border rounded-lg hover:border-black ${
+                    lockedView === view
                       ? "bg-black text-white dark:bg-white dark:text-black border-transparent"
                       : "bg-white dark:bg-black text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800"
-                    }`}
+                  }`}
                 >
                   {view}
                 </motion.button>

@@ -113,11 +113,15 @@ export async function POST(req: NextRequest) {
                 <div class="content">
                     <h2 style="margin-top: 0; font-size: 22px; color: #111827;">Design: <span style="color: #2563eb;">${designName || "Custom Jersey"}</span></h2>
                     
-                    ${message ? `
+                    ${
+                      message
+                        ? `
                     <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 4px; margin-bottom: 30px;">
                         <strong style="display:block; margin-bottom:5px; color:#1e40af; font-size: 12px; text-transform: uppercase;">Note from Designer</strong>
                         <div style="color: #1e3a8a;">"${message}"</div>
-                    </div>` : ""}
+                    </div>`
+                        : ""
+                    }
 
                     <!-- KEY DETAILS -->
                     <div class="info-grid">
@@ -140,7 +144,9 @@ export async function POST(req: NextRequest) {
                     </div>
 
                     <!-- ROSTER TABLE -->
-                    ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
+                    ${
+                      orderMetadata?.roster && orderMetadata.roster.length > 0
+                        ? `
                     <div class="section-title">Team Roster & Sizing</div>
                     <table class="roster-table">
                         <thead>
@@ -153,7 +159,9 @@ export async function POST(req: NextRequest) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${orderMetadata.roster.map((p: any, i: number) => `
+                            ${orderMetadata.roster
+                              .map(
+                                (p: any, i: number) => `
                             <tr>
                                 <td style="color: #9ca3af;">${i + 1}</td>
                                 <td style="font-weight: 600; color: #111827;">${p.nameOnJersey || "-"}</td>
@@ -161,19 +169,27 @@ export async function POST(req: NextRequest) {
                                 <td style="text-align: center;"><span style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">${p.sizes.top}</span></td>
                                 <td style="text-align: center;"><span style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">${p.sizes.shorts}</span></td>
                             </tr>
-                            `).join('')}
+                            `,
+                              )
+                              .join("")}
                         </tbody>
                     </table>
                     <div style="text-align: right; font-size: 13px; color: #6b7280; margin-bottom: 30px;">
                         Total Players: <strong>${orderMetadata.roster.length}</strong>
                     </div>
-                    ` : ""}
+                    `
+                        : ""
+                    }
 
                     <!-- MATERIALS & COLORS -->
                     <div class="section-title">Materials & Colors</div>
                     <table class="materials-table">
                         <tbody>
-                            ${orderDetails?.materials ? orderDetails.materials.map((m: any) => `
+                            ${
+                              orderDetails?.materials
+                                ? orderDetails.materials
+                                    .map(
+                                      (m: any) => `
                             <tr class="material-row">
                                 <td style="width: 40%; vertical-align: middle;">
                                     <div style="font-weight: 600; color: #374151;">${m.name}</div>
@@ -187,17 +203,25 @@ export async function POST(req: NextRequest) {
                                         </div>
                                     </div>
                                 </td>
-                            </tr>`).join("") : ""}
+                            </tr>`,
+                                    )
+                                    .join("")
+                                : ""
+                            }
                         </tbody>
                     </table>
 
                     <!-- DELIVERY NOTES -->
-                    ${orderDetails?.notes ? `
+                    ${
+                      orderDetails?.notes
+                        ? `
                     <div class="section-title">Delivery Notes</div>
                     <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 15px; border-radius: 6px; color: #92400e; font-size: 14px;">
                         ${orderDetails.notes}
                     </div>
-                    ` : ""}
+                    `
+                        : ""
+                    }
 
                     <div style="text-align: center; margin-top: 40px;">
                         <a href="https://besu-customs.vercel.app" class="btn">Start New Design</a>

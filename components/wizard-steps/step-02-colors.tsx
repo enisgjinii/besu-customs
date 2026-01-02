@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
-import { Link2, RotateCcw, Loader2, Palette, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Link2,
+  RotateCcw,
+  Loader2,
+  Palette,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 
 export function Step02Colors() {
@@ -38,7 +45,6 @@ export function Step02Colors() {
       setActiveSectionId(sections[0].id);
     }
   }, [sections, activeSectionId]);
-
 
   /* New state for tracking the color to revert to after hover */
   const [previewRevertColor, setPreviewRevertColor] = useState<string | null>(
@@ -340,7 +346,9 @@ export function Step02Colors() {
       <div className="flex gap-6 h-full min-h-0">
         {/* Left: Color Grid (Scrollable) */}
         <div className="flex-1 overflow-y-auto pr-2 min-h-0">
-          <h3 className="text-xs font-semibold text-muted-foreground mb-3 sticky top-0 bg-white dark:bg-black py-1 z-10">Usage Palette</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3 sticky top-0 bg-white dark:bg-black py-1 z-10">
+            Usage Palette
+          </h3>
           <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
             {PRESET_COLORS.map((color) => (
               <button
@@ -357,7 +365,8 @@ export function Step02Colors() {
                 style={{ backgroundColor: color }}
                 title={color}
               >
-                {activeSection?.color?.toUpperCase() === color.toUpperCase() && (
+                {activeSection?.color?.toUpperCase() ===
+                  color.toUpperCase() && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />
                   </div>
@@ -369,10 +378,11 @@ export function Step02Colors() {
 
         {/* Right: Actions Panel (Fixed) */}
         <div className="w-64 shrink-0 flex flex-col gap-4 border-l pl-6">
-
           {/* Custom Color Input Group */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground">Custom Color</label>
+            <label className="text-xs font-semibold text-foreground">
+              Custom Color
+            </label>
             <div className="flex gap-2">
               <div
                 className="w-12 h-12 rounded-lg border shadow-sm flex-shrink-0"
@@ -392,14 +402,18 @@ export function Step02Colors() {
                   className="h-7 text-xs font-mono uppercase"
                   placeholder="#000000"
                 />
-                <span className="text-[10px] text-muted-foreground px-1">Hex Code</span>
+                <span className="text-[10px] text-muted-foreground px-1">
+                  Hex Code
+                </span>
               </div>
             </div>
           </div>
 
           {/* Advanced Tools */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground">Tools</label>
+            <label className="text-xs font-semibold text-foreground">
+              Tools
+            </label>
             <Button
               variant="outline"
               size="sm"

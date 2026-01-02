@@ -109,19 +109,25 @@ export function AIImageGenerator() {
       const result = await removeBackgroundAdvanced(blob, {
         quality: "balanced",
         onProgress: (progress) => {
-          toast.loading(`AI removing background... ${progress}%`, { id: toastId });
+          toast.loading(`AI removing background... ${progress}%`, {
+            id: toastId,
+          });
         },
       });
       processedUrl = result.dataUrl;
-      console.log(`✅ Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`);
+      console.log(
+        `✅ Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`,
+      );
       toast.success(`Background removed!`, { id: toastId });
     } catch (error) {
       console.warn("Background removal failed, using original image:", error);
-      const errorMessage = error instanceof Error ? error.message : "Background removal failed";
-      toast.error(errorMessage.includes("timed out")
-        ? "Timed out. Try again on WiFi."
-        : "Background removal failed, using original",
-        { id: toastId }
+      const errorMessage =
+        error instanceof Error ? error.message : "Background removal failed";
+      toast.error(
+        errorMessage.includes("timed out")
+          ? "Timed out. Try again on WiFi."
+          : "Background removal failed, using original",
+        { id: toastId },
       );
     }
 
@@ -221,7 +227,7 @@ export function AIImageGenerator() {
                 "Flame gradient effects",
                 "Abstract wave design",
                 "Lightning bolt pattern",
-                "Galaxy space theme"
+                "Galaxy space theme",
               ].map((example) => (
                 <button
                   key={example}
@@ -238,10 +244,11 @@ export function AIImageGenerator() {
           {/* Usage Information */}
           {usage && (
             <div
-              className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
-                ? "text-destructive bg-destructive/10 border border-destructive/20"
-                : "text-muted-foreground bg-secondary/20"
-                }`}
+              className={`text-[10px] p-2 rounded-md ${
+                usage.remaining === 0
+                  ? "text-destructive bg-destructive/10 border border-destructive/20"
+                  : "text-muted-foreground bg-secondary/20"
+              }`}
             >
               <div className="flex items-center gap-1">
                 {usage.remaining === 0 ? (

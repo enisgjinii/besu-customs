@@ -14,7 +14,10 @@ function parseMaterialName(name: string, modelUrl?: string): string {
 
   // Model-specific overrides
   if (modelUrl) {
-    if (modelUrl.includes("basketball-jersey-top-and-long-shorts") || modelUrl.includes("basketball-jersey-and-shorts")) {
+    if (
+      modelUrl.includes("basketball-jersey-top-and-long-shorts") ||
+      modelUrl.includes("basketball-jersey-and-shorts")
+    ) {
       // Buttons should be hidden
       if (lowerName.includes("button")) return "HIDDEN";
 
@@ -24,8 +27,10 @@ function parseMaterialName(name: string, modelUrl?: string): string {
       if (name.includes("2848")) return "Front of Shorts";
 
       // Jersey parts
-      if (lowerName.includes("body_f") || lowerName.includes("front")) return "Front of Jersey";
-      if (lowerName.includes("body_b") || lowerName.includes("back")) return "Back of Jersey";
+      if (lowerName.includes("body_f") || lowerName.includes("front"))
+        return "Front of Jersey";
+      if (lowerName.includes("body_b") || lowerName.includes("back"))
+        return "Back of Jersey";
 
       // "Ble" matches usually indicate trim/binding in some exports or it might be the 4th fabric
       // If the user said "Ble", and we have a 4th fabric "66694", let's name it carefully or generic
@@ -34,7 +39,8 @@ function parseMaterialName(name: string, modelUrl?: string): string {
       // Catch-all for "Ble" if it appears as a name
       if (lowerName.includes("ble")) return "Jersey Sleeve & Collar Trim";
 
-      if (lowerName.includes("fabric_1") || lowerName === "fabric 1") return "Shorts";
+      if (lowerName.includes("fabric_1") || lowerName === "fabric 1")
+        return "Shorts";
       if (lowerName.includes("waist")) return "Waistband"; // Keep existing waistband mapping
     }
 
@@ -135,9 +141,17 @@ export function extractSectionsFromThreeModel(
         // Determine category based on name and model
         let category = "Other";
         if (modelUrl?.includes("basketball-jersey")) {
-          if (sectionName.includes("Jersey") || sectionName.includes("Sleeve") || sectionName.includes("Collar")) {
+          if (
+            sectionName.includes("Jersey") ||
+            sectionName.includes("Sleeve") ||
+            sectionName.includes("Collar")
+          ) {
             category = "Jersey";
-          } else if (sectionName.includes("Shorts") || sectionName.includes("Waist") || sectionName.includes("Pants")) {
+          } else if (
+            sectionName.includes("Shorts") ||
+            sectionName.includes("Waist") ||
+            sectionName.includes("Pants")
+          ) {
             category = "Shorts";
           }
         }
@@ -302,9 +316,7 @@ export function applyMaterialsToThreeModel(
           // Fix Z-Fighting for overlapping geometry (Trims/Collars/Stitching)
           const isTrim =
             /trim|collar|stitch|seam|detail|piping/i.test(section.name) ||
-            /trim|collar|stitch|seam|detail|piping/i.test(
-              section.originalName,
-            );
+            /trim|collar|stitch|seam|detail|piping/i.test(section.originalName);
 
           if (isTrim) {
             targetMaterial.polygonOffset = true;

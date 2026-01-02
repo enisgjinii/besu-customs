@@ -26,16 +26,16 @@ export const PATTERN_CATEGORIES: {
   name: string;
   icon: string;
 }[] = [
-    // Note: school-logos removed from here - they are now in the Logo step
-    { id: "league", name: "League", icon: "Trophy" },
-    { id: "gallery", name: "Gallery", icon: "Image" },
-    { id: "abstract", name: "Abstract", icon: "Abstract" },
-    { id: "animal", name: "Animal", icon: "Animal" },
-    { id: "camo", name: "Camo", icon: "Camo" },
-    { id: "sports", name: "Sports", icon: "Sports" },
-    { id: "stripes", name: "Stripes", icon: "Stripes" },
-    { id: "geometric", name: "Geometric", icon: "Geometric" },
-  ];
+  // Note: school-logos removed from here - they are now in the Logo step
+  { id: "league", name: "League", icon: "Trophy" },
+  { id: "gallery", name: "Gallery", icon: "Image" },
+  { id: "abstract", name: "Abstract", icon: "Abstract" },
+  { id: "animal", name: "Animal", icon: "Animal" },
+  { id: "camo", name: "Camo", icon: "Camo" },
+  { id: "sports", name: "Sports", icon: "Sports" },
+  { id: "stripes", name: "Stripes", icon: "Stripes" },
+  { id: "geometric", name: "Geometric", icon: "Geometric" },
+];
 
 // Generate SVG pattern data URLs
 const createSVGDataUrl = (svg: string) =>
@@ -318,12 +318,12 @@ const camoPatterns: Pattern[] = [
         <rect fill="#4B5563" width="100" height="100"/>
         <g>
           ${Array.from({ length: 50 }, () => {
-      const x = Math.floor(Math.random() * 10) * 10;
-      const y = Math.floor(Math.random() * 10) * 10;
-      const colors = ["#1F2937", "#6B7280", "#374151"];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      return `<rect fill="${color}" x="${x}" y="${y}" width="10" height="10"/>`;
-    }).join("")}
+            const x = Math.floor(Math.random() * 10) * 10;
+            const y = Math.floor(Math.random() * 10) * 10;
+            const colors = ["#1F2937", "#6B7280", "#374151"];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            return `<rect fill="${color}" x="${x}" y="${y}" width="10" height="10"/>`;
+          }).join("")}
         </g>
       </svg>
     `),
@@ -746,11 +746,11 @@ const geometricPatterns: Pattern[] = [
       <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <rect fill="#3B82F6" width="100" height="100"/>
         ${Array.from({ length: 25 }, (_, i) => {
-      const x = (i % 5) * 20;
-      const y = Math.floor(i / 5) * 20;
-      const color = i % 2 === 0 ? "#1E3A8A" : "#60A5FA";
-      return `<rect fill="${color}" x="${x}" y="${y}" width="20" height="20"/>`;
-    }).join("")}
+          const x = (i % 5) * 20;
+          const y = Math.floor(i / 5) * 20;
+          const color = i % 2 === 0 ? "#1E3A8A" : "#60A5FA";
+          return `<rect fill="${color}" x="${x}" y="${y}" width="20" height="20"/>`;
+        }).join("")}
       </svg>
     `),
   },
@@ -3536,11 +3536,11 @@ const leaguePatterns: Pattern[] = [
           </radialGradient>
         </defs>
         ${Array.from({ length: 100 }, (_, i) => {
-      const cy = Math.random() * 100;
-      const cx = Math.random() * 100;
-      const r = Math.random() * 3;
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#4F46E5" opacity="${Math.random()}"/>`;
-    }).join("")}
+          const cy = Math.random() * 100;
+          const cx = Math.random() * 100;
+          const r = Math.random() * 3;
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#4F46E5" opacity="${Math.random()}"/>`;
+        }).join("")}
       </svg>
     `),
   },

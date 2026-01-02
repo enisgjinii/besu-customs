@@ -87,7 +87,7 @@ export function Step03Style() {
         <button
           onClick={() => {
             // Reset sections to white
-            sections.forEach(s => updateSection(s.id, { color: "#ffffff" }));
+            sections.forEach((s) => updateSection(s.id, { color: "#ffffff" }));
             setSelectedStyle(null);
           }}
           className="text-xs text-muted-foreground hover:text-destructive border border-border hover:border-destructive/30 px-3 py-1.5 rounded-lg"

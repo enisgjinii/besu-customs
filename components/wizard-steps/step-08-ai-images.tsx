@@ -9,7 +9,15 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
-import { Sparkles, Map, Download, Eye, EyeOff, Loader2, Wand2 } from "lucide-react";
+import {
+  Sparkles,
+  Map,
+  Download,
+  Eye,
+  EyeOff,
+  Loader2,
+  Wand2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -93,7 +101,10 @@ export function Step08AIImages() {
       }
     } catch (error) {
       console.error("UV AI generation error:", error);
-      toast.error(error instanceof Error ? error.message : "Generation failed", { id: toastId });
+      toast.error(
+        error instanceof Error ? error.message : "Generation failed",
+        { id: toastId },
+      );
     } finally {
       setUvGenerating(false);
     }
@@ -197,7 +208,11 @@ export function Step08AIImages() {
               className="h-7 text-xs"
               onClick={() => setShowUVMap(!showUVMap)}
             >
-              {showUVMap ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+              {showUVMap ? (
+                <EyeOff className="w-3 h-3 mr-1" />
+              ) : (
+                <Eye className="w-3 h-3 mr-1" />
+              )}
               {showUVMap ? "Hide" : "Show"}
             </Button>
             {completeUVMap && (
@@ -241,7 +256,11 @@ export function Step08AIImages() {
                       placeholder="Describe your pattern (e.g., geometric flames, abstract waves)..."
                       value={uvPrompt}
                       onChange={(e) => setUvPrompt(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && !uvGenerating && handleGenerateOnUV()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        !uvGenerating &&
+                        handleGenerateOnUV()
+                      }
                       disabled={uvGenerating}
                       className="text-sm h-9"
                     />
@@ -286,7 +305,8 @@ export function Step08AIImages() {
                   </Button>
 
                   <p className="text-[10px] text-muted-foreground text-center">
-                    AI will create a seamless pattern that covers the entire garment
+                    AI will create a seamless pattern that covers the entire
+                    garment
                   </p>
                 </div>
               </div>
@@ -294,7 +314,9 @@ export function Step08AIImages() {
               <div className="text-center py-8 text-muted-foreground">
                 <Map className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No UV map available</p>
-                <p className="text-xs mt-1">Select a 3D model first to extract its UV map</p>
+                <p className="text-xs mt-1">
+                  Select a 3D model first to extract its UV map
+                </p>
               </div>
             )}
           </div>
@@ -341,9 +363,13 @@ export function Step08AIImages() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate mb-1">{layer.name}</p>
+                  <p className="text-sm font-medium truncate mb-1">
+                    {layer.name}
+                  </p>
                   <div className="flex items-center text-[10px] text-muted-foreground">
-                    <span className="truncate">AI Generated • High Quality</span>
+                    <span className="truncate">
+                      AI Generated • High Quality
+                    </span>
                   </div>
                 </div>
 
