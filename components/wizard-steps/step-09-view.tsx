@@ -10,13 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Share2, Video } from "lucide-react";
-import { useState } from "react";
+import { Download, Share2, Video, Users, Loader2, Camera } from "lucide-react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { findNearestPantone } from "@/lib/pantone";
 import { RosterInput, RosterData } from "@/components/roster-input";
+import JSZip from "jszip";
 
 export function Step09View() {
   const currentModelUrl = useConfiguratorStore(
@@ -28,6 +29,7 @@ export function Step09View() {
     (state) => state.setDeliveryNotes,
   );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
+  const updateTextureLayer = useConfiguratorStore((state) => state.updateTextureLayer);
   const roster = useConfiguratorStore((state) => state.roster);
   const setRoster = useConfiguratorStore((state) => state.setRoster);
 
@@ -38,12 +40,151 @@ export function Step09View() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [highRes, setHighRes] = useState(true); // Enable high-res by default
 
+  // Batch capture state
+  const [isBatchCapturing, setIsBatchCapturing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+
   // Order Details State (contact info only - roster handles player data)
   const [contactName, setContactName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
 
   // Get store function for camera view control
   const setLockedView = useConfiguratorStore((state) => state.setLockedView);
+
+  // Find text layers - use all text layers for swapping
+  // First text layer = name, second text layer = number (or both get swapped to name if only 1 layer)
+  const findTextLayers = useCallback(() => {
+    const allTextLayers = textureLayers.filter(
+      (l) => l.type === "text" && l.text
+    ).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // First layer is for names, second (if exists) is for numbers
+    const nameLayers = allTextLayers.length > 0 ? [allTextLayers[0]] : [];
+    const numberLayers = allTextLayers.length > 1 ? [allTextLayers[1]] : [];
+
+    return { nameLayers, numberLayers, allTextLayers };
+  }, [textureLayers]);
+
+  // Batch capture all players
+  const handleBatchCapture = useCallback(async () => {
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    if (!canvas) {
+      toast.error("3D Canvas not found");
+      return;
+    }
+
+    if (roster.players.length === 0) {
+      toast.error("No players in roster. Add players first.");
+      return;
+    }
+
+    const { nameLayers, numberLayers, allTextLayers } = findTextLayers();
+    if (allTextLayers.length === 0) {
+      toast.error("No text layers found. Add text to your jersey first.");
+      return;
+    }
+
+    toast.info(`Found ${allTextLayers.length} text layer(s). Using first for NAME, second for NUMBER.`);
+
+    setIsBatchCapturing(true);
+    setBatchProgress({ current: 0, total: roster.players.length });
+
+    // Store original text values to restore later
+    const originalNameTexts = nameLayers.map((l) => ({ id: l.id, text: l.text }));
+    const originalNumberTexts = numberLayers.map((l) => ({ id: l.id, text: l.text }));
+
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder(`${fileName}-roster`) || zip;
+
+      // Set camera to front view
+      setLockedView("Front");
+      await new Promise((r) => setTimeout(r, 500));
+
+      for (let i = 0; i < roster.players.length; i++) {
+        const player = roster.players[i];
+        setBatchProgress({ current: i + 1, total: roster.players.length });
+        toast.info(`Capturing ${player.nameOnJersey || `Player ${i + 1}`}...`);
+
+        // Swap name text layers
+        for (const layer of nameLayers) {
+          updateTextureLayer(layer.id, { text: player.nameOnJersey || "PLAYER" });
+        }
+
+        // Swap number text layers
+        for (const layer of numberLayers) {
+          updateTextureLayer(layer.id, { text: player.jerseyNumber || "00" });
+        }
+
+        // Wait for render to update
+        await new Promise((r) => setTimeout(r, 300));
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => resolve());
+          });
+        });
+
+        // Capture front view
+        const frontDataUrl = canvas.toDataURL("image/png", 1.0);
+        const frontBase64 = frontDataUrl.split(",")[1];
+        folder.file(`${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_front.png`, frontBase64, { base64: true });
+
+        // Capture back view
+        setLockedView("Back");
+        await new Promise((r) => setTimeout(r, 500));
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => resolve());
+          });
+        });
+
+        const backDataUrl = canvas.toDataURL("image/png", 1.0);
+        const backBase64 = backDataUrl.split(",")[1];
+        folder.file(`${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_back.png`, backBase64, { base64: true });
+
+        // Reset to front for next player
+        setLockedView("Front");
+        await new Promise((r) => setTimeout(r, 300));
+      }
+
+      // Restore original text values
+      for (const { id, text } of originalNameTexts) {
+        updateTextureLayer(id, { text });
+      }
+      for (const { id, text } of originalNumberTexts) {
+        updateTextureLayer(id, { text });
+      }
+
+      // Generate and download zip
+      toast.info("Creating ZIP file...");
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${fileName}-roster-${roster.players.length}-players.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Captured ${roster.players.length} player jerseys!`);
+    } catch (error) {
+      console.error("Batch capture error:", error);
+      toast.error("Batch capture failed");
+
+      // Restore original text values on error
+      for (const { id, text } of originalNameTexts) {
+        updateTextureLayer(id, { text });
+      }
+      for (const { id, text } of originalNumberTexts) {
+        updateTextureLayer(id, { text });
+      }
+    } finally {
+      setIsBatchCapturing(false);
+      setBatchProgress({ current: 0, total: 0 });
+      setLockedView(null);
+    }
+  }, [roster.players, textureLayers, findTextLayers, updateTextureLayer, fileName, setLockedView]);
 
   // Generate UV map with all texture layers composited
   const generateUvMapDataUrl = async (): Promise<string | null> => {
@@ -842,6 +983,43 @@ export function Step09View() {
             value={roster}
             onChange={setRoster}
           />
+
+          {/* Batch Capture Button */}
+          {roster.players.length > 0 && (
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200/50 dark:border-green-800/50">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-green-500/10 rounded-lg">
+                  <Camera className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-green-800 dark:text-green-300">
+                    Generate All Player Images
+                  </h4>
+                  <p className="text-xs text-green-700/70 dark:text-green-400/70">
+                    Auto-capture front & back views for each player in your roster.
+                    Make sure you have "NAME" text and a number on your jersey.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleBatchCapture}
+                disabled={isBatchCapturing || isExporting}
+                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isBatchCapturing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Capturing {batchProgress.current}/{batchProgress.total}...
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-4 h-4 mr-2" />
+                    Generate {roster.players.length} Player Images
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5">
