@@ -53,10 +53,6 @@ export function Step09View(): React.JSX.Element {
   }>({ front: null, back: null, side: null });
   const [previewsLoading, setPreviewsLoading] = useState(true);
 
-  // Constants
-  const PRICE_PER_JERSEY = 45; // Placeholder price
-  const totalPrice = roster.players.length * PRICE_PER_JERSEY;
-
   // On Mount: Capture previews
   useEffect(() => {
     const generatePreviews = async () => {
@@ -163,6 +159,27 @@ export function Step09View(): React.JSX.Element {
     return results;
   };
 
+  // Generate UV Map helpers 
+  const generateUvMapDataUrl = async (): Promise<string | null> => {
+    // Try to get the actual UV canvas from the 3D scene first (this is the real rendered texture)
+    const globalUvCanvas = (window as any).__uvMapCanvas as HTMLCanvasElement | null;
+
+    if (globalUvCanvas && globalUvCanvas.width > 0) {
+      const CANVAS_SIZE = 2048;
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = CANVAS_SIZE;
+      exportCanvas.height = CANVAS_SIZE;
+      const ctx = exportCanvas.getContext("2d");
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(globalUvCanvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        return exportCanvas.toDataURL("image/png", 1.0);
+      }
+    }
+    return null;
+  };
+
   const findTextLayers = useCallback(() => {
     const allTextLayers = textureLayers
       .filter((l) => l.type === "text" && l.text)
@@ -211,29 +228,23 @@ export function Step09View(): React.JSX.Element {
         });
       });
 
+      // Capture Full UV Map (Texture)
+      const uvMapUrl = await generateUvMapDataUrl();
+      if (uvMapUrl) {
+        files.push({
+          filename: "Design-Full-UV-Map.png",
+          content: uvMapUrl,
+        });
+      }
+
       // Roster Images (Limit 3)
       const maxRosterForEmail = 3;
       const rosterToCapture = roster.players.slice(0, maxRosterForEmail);
 
       if (rosterToCapture.length > 0) {
         const { nameLayers, numberLayers, allTextLayers } = findTextLayers();
-
         if (allTextLayers.length > 0) {
-          toast.info(
-            `Generating roster images for first ${rosterToCapture.length} players...`,
-          );
-
-          // Restore logic to capture roster images
-          // Note: We are NOT swapping text in this simplified version to avoid complex state management issues
-          // We will just capture generic views for now, or users downloads the zip separately.
-          // IF we want to swap text, we need to manipulate `textureLayers` store or the canvas objects directly.
-          // Given the complexity and '500 error' risk, let's skip dynamic swapping in this step 
-          // and just encourage them to download the ZIP for full roster.
-          // However, to satisfy the requirement of "roster images", we can just attach the generic ones 
-          // labeled with their names if we can't swap easily. 
-          // ACTUALLY: The previous implementation DID swap views using store updates or canvas manipulation?
-          // It's safer to skip the complex swapping here to prevent crashes and keep payload small. 
-          // We already have their names in the TABLE in the email.
+          // Placeholder logic for roster image generation
         }
       }
 
@@ -391,16 +402,6 @@ export function Step09View(): React.JSX.Element {
             </div>
           </div>
 
-          {/* Totals */}
-          <div className="space-y-2">
-            <Label className="text-slate-700 font-semibold">Total Amount</Label>
-            <Input
-              readOnly
-              value={totalPrice > 0 ? roster.players.length : "0"}
-              className="bg-white h-11 w-32 font-mono"
-            />
-          </div>
-
           {/* Address */}
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <Label className="text-slate-700 font-semibold text-lg">Shipping Address <span className="text-red-500">*</span></Label>
@@ -453,32 +454,16 @@ export function Step09View(): React.JSX.Element {
             </div>
           </div>
 
-          {/* Pricing & Notes */}
-          <div className="space-y-6 pt-6 border-t border-slate-200">
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-bold text-lg">Total Price <span className="text-red-500">*</span></Label>
-              <div className="relative max-w-md">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                <Input
-                  readOnly
-                  value={totalPrice}
-                  className="bg-white h-12 pl-7 font-mono text-lg"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">USD</span>
-              </div>
-            </div>
-
-            {/* Notes Section - RESTORED */}
-            <div className="space-y-2 pt-4">
-              <Label className="text-slate-700 font-semibold text-lg">Additional Notes</Label>
-              <Textarea
-                placeholder="Special instructions for production (colors, sizing, etc.)"
-                value={deliveryNotes}
-                onChange={(e) => setDeliveryNotes(e.target.value)}
-                className="min-h-[100px] resize-none bg-white"
-              />
-              <span className="text-xs text-slate-500">Any specific requests for the team?</span>
-            </div>
+          {/* Notes (Total Amount Removed) */}
+          <div className="space-y-2 pt-6 border-t border-slate-200">
+            <Label className="text-slate-700 font-semibold text-lg">Additional Notes</Label>
+            <Textarea
+              placeholder="Special instructions for production (colors, sizing, etc.)"
+              value={deliveryNotes}
+              onChange={(e) => setDeliveryNotes(e.target.value)}
+              className="min-h-[100px] resize-none bg-white"
+            />
+            <span className="text-xs text-slate-500">Any specific requests for the team?</span>
           </div>
 
           {/* Submit */}
