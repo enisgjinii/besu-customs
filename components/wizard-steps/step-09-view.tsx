@@ -353,6 +353,189 @@ export function Step09View(): React.JSX.Element {
     return canvas.toDataURL("image/png", 1.0);
   };
 
+  // Generate annotated UV map with placement labels for client reference
+  const generateAnnotatedUvMap = async (): Promise<string | null> => {
+    const baseUvMap = await generateUvMapDataUrl();
+    if (!baseUvMap) return null;
+
+    // Load the base UV map
+    const img = await new Promise<HTMLImageElement | null>((resolve) => {
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = baseUvMap;
+    });
+
+    if (!img) return baseUvMap;
+
+    const CANVAS_SIZE = 2048;
+    const canvas = document.createElement("canvas");
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return baseUvMap;
+
+    // Draw the base UV map
+    ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    // Get sections from store for dynamic labeling
+    const sections = useConfiguratorStore.getState().sections;
+
+    // Common placement zones with approximate UV positions
+    // These are typical positions for jersey/shirt UV layouts
+    const placementZones = [
+      // Main body zones
+      { label: "FRONT BODY", x: 0.25, y: 0.3, color: "#ef4444" },
+      { label: "BACK BODY", x: 0.75, y: 0.3, color: "#3b82f6" },
+      // Sleeve zones
+      { label: "LEFT SLEEVE", x: 0.1, y: 0.7, color: "#22c55e" },
+      { label: "RIGHT SLEEVE", x: 0.9, y: 0.7, color: "#22c55e" },
+      // Additional zones
+      { label: "COLLAR", x: 0.5, y: 0.08, color: "#a855f7" },
+      { label: "LOGO AREA", x: 0.25, y: 0.2, color: "#f97316", small: true },
+      { label: "NUMBER AREA", x: 0.75, y: 0.2, color: "#f97316", small: true },
+      { label: "NAME AREA", x: 0.75, y: 0.15, color: "#f97316", small: true },
+    ];
+
+    // Draw zone labels with backgrounds
+    placementZones.forEach((zone) => {
+      const x = zone.x * CANVAS_SIZE;
+      const y = zone.y * CANVAS_SIZE;
+      const fontSize = zone.small ? 28 : 40;
+
+      // Draw label background
+      ctx.font = `bold ${fontSize}px Arial`;
+      const metrics = ctx.measureText(zone.label);
+      const padding = 12;
+      const bgWidth = metrics.width + padding * 2;
+      const bgHeight = fontSize + padding;
+
+      // Semi-transparent background
+      ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+      ctx.beginPath();
+      ctx.roundRect(x - bgWidth / 2, y - bgHeight / 2, bgWidth, bgHeight, 6);
+      ctx.fill();
+
+      // Colored border
+      ctx.strokeStyle = zone.color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Text
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(zone.label, x, y);
+    });
+
+    // Add legend at bottom
+    const legendY = CANVAS_SIZE - 80;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+    ctx.fillRect(20, legendY - 20, CANVAS_SIZE - 40, 70);
+
+    ctx.font = "bold 24px Arial";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "left";
+    ctx.fillText(
+      "📍 PLACEMENT GUIDE - Use this map to position logos, text, and designs",
+      40,
+      legendY + 10,
+    );
+
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText(
+      "Red = Front Body | Blue = Back Body | Green = Sleeves | Purple = Collar | Orange = Logo/Number/Name Areas",
+      40,
+      legendY + 38,
+    );
+
+    return canvas.toDataURL("image/png", 1.0);
+  };
+
+  // Helper to add placement labels to any image (used for wireframe annotation)
+  const addPlacementLabelsToImage = async (
+    imageDataUrl: string,
+  ): Promise<string | null> => {
+    const img = await new Promise<HTMLImageElement | null>((resolve) => {
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = imageDataUrl;
+    });
+
+    if (!img) return null;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    // Draw original image
+    ctx.drawImage(img, 0, 0);
+
+    const width = img.width;
+    const height = img.height;
+
+    // Placement zone labels with approximate positions
+    const placementZones = [
+      { label: "FRONT", x: 0.25, y: 0.25, color: "#ef4444" },
+      { label: "BACK", x: 0.75, y: 0.25, color: "#3b82f6" },
+      { label: "L.SLEEVE", x: 0.12, y: 0.65, color: "#22c55e" },
+      { label: "R.SLEEVE", x: 0.88, y: 0.65, color: "#22c55e" },
+      { label: "COLLAR", x: 0.5, y: 0.1, color: "#a855f7" },
+    ];
+
+    const fontSize = Math.max(16, Math.floor(width / 50));
+
+    placementZones.forEach((zone) => {
+      const x = zone.x * width;
+      const y = zone.y * height;
+
+      ctx.font = `bold ${fontSize}px Arial`;
+      const metrics = ctx.measureText(zone.label);
+      const padding = 8;
+      const bgWidth = metrics.width + padding * 2;
+      const bgHeight = fontSize + padding;
+
+      // Background
+      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+      ctx.beginPath();
+      ctx.roundRect(x - bgWidth / 2, y - bgHeight / 2, bgWidth, bgHeight, 4);
+      ctx.fill();
+
+      // Border
+      ctx.strokeStyle = zone.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Text
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(zone.label, x, y);
+    });
+
+    // Add legend at bottom
+    const legendHeight = Math.max(40, fontSize * 2);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
+    ctx.fillRect(10, height - legendHeight - 10, width - 20, legendHeight);
+
+    ctx.font = `bold ${Math.floor(fontSize * 0.8)}px Arial`;
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      "📍 UV PLACEMENT GUIDE - Position logos, text, and designs in labeled zones",
+      width / 2,
+      height - legendHeight / 2,
+    );
+
+    return canvas.toDataURL("image/png", 1.0);
+  };
+
   // Helper to wait for camera animation to complete
   const waitForCameraAnimation = (ms: number = 400): Promise<void> => {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -800,21 +983,24 @@ export function Step09View(): React.JSX.Element {
         content: pdfBase64,
       });
 
-      // Generate UV Map (if available)
-      toast.info("Generating UV Map...");
-      const uvMapDataUrl = await generateUvMapDataUrl();
-      if (uvMapDataUrl) {
+      // Generate Annotated UV Map with placement labels (if available)
+      toast.info("Generating Annotated UV Map...");
+      const annotatedUvMap = await generateAnnotatedUvMap();
+      if (annotatedUvMap) {
         files.push({
-          filename: `${fileName}-uv-map.png`,
-          content: uvMapDataUrl,
+          filename: `${fileName}-uv-placement-guide.png`,
+          content: annotatedUvMap,
         });
       }
 
-      // Add UV Map Reference (Wireframe) if available
+      // Add UV Map Reference (Wireframe) with annotations if available
       if (completeUVMap) {
+        // Create annotated version of the wireframe
+        const annotatedWireframe =
+          await addPlacementLabelsToImage(completeUVMap);
         files.push({
-          filename: `${fileName}-uv-reference-wireframe.png`,
-          content: completeUVMap,
+          filename: `${fileName}-uv-reference-annotated.png`,
+          content: annotatedWireframe || completeUVMap,
         });
       }
 
