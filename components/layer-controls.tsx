@@ -21,11 +21,13 @@ import { toast } from "sonner";
 interface LayerControlsProps {
   layerId: string;
   compact?: boolean;
+  sliderOnly?: boolean;
 }
 
 export function LayerControls({
   layerId,
   compact = false,
+  sliderOnly = false,
 }: LayerControlsProps) {
   const layer = useConfiguratorStore((s) =>
     s.textureLayers.find((l) => l.id === layerId),
@@ -77,14 +79,16 @@ export function LayerControls({
       {/* Size controls with +/- buttons for easier mobile adjustment */}
       <div className="flex items-center gap-2">
         <ZoomIn className="w-3 h-3 text-muted-foreground shrink-0" />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={decreaseSize}
-          className="h-8 w-8 touch-manipulation"
-        >
-          <Minus className="w-4 h-4" />
-        </Button>
+        {!sliderOnly && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={decreaseSize}
+            className="h-8 w-8 touch-manipulation"
+          >
+            <Minus className="w-4 h-4" />
+          </Button>
+        )}
         <Slider
           value={[scale * 100]}
           min={5}
@@ -95,16 +99,18 @@ export function LayerControls({
               scale: [val / 100, val / 100, val / 100],
             })
           }
-          className="flex-1"
+          className="flex-1 cursor-pointer"
         />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={increaseSize}
-          className="h-8 w-8 touch-manipulation"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
+        {!sliderOnly && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={increaseSize}
+            className="h-8 w-8 touch-manipulation"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        )}
         <span className="text-[9px] text-muted-foreground w-10 text-right">
           {Math.round(scale * 100)}%
         </span>

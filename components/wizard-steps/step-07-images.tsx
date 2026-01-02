@@ -299,7 +299,7 @@ export function Step07Images() {
                 </div>
 
                 <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  <LayerControls layerId={layer.id} compact />
+                  <LayerControls layerId={layer.id} compact sliderOnly />
                 </div>
               </div>
             ))}

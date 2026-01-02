@@ -276,7 +276,7 @@ export function Step04SchoolLogo() {
                     </span>
                   </div>
                 </div>
-                <LayerControls layerId={layer.id} compact />
+                <LayerControls layerId={layer.id} compact sliderOnly />
               </div>
             ))}
           </div>
