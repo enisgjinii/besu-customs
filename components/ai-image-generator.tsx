@@ -107,7 +107,7 @@ export function AIImageGenerator() {
 
       // Use advanced AI background removal
       const result = await removeBackgroundAdvanced(blob, {
-        quality: "balanced",
+        quality: "quality",
         onProgress: (progress) => {
           toast.loading(`AI removing background... ${progress}%`, {
             id: toastId,
