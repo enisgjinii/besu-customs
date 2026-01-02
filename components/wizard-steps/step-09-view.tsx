@@ -707,6 +707,79 @@ export function Step09View() {
         console.log("📐 UV Map generation returned null - no layers or canvas issue");
       }
 
+      // ===== ROSTER PLAYER IMAGES =====
+      // Generate individual images for each player in the roster
+      if (roster.players.length > 0) {
+        const { nameLayers, numberLayers, allTextLayers } = findTextLayers();
+
+        if (allTextLayers.length > 0) {
+          toast.info(`Generating images for ${roster.players.length} players...`);
+
+          // Store original text values
+          const originalNameTexts = nameLayers.map((l) => ({ id: l.id, text: l.text }));
+          const originalNumberTexts = numberLayers.map((l) => ({ id: l.id, text: l.text }));
+
+          // Set camera to front view
+          setLockedView("Front");
+          await waitForCameraAnimation(500);
+
+          for (let i = 0; i < roster.players.length; i++) {
+            const player = roster.players[i];
+            toast.info(`Capturing player ${i + 1}/${roster.players.length}...`);
+
+            // Swap name text layers
+            for (const layer of nameLayers) {
+              updateTextureLayer(layer.id, { text: player.nameOnJersey || "PLAYER" });
+            }
+
+            // Swap number text layers
+            for (const layer of numberLayers) {
+              updateTextureLayer(layer.id, { text: player.jerseyNumber || "00" });
+            }
+
+            // Wait for render
+            await waitForCameraAnimation(300);
+            await new Promise<void>((resolve) => {
+              requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+            });
+
+            // Capture front
+            const frontDataUrl = captureAndResize(canvas, 600, 0.75);
+            files.push({
+              filename: `roster/${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_front.jpg`,
+              content: frontDataUrl,
+            });
+
+            // Capture back
+            setLockedView("Back");
+            await waitForCameraAnimation(500);
+            await new Promise<void>((resolve) => {
+              requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+            });
+
+            const backDataUrl = captureAndResize(canvas, 600, 0.75);
+            files.push({
+              filename: `roster/${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_back.jpg`,
+              content: backDataUrl,
+            });
+
+            // Reset to front for next player
+            setLockedView("Front");
+            await waitForCameraAnimation(300);
+          }
+
+          // Restore original text values
+          for (const { id, text } of originalNameTexts) {
+            updateTextureLayer(id, { text });
+          }
+          for (const { id, text } of originalNumberTexts) {
+            updateTextureLayer(id, { text });
+          }
+
+          console.log(`📸 Generated ${roster.players.length * 2} roster images`);
+        }
+      }
+
       // Note: Video removed from email to reduce payload
       // Users can use the 360° Video button to download separately
 
