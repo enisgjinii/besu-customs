@@ -1367,46 +1367,9 @@ export function Step09View(): React.JSX.Element {
             </div>
           </div>
 
+
           {/* Roster Input - Source of Truth for player data */}
           <RosterInput value={roster} onChange={setRoster} />
-
-          {/* Batch Capture Button */}
-          {roster.players.length > 0 && (
-            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200/50 dark:border-green-800/50">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <Camera className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-green-800 dark:text-green-300">
-                    Generate All Player Images
-                  </h4>
-                  <p className="text-xs text-green-700/70 dark:text-green-400/70">
-                    Auto-capture front & back views for each player in your
-                    roster. Make sure you have "NAME" text and a number on your
-                    jersey.
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleBatchCapture}
-                disabled={isBatchCapturing || isExporting}
-                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isBatchCapturing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Capturing {batchProgress.current}/{batchProgress.total}...
-                  </>
-                ) : (
-                  <>
-                    <Users className="w-4 h-4 mr-2" />
-                    Generate {roster.players.length} Player Images
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </div>
 
         <div className="space-y-1.5">
