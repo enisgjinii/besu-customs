@@ -709,11 +709,18 @@ export function Step09View() {
 
       // ===== ROSTER PLAYER IMAGES =====
       // Generate individual images for each player in the roster
-      if (roster.players.length > 0) {
+      // Limit to 10 players to avoid payload size issues
+      const maxRosterForEmail = 10;
+      const rosterToCapture = roster.players.slice(0, maxRosterForEmail);
+
+      if (rosterToCapture.length > 0) {
         const { nameLayers, numberLayers, allTextLayers } = findTextLayers();
 
         if (allTextLayers.length > 0) {
-          toast.info(`Generating images for ${roster.players.length} players...`);
+          if (roster.players.length > maxRosterForEmail) {
+            toast.warning(`Email limited to ${maxRosterForEmail} players. Use "Generate Player Images" button to download all.`);
+          }
+          toast.info(`Generating images for ${rosterToCapture.length} players...`);
 
           // Store original text values
           const originalNameTexts = nameLayers.map((l) => ({ id: l.id, text: l.text }));
@@ -723,8 +730,8 @@ export function Step09View() {
           setLockedView("Front");
           await waitForCameraAnimation(500);
 
-          for (let i = 0; i < roster.players.length; i++) {
-            const player = roster.players[i];
+          for (let i = 0; i < rosterToCapture.length; i++) {
+            const player = rosterToCapture[i];
             toast.info(`Capturing player ${i + 1}/${roster.players.length}...`);
 
             // Swap name text layers
@@ -743,8 +750,8 @@ export function Step09View() {
               requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
             });
 
-            // Capture front
-            const frontDataUrl = captureAndResize(canvas, 600, 0.75);
+            // Capture front (smaller size for email - 400px, 60% quality)
+            const frontDataUrl = captureAndResize(canvas, 400, 0.6);
             files.push({
               filename: `roster/${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_front.jpg`,
               content: frontDataUrl,
@@ -757,7 +764,8 @@ export function Step09View() {
               requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
             });
 
-            const backDataUrl = captureAndResize(canvas, 600, 0.75);
+            // Capture back (smaller size for email - 400px, 60% quality)
+            const backDataUrl = captureAndResize(canvas, 400, 0.6);
             files.push({
               filename: `roster/${player.nameOnJersey || `Player_${i + 1}`}_${player.jerseyNumber || "00"}_back.jpg`,
               content: backDataUrl,
