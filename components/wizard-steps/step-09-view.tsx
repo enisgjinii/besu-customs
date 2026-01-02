@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { findNearestPantone } from "@/lib/pantone";
 import { RosterInput } from "@/components/roster-input";
-import jsPDF from "jspdf"; // Re-added import
+import jsPDF from "jspdf";
 
 export function Step09View(): React.JSX.Element {
   // Store Data
@@ -236,100 +236,205 @@ export function Step09View(): React.JSX.Element {
         });
       }
 
-      // Generate PDF Spec Sheet (Restored Logic)
+      // Generate PDF Spec Sheet (Enhanced)
       try {
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
 
-        // Title
+        // --- PAGE 1: HEADER & VISUALS ---
+
+        // Header Bar
+        doc.setFillColor(15, 23, 42); // slate-900
+        doc.rect(0, 0, pageWidth, 40, "F");
+
+        doc.setTextColor(255, 255, 255);
         doc.setFontSize(22);
-        doc.text("Soccer Uniform Order Specification", 20, 20);
+        doc.setFont("helvetica", "bold");
+        doc.text("BESU CUSTOMS", margin, 20);
 
-        doc.setFontSize(12);
-        doc.text(`Team: ${roster.teamName || "Custom Team"}`, 20, 30);
-        doc.text(`Contact: ${firstName} ${lastName}`, 20, 36);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 42);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("Official Design Specification", margin, 32);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - margin, 32, { align: "right" });
 
-        let yPos = 55;
+        // Order Summary
+        doc.setTextColor(30, 30, 30);
+        doc.setFontSize(10);
+        doc.text(`Team: ${roster.teamName || "Custom Team"}`, margin, 55);
+        doc.text(`Contact: ${firstName} ${lastName}`, margin, 60);
+        doc.text(`Ref: Custom Order`, margin, 65);
 
-        // Add Front/Back Views to PDF
+        // 4-VIEW GRID
         const pdfFront = viewCaptures.find(v => v.view === "Front")?.dataUrl;
         const pdfBack = viewCaptures.find(v => v.view === "Back")?.dataUrl;
+        const pdfLeft = viewCaptures.find(v => v.view === "Left")?.dataUrl;
+        const pdfRight = viewCaptures.find(v => v.view === "Right")?.dataUrl;
 
+        let yImg = 80;
+        const imgSize = 75; // 75x75 squares
+        const col2X = margin + imgSize + 10;
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Design Views", margin, yImg - 5);
+
+        // Row 1
         if (pdfFront) {
-          doc.addImage(pdfFront, "JPEG", 20, yPos, 80, 80);
-          doc.text("Front View", 60, yPos + 85, { align: "center" });
+          doc.addImage(pdfFront, "JPEG", margin, yImg, imgSize, imgSize);
+          doc.setFontSize(9);
+          doc.text("Front", margin + imgSize / 2, yImg + imgSize + 5, { align: "center" });
         }
         if (pdfBack) {
-          doc.addImage(pdfBack, "JPEG", 110, yPos, 80, 80);
-          doc.text("Back View", 150, yPos + 85, { align: "center" });
+          doc.addImage(pdfBack, "JPEG", col2X, yImg, imgSize, imgSize);
+          doc.text("Back", col2X + imgSize / 2, yImg + imgSize + 5, { align: "center" });
         }
 
-        yPos += 100;
+        // Row 2
+        let yRow2 = yImg + imgSize + 15;
+        if (pdfLeft) {
+          doc.addImage(pdfLeft, "JPEG", margin, yRow2, imgSize, imgSize);
+          doc.text("Left Side", margin + imgSize / 2, yRow2 + imgSize + 5, { align: "center" });
+        }
+        if (pdfRight) {
+          doc.addImage(pdfRight, "JPEG", col2X, yRow2, imgSize, imgSize);
+          doc.text("Right Side", col2X + imgSize / 2, yRow2 + imgSize + 5, { align: "center" });
+        }
 
-        // Roster Table in PDF
+        // --- PAGE 2: SPECS & ROSTER ---
+        doc.addPage();
+
+        let yPos = 20;
+
+        // MATERIALS
         doc.setFontSize(14);
-        doc.text("Roster Details", 20, yPos);
+        doc.setFont("helvetica", "bold");
+        doc.text("Materials & Colors", margin, yPos);
         yPos += 10;
 
         doc.setFontSize(10);
-        let rowY = yPos;
-        // Header
-        doc.setFillColor(240, 240, 240);
-        doc.rect(20, rowY - 5, 170, 8, "F");
-        doc.font = "helvetica";
-        doc.setFont("helvetica", "bold");
-        doc.text("No.", 25, rowY);
-        doc.text("Name", 40, rowY);
-        doc.text("Number", 100, rowY);
-        doc.text("Top Size", 130, rowY);
-        doc.text("Shorts Size", 160, rowY);
-
         doc.setFont("helvetica", "normal");
-        rowY += 10;
+
+        sections.forEach((s) => {
+          const p = findNearestPantone(s.color);
+          // Background strip
+          doc.setFillColor(248, 250, 252);
+          doc.rect(margin, yPos - 4, 170, 7, "F");
+
+          doc.text(`${s.name}:`, margin + 2, yPos + 1);
+          doc.text(`${p.code} (${p.name})`, margin + 60, yPos + 1);
+
+          // Color swatch
+          doc.setFillColor(s.color);
+          doc.rect(margin + 150, yPos - 3, 10, 5, "F");
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(margin + 150, yPos - 3, 10, 5, "S"); // Border
+
+          yPos += 10;
+        });
+
+        yPos += 10;
+
+        // SHIPPING & NOTES
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("Order Details", margin, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("Shipping Address:", margin, yPos);
+        doc.setFont("helvetica", "normal");
+        yPos += 5;
+        doc.text(`${shippingAddress.street} ${shippingAddress.street2 || ""}`, margin, yPos);
+        yPos += 5;
+        doc.text(`${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`, margin, yPos);
+
+        yPos += 10;
+        doc.setFont("helvetica", "bold");
+        doc.text("Notes:", margin, yPos);
+        doc.setFont("helvetica", "normal");
+        yPos += 5;
+        if (deliveryNotes) {
+          const splitNotes = doc.splitTextToSize(deliveryNotes, 170);
+          doc.text(splitNotes, margin, yPos);
+          yPos += (splitNotes.length * 5) + 5;
+        } else {
+          doc.text("None", margin, yPos);
+          yPos += 10;
+        }
+
+        yPos += 10;
+
+        // ROSTER
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("Team Roster", margin, yPos);
+        yPos += 8;
+
+        // Header
+        doc.setFillColor(15, 23, 42);
+        doc.rect(margin, yPos - 6, 170, 8, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.text("#", margin + 5, yPos);
+        doc.text("NAME", margin + 20, yPos);
+        doc.text("NUMBER", margin + 80, yPos);
+        doc.text("TOP", margin + 110, yPos);
+        doc.text("SHORTS", margin + 140, yPos);
+
+        doc.setTextColor(30, 30, 30);
+        doc.setFont("helvetica", "normal");
+
+        let rowY = yPos + 8;
 
         roster.players.forEach((p, i) => {
-          if (rowY > 270) {
+          if (rowY > pageHeight - 20) {
             doc.addPage();
             rowY = 20;
           }
-          doc.text(`${i + 1}`, 25, rowY);
-          doc.text(`${p.nameOnJersey || "-"}`, 40, rowY);
-          doc.text(`${p.jerseyNumber || "-"}`, 100, rowY);
-          doc.text(`${p.sizes.top}`, 130, rowY);
-          doc.text(`${p.sizes.shorts}`, 160, rowY);
 
-          // Line
-          doc.setDrawColor(220, 220, 220);
-          doc.line(20, rowY + 2, 190, rowY + 2);
+          // Alternating Row Color
+          if (i % 2 === 1) {
+            doc.setFillColor(248, 250, 252);
+            doc.rect(margin, rowY - 6, 170, 8, "F");
+          }
 
-          rowY += 8;
+          doc.text(`${i + 1}`, margin + 5, rowY);
+          doc.text(`${p.nameOnJersey || "-"}`, margin + 20, rowY);
+          doc.text(`${p.jerseyNumber || "-"}`, margin + 80, rowY);
+          doc.text(`${p.sizes.top}`, margin + 110, rowY);
+          doc.text(`${p.sizes.shorts}`, margin + 140, rowY);
+
+          doc.setDrawColor(226, 232, 240);
+          doc.line(margin, rowY + 3, margin + 170, rowY + 3);
+
+          rowY += 10;
         });
+
+        // Total
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Items: ${roster.players.length}`, margin, rowY + 5);
 
         const pdfBase64 = doc.output("datauristring").split(",")[1];
         files.push({
           filename: "Order-Specs.pdf",
           content: pdfBase64
         });
-
       } catch (pdfError) {
         console.error("PDF Generation failed", pdfError);
-        // Continue without PDF if it fails
       }
 
 
       // Send to API
       const contactName = `${firstName} ${lastName}`;
-      // Hardcoded CCs are handled on Server, technically we can pass them here too but user asked for "every time" implies server rule? 
-      // Actually user said "in email you need to send... and in cc put..." 
-      // I will put them in the body just in case, but rely on server for the enforcement.
-
       const response = await fetch("/api/send-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           recipientEmail: email,
-          clientEmails: [], // Logic moved to server or can be added here
+          clientEmails: [],
           files,
           message: `Shipping to: ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}. Notes: ${deliveryNotes}`,
           designName: "Custom Order",
@@ -544,15 +649,16 @@ export function Step09View(): React.JSX.Element {
           <div className="pt-8 flex justify-center pb-8">
             <Button
               onClick={handleSubmitOrder}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold text-lg px-12 py-6 rounded shadow-lg transition-transform active:scale-95"
+              size="lg"
+              className="w-full md:w-auto min-w-[200px]"
               disabled={isSendingEmail}
             >
               {isSendingEmail ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
                 </>
-              ) : "Submit"}
+              ) : "Submit Order"}
             </Button>
           </div>
 
