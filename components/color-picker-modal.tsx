@@ -107,7 +107,29 @@ export function ColorPickerModal({
     // Auto-identify nearest Pantone
     const pantone = findNearestPantone(color);
     setSelectedPantone(pantone);
+    // Commit the change so we don't revert
+    setPreviewRevertColor(null);
   }, []);
+
+  /* New state for preview revert */
+  const [previewRevertColor, setPreviewRevertColor] = useState<string | null>(null);
+
+  const handleMouseEnter = (color: string) => {
+    if (!previewRevertColor) {
+      setPreviewRevertColor(tempColor);
+    }
+    setTempColor(color);
+    // Update the parent immediately for preview
+    onColorChange(color);
+  };
+
+  const handleMouseLeave = () => {
+    if (previewRevertColor) {
+      setTempColor(previewRevertColor);
+      onColorChange(previewRevertColor);
+      setPreviewRevertColor(null);
+    }
+  };
 
   const handlePantoneSelect = useCallback((pantone: PantoneColor) => {
     setTempColor(pantone.hex);
@@ -226,9 +248,11 @@ export function ColorPickerModal({
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
+                    onMouseEnter={() => handleMouseEnter(pantone.hex)}
+                    onMouseLeave={handleMouseLeave}
                     className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
-                        ? "border-primary ring-1 ring-primary"
-                        : "border-transparent hover:border-primary/50"
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-transparent hover:border-primary/50"
                       }`}
                   >
                     <div
@@ -264,9 +288,11 @@ export function ColorPickerModal({
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
+                    onMouseEnter={() => handleMouseEnter(pantone.hex)}
+                    onMouseLeave={handleMouseLeave}
                     className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
-                        ? "border-primary bg-primary/5"
-                        : "border-transparent hover:bg-muted"
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent hover:bg-muted"
                       }`}
                   >
                     <div
@@ -289,9 +315,11 @@ export function ColorPickerModal({
                   <button
                     key={pantone.code}
                     onClick={() => handlePantoneSelect(pantone)}
+                    onMouseEnter={() => handleMouseEnter(pantone.hex)}
+                    onMouseLeave={handleMouseLeave}
                     className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
-                        ? "border-primary bg-primary/5"
-                        : "border-transparent hover:bg-muted"
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent hover:bg-muted"
                       }`}
                   >
                     <div
@@ -417,6 +445,8 @@ export function ColorPickerModal({
                         <button
                           key={color}
                           onClick={() => handleColorSelect(color)}
+                          onMouseEnter={() => handleMouseEnter(color)}
+                          onMouseLeave={handleMouseLeave}
                           className="w-7 h-7 rounded border shadow-sm hover:scale-105 transition-transform"
                           style={{ backgroundColor: color }}
                           title={color}

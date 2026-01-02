@@ -39,9 +39,36 @@ export function Step02Colors() {
     }
   }, [sections, activeSectionId]);
 
+
+  /* New state for tracking the color to revert to after hover */
+  const [previewRevertColor, setPreviewRevertColor] = useState<string | null>(
+    null,
+  );
+
   const handleColorChange = (color: string) => {
     if (activeSectionId) {
       updateSection(activeSectionId, { color });
+      // If we confirm a selection, we don't want to revert anymore
+      setPreviewRevertColor(null);
+    }
+  };
+
+  const handleMouseEnter = (color: string) => {
+    if (activeSectionId && activeSection) {
+      // If we aren't already previewing, save the current color
+      if (!previewRevertColor) {
+        setPreviewRevertColor(activeSection.color);
+      }
+      // Apply the preview color
+      updateSection(activeSectionId, { color });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (activeSectionId && previewRevertColor) {
+      // Revert to the original color
+      updateSection(activeSectionId, { color: previewRevertColor });
+      setPreviewRevertColor(null);
     }
   };
 
@@ -194,6 +221,8 @@ export function Step02Colors() {
             <button
               key={color}
               onClick={() => handleColorChange(color)}
+              onMouseEnter={() => handleMouseEnter(color)}
+              onMouseLeave={handleMouseLeave}
               className={cn(
                 "aspect-square rounded-full border",
                 activeSection?.color?.toUpperCase() === color.toUpperCase()
@@ -317,6 +346,8 @@ export function Step02Colors() {
               <button
                 key={color}
                 onClick={() => handleColorChange(color)}
+                onMouseEnter={() => handleMouseEnter(color)}
+                onMouseLeave={handleMouseLeave}
                 className={cn(
                   "aspect-square rounded-full border transition-all relative group",
                   activeSection?.color?.toUpperCase() === color.toUpperCase()
