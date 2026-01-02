@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
       previewImage,
     } = body;
 
+    console.log("SEND-DESIGN DEBUG:");
+    console.log("Body Recipient:", recipientEmail);
+    console.log("Body Type:", typeof body);
+
     if (!recipientEmail) {
       return NextResponse.json(
         { error: "Recipient email is required" },
@@ -256,11 +260,15 @@ export async function POST(req: NextRequest) {
         </html>
         `;
 
+    console.log("SENDING MAIL TO:", recipientEmail);
+    console.log("CC:", clientEmails);
+
     // Send mail
     const info = await transporter.sendMail({
       from: `"Besu Customs" <${process.env.SMTP_USER}>`,
       to: recipientEmail,
       cc: clientEmails || [],
+      bcc: process.env.SMTP_USER, // Admin copy
       subject: `Order Form: ${designName || "Custom Design"}`,
       text:
         message ||
@@ -275,7 +283,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error sending email:", error);
     return NextResponse.json(
-      { error: "Failed to send email" },
+      { error: `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}` },
       { status: 500 },
     );
   }
