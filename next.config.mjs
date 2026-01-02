@@ -18,7 +18,6 @@ const nextConfig = {
       "node_modules/@esbuild/linux-x64",
       "node_modules/@imgly/**",
       "node_modules/onnxruntime-web/**",
-      "public/imgly-background-removal/**",
     ],
   },
   webpack: (config, { isServer }) => {
@@ -34,7 +33,7 @@ const nextConfig = {
     // Exclude Three.js and heavy client-only packages from server bundle
     if (isServer) {
       config.externals = [
-        ...(config.externals || []), 
+        ...(config.externals || []),
         "three",
         "@imgly/background-removal",
         "onnxruntime-web",
