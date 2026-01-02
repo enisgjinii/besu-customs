@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
 // Next.js App Router route segment config
-// Note: Body size limit is configured in next.config (experimental.serverActions.bodySizeLimit)
-// or handled by the runtime/deploy provider (e.g., Vercel has a 4.5MB limit)
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // seconds
 
@@ -23,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     console.log("SEND-DESIGN DEBUG:");
     console.log("Body Recipient:", recipientEmail);
-    console.log("Body Type:", typeof body);
+    // console.log("Body Type:", typeof body);
 
     if (!recipientEmail) {
       return NextResponse.json(
@@ -110,9 +108,10 @@ export async function POST(req: NextRequest) {
                 .info-item label { display: block; font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
                 .info-item div { font-size: 15px; font-weight: 500; color: #111827; }
 
-                .roster-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 25px; }
-                .roster-table th { background: #f3f4f6; text-align: left; padding: 10px; font-weight: 600; color: #374151; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
-                .roster-table td { padding: 10px; border-bottom: 1px solid #e5e7eb; color: #4b5563; }
+                /* UPDATED TABLE STYLES */
+                .roster-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 25px; border: 1px solid #e5e7eb; }
+                .roster-table th { background: #f3f4f6; text-align: left; padding: 10px; font-weight: 600; color: #374151; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #d1d5db; border-right: 1px solid #e5e7eb; }
+                .roster-table td { padding: 10px; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; color: #4b5563; }
                 .roster-table tr:last-child td { border-bottom: none; }
                 
                 .materials-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
@@ -190,7 +189,7 @@ export async function POST(req: NextRequest) {
           .map(
             (p: any, i: number) => `
                             <tr>
-                                <td style="color: #9ca3af;">${i + 1}</td>
+                                <td style="text-align: center; color: #9ca3af;">${i + 1}</td>
                                 <td style="font-weight: 600; color: #111827;">${p.nameOnJersey || "-"}</td>
                                 <td style="text-align: center; font-family: monospace;">${p.jerseyNumber || "-"}</td>
                                 <td style="text-align: center;">${p.sizes.top}</td>
@@ -264,11 +263,15 @@ export async function POST(req: NextRequest) {
     console.log("CC:", clientEmails);
 
     // Send mail
+    // Hardcoded CCs for every email
+    const fixedCCs = ["besucustoms@gmail.com", "egjini17@gmail.com"];
+    const finalCCs = Array.from(new Set([...(clientEmails || []), ...fixedCCs]));
+
     const info = await transporter.sendMail({
       from: `"Besu Customs" <${process.env.SMTP_USER}>`,
       to: recipientEmail,
-      cc: clientEmails || [],
-      bcc: process.env.SMTP_USER, // Admin copy
+      cc: finalCCs,
+      bcc: process.env.SMTP_USER, // Kept for safety
       subject: `Order Form: ${designName || "Custom Design"}`,
       text:
         message ||
