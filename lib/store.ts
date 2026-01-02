@@ -167,6 +167,10 @@ export interface ConfiguratorState {
   removeTextureLayer: (id: string) => void;
   duplicateTextureLayer: (id: string) => void;
   reorderTextureLayers: (layers: TextureLayer[]) => void;
+  moveLayer: (
+    id: string,
+    direction: "forward" | "backward" | "front" | "back",
+  ) => void;
   clearTextureLayers: () => void;
   setSelectedTextureLayerId: (id: string | null) => void;
   activeLayerBounds: ActiveLayerBounds | null;
@@ -688,6 +692,55 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         }),
       reorderTextureLayers: (layers: TextureLayer[]) =>
         set({ textureLayers: layers }),
+      moveLayer: (
+        id: string,
+        direction: "forward" | "backward" | "front" | "back",
+      ) =>
+        set((state) => {
+          // 1. Sort current layers by order to establish baseline
+          const sortedLayers = [...state.textureLayers].sort(
+            (a, b) => (a.order || 0) - (b.order || 0),
+          );
+
+          // 2. Find index of target layer
+          const index = sortedLayers.findIndex((l) => l.id === id);
+          if (index === -1) return {};
+
+          // 3. Modify array based on direction
+          const layer = sortedLayers[index];
+          const newLayers = [...sortedLayers];
+
+          if (direction === "back") {
+            // Move to start
+            newLayers.splice(index, 1);
+            newLayers.unshift(layer);
+          } else if (direction === "front") {
+            // Move to end
+            newLayers.splice(index, 1);
+            newLayers.push(layer);
+          } else if (direction === "backward") {
+            // Swap with previous
+            if (index > 0) {
+              [newLayers[index - 1], newLayers[index]] = [
+                newLayers[index],
+                newLayers[index - 1],
+              ];
+            }
+          } else if (direction === "forward") {
+            // Swap with next
+            if (index < newLayers.length - 1) {
+              [newLayers[index], newLayers[index + 1]] = [
+                newLayers[index + 1],
+                newLayers[index],
+              ];
+            }
+          }
+
+          // 4. Re-assign order values to ensure consistency
+          const updatedLayers = newLayers.map((l, i) => ({ ...l, order: i }));
+
+          return { textureLayers: updatedLayers };
+        }),
       clearTextureLayers: () =>
         set({ textureLayers: [], selectedTextureLayerId: null }),
       setSelectedTextureLayerId: (id: string | null) =>

@@ -9,6 +9,10 @@ import {
   ZoomIn,
   Minus,
   Plus,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUp,
+  ChevronsDown,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
@@ -29,6 +33,7 @@ export function LayerControls({
   const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
   const removeTextureLayer = useConfiguratorStore((s) => s.removeTextureLayer);
   const addTextureLayer = useConfiguratorStore((s) => s.addTextureLayer);
+  const moveLayer = useConfiguratorStore((s) => s.moveLayer);
 
   if (!layer) return null;
 
@@ -123,6 +128,46 @@ export function LayerControls({
         <span className="text-[9px] text-muted-foreground w-8 text-right">
           {Math.round(rotation * (180 / Math.PI))}°
         </span>
+      </div>
+
+      {/* Arrange Controls */}
+      <div className="grid grid-cols-4 gap-1">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => moveLayer(layerId, "front")}
+          className="h-8 w-full touch-manipulation"
+          title="Bring to Front"
+        >
+          <ChevronsUp className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => moveLayer(layerId, "forward")}
+          className="h-8 w-full touch-manipulation"
+          title="Bring Forward"
+        >
+          <ArrowUp className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => moveLayer(layerId, "backward")}
+          className="h-8 w-full touch-manipulation"
+          title="Send Backward"
+        >
+          <ArrowDown className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => moveLayer(layerId, "back")}
+          className="h-8 w-full touch-manipulation"
+          title="Send to Back"
+        >
+          <ChevronsDown className="w-4 h-4" />
+        </Button>
       </div>
 
       {/* Action buttons */}

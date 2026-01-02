@@ -548,6 +548,14 @@ export function Step06Text() {
                   ))}
                 </div>
               </div>
+
+              {/* Advanced Controls (Arrange, Duplicate, Delete) */}
+              <div className="space-y-2 pt-4 border-t mt-2">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                  Operations
+                </label>
+                <LayerControls layerId={selectedLayer!.id} compact={false} />
+              </div>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-6">
