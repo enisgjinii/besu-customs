@@ -208,8 +208,7 @@ export const removeBackgroundAdvanced = async (
     // Uses IMG.LY CDN by default (no publicPath = uses their CDN)
     const resultBlob = await Promise.race([
       imglyRemoveBackground(inputBlob, {
-        publicPath: "https://unpkg.com/@imgly/background-removal@1.7.0/dist/",
-        ...config,
+        // No publicPath - use bundled assets from node_modules
         output: {
           format: outputFormat === "webp" ? "image/webp" : "image/png",
           quality: config.output?.quality ?? 0.9,
