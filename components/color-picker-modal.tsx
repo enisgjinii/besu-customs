@@ -136,6 +136,8 @@ export function ColorPickerModal({
   const handlePantoneSelect = useCallback((pantone: PantoneColor) => {
     setTempColor(pantone.hex);
     setSelectedPantone(pantone);
+    // Clear revert color so mouseLeave doesn't undo the click
+    setPreviewRevertColor(null);
   }, []);
 
   const handleApplyColor = useCallback(() => {
