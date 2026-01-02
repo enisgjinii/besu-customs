@@ -105,9 +105,9 @@ export function AIImageGenerator() {
       const response = await fetch(generatedImage.imageURL);
       const blob = await response.blob();
 
-      // Use advanced AI background removal
+      // Use @imgly/background-removal with ultra quality for complete removal
       const result = await removeBackgroundAdvanced(blob, {
-        quality: "quality",
+        quality: "ultra",
         onProgress: (progress) => {
           toast.loading(`AI removing background... ${progress}%`, {
             id: toastId,
@@ -118,7 +118,7 @@ export function AIImageGenerator() {
       console.log(
         `✅ Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`,
       );
-      toast.success(`Background removed!`, { id: toastId });
+      toast.success("Background removed completely!", { id: toastId });
     } catch (error) {
       console.warn("Background removal failed, using original image:", error);
       const errorMessage =
@@ -244,11 +244,10 @@ export function AIImageGenerator() {
           {/* Usage Information */}
           {usage && (
             <div
-              className={`text-[10px] p-2 rounded-md ${
-                usage.remaining === 0
-                  ? "text-destructive bg-destructive/10 border border-destructive/20"
-                  : "text-muted-foreground bg-secondary/20"
-              }`}
+              className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
+                ? "text-destructive bg-destructive/10 border border-destructive/20"
+                : "text-muted-foreground bg-secondary/20"
+                }`}
             >
               <div className="flex items-center gap-1">
                 {usage.remaining === 0 ? (
