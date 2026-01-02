@@ -16,16 +16,10 @@ import { ColorPickerModal } from "@/components/color-picker-modal";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-// Predefined trim line patterns
+// Predefined trim line patterns (simplified to Solid and Double)
 const TRIM_PATTERNS = [
   { id: "solid", name: "Solid Line", description: "Single solid color line" },
-  { id: "dashed", name: "Dashed", description: "Dashed line pattern" },
-  { id: "dotted", name: "Dotted", description: "Dotted line pattern" },
-  { id: "wave", name: "Wave", description: "Wavy decorative line" },
   { id: "double", name: "Double Line", description: "Double parallel lines" },
-  { id: "gradient", name: "Gradient", description: "Color gradient line" },
-  { id: "embossed", name: "Embossed", description: "3D embossed effect" },
-  { id: "shadow", name: "Shadow", description: "Subtle shadow effect" },
 ];
 
 // Trim locations on jersey - including sides for jersey top/bottom
@@ -403,23 +397,10 @@ export function Step03bTrimLines() {
                   height: `${trimWidth}px`,
                   backgroundColor: trimColor,
                   width: "100%",
-                  borderRadius: trimPattern === "wave" ? "50% 50%" : "0",
-                  boxShadow:
-                    trimPattern === "shadow"
-                      ? "0 2px 4px rgba(0,0,0,0.2)"
-                      : trimPattern === "embossed"
-                        ? "inset 0 2px 4px rgba(0,0,0,0.3)"
-                        : "",
                   backgroundImage:
-                    trimPattern === "dashed"
-                      ? `repeating-linear-gradient(90deg, ${trimColor} 0, ${trimColor} 10px, transparent 10px, transparent 20px)`
-                      : trimPattern === "dotted"
-                        ? `radial-gradient(circle, ${trimColor} 30%, transparent 30%)`
-                        : trimPattern === "gradient"
-                          ? `linear-gradient(90deg, transparent 0%, ${trimColor} 50%, transparent 100%)`
-                          : trimPattern === "double"
-                            ? `repeating-linear-gradient(0deg, ${trimColor} 0, ${trimColor} 2px, transparent 2px, transparent 8px, ${trimColor} 8px, ${trimColor} 10px, transparent 10px, transparent 16px)`
-                            : undefined,
+                    trimPattern === "double"
+                      ? `repeating-linear-gradient(0deg, ${trimColor} 0, ${trimColor} 2px, transparent 2px, transparent 8px, ${trimColor} 8px, ${trimColor} 10px, transparent 10px, transparent 16px)`
+                      : undefined,
                 }}
               />
             </div>
