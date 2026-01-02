@@ -955,13 +955,20 @@ export function Step09View(): React.JSX.Element {
       // ===== PREPARE FILE ATTACHMENTS =====
       const files: { filename: string; content: string }[] = [];
 
-      // JPEG views (4 files)
+      // JPEG views (Filter to main 4 views for email compactness)
+      const mainViews = ["Front", "Back", "Left", "Right"];
       viewCaptures.forEach((capture) => {
-        files.push({
-          filename: `${fileName}-${capture.view.toLowerCase()}.jpg`,
-          content: capture.dataUrl,
-        });
+        if (mainViews.includes(capture.view)) {
+          files.push({
+            filename: `${fileName}-${capture.view.toLowerCase()}.jpg`,
+            content: capture.dataUrl,
+          });
+        }
       });
+
+      // Find Front view for email body preview
+      const frontView = viewCaptures.find((v) => v.view === "Front");
+      const previewImage = frontView ? frontView.dataUrl : null;
 
       // PDF Spec Sheet
       files.push({
@@ -1088,6 +1095,7 @@ export function Step09View(): React.JSX.Element {
           files,
           message: data.message,
           designName: fileName,
+          previewImage, // Pass main view for email body embedding
           orderMetadata: {
             teamName: roster.teamName,
             contactName,

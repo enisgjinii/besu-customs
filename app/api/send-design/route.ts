@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       designName,
       orderDetails,
       orderMetadata,
+      previewImage,
     } = body;
 
     if (!recipientEmail) {
@@ -72,6 +73,18 @@ export async function POST(req: NextRequest) {
         encoding: "base64",
       })) || [];
 
+    // Add preview image as inline attachment if provided
+    if (previewImage) {
+      attachments.push({
+        filename: "preview.jpg",
+        content: previewImage.includes("base64,")
+          ? previewImage.split("base64,")[1]
+          : previewImage,
+        encoding: "base64",
+        cid: "preview-image", // referenced in HTML
+      });
+    }
+
     // Premium HTML Template
     const htmlContent = `
         <!DOCTYPE html>
@@ -80,9 +93,12 @@ export async function POST(req: NextRequest) {
             <style>
                 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f5; margin: 0; padding: 0; }
                 .container { max-width: 680px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-                .header { background: #000000; color: white; padding: 30px; text-align: center; }
-                .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+                .header { background: #ffffff; color: #111827; padding: 30px; text-align: center; border-bottom: 1px solid #e5e7eb; }
+                .header h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #111827; }
                 .content { padding: 40px 30px; }
+                
+                .preview-image { width: 100%; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; background: #f9fafb; border: 1px solid #f3f4f6; }
+                .preview-image img { width: 100%; height: auto; display: block; }
                 
                 .section-title { font-size: 18px; font-weight: 700; color: #111827; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
                 
@@ -101,95 +117,101 @@ export async function POST(req: NextRequest) {
                 .material-row td:last-child { border-right: 1px solid #e5e7eb; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
                 
                 .footer { background: #f9fafb; padding: 25px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
-                .btn { display: inline-block; background: #000000; color: white; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 20px; }
+                .btn { display: inline-block; background: #000000; color: white; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 20px; transition: opacity 0.2s; }
+                .btn:hover { opacity: 0.9; }
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>BESU CUSTOMS</h1>
-                    <div style="font-size: 13px; color: #9ca3af; margin-top: 5px;">OFFICIAL ORDER SPECIFICATIONS</div>
+                    <h1>Soccer Uniform Order Form</h1>
+                    <div style="font-size: 14px; color: #6b7280; margin-top: 5px;">Reference: ${designName || "Custom Design"}</div>
                 </div>
                 <div class="content">
-                    <h2 style="margin-top: 0; font-size: 22px; color: #111827;">Design: <span style="color: #2563eb;">${designName || "Custom Jersey"}</span></h2>
                     
-                    ${
-                      message
-                        ? `
+                    ${previewImage
+        ? `
+                    <div class="preview-image">
+                         <img src="cid:preview-image" alt="Design Preview" />
+                    </div>
+                    `
+        : ""
+      }
+                    
+                    ${message
+        ? `
                     <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 4px; margin-bottom: 30px;">
                         <strong style="display:block; margin-bottom:5px; color:#1e40af; font-size: 12px; text-transform: uppercase;">Note from Designer</strong>
                         <div style="color: #1e3a8a;">"${message}"</div>
                     </div>`
-                        : ""
-                    }
+        : ""
+      }
 
                     <!-- KEY DETAILS -->
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Team Name</label>
-                            <div>${orderMetadata?.teamName || "N/A"}</div>
+                            <div>${orderMetadata?.teamName || "-"}</div>
                         </div>
                         <div class="info-item">
                             <label>Contact Person</label>
-                            <div>${orderMetadata?.contactName || "N/A"}</div>
+                            <div>${orderMetadata?.contactName || "-"}</div>
                         </div>
                         <div class="info-item">
                             <label>Phone Number</label>
-                            <div>${orderMetadata?.phoneNumber || "N/A"}</div>
+                            <div>${orderMetadata?.phoneNumber || "-"}</div>
                         </div>
                         <div class="info-item">
-                            <label>Recipient</label>
-                            <div>${recipientEmail}</div>
+                            <label>Design Date</label>
+                            <div>${new Date().toLocaleDateString()}</div>
                         </div>
                     </div>
 
                     <!-- ROSTER TABLE -->
-                    ${
-                      orderMetadata?.roster && orderMetadata.roster.length > 0
-                        ? `
-                    <div class="section-title">Team Roster & Sizing</div>
+                    ${orderMetadata?.roster && orderMetadata.roster.length > 0
+        ? `
+                    <div class="section-title">Uniform Size & Amount</div>
                     <table class="roster-table">
                         <thead>
                             <tr>
                                 <th style="width: 40px;">#</th>
-                                <th>Name on Jersey</th>
+                                <th>Name</th>
                                 <th style="text-align: center;">Number</th>
-                                <th style="text-align: center;">Top Size</th>
-                                <th style="text-align: center;">Shorts Size</th>
+                                <th style="text-align: center;">Top</th>
+                                <th style="text-align: center;">Shorts</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${orderMetadata.roster
-                              .map(
-                                (p: any, i: number) => `
+          .map(
+            (p: any, i: number) => `
                             <tr>
                                 <td style="color: #9ca3af;">${i + 1}</td>
                                 <td style="font-weight: 600; color: #111827;">${p.nameOnJersey || "-"}</td>
-                                <td style="text-align: center; font-family: monospace; font-size: 14px;">${p.jerseyNumber || "-"}</td>
-                                <td style="text-align: center;"><span style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">${p.sizes.top}</span></td>
-                                <td style="text-align: center;"><span style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">${p.sizes.shorts}</span></td>
+                                <td style="text-align: center; font-family: monospace;">${p.jerseyNumber || "-"}</td>
+                                <td style="text-align: center;">${p.sizes.top}</td>
+                                <td style="text-align: center;">${p.sizes.shorts}</td>
                             </tr>
                             `,
-                              )
-                              .join("")}
+          )
+          .join("")}
                         </tbody>
                     </table>
-                    <div style="text-align: right; font-size: 13px; color: #6b7280; margin-bottom: 30px;">
-                        Total Players: <strong>${orderMetadata.roster.length}</strong>
+                    <div style="text-align: right; background: #f3f4f6; padding: 10px; border-radius: 6px; font-weight: 600; color: #374151;">
+                        Total Quantity: ${orderMetadata.roster.length}
                     </div>
                     `
-                        : ""
-                    }
+        : ""
+      }
 
                     <!-- MATERIALS & COLORS -->
-                    <div class="section-title">Materials & Colors</div>
+                    <div class="section-title">Selected Materials</div>
                     <table class="materials-table">
                         <tbody>
-                            ${
-                              orderDetails?.materials
-                                ? orderDetails.materials
-                                    .map(
-                                      (m: any) => `
+                            ${orderDetails?.materials
+        ? orderDetails.materials
+          .map(
+            (m: any) => `
                             <tr class="material-row">
                                 <td style="width: 40%; vertical-align: middle;">
                                     <div style="font-weight: 600; color: #374151;">${m.name}</div>
@@ -204,32 +226,30 @@ export async function POST(req: NextRequest) {
                                     </div>
                                 </td>
                             </tr>`,
-                                    )
-                                    .join("")
-                                : ""
-                            }
+          )
+          .join("")
+        : ""
+      }
                         </tbody>
                     </table>
 
                     <!-- DELIVERY NOTES -->
-                    ${
-                      orderDetails?.notes
-                        ? `
-                    <div class="section-title">Delivery Notes</div>
+                    ${orderDetails?.notes
+        ? `
+                    <div class="section-title">Additional Notes</div>
                     <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 15px; border-radius: 6px; color: #92400e; font-size: 14px;">
                         ${orderDetails.notes}
                     </div>
                     `
-                        : ""
-                    }
+        : ""
+      }
 
-                    <div style="text-align: center; margin-top: 40px;">
-                        <a href="https://besu-customs.vercel.app" class="btn">Start New Design</a>
+                    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <a href="https://besu-customs.vercel.app" class="btn">Create Another Design</a>
                     </div>
                 </div>
                 <div class="footer">
-                    <p>Generated by Besu Customs 3D Configurator</p>
-                    <p>&copy; ${new Date().getFullYear()} Besu Customs. All rights reserved.</p>
+                    <p>Sent via Besu Customs Configurator</p>
                 </div>
             </div>
         </body>
@@ -241,10 +261,10 @@ export async function POST(req: NextRequest) {
       from: `"Besu Customs" <${process.env.SMTP_USER}>`,
       to: recipientEmail,
       cc: clientEmails || [],
-      subject: `Design Assets: ${designName || "Your Custom Design"}`,
+      subject: `Order Form: ${designName || "Custom Design"}`,
       text:
         message ||
-        `Here are your design assets for ${designName || "your custom order"}.`,
+        `Here is the order form and design assets for ${designName || "your custom order"}.`,
       html: htmlContent,
       attachments,
     });
