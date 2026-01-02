@@ -9,8 +9,9 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
-import { Sparkles, Map, Download, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Sparkles, Map, Download, Eye, EyeOff, Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function Step08AIImages() {
   const addTextureLayer = useConfiguratorStore(
@@ -24,6 +25,79 @@ export function Step08AIImages() {
 
   const [showUVMap, setShowUVMap] = useState(true);
   const [uvMapLoading, setUvMapLoading] = useState(false);
+
+  // UV-based AI generation state
+  const [uvPrompt, setUvPrompt] = useState("");
+  const [uvGenerating, setUvGenerating] = useState(false);
+
+  // Handle UV-based AI generation
+  const handleGenerateOnUV = async () => {
+    if (!uvPrompt.trim()) {
+      toast.error("Please enter a design prompt");
+      return;
+    }
+
+    if (!completeUVMap) {
+      toast.error("No UV map available. Load a 3D model first.");
+      return;
+    }
+
+    setUvGenerating(true);
+    const toastId = toast.loading("Generating AI design for UV map...");
+
+    try {
+      // Enhanced prompt that instructs AI to create a seamless pattern/design
+      const enhancedPrompt = `Create a seamless ${uvPrompt} pattern design suitable for garment fabric, high quality textile print, repeating pattern, professional sportswear design, no text, no watermarks`;
+
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: enhancedPrompt,
+          width: 1024,
+          height: 1024,
+          numberResults: 1,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate image");
+      }
+
+      if (data.images && data.images.length > 0) {
+        const generatedUrl = data.images[0].imageURL;
+
+        // Add as a full pattern layer (covers entire UV)
+        const newId = uuidv4();
+        addTextureLayer({
+          id: newId,
+          name: `AI UV Pattern`,
+          type: "pattern",
+          visible: true,
+          locked: false,
+          opacity: 1,
+          blendMode: "normal",
+          order: textureLayers.length,
+          imageUrl: generatedUrl,
+          position: [0.5, 0.5, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+          flipX: false,
+        });
+
+        setSelectedTextureLayerId(newId);
+        toast.success("AI pattern generated and applied!", { id: toastId });
+        setUvPrompt("");
+      }
+    } catch (error) {
+      console.error("UV AI generation error:", error);
+      toast.error(error instanceof Error ? error.message : "Generation failed", { id: toastId });
+    } finally {
+      setUvGenerating(false);
+    }
+  };
 
   // Listen for generated images from the AIImageGenerator component
   // Background is already removed by the advanced AI in the generator
@@ -148,15 +222,72 @@ export function Step08AIImages() {
                   <img
                     src={completeUVMap}
                     alt="UV Map"
-                    className="w-full max-h-[300px] object-contain"
+                    className="w-full max-h-[200px] object-contain"
                   />
                   <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">
                     UV Map Template
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                  <strong>💡 Tip:</strong> Download this UV map and use it as a reference when creating AI designs.
-                  The AI can generate patterns that match the garment&apos;s shape perfectly.
+
+                {/* AI Generate on UV Section */}
+                <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-3 rounded-lg border border-purple-200/30 space-y-3">
+                  <h4 className="text-xs font-semibold flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                    <Wand2 className="w-3.5 h-3.5" />
+                    AI Generate Pattern
+                  </h4>
+
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Describe your pattern (e.g., geometric flames, abstract waves)..."
+                      value={uvPrompt}
+                      onChange={(e) => setUvPrompt(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && !uvGenerating && handleGenerateOnUV()}
+                      disabled={uvGenerating}
+                      className="text-sm h-9"
+                    />
+
+                    {/* Quick Suggestions */}
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        "geometric flames",
+                        "abstract waves",
+                        "camouflage",
+                        "galaxy nebula",
+                        "tiger stripes",
+                        "honeycomb",
+                      ].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => setUvPrompt(suggestion)}
+                          className="px-2 py-0.5 text-[10px] bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 rounded-full border border-purple-200/50 transition-colors"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleGenerateOnUV}
+                    disabled={uvGenerating || !uvPrompt.trim()}
+                    className="w-full h-9 text-xs bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                  >
+                    {uvGenerating ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                        Generating Pattern...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-3.5 h-3.5 mr-2" />
+                        Generate & Apply Pattern
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    AI will create a seamless pattern that covers the entire garment
+                  </p>
                 </div>
               </div>
             ) : (
