@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ConfiguratorWizard } from "@/components/configurator-wizard";
+import { LayerControlsOverlay } from "@/components/layer-controls-overlay";
 import { useEffect, useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
@@ -71,6 +72,7 @@ export default function Home() {
         {/* 3D Viewer - 45% of viewport height (increased from 40%) */}
         <div className="h-[45vh] min-h-[250px] flex-shrink-0 relative bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
           <Scene />
+          <LayerControlsOverlay />
         </div>
 
         {/* Controls Area - 55% of viewport, scrollable */}
@@ -87,6 +89,7 @@ export default function Home() {
       {/* 3D Viewer - Takes remaining space above wizard */}
       <main className="flex-1 relative w-full pb-[280px]">
         <Scene />
+        <LayerControlsOverlay />
       </main>
 
       {/* Wizard - Fixed at bottom */}
