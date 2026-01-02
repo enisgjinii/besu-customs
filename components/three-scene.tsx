@@ -501,10 +501,29 @@ function CameraViewLock() {
             c.setPolarAngle(Math.PI / 2);
             break;
           case "Top":
-            c.setPolarAngle(0);
+            c.setAzimuthalAngle(0);
+            c.setPolarAngle(0.1); // Slightly off to avoid gimbal lock
             break;
           case "Bottom":
-            c.setPolarAngle(Math.PI);
+            c.setAzimuthalAngle(0);
+            c.setPolarAngle(Math.PI - 0.1); // Slightly off to avoid gimbal lock
+            break;
+          // Diagonal views for comprehensive coverage
+          case "Front-Left":
+            c.setAzimuthalAngle(-Math.PI / 4);
+            c.setPolarAngle(Math.PI / 2);
+            break;
+          case "Front-Right":
+            c.setAzimuthalAngle(Math.PI / 4);
+            c.setPolarAngle(Math.PI / 2);
+            break;
+          case "Back-Left":
+            c.setAzimuthalAngle((-Math.PI * 3) / 4);
+            c.setPolarAngle(Math.PI / 2);
+            break;
+          case "Back-Right":
+            c.setAzimuthalAngle((Math.PI * 3) / 4);
+            c.setPolarAngle(Math.PI / 2);
             break;
         }
         c.update();

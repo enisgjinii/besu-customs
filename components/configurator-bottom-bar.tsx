@@ -39,7 +39,18 @@ const COLOR_PALETTE = [
   { name: "Pollen", hex: "#d4a84b" },
 ];
 
-const VIEW_ANGLES = ["Front", "Back", "Left", "Right", "Top", "Bottom"];
+const VIEW_ANGLES = [
+  "Front",
+  "Back",
+  "Left",
+  "Right",
+  "Top",
+  "Bottom",
+  "Front-Left",
+  "Front-Right",
+  "Back-Left",
+  "Back-Right",
+];
 
 const MODES = [
   { id: "colors", label: "Colors", icon: Palette },

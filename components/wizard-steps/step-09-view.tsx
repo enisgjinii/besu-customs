@@ -405,7 +405,19 @@ export function Step09View(): React.JSX.Element {
       dataUrl: string;
     }[]
   > => {
-    const views = ["Front", "Back", "Left", "Right"];
+    // 10 views for complete 360° coverage (including diagonals)
+    const views = [
+      "Front",
+      "Back",
+      "Left",
+      "Right",
+      "Top",
+      "Bottom",
+      "Front-Left",
+      "Front-Right",
+      "Back-Left",
+      "Back-Right",
+    ];
     const results: { view: string; dataUrl: string }[] = [];
 
     for (const view of views) {
@@ -414,10 +426,10 @@ export function Step09View(): React.JSX.Element {
       // Set camera to this view
       setLockedView(view);
 
-      // Wait for camera animation + render (increased for reliability)
-      await waitForCameraAnimation(1000);
+      // Wait for camera animation + render
+      await waitForCameraAnimation(600);
 
-      // Wait for one more animation frame to ensure canvas is updated
+      // Wait for animation frames to ensure canvas is updated
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -425,37 +437,15 @@ export function Step09View(): React.JSX.Element {
           });
         });
       });
-      // Capture front
-      setLockedView("Front");
-      await waitForCameraAnimation(500);
-      // Tuned for high quality but strictly < 4.5MB total payload
-      // 1024px @ 0.85 quality is excellent but smaller than 0.9
-      const frontDataUrl = captureAndResize(canvas, 1024, 0.85);
-      results.push({ view: "Front", dataUrl: frontDataUrl });
 
-      // Capture back
-      setLockedView("Back");
-      await waitForCameraAnimation(500);
-      const backDataUrl = captureAndResize(canvas, 1024, 0.85);
-      results.push({ view: "Back", dataUrl: backDataUrl });
-
-      // Capture left
-      setLockedView("Left");
-      await waitForCameraAnimation(500);
-      const leftDataUrl = captureAndResize(canvas, 1024, 0.85);
-      results.push({ view: "Left", dataUrl: leftDataUrl });
-
-      // Capture right
-      setLockedView("Right");
-      await waitForCameraAnimation(500);
-      const rightDataUrl = captureAndResize(canvas, 1024, 0.85);
-      results.push({ view: "Right", dataUrl: rightDataUrl });
-
-      // Reset camera view
-      setLockedView(null);
-
-      return results;
+      // Capture this view (1024px @ 0.85 quality for high quality under 4.5MB)
+      const dataUrl = captureAndResize(canvas, 1024, 0.85);
+      results.push({ view, dataUrl });
     }
+
+    // Reset camera view
+    setLockedView(null);
+
     return results;
   };
 
@@ -558,26 +548,33 @@ export function Step09View(): React.JSX.Element {
         }
       }
 
-      // 4-View Grid
+      // 10-View Grid (5x2 layout for complete 360° coverage)
       doc.setFontSize(12);
       doc.setTextColor(17, 24, 39);
       doc.text("Design Views", 20, 58);
       doc.setDrawColor(229, 231, 235);
       doc.line(20, 61, 190, 61);
 
-      // Grid positions for 4 views (2x2 grid)
+      // Grid positions for 10 views (5x2 grid, smaller to fit)
       const viewGrid = [
         { label: "Front", x: 20, y: 68 },
-        { label: "Back", x: 105, y: 68 },
-        { label: "Left", x: 20, y: 135 },
-        { label: "Right", x: 105, y: 135 },
+        { label: "Back", x: 54, y: 68 },
+        { label: "Left", x: 88, y: 68 },
+        { label: "Right", x: 122, y: 68 },
+        { label: "Top", x: 156, y: 68 },
+        { label: "Bottom", x: 20, y: 110 },
+        { label: "Front-L", x: 54, y: 110 },
+        { label: "Front-R", x: 88, y: 110 },
+        { label: "Back-L", x: 122, y: 110 },
+        { label: "Back-R", x: 156, y: 110 },
       ];
 
       viewCaptures.forEach((capture, i) => {
         const grid = viewGrid[i];
+        if (!grid) return; // Safety check for extra captures
         const imgProps = (doc as any).getImageProperties(capture.dataUrl);
-        const maxWidth = 75;
-        const maxHeight = 60;
+        const maxWidth = 30;
+        const maxHeight = 35;
         const ratio = Math.min(
           maxWidth / imgProps.width,
           maxHeight / imgProps.height,
@@ -586,7 +583,7 @@ export function Step09View(): React.JSX.Element {
         const imgH = imgProps.height * ratio;
 
         // View label
-        doc.setFontSize(9);
+        doc.setFontSize(7);
         doc.setTextColor(107, 114, 128);
         doc.text(grid.label, grid.x, grid.y - 2);
 

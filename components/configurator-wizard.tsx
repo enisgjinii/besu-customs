@@ -265,15 +265,26 @@ export function ConfiguratorWizard() {
         <div className="flex items-center gap-2 px-3 py-2 bg-gray-100/80 dark:bg-gray-800/80 border-b border-border/30 flex-shrink-0">
           <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
           <span className="text-xs text-muted-foreground mr-1">Lock:</span>
-          <div className="flex gap-1.5 flex-1 overflow-x-auto">
-            {["Front", "Back", "Left", "Right"].map((view) => (
+          <div className="flex gap-1.5 flex-1 overflow-x-auto pb-1">
+            {[
+              "Front",
+              "Back",
+              "Left",
+              "Right",
+              "Top",
+              "Bottom",
+              "Front-Left",
+              "Front-Right",
+              "Back-Left",
+              "Back-Right",
+            ].map((view) => (
               <button
                 key={view}
                 onClick={() =>
                   setLockedView(view === lockedView ? null : (view as any))
                 }
                 className={cn(
-                  "text-xs px-3 py-1.5 rounded-full transition-all flex-shrink-0 font-medium",
+                  "text-xs px-2 py-1.5 rounded-full transition-all flex-shrink-0 font-medium whitespace-nowrap",
                   lockedView === view
                     ? "bg-primary text-primary-foreground"
                     : "bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600",
