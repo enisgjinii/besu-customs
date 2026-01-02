@@ -564,7 +564,17 @@ export function Step03bTrimLines() {
                   size="sm"
                   variant="ghost"
                   onClick={() => {
-                    // Clear Logic if needed
+                    // Clear all regular trims
+                    sectionsWithTrims.forEach((section) => {
+                      updateSection(section.id, { trimDesign: undefined, trimColor: undefined });
+                    });
+
+                    // Clear all side stripes
+                    sideStripeLayers.forEach((layer) => {
+                      removeTextureLayer(layer.id);
+                    });
+
+                    toast.success("Removed all trim lines");
                   }}
                   className="h-6 text-[10px] px-2 text-muted-foreground hover:text-destructive"
                 >
