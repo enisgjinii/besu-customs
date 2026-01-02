@@ -19,7 +19,7 @@ import {
 } from "@/lib/pantone";
 import { extractColors } from "@/lib/color-extractor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 interface ColorPickerModalProps {
@@ -212,7 +212,7 @@ export function ColorPickerModal({
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="p-3 space-y-4">
           {/* Smart Match Section - Compact */}
           <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
@@ -252,11 +252,10 @@ export function ColorPickerModal({
                     onClick={() => handlePantoneSelect(pantone)}
                     onMouseEnter={() => handleMouseEnter(pantone.hex)}
                     onMouseLeave={handleMouseLeave}
-                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${
-                      selectedPantone?.code === pantone.code
-                        ? "border-primary ring-1 ring-primary"
-                        : "border-transparent hover:border-primary/50"
-                    }`}
+                    className={`group relative aspect-square rounded border-2 transition-all overflow-hidden ${selectedPantone?.code === pantone.code
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-transparent hover:border-primary/50"
+                      }`}
                   >
                     <div
                       className="absolute inset-0"
@@ -293,11 +292,10 @@ export function ColorPickerModal({
                     onClick={() => handlePantoneSelect(pantone)}
                     onMouseEnter={() => handleMouseEnter(pantone.hex)}
                     onMouseLeave={handleMouseLeave}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
-                      selectedPantone?.code === pantone.code
-                        ? "border-primary bg-primary/5"
-                        : "border-transparent hover:bg-muted"
-                    }`}
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent hover:bg-muted"
+                      }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
@@ -321,11 +319,10 @@ export function ColorPickerModal({
                     onClick={() => handlePantoneSelect(pantone)}
                     onMouseEnter={() => handleMouseEnter(pantone.hex)}
                     onMouseLeave={handleMouseLeave}
-                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${
-                      selectedPantone?.code === pantone.code
-                        ? "border-primary bg-primary/5"
-                        : "border-transparent hover:bg-muted"
-                    }`}
+                    className={`flex items-center gap-1.5 p-1.5 rounded border text-left transition-all ${selectedPantone?.code === pantone.code
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent hover:bg-muted"
+                      }`}
                   >
                     <div
                       className="w-6 h-6 rounded border shadow-sm shrink-0"
@@ -338,10 +335,10 @@ export function ColorPickerModal({
                     </div>
                   </button>
                 )) || (
-                  <div className="text-xs text-muted-foreground text-center py-3">
-                    No metallic colors
-                  </div>
-                )}
+                    <div className="text-xs text-muted-foreground text-center py-3">
+                      No metallic colors
+                    </div>
+                  )}
               </div>
             </TabsContent>
 
@@ -485,7 +482,7 @@ export function ColorPickerModal({
             </TabsContent>
           </Tabs>
         </div>
-      </ScrollArea>
+      </div>
 
       {footer && <div className="p-3 border-t bg-muted/10">{footer}</div>}
     </div>
@@ -510,7 +507,7 @@ export function ColorPickerModal({
             <div className="w-12" /> {/* Spacer */}
           </div>
 
-          <div className="flex-1 overflow-hidden relative">{Content}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto">{Content}</div>
         </div>
       </div>,
       document.body,
@@ -536,7 +533,7 @@ export function ColorPickerModal({
           </Button>
         </div>
 
-        <div className="flex-1 overflow-hidden relative">{Content}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto">{Content}</div>
       </div>
     </div>,
     document.body,
