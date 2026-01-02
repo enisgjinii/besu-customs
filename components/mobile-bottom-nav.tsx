@@ -73,11 +73,10 @@ const NavButton = memo(function NavButton({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-4 py-2 rounded-xl transition-all duration-150 min-w-[56px] sm:min-w-[64px] min-h-[48px] active:scale-95 ${
-        isActive
+      className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-4 py-2 rounded-xl transition-all duration-150 min-w-[56px] sm:min-w-[64px] min-h-[48px] active:scale-95 ${isActive
           ? "bg-primary text-primary-foreground shadow-md"
           : "text-muted-foreground active:bg-accent/50"
-      }`}
+        }`}
       style={{ WebkitTapHighlightColor: "transparent" }}
       aria-label={label}
       aria-pressed={isActive}
@@ -241,20 +240,19 @@ export function MobileBottomNav() {
       {/* Expanded Panel */}
       <div
         ref={panelRef}
-        className={`fixed left-0 right-0 bottom-0 bg-card/98 backdrop-blur-lg border-t border-border/40 rounded-t-2xl z-50 shadow-xl ${
-          isExpanded
+        className={`fixed left-0 right-0 bottom-0 bg-card/98 backdrop-blur-lg border-t border-border/40 rounded-t-2xl z-50 shadow-xl ${isExpanded
             ? "mobile-panel-enter"
             : "mobile-panel-exit pointer-events-none"
-        }`}
+          }`}
         style={{
           height: isExpanded ? `${panelHeight}vh` : "0",
           maxHeight: "75vh",
           transform: "translateZ(0)",
         }}
       >
-        {/* Drag Handle */}
+        {/* Drag Handle - Enhanced */}
         <div
-          className="w-full py-2 cursor-grab active:cursor-grabbing touch-none"
+          className="w-full py-3 cursor-grab active:cursor-grabbing touch-none select-none"
           onTouchStart={handleDragStart}
           onTouchMove={handleDrag}
           onTouchEnd={handleDragEnd}
@@ -262,7 +260,10 @@ export function MobileBottomNav() {
           onMouseMove={handleDrag}
           onMouseUp={handleDragEnd}
         >
-          <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mx-auto" />
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-12 h-1.5 bg-muted-foreground/40 rounded-full" />
+            <span className="text-[9px] text-muted-foreground/60 uppercase tracking-wider">Drag to resize</span>
+          </div>
         </div>
 
         {/* Header - Compact */}

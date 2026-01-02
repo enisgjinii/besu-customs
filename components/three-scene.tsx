@@ -10,6 +10,7 @@ import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import {
   extractSectionsFromThreeModel,
   applyMaterialsToThreeModel,
+  extractUVMapFromThreeModel,
 } from "@/lib/three-material-utils";
 import { useCachedGLTF } from "@/hooks/use-cached-gltf";
 import { getModelCache } from "@/lib/model-cache";
@@ -582,6 +583,13 @@ function Model({
         const extracted = extractSectionsFromThreeModel(cloned, url);
         onSectionsExtractedRef.current?.(extracted);
         onLoadRef.current?.();
+
+        // Extract UV map and store it for AI design section
+        const uvMapDataUrl = extractUVMapFromThreeModel(cloned, 1024, 1024);
+        if (uvMapDataUrl) {
+          useConfiguratorStore.getState().setCompleteUVMap(uvMapDataUrl);
+          console.log("🗺️ UV map extracted and stored");
+        }
 
         // Ensure materials are ready for decals
         cloned.traverse((node) => {

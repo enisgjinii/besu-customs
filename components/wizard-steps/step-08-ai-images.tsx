@@ -9,7 +9,8 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Map, Download, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function Step08AIImages() {
   const addTextureLayer = useConfiguratorStore(
@@ -19,6 +20,10 @@ export function Step08AIImages() {
   const setSelectedTextureLayerId = useConfiguratorStore(
     (state) => state.setSelectedTextureLayerId,
   );
+  const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
+
+  const [showUVMap, setShowUVMap] = useState(true);
+  const [uvMapLoading, setUvMapLoading] = useState(false);
 
   // Listen for generated images from the AIImageGenerator component
   // Background is already removed by the advanced AI in the generator
@@ -80,6 +85,21 @@ export function Step08AIImages() {
   // Get AI-generated layers
   const aiLayers = textureLayers.filter((l) => l.name.startsWith("AI"));
 
+  const handleDownloadUVMap = () => {
+    if (!completeUVMap) {
+      toast.error("No UV map available");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = completeUVMap;
+    link.download = `uv-map-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("UV map downloaded!");
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -87,6 +107,67 @@ export function Step08AIImages() {
         <p className="text-sm text-muted-foreground">
           Create unique patterns and designs with AI
         </p>
+      </div>
+
+      {/* UV Map Reference Section */}
+      <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+        <div className="p-3 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-b flex items-center justify-between">
+          <h3 className="text-sm font-medium flex items-center gap-2">
+            <Map className="w-4 h-4 text-indigo-500" />
+            UV Map Reference
+          </h3>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setShowUVMap(!showUVMap)}
+            >
+              {showUVMap ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+              {showUVMap ? "Hide" : "Show"}
+            </Button>
+            {completeUVMap && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleDownloadUVMap}
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Download
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {showUVMap && (
+          <div className="p-4">
+            {completeUVMap ? (
+              <div className="space-y-3">
+                <div className="relative rounded-lg border bg-muted/20 overflow-hidden">
+                  <img
+                    src={completeUVMap}
+                    alt="UV Map"
+                    className="w-full max-h-[300px] object-contain"
+                  />
+                  <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">
+                    UV Map Template
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                  <strong>💡 Tip:</strong> Download this UV map and use it as a reference when creating AI designs.
+                  The AI can generate patterns that match the garment&apos;s shape perfectly.
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Map className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No UV map available</p>
+                <p className="text-xs mt-1">Select a 3D model first to extract its UV map</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="p-1">

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronRight, ChevronLeft, Lock, RotateCcw } from "lucide-react";
+import { ChevronRight, ChevronLeft, Lock, RotateCcw, GripHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -51,6 +51,12 @@ export function ConfiguratorWizard() {
   const [isMounted, setIsMounted] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
 
+  // Desktop drag-to-resize state
+  const [panelHeight, setPanelHeight] = useState(320); // pixels
+  const isDraggingRef = useRef(false);
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(320);
+
   const lockedView = useConfiguratorStore((s) => s.lockedView);
   const setLockedView = useConfiguratorStore((s) => s.setLockedView);
   const resetAllCustomizations = useConfiguratorStore(
@@ -67,6 +73,40 @@ export function ConfiguratorWizard() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Desktop drag handlers
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    isDraggingRef.current = true;
+    dragStartY.current = e.clientY;
+    dragStartHeight.current = panelHeight;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  }, [panelHeight]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+
+      const deltaY = dragStartY.current - e.clientY;
+      const newHeight = Math.min(600, Math.max(200, dragStartHeight.current + deltaY));
+      setPanelHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
   }, []);
 
   const handleNext = () => {
@@ -87,12 +127,28 @@ export function ConfiguratorWizard() {
     <div
       className={cn(
         "bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col",
-        // Mobile: relative positioning within flex container, Desktop: absolute with fixed height
+        // Mobile: relative positioning within flex container, Desktop: absolute with dynamic height
         isMobile
           ? "relative flex-1 min-h-0"
-          : "absolute bottom-0 left-0 right-0 h-[320px]",
+          : "absolute bottom-0 left-0 right-0",
       )}
+      style={!isMobile ? { height: `${panelHeight}px` } : undefined}
     >
+      {/* Desktop Drag Handle */}
+      {!isMobile && (
+        <div
+          className="w-full h-3 cursor-ns-resize flex items-center justify-center bg-gray-100 dark:bg-gray-900 hover:bg-primary/10 transition-colors group flex-shrink-0 select-none"
+          onMouseDown={handleDragStart}
+        >
+          <div className="flex items-center gap-1">
+            <GripHorizontal className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/70" />
+            <span className="text-[9px] text-muted-foreground/50 group-hover:text-primary/70 uppercase tracking-wider hidden group-hover:inline">
+              Drag to resize
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Texture Layer Selector - Compact on mobile */}
       {textureLayers.length > 0 && (
         <div className="border-b border-border/30 flex-shrink-0">
