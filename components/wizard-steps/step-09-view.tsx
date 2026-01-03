@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,7 @@ export function Step09View(): React.JSX.Element {
 
   // State for logic
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const [designPreviews, setDesignPreviews] = useState<{
     front: string | null;
     back: string | null;
@@ -645,13 +647,36 @@ export function Step09View(): React.JSX.Element {
             <span className="text-xs text-slate-500">Any specific requests for the team?</span>
           </div>
 
+          {/* Confirmation Checkbox */}
+          <div className="pt-6 space-y-4 border-t border-slate-200">
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="confirmation"
+                checked={isConfirmed}
+                onCheckedChange={(checked) => setIsConfirmed(checked as boolean)}
+                className="mt-1"
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="confirmation"
+                  className="text-sm font-medium leading-normal text-slate-700 cursor-pointer"
+                >
+                  Confirm your order and design
+                </label>
+                <p className="text-xs text-slate-500 leading-snug">
+                  I confirm that my order details and designs are correct. I give my full consent to move forward with printing the order and I accept that any errors with my order names or misspelling.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Submit */}
           <div className="pt-8 flex justify-center pb-8">
             <Button
               onClick={handleSubmitOrder}
               size="lg"
               className="w-full md:w-auto min-w-[200px]"
-              disabled={isSendingEmail}
+              disabled={isSendingEmail || !isConfirmed}
             >
               {isSendingEmail ? (
                 <>
