@@ -487,7 +487,7 @@ export function Step09View(): React.JSX.Element {
       <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden mb-6">
         <div className="p-8 pb-6 border-b border-border/10">
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-            Soccer Uniform Order Form
+            Review & Submit Order Form
           </h1>
           <p className="text-slate-500 mt-1">
             Complete your team details and review your design.
@@ -553,7 +553,7 @@ export function Step09View(): React.JSX.Element {
 
           {/* Design Selection */}
           <div className="space-y-3">
-            <Label className="text-slate-700 font-semibold">Please Select the Uniform Design <span className="text-red-500">*</span></Label>
+            <Label className="text-slate-700 font-semibold">Preview Your Custom Design <span className="text-red-500">*</span></Label>
             <div className="grid grid-cols-3 gap-4 max-w-2xl">
               <div className="aspect-square rounded-lg border-2 border-blue-500 ring-2 ring-blue-500/20 overflow-hidden bg-slate-50 relative">
                 {previewsLoading ? (
