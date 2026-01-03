@@ -221,28 +221,6 @@ export function Step09View(): React.JSX.Element {
       const frontCapture = viewCaptures.find(v => v.view === "Front");
       const previewImage = frontCapture ? frontCapture.dataUrl : designPreviews.front;
 
-      // START SKETCH GENERATION
-      // Generate "Technical Sketch" versions of the views
-      const sketchCaptures: { view: string; dataUrl: string }[] = [];
-      try {
-        const { generateSketchEffect } = await import("@/lib/image-processing");
-
-        for (const capture of viewCaptures) {
-          // Only generate sketches for main views
-          if (["Front", "Back", "Left", "Right"].includes(capture.view)) {
-            const sketchUrl = await generateSketchEffect(capture.dataUrl);
-            sketchCaptures.push({
-              view: capture.view,
-              dataUrl: sketchUrl
-            });
-          }
-        }
-      } catch (sketchError) {
-        console.error("Failed to generate sketches:", sketchError);
-        // Continue without sketches if it fails
-      }
-      // END SKETCH GENERATION
-
       const files: { filename: string; content: string }[] = [];
 
       // Add regular 3D views
@@ -253,19 +231,63 @@ export function Step09View(): React.JSX.Element {
         });
       });
 
-      // Add Sketch views
-      sketchCaptures.forEach((capture) => {
-        files.push({
-          filename: `Sketch-${capture.view.toLowerCase()}.jpg`,
-          content: capture.dataUrl,
-        });
-      });
-
-      // Capture Full UV Map (Texture)
+      // Capture Tech Pack (Texture + UV Wireframe)
+      // We start with the texture canvas
       const uvMapUrl = await generateUvMapDataUrl();
-      if (uvMapUrl) {
+
+      // Retrieve the stored UV Wireframe (black lines on white)
+      const wireframeUrl = useConfiguratorStore.getState().completeUVMap;
+
+      if (uvMapUrl && wireframeUrl) {
+        try {
+          // Create composite canvas
+          const compositeCanvas = document.createElement("canvas");
+          const size = 2048;
+          compositeCanvas.width = size;
+          compositeCanvas.height = size;
+          const ctx = compositeCanvas.getContext("2d");
+
+          if (ctx) {
+            // 1. Draw Texture (The colorful design)
+            const textureImg = new Image();
+            textureImg.src = uvMapUrl;
+            await new Promise((r) => { textureImg.onload = r; });
+            ctx.drawImage(textureImg, 0, 0, size, size);
+
+            // 2. Draw Wireframe (Black outlines)
+            // Use "multiply" so white background becomes transparent, black lines stay black
+            const wireframeImg = new Image();
+            wireframeImg.src = wireframeUrl;
+            await new Promise((r) => { wireframeImg.onload = r; });
+
+            ctx.globalCompositeOperation = "multiply";
+            ctx.drawImage(wireframeImg, 0, 0, size, size);
+            ctx.globalCompositeOperation = "source-over";
+
+            // 3. Export
+            const compositeDataUrl = compositeCanvas.toDataURL("image/png");
+            files.push({
+              filename: "Design-2D-Tech-Pack.png",
+              content: compositeDataUrl,
+            });
+          } else {
+            // Fallback if context fails
+            files.push({
+              filename: "Design-Texture-Only.png",
+              content: uvMapUrl,
+            });
+          }
+        } catch (e) {
+          console.error("Failed to composite Tech Pack", e);
+          // Fallback
+          files.push({
+            filename: "Design-Texture-Only.png",
+            content: uvMapUrl,
+          });
+        }
+      } else if (uvMapUrl) {
         files.push({
-          filename: "Design-Full-UV-Map.png",
+          filename: "Design-Texture-Only.png",
           content: uvMapUrl,
         });
       }

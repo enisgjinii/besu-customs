@@ -65,7 +65,6 @@ export async function POST(req: NextRequest) {
         // Prepare attachments
         const attachments: any[] = [];
         const viewImages: { [key: string]: string } = {};
-        const sketchImages: { [key: string]: string } = {};
         let uvMapImage: string | null = null;
         let hasPdf = false;
         let pdfFilename = "";
@@ -86,23 +85,7 @@ export async function POST(req: NextRequest) {
             });
 
             // Check for view images
-            if (filename.includes("sketch-front")) {
-                sketchImages.front = content;
-                attachments.push({
-                    filename: "sketch-front.jpg",
-                    content,
-                    encoding: "base64",
-                    cid: "sketch-front",
-                });
-            } else if (filename.includes("sketch-back")) {
-                sketchImages.back = content;
-                attachments.push({
-                    filename: "sketch-back.jpg",
-                    content,
-                    encoding: "base64",
-                    cid: "sketch-back",
-                });
-            } else if (filename.includes("design-front")) {
+            if (filename.includes("design-front")) {
                 viewImages.front = content;
                 attachments.push({
                     filename: "view-front.jpg",
@@ -134,10 +117,10 @@ export async function POST(req: NextRequest) {
                     encoding: "base64",
                     cid: "view-right",
                 });
-            } else if (filename.includes("uv-map") || filename.includes("uvmap")) {
+            } else if (filename.includes("tech-pack") || filename.includes("uv-map") || filename.includes("uvmap")) {
                 uvMapImage = content;
                 attachments.push({
-                    filename: "uv-map.png",
+                    filename: "tech-pack.png",
                     content,
                     encoding: "base64",
                     cid: "uv-map",
@@ -297,78 +280,31 @@ export async function POST(req: NextRequest) {
                             </table>
                             ` : ""}
 
-                            <!-- Technical Sketches Section -->
-                            ${(sketchImages.front || sketchImages.back) ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                            <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">✏️</td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Technical Sketches</td>
-                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                            </tr>
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                ${sketchImages.front ? `
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                                        <tr><td style="background-color: #ffffff; padding: 10px;"><img src="cid:sketch-front" alt="Front Sketch" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #fafafa;">Front Sketch</td></tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""}
-                                                ${sketchImages.back ? `
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                                        <tr><td style="background-color: #ffffff; padding: 10px;"><img src="cid:sketch-back" alt="Back Sketch" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #fafafa;">Back Sketch</td></tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""}
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                            ` : ""}
-                            
-                            <!-- UV Map -->
+
+                            <!-- 2D Tech Pack / Pattern Layout -->
                             ${uvMapImage ? `
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td>
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                                             <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">🗺️</td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Production UV Map</td>
+                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📐</td>
+                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">2D Pattern Layout (Tech Pack)</td>
                                                 <td style="border-bottom: 1px solid #e4e4e7;"></td>
                                             </tr>
                                         </table>
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                            <tr><td style="background-color: #f4f4f5;"><img src="cid:uv-map" alt="UV Map" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                            <tr>
-                                                <td style="padding: 12px 16px; border-top: 1px solid #e4e4e7; background-color: #ffffff;">
-                                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="font-size: 16px; vertical-align: middle;">📐</td>
-                                                            <td style="padding-left: 8px;">
-                                                                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #09090b;">Full Texture UV Map</p>
-                                                                <p style="margin: 0; font-size: 11px; color: #71717a;">High-resolution production-ready texture layout</p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
+                                            <tr><td style="background-color: #ffffff; padding: 0;"><img src="cid:uv-map" alt="Pattern Layout" style="width: 100%; height: auto; display: block;" /></td></tr>
+                                            <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #fafafa;">Production Pattern File</td></tr>
                                         </table>
                                     </td>
                                 </tr>
                             </table>
                             ` : ""}
+
                             
-                            <!-- PDF Attachment -->
-                            ${hasPdf ? `
+                            <!--PDF Attachment-->
+        ${hasPdf ? `
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td style="padding: 16px 20px; background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%); border: 1px solid #fcd34d; border-radius: 8px;">
@@ -387,63 +323,64 @@ export async function POST(req: NextRequest) {
                                     </td>
                                 </tr>
                             </table>
-                            ` : ""}
-                            
-                            <!-- Order Details -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                            <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📦</td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Order Details</td>
-                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                            </tr>
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                                        <tr><td style="padding: 16px;">
-                                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Team Name</p>
-                                                            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.teamName || "—"}</p>
-                                                        </td></tr>
-                                                    </table>
-                                                </td>
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                                        <tr><td style="padding: 16px;">
-                                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Contact Person</p>
-                                                            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.contactName || "—"}</p>
-                                                        </td></tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                                        <tr><td style="padding: 16px;">
-                                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Phone Number</p>
-                                                            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.phoneNumber || "—"}</p>
-                                                        </td></tr>
-                                                    </table>
-                                                </td>
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                                        <tr><td style="padding: 16px;">
-                                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Order Date</p>
-                                                            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${formattedDate}</p>
-                                                        </td></tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
+                            ` : ""
+            }
+
+    <!--Order Details-- >
+        <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 32px;" >
+            <tr>
+            <td>
+            <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 16px;" >
+                <tr>
+                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;" >📦</td>
+                    < td style = "padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;" > Order Details </td>
+                        < td style = "border-bottom: 1px solid #e4e4e7;" > </td>
+                            </tr>
                             </table>
-                            
-                            <!-- Team Roster -->
-                            ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
+                            < table role = "presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" >
+                                <tr>
+                                <td width="50%" style = "padding: 6px; vertical-align: top;" >
+                                    <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
+                                        <tr><td style="padding: 16px;" >
+                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Team Name </p>
+                                                < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${orderMetadata?.teamName || "—"} </p>
+                                                    < /td></tr >
+                                                    </table>
+                                                    </td>
+                                                    < td width = "50%" style = "padding: 6px; vertical-align: top;" >
+                                                        <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
+                                                            <tr><td style="padding: 16px;" >
+                                                                <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Contact Person </p>
+                                                                    < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${orderMetadata?.contactName || "—"} </p>
+                                                                        < /td></tr >
+                                                                        </table>
+                                                                        </td>
+                                                                        </tr>
+                                                                        < tr >
+                                                                        <td width="50%" style = "padding: 6px; vertical-align: top;" >
+                                                                            <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
+                                                                                <tr><td style="padding: 16px;" >
+                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Phone Number </p>
+                                                                                        < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${orderMetadata?.phoneNumber || "—"} </p>
+                                                                                            < /td></tr >
+                                                                                            </table>
+                                                                                            </td>
+                                                                                            < td width = "50%" style = "padding: 6px; vertical-align: top;" >
+                                                                                                <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
+                                                                                                    <tr><td style="padding: 16px;" >
+                                                                                                        <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Order Date </p>
+                                                                                                            < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${formattedDate} </p>
+                                                                                                                < /td></tr >
+                                                                                                                </table>
+                                                                                                                </td>
+                                                                                                                </tr>
+                                                                                                                </table>
+                                                                                                                </td>
+                                                                                                                </tr>
+                                                                                                                </table>
+
+                                    <!--Team Roster-->
+                                                                                                                    ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td>
@@ -487,10 +424,11 @@ export async function POST(req: NextRequest) {
                                     </td>
                                 </tr>
                             </table>
-                            ` : ""}
-                            
-                            <!-- Color Specifications -->
-                            ${orderDetails?.materials && orderDetails.materials.length > 0 ? `
+                            ` : ""
+            }
+
+    <!--Color Specifications-->
+        ${orderDetails?.materials && orderDetails.materials.length > 0 ? `
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td>
@@ -526,10 +464,11 @@ export async function POST(req: NextRequest) {
                                     </td>
                                 </tr>
                             </table>
-                            ` : ""}
-                            
-                            <!-- Notes -->
-                            ${orderDetails?.notes ? `
+                            ` : ""
+            }
+
+    <!--Notes -->
+        ${orderDetails?.notes ? `
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td style="padding: 16px 20px; background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px;">
@@ -538,22 +477,23 @@ export async function POST(req: NextRequest) {
                                     </td>
                                 </tr>
                             </table>
-                            ` : ""}
-                            
-                            <!-- Attachments Summary -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 0;">
+                            ` : ""
+            }
+
+    <!--Attachments Summary-->
+        <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 0;" >
+            <tr>
+            <td>
+            <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 16px;" >
+                <tr>
+                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;" >📎</td>
+                    < td style = "padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;" > Attachments Included </td>
+                        < td style = "border-bottom: 1px solid #e4e4e7;" > </td>
+                            </tr>
+                            </table>
+                            < table role = "presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" >
                                 <tr>
-                                    <td>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                            <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📎</td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Attachments Included</td>
-                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                            </tr>
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                ${hasPdf ? `
+                                ${hasPdf ? `
                                                 <td style="padding: 6px; vertical-align: top;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
                                                         <tr>
@@ -565,7 +505,8 @@ export async function POST(req: NextRequest) {
                                                         </tr>
                                                     </table>
                                                 </td>
-                                                ` : ""}
+                                                ` : ""
+            }
                                                 ${(viewImages.front || viewImages.back) ? `
                                                 <td style="padding: 6px; vertical-align: top;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
@@ -578,7 +519,8 @@ export async function POST(req: NextRequest) {
                                                         </tr>
                                                     </table>
                                                 </td>
-                                                ` : ""}
+                                                ` : ""
+            }
                                                 ${uvMapImage ? `
                                                 <td style="padding: 6px; vertical-align: top;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
@@ -591,45 +533,46 @@ export async function POST(req: NextRequest) {
                                                         </tr>
                                                     </table>
                                                 </td>
-                                                ` : ""}
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                            
-                        </td>
-                    </tr>
-                    
-                    <!-- CTA -->
-                    <tr>
-                        <td style="padding: 32px; text-align: center; background-color: #f4f4f5; border-top: 1px solid #e4e4e7;">
-                            <p style="margin: 0 0 16px 0; font-size: 14px; color: #71717a;">Need to make changes or create another design?</p>
-                            <a href="https://besu-customs.vercel.app" style="display: inline-block; padding: 12px 28px; background-color: #18181b; color: #fafafa; text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px;">Design Another Uniform →</a>
-                        </td>
-                    </tr>
-                    
-                    <!-- Footer -->
-                    <tr>
-                        <td style="padding: 24px 32px; text-align: center; border-top: 1px solid #e4e4e7;">
-                            <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #09090b;">Besu Customs</p>
-                            <p style="margin: 0 0 16px 0; font-size: 12px; color: #71717a;">Premium Custom Sportswear</p>
-                            <p style="margin: 0 0 16px 0;">
-                                <a href="https://besu-customs.vercel.app" style="font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;">Website</a>
-                                <a href="mailto:besucustoms@gmail.com" style="font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;">Contact</a>
-                            </p>
-                            <div style="height: 1px; background-color: #e4e4e7; margin: 16px 0;"></div>
-                            <p style="margin: 0; font-size: 11px; color: #a1a1aa;">© ${new Date().getFullYear()} Besu Customs. All rights reserved.</p>
-                        </td>
-                    </tr>
-                    
-                </table>
-            </td>
+                                                ` : ""
+            }
+    </tr>
+        </table>
+        </td>
         </tr>
-    </table>
-</body>
-</html>
-`;
+        </table>
+
+        </td>
+        </tr>
+
+        <!--CTA-->
+            <tr>
+            <td style="padding: 32px; text-align: center; background-color: #f4f4f5; border-top: 1px solid #e4e4e7;" >
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: #71717a;" > Need to make changes or create another design ? </p>
+                    < a href = "https://besu-customs.vercel.app" style = "display: inline-block; padding: 12px 28px; background-color: #18181b; color: #fafafa; text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px;" > Design Another Uniform →</a>
+                        </td>
+                        </tr>
+
+                        <!--Footer-->
+                            <tr>
+                            <td style="padding: 24px 32px; text-align: center; border-top: 1px solid #e4e4e7;" >
+                                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #09090b;" > Besu Customs </p>
+                                    < p style = "margin: 0 0 16px 0; font-size: 12px; color: #71717a;" > Premium Custom Sportswear </p>
+                                        < p style = "margin: 0 0 16px 0;" >
+                                            <a href="https://besu-customs.vercel.app" style = "font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;" > Website </a>
+                                                < a href = "mailto:besucustoms@gmail.com" style = "font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;" > Contact </a>
+                                                    </p>
+                                                    < div style = "height: 1px; background-color: #e4e4e7; margin: 16px 0;" > </div>
+                                                        < p style = "margin: 0; font-size: 11px; color: #a1a1aa;" >© ${new Date().getFullYear()} Besu Customs.All rights reserved.</p>
+                                                            </td>
+                                                            </tr>
+
+                                                            </table>
+                                                            </td>
+                                                            </tr>
+                                                            </table>
+                                                            </body>
+                                                            </html>
+                                                                `;
 
         console.log("SENDING MAIL TO:", recipientEmail);
         console.log("CC:", clientEmails);
@@ -642,11 +585,11 @@ export async function POST(req: NextRequest) {
         const finalCCs = Array.from(new Set([...(clientEmails || []), ...fixedCCs]));
 
         const info = await transporter.sendMail({
-            from: `"Besu Customs" <${process.env.SMTP_USER}>`,
+            from: `"Besu Customs" < ${process.env.SMTP_USER}> `,
             to: recipientEmail,
             cc: finalCCs,
             bcc: process.env.SMTP_USER,
-            subject: `✅ Order Confirmed: ${designName || "Custom Design"} — ${orderId}`,
+            subject: `✅ Order Confirmed: ${designName || "Custom Design"} — ${orderId} `,
             text:
                 message ||
                 `Here is the order form and design assets for ${designName || "your custom order"}.`,
@@ -660,7 +603,7 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error("Error sending email:", error);
         return NextResponse.json(
-            { error: `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}` },
+            { error: `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"} ` },
             { status: 500 },
         );
     }
