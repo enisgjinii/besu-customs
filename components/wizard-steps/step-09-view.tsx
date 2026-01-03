@@ -248,6 +248,10 @@ export function Step09View(): React.JSX.Element {
           const ctx = compositeCanvas.getContext("2d");
 
           if (ctx) {
+            // Flip Y-axis to correct orientation
+            ctx.translate(0, size);
+            ctx.scale(1, -1);
+
             // 1. Draw Texture (The colorful design)
             const textureImg = new Image();
             textureImg.src = uvMapUrl;

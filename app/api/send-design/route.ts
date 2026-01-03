@@ -326,58 +326,58 @@ export async function POST(req: NextRequest) {
                             ` : ""
             }
 
-    <!--Order Details-- >
-        <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 32px;" >
+    <!--Order Details-->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
             <tr>
             <td>
-            <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 16px;" >
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                 <tr>
-                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;" >📦</td>
-                    < td style = "padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;" > Order Details </td>
-                        < td style = "border-bottom: 1px solid #e4e4e7;" > </td>
+                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📦</td>
+                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Order Details</td>
+                        <td style="border-bottom: 1px solid #e4e4e7;"></td>
                             </tr>
                             </table>
-                            < table role = "presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" >
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                <td width="50%" style = "padding: 6px; vertical-align: top;" >
-                                    <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
-                                        <tr><td style="padding: 16px;" >
-                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Team Name </p>
-                                                < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${orderMetadata?.teamName || "—"} </p>
-                                                    < /td></tr >
-                                                    </table>
-                                                    </td>
-                                                    < td width = "50%" style = "padding: 6px; vertical-align: top;" >
-                                                        <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
-                                                            <tr><td style="padding: 16px;" >
-                                                                <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Contact Person </p>
-                                                                    < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${orderMetadata?.contactName || "—"} </p>
-                                                                        < /td></tr >
-                                                                        </table>
+                                <td width="50%" style="padding: 6px; vertical-align: top;">
+                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
+                                        <tr><td style="padding: 16px;">
+                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Team Name</p>
+                                            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.teamName || "—"}</p>
+                                        </td></tr>
+                                    </table>
+                                </td>
+                                                                        <td width="50%" style="padding: 6px; vertical-align: top;">
+                                                                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
+                                                                                <tr><td style="padding: 16px;">
+                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Contact Person</p>
+                                                                                    <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.contactName || "—"}</p>
+                                                                                </td></tr>
+                                                                            </table>
                                                                         </td>
-                                                                        </tr>
-                                                                        < tr >
-                                                                        <td width="50%" style = "padding: 6px; vertical-align: top;" >
-                                                                            <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
-                                                                                <tr><td style="padding: 16px;" >
-                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Phone Number </p>
-                                                                                        < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${orderMetadata?.phoneNumber || "—"} </p>
-                                                                                            < /td></tr >
-                                                                                            </table>
-                                                                                            </td>
-                                                                                            < td width = "50%" style = "padding: 6px; vertical-align: top;" >
-                                                                                                <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;" >
-                                                                                                    <tr><td style="padding: 16px;" >
-                                                                                                        <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;" > Order Date </p>
-                                                                                                            < p style = "margin: 0; font-size: 15px; font-weight: 500; color: #09090b;" > ${formattedDate} </p>
-                                                                                                                < /td></tr >
-                                                                                                                </table>
-                                                                                                                </td>
-                                                                                                                </tr>
-                                                                                                                </table>
-                                                                                                                </td>
-                                                                                                                </tr>
-                                                                                                                </table>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td width="50%" style="padding: 6px; vertical-align: top;">
+                                                                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
+                                                                                <tr><td style="padding: 16px;">
+                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Phone Number</p>
+                                                                                    <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.phoneNumber || "—"}</p>
+                                                                                </td></tr>
+                                                                            </table>
+                                                                        </td>
+                                                                        <td width="50%" style="padding: 6px; vertical-align: top;">
+                                                                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
+                                                                                <tr><td style="padding: 16px;">
+                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Order Date</p>
+                                                                                    <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${formattedDate}</p>
+                                                                                </td></tr>
+                                                                            </table>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
 
                                     <!--Team Roster-->
                                                                                                                     ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
@@ -481,17 +481,17 @@ export async function POST(req: NextRequest) {
             }
 
     <!--Attachments Summary-->
-        <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 0;" >
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 0;">
             <tr>
             <td>
-            <table role="presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" style = "margin-bottom: 16px;" >
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                 <tr>
-                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;" >📎</td>
-                    < td style = "padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;" > Attachments Included </td>
-                        < td style = "border-bottom: 1px solid #e4e4e7;" > </td>
+                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📎</td>
+                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Attachments Included</td>
+                        <td style="border-bottom: 1px solid #e4e4e7;"></td>
                             </tr>
                             </table>
-                            < table role = "presentation" width = "100%" cellspacing = "0" cellpadding = "0" border = "0" >
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
                                 ${hasPdf ? `
                                                 <td style="padding: 6px; vertical-align: top;">
@@ -547,22 +547,22 @@ export async function POST(req: NextRequest) {
         <!--CTA-->
             <tr>
             <td style="padding: 32px; text-align: center; background-color: #f4f4f5; border-top: 1px solid #e4e4e7;" >
-                <p style="margin: 0 0 16px 0; font-size: 14px; color: #71717a;" > Need to make changes or create another design ? </p>
-                    < a href = "https://besu-customs.vercel.app" style = "display: inline-block; padding: 12px 28px; background-color: #18181b; color: #fafafa; text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px;" > Design Another Uniform →</a>
+                <p style="margin: 0 0 16px 0; font-size: 14px; color: #71717a;">Need to make changes or create another design?</p>
+                <a href="https://besu-customs.vercel.app" style="display: inline-block; padding: 12px 28px; background-color: #18181b; color: #fafafa; text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px;">Design Another Uniform →</a>
                         </td>
                         </tr>
 
                         <!--Footer-->
                             <tr>
-                            <td style="padding: 24px 32px; text-align: center; border-top: 1px solid #e4e4e7;" >
-                                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #09090b;" > Besu Customs </p>
-                                    < p style = "margin: 0 0 16px 0; font-size: 12px; color: #71717a;" > Premium Custom Sportswear </p>
-                                        < p style = "margin: 0 0 16px 0;" >
-                                            <a href="https://besu-customs.vercel.app" style = "font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;" > Website </a>
-                                                < a href = "mailto:besucustoms@gmail.com" style = "font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;" > Contact </a>
-                                                    </p>
-                                                    < div style = "height: 1px; background-color: #e4e4e7; margin: 16px 0;" > </div>
-                                                        < p style = "margin: 0; font-size: 11px; color: #a1a1aa;" >© ${new Date().getFullYear()} Besu Customs.All rights reserved.</p>
+            <td style="padding: 24px 32px; text-align: center; border-top: 1px solid #e4e4e7;">
+                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #09090b;">Besu Customs</p>
+                <p style="margin: 0 0 16px 0; font-size: 12px; color: #71717a;">Premium Custom Sportswear</p>
+                <p style="margin: 0 0 16px 0;">
+                    <a href="https://besu-customs.vercel.app" style="font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;">Website</a>
+                    <a href="mailto:besucustoms@gmail.com" style="font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;">Contact</a>
+                </p>
+                <div style="height: 1px; background-color: #e4e4e7; margin: 16px 0;"></div>
+                <p style="margin: 0; font-size: 11px; color: #a1a1aa;">© ${new Date().getFullYear()} Besu Customs. All rights reserved.</p>
                                                             </td>
                                                             </tr>
 
