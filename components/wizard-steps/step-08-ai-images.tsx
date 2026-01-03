@@ -9,6 +9,8 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
+import { generatePBRMaps } from "@/lib/pbr-utils";
+import { useRunwareAI } from "@/hooks/use-runware-ai";
 import {
   Sparkles,
   Map,
@@ -30,6 +32,12 @@ export function Step08AIImages() {
     (state) => state.setSelectedTextureLayerId,
   );
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
+  const setGlobalNormalMap = useConfiguratorStore((s) => s.setGlobalNormalMap);
+  const setGlobalRoughnessMap = useConfiguratorStore((s) => s.setGlobalRoughnessMap);
+  const setGlobalAOMap = useConfiguratorStore((s) => s.setGlobalAOMap);
+  const setGlobalDisplacementMap = useConfiguratorStore((s) => s.setGlobalDisplacementMap);
+
+  const { generateTexture } = useRunwareAI();
 
   const [showUVMap, setShowUVMap] = useState(true);
   const [uvMapLoading, setUvMapLoading] = useState(false);
@@ -52,53 +60,61 @@ export function Step08AIImages() {
 
     setUvGenerating(true);
     const toastId = toast.loading("Generating AI design for UV map...");
+    const loadingPbrId = "pbr-loading";
 
     try {
       // Enhanced prompt that instructs AI to create a seamless pattern/design
-      const enhancedPrompt = `Create a seamless ${uvPrompt} pattern design suitable for garment fabric, high quality textile print, repeating pattern, professional sportswear design, no text, no watermarks`;
+      // const enhancedPrompt = `Create a seamless ${uvPrompt} pattern design suitable for garment fabric, high quality textile print, repeating pattern, professional sportswear design, no text, no watermarks`;
 
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: enhancedPrompt,
-          width: 1024,
-          height: 1024,
-          numberResults: 1,
-        }),
+      console.log("Generating with UV map guidance...");
+
+      const result = await generateTexture({
+        prompt: uvPrompt,
+        uvMap: completeUVMap,
+        strength: 0.85, // Strong guidance from UV map structure
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate image");
+      if (!result) {
+        throw new Error("Failed to generate texture");
       }
 
-      if (data.images && data.images.length > 0) {
-        const generatedUrl = data.images[0].imageURL;
+      const generatedUrl = result.imageUrl;
 
-        // Add as a full pattern layer (covers entire UV)
-        const newId = uuidv4();
-        addTextureLayer({
-          id: newId,
-          name: `AI UV Pattern`,
-          type: "pattern",
-          visible: true,
-          locked: false,
-          opacity: 1,
-          blendMode: "normal",
-          order: textureLayers.length,
-          imageUrl: generatedUrl,
-          position: [0.5, 0.5, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-          flipX: false,
-        });
+      toast.loading("Generating PBR maps (Normal, Roughness)...", {
+        id: toastId,
+      });
 
-        setSelectedTextureLayerId(newId);
-        toast.success("AI pattern generated and applied!", { id: toastId });
-        setUvPrompt("");
-      }
+      // Generate PBR Maps
+      const maps = await generatePBRMaps(generatedUrl);
+
+      // Store PBR maps globally
+      setGlobalNormalMap(maps.normal);
+      setGlobalRoughnessMap(maps.roughness);
+      setGlobalAOMap(maps.ao);
+      setGlobalDisplacementMap(maps.displacement);
+
+      // Add as a full pattern layer (covers entire UV)
+      const newId = uuidv4();
+      addTextureLayer({
+        id: newId,
+        name: `AI UV Pattern`,
+        type: "pattern",
+        visible: true,
+        locked: false,
+        opacity: 1,
+        blendMode: "normal",
+        order: textureLayers.length,
+        imageUrl: generatedUrl,
+        position: [0.5, 0.5, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        flipX: false,
+      });
+
+      setSelectedTextureLayerId(newId);
+      toast.success("AI pattern generated with PBR maps!", { id: toastId });
+      setUvPrompt("");
+
     } catch (error) {
       console.error("UV AI generation error:", error);
       toast.error(

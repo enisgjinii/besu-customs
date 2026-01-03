@@ -12,6 +12,7 @@ import {
   applyMaterialsToThreeModel,
   extractUVMapFromThreeModel,
 } from "@/lib/three-material-utils";
+import { analyzeModel, printModelAnalysis } from "@/lib/model-analyzer";
 import { useCachedGLTF } from "@/hooks/use-cached-gltf";
 import { getModelCache } from "@/lib/model-cache";
 import * as THREE from "three";
@@ -55,6 +56,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   );
   const perfConfig = useMobilePerformance();
 
+  // PBR Maps from AI Generator
+  const globalNormalMap = useConfiguratorStore((s) => s.globalNormalMap);
+  const globalRoughnessMap = useConfiguratorStore((s) => s.globalRoughnessMap);
+  const globalAOMap = useConfiguratorStore((s) => s.globalAOMap);
+  const globalDisplacementMap = useConfiguratorStore((s) => s.globalDisplacementMap);
+
   // Use optimal canvas size based on device performance
   const CANVAS_SIZE = perfConfig.uvCanvasSize;
 
@@ -78,7 +85,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
   // Control icons removed as per UX request (moved to bottom panel only)
-  const drawControlIcon = () => {}; // No-op
+  const drawControlIcon = () => { }; // No-op
 
   useEffect(() => {
     const ctx = canvas.getContext("2d", {
@@ -441,6 +448,13 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     const hasLayers = textureLayers.some((l) => l.visible);
 
+    // Load PBR maps if available
+    const loader = new THREE.TextureLoader();
+    const normalTex = globalNormalMap ? loader.load(globalNormalMap) : null;
+    const roughnessTex = globalRoughnessMap ? loader.load(globalRoughnessMap) : null;
+    const aoTex = globalAOMap ? loader.load(globalAOMap) : null;
+    const dispTex = globalDisplacementMap ? loader.load(globalDisplacementMap) : null;
+
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
         const mat = child.material as THREE.MeshStandardMaterial;
@@ -451,13 +465,53 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           // Don't use alphaTest - it was making transparent areas invisible
           mat.transparent = false;
           mat.alphaTest = 0;
+
+          // Apply PBR maps
+          if (normalTex) {
+            mat.normalMap = normalTex;
+            mat.normalScale.set(1, 1);
+          } else {
+            mat.normalMap = null;
+          }
+
+          if (roughnessTex) {
+            mat.roughnessMap = roughnessTex;
+          } else {
+            mat.roughnessMap = null;
+          }
+
+          if (aoTex) {
+            mat.aoMap = aoTex;
+          } else {
+            mat.aoMap = null;
+          }
+
+          if (dispTex) {
+            mat.displacementMap = dispTex;
+            mat.displacementScale = 0.05; // Gentle displacement
+          } else {
+            mat.displacementMap = null;
+          }
+
         } else {
           mat.map = null;
+          // Clear PBR if no layers (optional, maybe we want to keep them? usually if generic layers are off, we revert to base)
+          mat.normalMap = null;
+          mat.roughnessMap = null;
+          mat.aoMap = null;
+          mat.displacementMap = null;
         }
         mat.needsUpdate = true;
       }
     });
-  }, [scene, texture, textureLayers]);
+
+    return () => {
+      normalTex?.dispose();
+      roughnessTex?.dispose();
+      aoTex?.dispose();
+      dispTex?.dispose();
+    };
+  }, [scene, texture, textureLayers, globalNormalMap, globalRoughnessMap, globalAOMap, globalDisplacementMap]);
 
   // Expose canvas to global for UV map capture (email export)
   useEffect(() => {
@@ -602,6 +656,13 @@ function Model({
         const extracted = extractSectionsFromThreeModel(cloned, url);
         onSectionsExtractedRef.current?.(extracted);
         onLoadRef.current?.();
+
+        // Analyze model structure (meshes, materials, UVs)
+        const analysis = analyzeModel(cloned);
+        printModelAnalysis(analysis);
+        // Store analysis for debugging
+        (window as any).__modelAnalysis = analysis;
+        console.log("💡 Access model analysis via: window.__modelAnalysis");
 
         // Extract UV map and store it for AI design section
         const uvMapDataUrl = extractUVMapFromThreeModel(cloned, 1024, 1024);
@@ -1298,9 +1359,8 @@ export function ThreeScene({
 
       {/* Loading Transition Overlay */}
       <div
-        className={`absolute inset-0 flex flex-col items-center justify-center bg-background z-20 transition-opacity duration-700 ease-in-out ${
-          modelLoading ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
+        className={`absolute inset-0 flex flex-col items-center justify-center bg-background z-20 transition-opacity duration-700 ease-in-out ${modelLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
       >
         <Spinner className="text-primary w-12 h-12 mb-4" />
         <p className="text-sm text-muted-foreground animate-pulse">
