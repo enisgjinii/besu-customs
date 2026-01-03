@@ -21,7 +21,6 @@ export async function POST(req: NextRequest) {
 
     console.log("SEND-DESIGN DEBUG:");
     console.log("Body Recipient:", recipientEmail);
-    // console.log("Body Type:", typeof body);
 
     if (!recipientEmail) {
       return NextResponse.json(
@@ -37,7 +36,6 @@ export async function POST(req: NextRequest) {
       !process.env.SMTP_PASS
     ) {
       console.warn("⚠️ SMTP credentials missing. Logging email instead.");
-      // Log payload size for debugging
       const payloadSize = JSON.stringify(body).length;
       console.log(
         `📦 Payload size: ${(payloadSize / 1024 / 1024).toFixed(2)} MB`,
@@ -57,33 +55,92 @@ export async function POST(req: NextRequest) {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,
-      secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
+      secure: Number(process.env.SMTP_PORT) === 465,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
     });
 
-    // Prepare attachments
-    // files is expected to be an array of { filename, content (base64) }
-    const attachments =
-      files?.map((file: any) => ({
-        filename: file.filename,
-        content: file.content.includes("base64,")
-          ? file.content.split("base64,")[1]
-          : file.content,
-        encoding: "base64",
-      })) || [];
+    // Prepare attachments - regular file attachments
+    const attachments: any[] = [];
+    const viewImages: { [key: string]: string } = {};
+    let uvMapImage: string | null = null;
+    let hasPdf = false;
+    let pdfFilename = "";
 
-    // Add preview image as inline attachment if provided
-    if (previewImage) {
+    // Process all files
+    files?.forEach((file: any) => {
+      const content = file.content.includes("base64,")
+        ? file.content.split("base64,")[1]
+        : file.content;
+
+      const filename = file.filename.toLowerCase();
+
+      // Add as regular attachment
+      attachments.push({
+        filename: file.filename,
+        content,
+        encoding: "base64",
+      });
+
+      // Check for view images
+      if (filename.includes("design-front")) {
+        viewImages.front = content;
+        attachments.push({
+          filename: "view-front.jpg",
+          content,
+          encoding: "base64",
+          cid: "view-front",
+        });
+      } else if (filename.includes("design-back")) {
+        viewImages.back = content;
+        attachments.push({
+          filename: "view-back.jpg",
+          content,
+          encoding: "base64",
+          cid: "view-back",
+        });
+      } else if (filename.includes("design-left")) {
+        viewImages.left = content;
+        attachments.push({
+          filename: "view-left.jpg",
+          content,
+          encoding: "base64",
+          cid: "view-left",
+        });
+      } else if (filename.includes("design-right")) {
+        viewImages.right = content;
+        attachments.push({
+          filename: "view-right.jpg",
+          content,
+          encoding: "base64",
+          cid: "view-right",
+        });
+      } else if (filename.includes("uv-map") || filename.includes("uvmap")) {
+        uvMapImage = content;
+        attachments.push({
+          filename: "uv-map.png",
+          content,
+          encoding: "base64",
+          cid: "uv-map",
+        });
+      } else if (filename.endsWith(".pdf")) {
+        hasPdf = true;
+        pdfFilename = file.filename;
+      }
+    });
+
+    // Add preview image as inline attachment if provided (fallback)
+    if (previewImage && !viewImages.front) {
+      const content = previewImage.includes("base64,")
+        ? previewImage.split("base64,")[1]
+        : previewImage;
       attachments.push({
         filename: "preview.jpg",
-        content: previewImage.includes("base64,")
-          ? previewImage.split("base64,")[1]
-          : previewImage,
+        content,
         encoding: "base64",
-        cid: "preview-image", // referenced in HTML
+        cid: "preview-image",
       });
     }
 
@@ -95,9 +152,16 @@ export async function POST(req: NextRequest) {
       month: "long",
       day: "numeric",
     });
+    const formattedTime = new Date().toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     const totalItems = orderMetadata?.roster?.length || 0;
 
-    // Premium HTML Template - Luxury Edition
+    // Count attachments for display
+    const attachmentCount = files?.length || 0;
+
+    // Shadcn-inspired HTML Template with Enhanced Tables
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -106,636 +170,900 @@ export async function POST(req: NextRequest) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Confirmation - ${designName || "Custom Design"}</title>
     <style>
-        /* Reset & Base */
+        /* Shadcn Design System */
+        :root {
+            --background: #ffffff;
+            --foreground: #09090b;
+            --card: #ffffff;
+            --card-foreground: #09090b;
+            --primary: #18181b;
+            --primary-foreground: #fafafa;
+            --secondary: #f4f4f5;
+            --secondary-foreground: #18181b;
+            --muted: #f4f4f5;
+            --muted-foreground: #71717a;
+            --accent: #f4f4f5;
+            --accent-foreground: #18181b;
+            --border: #e4e4e7;
+            --ring: #18181b;
+            --radius: 8px;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-            line-height: 1.7; 
-            color: #1a1a2e; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            min-height: 100vh;
+            line-height: 1.6; 
+            color: var(--foreground); 
+            background: #fafafa;
             padding: 40px 20px;
+            -webkit-font-smoothing: antialiased;
         }
         
-        /* Main Container */
-        .email-wrapper {
-            max-width: 700px;
+        .container {
+            max-width: 720px;
             margin: 0 auto;
-            background: #ffffff;
-            border-radius: 24px;
+            background: var(--background);
+            border-radius: 12px;
+            border: 1px solid var(--border);
             overflow: hidden;
-            box-shadow: 
-                0 25px 80px rgba(0, 0, 0, 0.15),
-                0 10px 30px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
-        /* Premium Header */
+        /* Header */
         .header {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b4e 100%);
-            padding: 50px 40px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
+            padding: 32px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(to bottom, #fafafa, #ffffff);
         }
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
-            animation: shimmer 3s infinite;
-        }
-        @keyframes shimmer {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(180deg); }
-        }
-        .brand-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #ffd700, #ffaa00);
-            color: #0f0f23;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            padding: 6px 16px;
-            border-radius: 50px;
-            text-transform: uppercase;
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
         }
-        .header h1 {
-            color: #ffffff;
-            font-size: 32px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
-        }
-        .header-subtitle {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 15px;
-            position: relative;
-            z-index: 1;
-        }
-        .order-id {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #ffd700;
-            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-            font-size: 13px;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
             font-weight: 600;
-            padding: 8px 20px;
+            letter-spacing: -0.3px;
+            color: var(--foreground);
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
             border-radius: 8px;
-            margin-top: 20px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Status Banner */
-        .status-banner {
-            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-            padding: 16px 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            color: white;
+            font-size: 16px;
         }
-        .status-icon {
-            width: 24px;
-            height: 24px;
-            background: rgba(255,255,255,0.2);
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 9999px;
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
             border-radius: 50%;
+        }
+        .order-title {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: var(--foreground);
+            margin-bottom: 4px;
+        }
+        .order-meta {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 14px;
+            gap: 16px;
+            flex-wrap: wrap;
         }
-        .status-text {
-            color: #ffffff;
-            font-weight: 600;
+        .order-id-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 8px 14px;
+            background: var(--secondary);
+            border-radius: var(--radius);
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, monospace;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--foreground);
+        }
+        .order-date {
             font-size: 14px;
-            letter-spacing: 0.3px;
+            color: var(--muted-foreground);
+            margin-top: 12px;
         }
         
         /* Content */
         .content {
-            padding: 50px 40px;
+            padding: 32px;
         }
         
-        /* Preview Section */
-        .preview-section {
-            margin-bottom: 40px;
+        /* Section */
+        .section {
+            margin-bottom: 32px;
         }
-        .preview-card {
-            background: linear-gradient(145deg, #f8fafc, #f1f5f9);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 
-                inset 0 2px 4px rgba(255,255,255,0.8),
-                0 4px 20px rgba(0, 0, 0, 0.05);
+        .section:last-child {
+            margin-bottom: 0;
         }
-        .preview-card img {
-            width: 100%;
-            height: auto;
-            border-radius: 12px;
-            display: block;
-        }
-        
-        /* Message Box */
-        .message-box {
-            background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
-            border-left: 5px solid #3b82f6;
-            border-radius: 0 16px 16px 0;
-            padding: 24px 28px;
-            margin-bottom: 40px;
-            position: relative;
-        }
-        .message-label {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #3b82f6;
-            color: white;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            padding: 5px 12px;
-            border-radius: 6px;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-        .message-content {
-            color: #1e40af;
-            font-size: 15px;
-            font-style: italic;
-            line-height: 1.8;
-        }
-        
-        /* Info Cards Grid */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 40px;
-        }
-        .info-card {
-            background: linear-gradient(145deg, #ffffff, #f8fafc);
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 20px 24px;
-            transition: all 0.3s ease;
-        }
-        .info-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-        }
-        .info-label {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            color: #64748b;
-            margin-bottom: 8px;
-        }
-        .info-value {
-            font-size: 17px;
-            font-weight: 600;
-            color: #0f172a;
-        }
-        
-        /* Section Headers */
         .section-header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #e2e8f0;
+            gap: 12px;
+            margin-bottom: 16px;
         }
         .section-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
+            width: 36px;
+            height: 36px;
+            background: var(--secondary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--foreground);
+            letter-spacing: -0.2px;
+        }
+        .section-divider {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        
+        /* Design Views Grid */
+        .views-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .view-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--muted);
+            transition: box-shadow 0.2s;
+        }
+        .view-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .view-label {
+            padding: 10px 12px;
+            background: var(--background);
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* UV Map Section */
+        .uv-map-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--muted);
+        }
+        .uv-map-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .uv-map-label {
+            padding: 12px 16px;
+            background: var(--background);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .uv-map-icon {
+            font-size: 16px;
+        }
+        .uv-map-text {
+            flex: 1;
+        }
+        .uv-map-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--foreground);
+        }
+        .uv-map-subtitle {
+            font-size: 11px;
+            color: var(--muted-foreground);
+        }
+        
+        /* PDF Attachment Card */
+        .attachment-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+            border: 1px solid #fcd34d;
+            border-radius: var(--radius);
+        }
+        .attachment-icon {
+            width: 48px;
+            height: 48px;
+            background: #ef4444;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 20px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-        .section-title {
-            font-size: 20px;
             font-weight: 700;
-            color: #0f172a;
-            letter-spacing: -0.3px;
+        }
+        .attachment-info {
+            flex: 1;
+        }
+        .attachment-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 2px;
+        }
+        .attachment-subtitle {
+            font-size: 12px;
+            color: #a16207;
+        }
+        .attachment-badge {
+            padding: 6px 12px;
+            background: white;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #92400e;
+            border: 1px solid #fcd34d;
         }
         
-        /* Premium Table */
-        .premium-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin-bottom: 20px;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        }
-        .premium-table thead {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        }
-        .premium-table th {
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+        /* Message Card */
+        .message-card {
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             padding: 16px 20px;
-            text-align: left;
         }
-        .premium-table th:first-child { border-radius: 16px 0 0 0; }
-        .premium-table th:last-child { border-radius: 0 16px 0 0; }
-        .premium-table tbody tr {
-            background: #ffffff;
-            transition: all 0.2s ease;
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
         }
-        .premium-table tbody tr:nth-child(even) {
-            background: #f8fafc;
-        }
-        .premium-table tbody tr:hover {
-            background: #f1f5f9;
-        }
-        .premium-table td {
-            padding: 16px 20px;
-            border-bottom: 1px solid #e2e8f0;
+        .message-icon {
             font-size: 14px;
-            color: #475569;
         }
-        .premium-table tbody tr:last-child td {
+        .message-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted-foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .message-content {
+            font-size: 14px;
+            color: var(--foreground);
+            line-height: 1.7;
+        }
+        
+        /* Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .info-card {
+            padding: 16px;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .info-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted-foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .info-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--foreground);
+        }
+        
+        /* Enhanced Table */
+        .table-container {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .table-header-row {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--foreground);
+            vertical-align: middle;
+        }
+        tr:last-child td {
             border-bottom: none;
         }
-        .premium-table tbody tr:last-child td:first-child {
-            border-radius: 0 0 0 16px;
+        tbody tr {
+            background: var(--background);
+            transition: background 0.15s;
         }
-        .premium-table tbody tr:last-child td:last-child {
-            border-radius: 0 0 16px 0;
+        tbody tr:nth-child(even) {
+            background: var(--secondary);
+        }
+        .row-number {
+            font-size: 12px;
+            color: var(--muted-foreground);
+            font-weight: 500;
         }
         .player-name {
-            font-weight: 700;
-            color: #0f172a;
+            font-weight: 600;
+            color: var(--foreground);
         }
-        .player-number {
+        .jersey-number {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             min-width: 36px;
             height: 28px;
-            background: linear-gradient(135deg, #ffd700, #ffaa00);
-            color: #0f172a;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-weight: 800;
+            padding: 0 10px;
+            background: var(--primary);
+            color: var(--primary-foreground);
+            font-family: ui-monospace, SFMono-Regular, monospace;
             font-size: 13px;
+            font-weight: 700;
             border-radius: 6px;
         }
-        .size-badge {
+        .size-tag {
             display: inline-block;
-            background: #e2e8f0;
-            color: #475569;
-            font-weight: 600;
+            padding: 4px 10px;
+            background: var(--secondary);
+            color: var(--secondary-foreground);
             font-size: 12px;
-            padding: 4px 12px;
-            border-radius: 6px;
+            font-weight: 600;
+            border-radius: 4px;
+            border: 1px solid var(--border);
         }
         
-        /* Total Summary */
-        .total-summary {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border-radius: 16px;
-            padding: 20px 28px;
+        /* Summary Row */
+        .summary-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
-            margin-bottom: 50px;
+            padding: 16px 20px;
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border-radius: var(--radius);
+            margin-top: 12px;
         }
-        .total-label {
-            color: rgba(255, 255, 255, 0.7);
+        .summary-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .summary-icon {
+            font-size: 18px;
+        }
+        .summary-label {
             font-size: 14px;
             font-weight: 500;
         }
-        .total-value {
-            color: #ffd700;
+        .summary-value {
             font-size: 28px;
-            font-weight: 800;
+            font-weight: 700;
+            letter-spacing: -1px;
         }
-        .total-unit {
-            color: rgba(255, 255, 255, 0.5);
+        .summary-unit {
             font-size: 14px;
-            margin-left: 6px;
+            opacity: 0.7;
+            margin-left: 4px;
         }
         
-        /* Color Swatches */
-        .color-card {
+        /* Color Table */
+        .color-cell {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
         .color-swatch {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            box-shadow: 
-                inset 0 2px 4px rgba(255, 255, 255, 0.3),
-                0 4px 12px rgba(0, 0, 0, 0.15);
-            border: 3px solid #ffffff;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
-        .color-info {
+        .color-details {
             flex: 1;
         }
-        .pantone-code {
-            font-weight: 700;
-            font-size: 14px;
-            color: #0f172a;
+        .color-code {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--foreground);
         }
-        .pantone-name {
-            font-size: 12px;
-            color: #64748b;
+        .color-name {
+            font-size: 11px;
+            color: var(--muted-foreground);
+        }
+        .material-name {
+            font-weight: 600;
+            color: var(--foreground);
         }
         
-        /* Notes Box */
-        .notes-box {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-radius: 16px;
-            padding: 24px 28px;
-            margin-bottom: 50px;
+        /* Notes */
+        .notes-card {
+            padding: 16px 20px;
+            background: #fef3c7;
             border: 1px solid #fcd34d;
+            border-radius: var(--radius);
         }
         .notes-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
         .notes-icon {
-            font-size: 20px;
+            font-size: 16px;
         }
         .notes-title {
-            font-weight: 700;
-            font-size: 14px;
+            font-size: 12px;
+            font-weight: 600;
             color: #92400e;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .notes-content {
+            font-size: 14px;
             color: #78350f;
-            font-size: 15px;
             line-height: 1.7;
         }
         
-        /* CTA Section */
+        /* Attachments Summary */
+        .attachments-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .attachment-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .attachment-item-icon.pdf { background: #fee2e2; color: #dc2626; }
+        .attachment-item-icon.image { background: #dbeafe; color: #2563eb; }
+        .attachment-item-icon.uv { background: #d1fae5; color: #059669; }
+        .attachment-item-text {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--foreground);
+        }
+        .attachment-item-count {
+            font-size: 11px;
+            color: var(--muted-foreground);
+        }
+        
+        /* CTA */
         .cta-section {
             text-align: center;
-            padding: 40px;
-            background: linear-gradient(145deg, #f8fafc, #f1f5f9);
-            border-radius: 20px;
-            margin-bottom: 0;
+            padding: 32px;
+            background: var(--secondary);
+            border-top: 1px solid var(--border);
         }
-        .cta-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #0f172a;
-            margin-bottom: 8px;
-        }
-        .cta-subtitle {
-            color: #64748b;
+        .cta-text {
             font-size: 14px;
-            margin-bottom: 24px;
+            color: var(--muted-foreground);
+            margin-bottom: 16px;
         }
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #ffffff;
+            padding: 12px 28px;
+            background: var(--primary);
+            color: var(--primary-foreground);
             text-decoration: none;
-            font-weight: 700;
-            font-size: 15px;
-            padding: 16px 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s ease;
-        }
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: var(--radius);
+            transition: opacity 0.2s;
         }
         
         /* Footer */
         .footer {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
-            padding: 40px;
+            padding: 24px 32px;
+            border-top: 1px solid var(--border);
             text-align: center;
         }
         .footer-brand {
-            font-size: 22px;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--foreground);
+            margin-bottom: 4px;
         }
-        .footer-tagline {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 13px;
-            margin-bottom: 24px;
+        .footer-text {
+            font-size: 12px;
+            color: var(--muted-foreground);
         }
         .footer-links {
-            margin-bottom: 24px;
+            margin-top: 16px;
         }
         .footer-link {
-            color: rgba(255, 255, 255, 0.7);
+            display: inline-block;
+            margin: 0 12px;
+            font-size: 12px;
+            color: var(--muted-foreground);
             text-decoration: none;
-            font-size: 13px;
-            margin: 0 16px;
-            transition: color 0.2s;
-        }
-        .footer-link:hover {
-            color: #ffd700;
         }
         .footer-divider {
             height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 24px 0;
-        }
-        .footer-legal {
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 11px;
+            background: var(--border);
+            margin: 16px 0;
         }
         
         /* Responsive */
         @media (max-width: 600px) {
-            body { padding: 20px 12px; }
-            .header { padding: 40px 24px; }
-            .header h1 { font-size: 26px; }
-            .content { padding: 30px 24px; }
+            body { padding: 16px; }
+            .header, .content { padding: 24px; }
             .info-grid { grid-template-columns: 1fr; }
-            .premium-table th, .premium-table td { padding: 12px 14px; font-size: 12px; }
-            .total-summary { flex-direction: column; gap: 12px; text-align: center; }
+            .views-grid { grid-template-columns: 1fr; }
+            .attachments-grid { grid-template-columns: 1fr; }
+            .summary-row { flex-direction: column; gap: 12px; text-align: center; }
+            th, td { padding: 10px 12px; font-size: 12px; }
         }
     </style>
 </head>
 <body>
-    <div class="email-wrapper">
-        <!-- Premium Header -->
+    <div class="container">
+        <!-- Header -->
         <div class="header">
-            <div class="brand-badge">⚽ Besu Customs</div>
-            <h1>Order Confirmation</h1>
-            <p class="header-subtitle">${designName || "Custom Uniform Design"}</p>
-            <div class="order-id">Order ${orderId}</div>
-        </div>
-        
-        <!-- Status Banner -->
-        <div class="status-banner">
-            <div class="status-icon">✓</div>
-            <span class="status-text">Your order has been received and is being processed</span>
+            <div class="header-top">
+                <div class="logo">
+                    <div class="logo-icon">⚽</div>
+                    <span>Besu Customs</span>
+                </div>
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    Order Confirmed
+                </div>
+            </div>
+            <h1 class="order-title">${designName || "Custom Uniform Design"}</h1>
+            <div class="order-meta">
+                <div class="order-id-badge">
+                    <span>📋</span>
+                    <span>${orderId}</span>
+                </div>
+                <div class="order-date">${formattedDate} at ${formattedTime}</div>
+            </div>
         </div>
         
         <div class="content">
-            <!-- Preview Image -->
-            ${previewImage ? `
-            <div class="preview-section">
-                <div class="preview-card">
-                    <img src="cid:preview-image" alt="Design Preview" />
-                </div>
-            </div>
-            ` : ""}
-            
-            <!-- Message Box -->
+            <!-- Message -->
             ${message ? `
-            <div class="message-box">
-                <div class="message-label">📋 Order Notes</div>
-                <p class="message-content">"${message}"</p>
+            <div class="section">
+                <div class="message-card">
+                    <div class="message-header">
+                        <span class="message-icon">💬</span>
+                        <span class="message-label">Order Notes</span>
+                    </div>
+                    <p class="message-content">${message}</p>
+                </div>
             </div>
             ` : ""}
             
-            <!-- Info Grid -->
-            <div class="info-grid">
-                <div class="info-card">
-                    <div class="info-label">Team Name</div>
-                    <div class="info-value">${orderMetadata?.teamName || "—"}</div>
+            <!-- Design Views -->
+            ${(viewImages.front || viewImages.back || viewImages.left || viewImages.right || previewImage) ? `
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">🎨</div>
+                    <span class="section-title">Design Preview</span>
+                    <div class="section-divider"></div>
                 </div>
-                <div class="info-card">
-                    <div class="info-label">Contact Person</div>
-                    <div class="info-value">${orderMetadata?.contactName || "—"}</div>
+                <div class="views-grid">
+                    ${viewImages.front ? `
+                    <div class="view-card">
+                        <img src="cid:view-front" alt="Front View" class="view-image" />
+                        <div class="view-label">Front View</div>
+                    </div>
+                    ` : ""}
+                    ${viewImages.back ? `
+                    <div class="view-card">
+                        <img src="cid:view-back" alt="Back View" class="view-image" />
+                        <div class="view-label">Back View</div>
+                    </div>
+                    ` : ""}
+                    ${viewImages.left ? `
+                    <div class="view-card">
+                        <img src="cid:view-left" alt="Left View" class="view-image" />
+                        <div class="view-label">Left Side</div>
+                    </div>
+                    ` : ""}
+                    ${viewImages.right ? `
+                    <div class="view-card">
+                        <img src="cid:view-right" alt="Right View" class="view-image" />
+                        <div class="view-label">Right Side</div>
+                    </div>
+                    ` : ""}
+                    ${!viewImages.front && previewImage ? `
+                    <div class="view-card" style="grid-column: span 2;">
+                        <img src="cid:preview-image" alt="Design Preview" class="view-image" />
+                        <div class="view-label">Design Preview</div>
+                    </div>
+                    ` : ""}
                 </div>
-                <div class="info-card">
-                    <div class="info-label">Phone Number</div>
-                    <div class="info-value">${orderMetadata?.phoneNumber || "—"}</div>
+            </div>
+            ` : ""}
+            
+            <!-- UV Map -->
+            ${uvMapImage ? `
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">🗺️</div>
+                    <span class="section-title">Production UV Map</span>
+                    <div class="section-divider"></div>
                 </div>
-                <div class="info-card">
-                    <div class="info-label">Order Date</div>
-                    <div class="info-value">${formattedDate}</div>
+                <div class="uv-map-card">
+                    <img src="cid:uv-map" alt="UV Map" class="uv-map-image" />
+                    <div class="uv-map-label">
+                        <span class="uv-map-icon">📐</span>
+                        <div class="uv-map-text">
+                            <div class="uv-map-title">Full Texture UV Map</div>
+                            <div class="uv-map-subtitle">High-resolution production-ready texture layout</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ` : ""}
+            
+            <!-- PDF Attachment Highlight -->
+            ${hasPdf ? `
+            <div class="section">
+                <div class="attachment-card">
+                    <div class="attachment-icon">PDF</div>
+                    <div class="attachment-info">
+                        <div class="attachment-title">📄 ${pdfFilename || "Order-Specs.pdf"}</div>
+                        <div class="attachment-subtitle">Complete order specification document with all details</div>
+                    </div>
+                    <div class="attachment-badge">Attached</div>
+                </div>
+            </div>
+            ` : ""}
+            
+            <!-- Order Info -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">📦</div>
+                    <span class="section-title">Order Details</span>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Team Name</div>
+                        <div class="info-value">${orderMetadata?.teamName || "—"}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Contact Person</div>
+                        <div class="info-value">${orderMetadata?.contactName || "—"}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Phone Number</div>
+                        <div class="info-value">${orderMetadata?.phoneNumber || "—"}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Order Date</div>
+                        <div class="info-value">${formattedDate}</div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Roster Section -->
+            <!-- Team Roster -->
             ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
-            <div class="section-header">
-                <div class="section-icon">👕</div>
-                <h2 class="section-title">Team Roster & Sizes</h2>
-            </div>
-            
-            <table class="premium-table">
-                <thead>
-                    <tr>
-                        <th style="width: 50px; text-align: center;">#</th>
-                        <th>Player Name</th>
-                        <th style="text-align: center;">Number</th>
-                        <th style="text-align: center;">Top</th>
-                        <th style="text-align: center;">Shorts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${orderMetadata.roster.map((p: any, i: number) => `
-                    <tr>
-                        <td style="text-align: center; color: #94a3b8; font-weight: 600;">${i + 1}</td>
-                        <td class="player-name">${p.nameOnJersey || "—"}</td>
-                        <td style="text-align: center;"><span class="player-number">${p.jerseyNumber || "—"}</span></td>
-                        <td style="text-align: center;"><span class="size-badge">${p.sizes.top}</span></td>
-                        <td style="text-align: center;"><span class="size-badge">${p.sizes.shorts}</span></td>
-                    </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-            
-            <div class="total-summary">
-                <span class="total-label">Total Uniforms Ordered</span>
-                <span><span class="total-value">${totalItems}</span><span class="total-unit">sets</span></span>
-            </div>
-            ` : ""}
-            
-            <!-- Materials Section -->
-            <div class="section-header">
-                <div class="section-icon">🎨</div>
-                <h2 class="section-title">Color Specifications</h2>
-            </div>
-            
-            <table class="premium-table">
-                <thead>
-                    <tr>
-                        <th style="width: 45%;">Material Zone</th>
-                        <th>Pantone Color</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${orderDetails?.materials ? orderDetails.materials.map((m: any) => `
-                    <tr>
-                        <td><span class="player-name">${m.name}</span></td>
-                        <td>
-                            <div class="color-card">
-                                <div class="color-swatch" style="background: ${m.color};"></div>
-                                <div class="color-info">
-                                    <div class="pantone-code">${m.pantone}</div>
-                                    <div class="pantone-name">${m.pantoneName}</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    `).join("") : ""}
-                </tbody>
-            </table>
-            
-            <!-- Notes Section -->
-            ${orderDetails?.notes ? `
-            <div class="notes-box">
-                <div class="notes-header">
-                    <span class="notes-icon">📝</span>
-                    <span class="notes-title">Additional Notes</span>
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">👥</div>
+                    <span class="section-title">Team Roster</span>
+                    <div class="section-divider"></div>
                 </div>
-                <p class="notes-content">${orderDetails.notes}</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr class="table-header-row">
+                                <th style="width: 50px; text-align: center;">#</th>
+                                <th>Player Name</th>
+                                <th style="text-align: center;">Jersey #</th>
+                                <th style="text-align: center;">Top Size</th>
+                                <th style="text-align: center;">Shorts Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${orderMetadata.roster.map((p: any, i: number) => `
+                            <tr>
+                                <td style="text-align: center;" class="row-number">${i + 1}</td>
+                                <td class="player-name">${p.nameOnJersey || "—"}</td>
+                                <td style="text-align: center;"><span class="jersey-number">${p.jerseyNumber || "—"}</span></td>
+                                <td style="text-align: center;"><span class="size-tag">${p.sizes?.top || "—"}</span></td>
+                                <td style="text-align: center;"><span class="size-tag">${p.sizes?.shorts || "—"}</span></td>
+                            </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-left">
+                        <span class="summary-icon">📊</span>
+                        <span class="summary-label">Total Uniform Sets</span>
+                    </div>
+                    <div>
+                        <span class="summary-value">${totalItems}</span>
+                        <span class="summary-unit">sets</span>
+                    </div>
+                </div>
             </div>
             ` : ""}
             
-            <!-- CTA Section -->
-            <div class="cta-section">
-                <h3 class="cta-title">Need to make changes?</h3>
-                <p class="cta-subtitle">Create a new design or contact our team for modifications.</p>
-                <a href="https://besu-customs.vercel.app" class="cta-button">Design Another Uniform</a>
+            <!-- Color Specifications -->
+            ${orderDetails?.materials && orderDetails.materials.length > 0 ? `
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">🎨</div>
+                    <span class="section-title">Color Specifications</span>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr class="table-header-row">
+                                <th>Material Zone</th>
+                                <th>Pantone Color</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${orderDetails.materials.map((m: any) => `
+                            <tr>
+                                <td class="material-name">${m.name}</td>
+                                <td>
+                                    <div class="color-cell">
+                                        <div class="color-swatch" style="background: ${m.color};"></div>
+                                        <div class="color-details">
+                                            <div class="color-code">${m.pantone}</div>
+                                            <div class="color-name">${m.pantoneName}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                </div>
             </div>
+            ` : ""}
+            
+            <!-- Additional Notes -->
+            ${orderDetails?.notes ? `
+            <div class="section">
+                <div class="notes-card">
+                    <div class="notes-header">
+                        <span class="notes-icon">📝</span>
+                        <span class="notes-title">Production Notes</span>
+                    </div>
+                    <p class="notes-content">${orderDetails.notes}</p>
+                </div>
+            </div>
+            ` : ""}
+            
+            <!-- Attachments Summary -->
+            ${attachmentCount > 0 ? `
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">📎</div>
+                    <span class="section-title">Attachments Included</span>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="attachments-grid">
+                    ${hasPdf ? `
+                    <div class="attachment-item">
+                        <div class="attachment-item-icon pdf">📄</div>
+                        <div>
+                            <div class="attachment-item-text">PDF Spec Sheet</div>
+                            <div class="attachment-item-count">1 file</div>
+                        </div>
+                    </div>
+                    ` : ""}
+                    ${(viewImages.front || viewImages.back || viewImages.left || viewImages.right) ? `
+                    <div class="attachment-item">
+                        <div class="attachment-item-icon image">🖼️</div>
+                        <div>
+                            <div class="attachment-item-text">Design Views</div>
+                            <div class="attachment-item-count">${[viewImages.front, viewImages.back, viewImages.left, viewImages.right].filter(Boolean).length} images</div>
+                        </div>
+                    </div>
+                    ` : ""}
+                    ${uvMapImage ? `
+                    <div class="attachment-item">
+                        <div class="attachment-item-icon uv">🗺️</div>
+                        <div>
+                            <div class="attachment-item-text">UV Map</div>
+                            <div class="attachment-item-count">1 file</div>
+                        </div>
+                    </div>
+                    ` : ""}
+                </div>
+            </div>
+            ` : ""}
         </div>
         
-        <!-- Premium Footer -->
+        <!-- CTA -->
+        <div class="cta-section">
+            <p class="cta-text">Need to make changes or create another design?</p>
+            <a href="https://besu-customs.vercel.app" class="cta-button">Design Another Uniform →</a>
+        </div>
+        
+        <!-- Footer -->
         <div class="footer">
-            <div class="footer-brand">BESU CUSTOMS</div>
-            <p class="footer-tagline">Premium Custom Sportswear</p>
+            <div class="footer-brand">Besu Customs</div>
+            <div class="footer-text">Premium Custom Sportswear</div>
             <div class="footer-links">
                 <a href="https://besu-customs.vercel.app" class="footer-link">Website</a>
                 <a href="mailto:besucustoms@gmail.com" class="footer-link">Contact</a>
-                <a href="https://besu-customs.vercel.app" class="footer-link">Support</a>
             </div>
             <div class="footer-divider"></div>
-            <p class="footer-legal">© ${new Date().getFullYear()} Besu Customs. All rights reserved.</p>
+            <div class="footer-text">© ${new Date().getFullYear()} Besu Customs. All rights reserved.</div>
         </div>
     </div>
 </body>
@@ -744,9 +1072,11 @@ export async function POST(req: NextRequest) {
 
     console.log("SENDING MAIL TO:", recipientEmail);
     console.log("CC:", clientEmails);
+    console.log("Attachments:", attachments.length);
+    console.log("Has UV Map:", !!uvMapImage);
+    console.log("Has PDF:", hasPdf);
 
     // Send mail
-    // Hardcoded CCs for every email
     const fixedCCs = ["besucustoms@gmail.com", "egjini17@gmail.com"];
     const finalCCs = Array.from(new Set([...(clientEmails || []), ...fixedCCs]));
 
@@ -754,8 +1084,8 @@ export async function POST(req: NextRequest) {
       from: `"Besu Customs" <${process.env.SMTP_USER}>`,
       to: recipientEmail,
       cc: finalCCs,
-      bcc: process.env.SMTP_USER, // Kept for safety
-      subject: `Order Form: ${designName || "Custom Design"}`,
+      bcc: process.env.SMTP_USER,
+      subject: `✅ Order Confirmed: ${designName || "Custom Design"} — ${orderId}`,
       text:
         message ||
         `Here is the order form and design assets for ${designName || "your custom order"}.`,
