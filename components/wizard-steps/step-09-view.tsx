@@ -221,10 +221,42 @@ export function Step09View(): React.JSX.Element {
       const frontCapture = viewCaptures.find(v => v.view === "Front");
       const previewImage = frontCapture ? frontCapture.dataUrl : designPreviews.front;
 
+      // START SKETCH GENERATION
+      // Generate "Technical Sketch" versions of the views
+      const sketchCaptures: { view: string; dataUrl: string }[] = [];
+      try {
+        const { generateSketchEffect } = await import("@/lib/image-processing");
+
+        for (const capture of viewCaptures) {
+          // Only generate sketches for main views
+          if (["Front", "Back", "Left", "Right"].includes(capture.view)) {
+            const sketchUrl = await generateSketchEffect(capture.dataUrl);
+            sketchCaptures.push({
+              view: capture.view,
+              dataUrl: sketchUrl
+            });
+          }
+        }
+      } catch (sketchError) {
+        console.error("Failed to generate sketches:", sketchError);
+        // Continue without sketches if it fails
+      }
+      // END SKETCH GENERATION
+
       const files: { filename: string; content: string }[] = [];
+
+      // Add regular 3D views
       viewCaptures.forEach((capture) => {
         files.push({
           filename: `Design-${capture.view.toLowerCase()}.jpg`,
+          content: capture.dataUrl,
+        });
+      });
+
+      // Add Sketch views
+      sketchCaptures.forEach((capture) => {
+        files.push({
+          filename: `Sketch-${capture.view.toLowerCase()}.jpg`,
           content: capture.dataUrl,
         });
       });

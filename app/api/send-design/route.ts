@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         // Prepare attachments
         const attachments: any[] = [];
         const viewImages: { [key: string]: string } = {};
+        const sketchImages: { [key: string]: string } = {};
         let uvMapImage: string | null = null;
         let hasPdf = false;
         let pdfFilename = "";
@@ -85,7 +86,23 @@ export async function POST(req: NextRequest) {
             });
 
             // Check for view images
-            if (filename.includes("design-front")) {
+            if (filename.includes("sketch-front")) {
+                sketchImages.front = content;
+                attachments.push({
+                    filename: "sketch-front.jpg",
+                    content,
+                    encoding: "base64",
+                    cid: "sketch-front",
+                });
+            } else if (filename.includes("sketch-back")) {
+                sketchImages.back = content;
+                attachments.push({
+                    filename: "sketch-back.jpg",
+                    content,
+                    encoding: "base64",
+                    cid: "sketch-back",
+                });
+            } else if (filename.includes("design-front")) {
                 viewImages.front = content;
                 attachments.push({
                     filename: "view-front.jpg",
@@ -274,6 +291,43 @@ export async function POST(req: NextRequest) {
                                                 </td>
                                             </tr>
                                             ` : ""}
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            ` : ""}
+
+                            <!-- Technical Sketches Section -->
+                            ${(sketchImages.front || sketchImages.back) ? `
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
+                                <tr>
+                                    <td>
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
+                                            <tr>
+                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">✏️</td>
+                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Technical Sketches</td>
+                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
+                                            </tr>
+                                        </table>
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                            <tr>
+                                                ${sketchImages.front ? `
+                                                <td width="50%" style="padding: 6px; vertical-align: top;">
+                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
+                                                        <tr><td style="background-color: #ffffff; padding: 10px;"><img src="cid:sketch-front" alt="Front Sketch" style="width: 100%; height: auto; display: block;" /></td></tr>
+                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #fafafa;">Front Sketch</td></tr>
+                                                    </table>
+                                                </td>
+                                                ` : ""}
+                                                ${sketchImages.back ? `
+                                                <td width="50%" style="padding: 6px; vertical-align: top;">
+                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
+                                                        <tr><td style="background-color: #ffffff; padding: 10px;"><img src="cid:sketch-back" alt="Back Sketch" style="width: 100%; height: auto; display: block;" /></td></tr>
+                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #fafafa;">Back Sketch</td></tr>
+                                                    </table>
+                                                </td>
+                                                ` : ""}
+                                            </tr>
                                         </table>
                                     </td>
                                 </tr>
