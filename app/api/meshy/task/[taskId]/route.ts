@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MESHY_API_URL = "https://api.meshy.ai/openapi/v1/retexture";
+const MESHY_API_URL = "https://api.meshy.ai/openapi/v1/text-to-image";
 
 export async function GET(
     request: NextRequest,
@@ -43,53 +43,41 @@ export async function GET(
 
         const data = await response.json();
 
-        // Extract relevant fields from Meshy response
+        // Debug logging
+        console.log("Meshy task status:", {
+            id: data.id,
+            status: data.status,
+            progress: data.progress,
+            hasImages: !!data.image_urls?.length,
+        });
+
+        // Extract relevant fields from Meshy Text to Image response
         const result: {
             status: string;
             progress: number;
             textureUrl?: string;
-            thumbnailUrl?: string;
-            modelUrls?: {
-                glb?: string;
-                fbx?: string;
-                usdz?: string;
-            };
-            pbrMaps?: {
-                metallic?: string;
-                normal?: string;
-                roughness?: string;
-            };
+            imageUrls?: string[];
             error?: string;
         } = {
             status: data.status,
             progress: data.progress || 0,
         };
 
-        // If succeeded, include texture URLs
+        // If succeeded, include image URLs
         if (data.status === "SUCCEEDED") {
-            // Get main texture from texture_urls array
-            const textureData = data.texture_urls?.[0];
-            if (textureData) {
-                result.textureUrl = textureData.base_color;
-
-                // Include PBR maps if available
-                if (textureData.metallic || textureData.normal || textureData.roughness) {
-                    result.pbrMaps = {
-                        metallic: textureData.metallic,
-                        normal: textureData.normal,
-                        roughness: textureData.roughness,
-                    };
-                }
+            // Get first image URL from the array
+            if (data.image_urls && data.image_urls.length > 0) {
+                result.textureUrl = data.image_urls[0];
+                result.imageUrls = data.image_urls;
             }
 
-            // Include thumbnail and model URLs
-            result.thumbnailUrl = data.thumbnail_url;
-            result.modelUrls = data.model_urls;
+            console.log("Meshy task SUCCEEDED, image URL:", result.textureUrl);
         }
 
         // If failed, include error message
-        if (data.status === "FAILED" && data.task_error?.message) {
-            result.error = data.task_error.message;
+        if (data.status === "FAILED") {
+            result.error = data.task_error?.message || "Image generation failed";
+            console.error("Meshy task FAILED:", result.error);
         }
 
         return NextResponse.json(result);

@@ -103,7 +103,7 @@ export function useMeshyAI(): UseMeshyAIReturn {
         return response.json();
     }, []);
 
-    // Generate texture using Meshy AI
+    // Generate texture using Meshy AI Text to Image
     const generateTexture = useCallback(async (
         options: MeshyTextureOptions
     ): Promise<MeshyGenerationResult | null> => {
@@ -115,40 +115,27 @@ export function useMeshyAI(): UseMeshyAIReturn {
 
         setIsGenerating(true);
         setError(null);
-        setProgress("Preparing UV map...");
+        setProgress("Preparing request...");
         setProgressPercent(0);
 
         try {
-            const {
-                prompt,
-                uvMap,
-                styleImageUrl,
-                enablePbr = true,
-                enableOriginalUv = true,
-                aiModel = "latest",
-            } = options;
+            const { prompt } = options;
 
-            // Convert UV map to base64 if needed
-            let uvBase64 = uvMap;
-            if (uvMap.startsWith("data:")) {
-                // Already a data URL, keep as is for the API
-                uvBase64 = uvMap;
-            }
+            // Enhance the prompt for seamless texture generation
+            const enhancedPrompt = `Seamless tileable ${prompt} texture pattern, high resolution, fabric textile design, seamless edges, professional quality, no watermarks, flat 2D texture map, uniform lighting`;
 
-            setProgress("Creating retexture task...");
+            setProgress("Creating AI image task...");
 
-            // Create the retexture task via our API route
+            // Create the text-to-image task via our API route
             const createResponse = await fetch("/api/meshy/retexture", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    prompt,
-                    imageStyleUrl: styleImageUrl || uvBase64,
-                    enablePbr,
-                    enableOriginalUv,
-                    aiModel,
+                    prompt: enhancedPrompt,
+                    aiModel: "nano-banana-pro", // Pro model for better quality
+                    aspectRatio: "1:1", // Square for textures
                 }),
                 signal: abortControllerRef.current.signal,
             });
@@ -161,7 +148,7 @@ export function useMeshyAI(): UseMeshyAIReturn {
             const { taskId } = await createResponse.json();
             console.log("Meshy task created:", taskId);
 
-            setProgress("AI is generating texture...");
+            setProgress("AI is generating image...");
 
             // Poll for completion
             let attempts = 0;

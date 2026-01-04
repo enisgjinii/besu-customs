@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MESHY_API_URL = "https://api.meshy.ai/openapi/v1/retexture";
+const MESHY_API_URL = "https://api.meshy.ai/openapi/v1/text-to-image";
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,52 +16,28 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const {
             prompt,
-            imageStyleUrl,
-            modelUrl,
-            enablePbr = true,
-            enableOriginalUv = true,
-            aiModel = "latest",
+            aiModel = "nano-banana-pro", // Use pro model for better quality
+            aspectRatio = "1:1", // Square for textures
         } = body;
 
-        if (!prompt && !imageStyleUrl) {
+        if (!prompt) {
             return NextResponse.json(
-                { error: "Either prompt or imageStyleUrl is required" },
+                { error: "Prompt is required" },
                 { status: 400 }
             );
         }
 
-        // Build request body for Meshy API
+        // Build request body for Meshy Text to Image API
         const meshyBody: Record<string, unknown> = {
-            enable_pbr: enablePbr,
-            enable_original_uv: enableOriginalUv,
             ai_model: aiModel,
+            prompt: prompt,
+            aspect_ratio: aspectRatio,
         };
 
-        // Add text prompt if provided
-        if (prompt) {
-            meshyBody.text_style_prompt = prompt;
-        }
-
-        // Add image style URL if provided (can be base64 data URI)
-        if (imageStyleUrl) {
-            meshyBody.image_style_url = imageStyleUrl;
-        }
-
-        // Add model URL if provided, otherwise use a default simple cube
-        // Note: Meshy requires either model_url or input_task_id
-        if (modelUrl) {
-            meshyBody.model_url = modelUrl;
-        } else {
-            // Use a public sample model for texture generation
-            // You can replace this with your own model URL
-            meshyBody.model_url = "https://cdn.meshy.ai/model/example_model_2.glb";
-        }
-
-        console.log("Creating Meshy retexture task:", {
-            hasPrompt: !!prompt,
-            hasImageStyle: !!imageStyleUrl,
-            hasModel: !!modelUrl,
+        console.log("Creating Meshy text-to-image task:", {
+            prompt: prompt.substring(0, 50) + "...",
             aiModel,
+            aspectRatio,
         });
 
         const response = await fetch(MESHY_API_URL, {
@@ -94,9 +70,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        console.log("Meshy task created successfully:", taskId);
+
         return NextResponse.json({ taskId });
     } catch (error) {
-        console.error("Meshy retexture error:", error);
+        console.error("Meshy text-to-image error:", error);
         return NextResponse.json(
             { error: error instanceof Error ? error.message : "Internal server error" },
             { status: 500 }
