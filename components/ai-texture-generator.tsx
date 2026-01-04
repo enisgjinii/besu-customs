@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRunwareAI } from "@/hooks/use-runware-ai";
+import { useHitemAI } from "@/hooks/use-hitem-ai";
 import { useConfiguratorStore } from "@/lib/store";
-import { Loader2, Sparkles, Layers, Check, Image as ImageIcon } from "lucide-react";
+import { Loader2, Sparkles, Layers, Check, Image as ImageIcon, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -59,16 +60,108 @@ export function AITextureGenerator({
   const uvMap = useConfiguratorStore((s) => s.completeUVMap);
 
   const {
-    textureUrl,
-    texture,
-    normalMapUrl,
-    roughnessMapUrl,
-    isGenerating,
-    error,
-    progress,
-    generateTexture,
-    applyToScene,
+    textureUrl: runwareUrl,
+    texture: runwareTexture,
+    normalMapUrl: runwareNormalUrl,
+    roughnessMapUrl: runwareRoughnessUrl,
+    isGenerating: isRunwareGenerating,
+    error: runwareError,
+    progress: runwareProgress,
+    generateTexture: generateRunware,
+    applyToScene: applyRunware,
   } = useRunwareAI();
+
+  const {
+    isGenerating: isHitemGenerating,
+    progress: hitemProgress,
+    error: hitemError,
+    generateTexture: generateHitem,
+  } = useHitemAI();
+
+  const [provider, setProvider] = useState<"runware" | "hitem">("runware");
+  // For Hitem generated textures (persistent state for preview)
+  const [hitemTexture, setHitemTexture] = useState<THREE.Texture | null>(null);
+  const [hitemTextureUrl, setHitemTextureUrl] = useState<string | null>(null);
+  const [hitemMaps, setHitemMaps] = useState<{ normal?: string; roughness?: string }>({});
+
+  const isGenerating = isRunwareGenerating || isHitemGenerating;
+  const progress = isRunwareGenerating ? runwareProgress : hitemProgress;
+  const error = runwareError || hitemError;
+
+  const handleGenerate = useCallback(async () => {
+    if (!prompt.trim() || !uvMap) return;
+
+    // 1. Generate Base with Runware (Always needed as input for Hitem if no image upload)
+    let finalPrompt = prompt.trim();
+    if (style && style !== "photorealistic") {
+      finalPrompt += `, ${style} style`;
+    }
+    if (seamless) {
+      finalPrompt += ", seamless tileable pattern, texture map";
+    }
+
+    const runwareResult = await generateRunware({
+      prompt: finalPrompt,
+      uvMap,
+      strength: 0.85,
+      generatePbr: generatePbr && provider === "runware", // Only gen local PBR if Runware is final
+    });
+
+    if (!runwareResult) return;
+
+    if (provider === "runware") {
+      onTextureGenerated?.(runwareResult.texture, runwareResult.imageUrl);
+    } else {
+      // 2. Chain to Hitem3D
+      // We need to convert the Runware Image URL to a Blob/File
+      try {
+        // Proxy fetch if needed, but the URL is likely remote.
+        // Runware URLs are public.
+        const imgRes = await fetch(runwareResult.imageUrl);
+        const imgBlob = await imgRes.blob();
+
+        const hitemResult = await generateHitem({
+          image: imgBlob,
+          prompt: finalPrompt,
+        });
+
+        if (hitemResult) {
+          setHitemTexture(hitemResult.texture);
+          setHitemTextureUrl(hitemResult.coverUrl || runwareResult.imageUrl);
+          setHitemMaps({
+            // @ts-ignore - Assuming source.data.src exists on loaded texture if it's an image
+            normal: hitemResult.normalMap?.source?.data?.src || hitemResult.normalMap?.image?.src,
+            // @ts-ignore
+            roughness: hitemResult.roughnessMap?.source?.data?.src || hitemResult.roughnessMap?.image?.src
+          });
+
+          onTextureGenerated?.(hitemResult.texture, hitemResult.coverUrl || runwareResult.imageUrl);
+
+          // Apply Hitem texture to scene
+          if (scene) {
+            scene.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) {
+                const m = child as THREE.Mesh;
+                if (m.material instanceof THREE.MeshStandardMaterial) {
+                  m.material.map = hitemResult.texture;
+                  if (hitemResult.normalMap) m.material.normalMap = hitemResult.normalMap;
+                  if (hitemResult.roughnessMap) m.material.roughnessMap = hitemResult.roughnessMap;
+                  m.material.needsUpdate = true;
+                }
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Hitem Chain Error", e);
+      }
+    }
+  }, [prompt, style, seamless, generatePbr, uvMap, provider, generateRunware, generateHitem, onTextureGenerated, scene]);
+
+  // Display var helpers
+  const currentTextureUrl = provider === "runware" ? runwareUrl : hitemTextureUrl;
+  const currentNormalUrl = provider === "runware" ? runwareNormalUrl : hitemMaps.normal;
+  const currentRoughnessUrl = provider === "runware" ? runwareRoughnessUrl : hitemMaps.roughness;
 
   const handlePresetClick = (preset: string) => {
     if (selectedPreset === preset) {
@@ -80,41 +173,51 @@ export function AITextureGenerator({
     }
   };
 
-  const handleGenerate = useCallback(async () => {
-    if (!prompt.trim() || !uvMap) return;
-
-    // Construct augmented prompt
-    let finalPrompt = prompt.trim();
-    if (style && style !== "photorealistic") {
-      finalPrompt += `, ${style} style`;
-    }
-    if (seamless) {
-      finalPrompt += ", seamless tileable pattern, texture map";
-    }
-
-    const result = await generateTexture({
-      prompt: finalPrompt,
-      uvMap,
-      strength: 0.85,
-      generatePbr,
-    });
-
-    if (result) {
-      onTextureGenerated?.(result.texture, result.imageUrl);
-    }
-  }, [prompt, style, seamless, generatePbr, uvMap, generateTexture, onTextureGenerated]);
-
   useEffect(() => {
-    if (texture && scene) {
-      applyToScene(scene);
+    if (scene) {
+      if (provider === "runware" && runwareTexture) {
+        applyRunware(scene);
+      }
+      // Hitem texture is applied in handleGenerate, but we can re-apply if scene changes
+      // or just rely on manual application.
     }
-  }, [texture, scene, applyToScene]);
+  }, [runwareTexture, provider, scene, applyRunware]);
 
   const canGenerate = prompt.trim() && uvMap && !isGenerating;
 
   return (
     <div className={cn("space-y-4", className)}>
       <div className="space-y-3">
+        {/* Provider Selector */}
+        <div className="flex p-1 bg-muted rounded-lg">
+          <button
+            onClick={() => setProvider("runware")}
+            className={cn(
+              "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
+              provider === "runware" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Standard
+          </button>
+          <button
+            onClick={() => setProvider("hitem")}
+            className={cn(
+              "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
+              provider === "hitem" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Box className="w-3.5 h-3.5" />
+            Advanced 3D
+          </button>
+        </div>
+
+        {provider === "hitem" && (
+          <div className="text-[10px] text-muted-foreground px-1 bg-blue-50/50 p-2 rounded border border-blue-100">
+            <strong>Note:</strong> Hitem3D generates a base using Runware, then enhances it into a 3D texture.
+          </div>
+        )}
+
         {/* Style Selector */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -197,11 +300,13 @@ export function AITextureGenerator({
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             {progress || "Generating..."}
+            {provider === "hitem" && isRunwareGenerating && " (Base)"}
+            {provider === "hitem" && hitemProgress > 0 && ` (3D: ${hitemProgress}%)`}
           </>
         ) : (
           <>
             <Sparkles className="mr-2 h-4 w-4" />
-            Generate Advanced Texture
+            Generate {provider === "hitem" ? "Advanced 3D" : "Advanced"} Texture
           </>
         )}
       </Button>
@@ -214,7 +319,7 @@ export function AITextureGenerator({
       )}
 
       {/* Result Preview & Layers */}
-      {textureUrl && (
+      {currentTextureUrl && (
         <div className="space-y-2 pt-2 border-t">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Generated Maps</h4>
@@ -228,20 +333,20 @@ export function AITextureGenerator({
           <Tabs defaultValue="color" className="w-full">
             <TabsList className="grid w-full grid-cols-3 h-7">
               <TabsTrigger value="color" className="text-xs">Color</TabsTrigger>
-              <TabsTrigger value="normal" disabled={!normalMapUrl} className="text-xs">Normal</TabsTrigger>
-              <TabsTrigger value="roughness" disabled={!roughnessMapUrl} className="text-xs">Roughness</TabsTrigger>
+              <TabsTrigger value="normal" disabled={!currentNormalUrl} className="text-xs">Normal</TabsTrigger>
+              <TabsTrigger value="roughness" disabled={!currentRoughnessUrl} className="text-xs">Roughness</TabsTrigger>
             </TabsList>
 
             <div className="mt-2 aspect-square rounded-lg overflow-hidden border bg-muted/30 relative group">
               <TabsContent value="color" className="m-0 h-full">
-                <img src={textureUrl} alt="Color Map" className="w-full h-full object-cover" />
+                <img src={currentTextureUrl} alt="Color Map" className="w-full h-full object-cover" />
                 <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">Base Color</div>
               </TabsContent>
 
               <TabsContent value="normal" className="m-0 h-full">
-                {normalMapUrl ? (
+                {currentNormalUrl ? (
                   <>
-                    <img src={normalMapUrl} alt="Normal Map" className="w-full h-full object-cover" />
+                    <img src={currentNormalUrl} alt="Normal Map" className="w-full h-full object-cover" />
                     <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">Normal (Bump)</div>
                   </>
                 ) : (
@@ -250,9 +355,9 @@ export function AITextureGenerator({
               </TabsContent>
 
               <TabsContent value="roughness" className="m-0 h-full">
-                {roughnessMapUrl ? (
+                {currentRoughnessUrl ? (
                   <>
-                    <img src={roughnessMapUrl} alt="Roughness Map" className="w-full h-full object-cover" />
+                    <img src={currentRoughnessUrl} alt="Roughness Map" className="w-full h-full object-cover" />
                     <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">Roughness</div>
                   </>
                 ) : (

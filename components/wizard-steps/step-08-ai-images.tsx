@@ -1,6 +1,7 @@
 "use client";
 import { useConfiguratorStore } from "@/lib/store";
 import { AIImageGenerator } from "@/components/ai-image-generator";
+import { AITextureGenerator } from "@/components/ai-texture-generator";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -9,25 +10,20 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
-import { generatePBRMaps } from "@/lib/pbr-utils";
-import { useRunwareAI } from "@/hooks/use-runware-ai";
-import { useMeshyAI } from "@/hooks/use-meshy-ai";
+import * as THREE from "three";
 import {
   Sparkles,
   Map,
   Download,
   Eye,
   EyeOff,
-  Loader2,
   Wand2,
-  Zap,
-  Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // AI Provider types
-type AIProvider = "runware" | "meshy";
+// Removed as we strictly use Runware now
 
 export function Step08AIImages() {
   const addTextureLayer = useConfiguratorStore(
@@ -38,155 +34,35 @@ export function Step08AIImages() {
     (state) => state.setSelectedTextureLayerId,
   );
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
-  const setGlobalNormalMap = useConfiguratorStore((s) => s.setGlobalNormalMap);
-  const setGlobalRoughnessMap = useConfiguratorStore((s) => s.setGlobalRoughnessMap);
-  const setGlobalAOMap = useConfiguratorStore((s) => s.setGlobalAOMap);
-  const setGlobalDisplacementMap = useConfiguratorStore((s) => s.setGlobalDisplacementMap);
-
-  // AI Hooks
-  const runwareAI = useRunwareAI();
-  const meshyAI = useMeshyAI();
 
   const [showUVMap, setShowUVMap] = useState(true);
-  const [uvMapLoading, setUvMapLoading] = useState(false);
 
-  // AI Provider selection
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>("runware");
+  // Handle new AI Texture Generator result
+  const handleGeneratedTexture = (texture: THREE.Texture, url: string) => {
+    const newId = uuidv4();
+    addTextureLayer({
+      id: newId,
+      name: "AI Advanced Pattern",
+      type: "pattern",
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      order: textureLayers.length,
+      imageUrl: url,
+      position: [0.5, 0.5, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+      flipX: false,
+    });
 
-  // UV-based AI generation state
-  const [uvPrompt, setUvPrompt] = useState("");
-  const [uvGenerating, setUvGenerating] = useState(false);
+    // Also apply PBR maps if they were generated (Runware hook handles this internally for the texture object,
+    // but we might want to store them in global state if we want them to persist across reloads properly,
+    // although the texture object itself carries them).
+    // For now, let's trust the texture object + layer system.
 
-  // Get current progress from active provider
-  const currentProgress = selectedProvider === "meshy"
-    ? meshyAI.progress || `${meshyAI.progressPercent}%`
-    : runwareAI.progress;
-
-  // Handle UV-based AI generation
-  const handleGenerateOnUV = async () => {
-    if (!uvPrompt.trim()) {
-      toast.error("Please enter a design prompt");
-      return;
-    }
-
-    if (!completeUVMap) {
-      toast.error("No UV map available. Load a 3D model first.");
-      return;
-    }
-
-    setUvGenerating(true);
-    const providerName = selectedProvider === "meshy" ? "Meshy AI" : "Runware AI";
-    const toastId = toast.loading(`Generating with ${providerName}...`);
-
-    try {
-      console.log(`Generating with ${providerName} using UV map guidance...`);
-
-      let result: { imageUrl: string; pbrMaps?: { metallic?: string; normal?: string; roughness?: string } } | null = null;
-
-      if (selectedProvider === "meshy") {
-        // Use Meshy AI
-        const meshyResult = await meshyAI.generateTexture({
-          prompt: uvPrompt,
-          uvMap: completeUVMap,
-          enablePbr: true,
-          enableOriginalUv: true,
-          aiModel: "latest",
-        });
-
-        if (meshyResult) {
-          result = {
-            imageUrl: meshyResult.imageUrl,
-            pbrMaps: meshyResult.pbrMaps,
-          };
-        }
-      } else {
-        // Use Runware AI
-        const runwareResult = await runwareAI.generateTexture({
-          prompt: uvPrompt,
-          uvMap: completeUVMap,
-          strength: 0.85,
-        });
-
-        if (runwareResult) {
-          result = { imageUrl: runwareResult.imageUrl };
-        }
-      }
-
-      if (!result) {
-        throw new Error("Failed to generate texture");
-      }
-
-      let generatedUrl = result.imageUrl;
-
-      // For Meshy, we need to proxy the image to avoid CORS issues with PBR generation
-      if (selectedProvider === "meshy") {
-        toast.loading("Downloading generated texture...", { id: toastId });
-
-        // Download via proxy and convert to blob URL for local use
-        const proxyUrl = `/api/meshy/image-proxy?url=${encodeURIComponent(result.imageUrl)}`;
-        const response = await fetch(proxyUrl);
-
-        if (!response.ok) {
-          throw new Error("Failed to download generated texture");
-        }
-
-        const blob = await response.blob();
-        generatedUrl = URL.createObjectURL(blob);
-        console.log("Proxied Meshy image to blob URL:", generatedUrl);
-      }
-
-      // Generate PBR Maps (use Meshy's if available, otherwise generate locally)
-      let maps;
-      if (result.pbrMaps?.normal && result.pbrMaps?.roughness) {
-        toast.loading("Using Meshy PBR maps...", { id: toastId });
-        maps = {
-          normal: result.pbrMaps.normal,
-          roughness: result.pbrMaps.roughness,
-          ao: null,
-          displacement: null,
-        };
-      } else {
-        toast.loading("Generating PBR maps (Normal, Roughness)...", { id: toastId });
-        maps = await generatePBRMaps(generatedUrl);
-      }
-
-      // Store PBR maps globally
-      setGlobalNormalMap(maps.normal);
-      setGlobalRoughnessMap(maps.roughness);
-      if (maps.ao) setGlobalAOMap(maps.ao);
-      if (maps.displacement) setGlobalDisplacementMap(maps.displacement);
-
-      // Add as a full pattern layer (covers entire UV)
-      const newId = uuidv4();
-      addTextureLayer({
-        id: newId,
-        name: `AI UV Pattern (${providerName})`,
-        type: "pattern",
-        visible: true,
-        locked: false,
-        opacity: 1,
-        blendMode: "normal",
-        order: textureLayers.length,
-        imageUrl: generatedUrl,
-        position: [0.5, 0.5, 0],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
-        flipX: false,
-      });
-
-      setSelectedTextureLayerId(newId);
-      toast.success(`AI pattern generated with ${providerName}!`, { id: toastId });
-      setUvPrompt("");
-
-    } catch (error) {
-      console.error("UV AI generation error:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Generation failed",
-        { id: toastId },
-      );
-    } finally {
-      setUvGenerating(false);
-    }
+    setSelectedTextureLayerId(newId);
+    toast.success("AI Pattern added successfully!");
   };
 
   // Listen for generated images from the AIImageGenerator component
@@ -323,104 +199,15 @@ export function Step08AIImages() {
                   </div>
                 </div>
 
-                {/* AI Generate on UV Section */}
-                <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-3 rounded-lg border border-purple-200/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-semibold flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                      <Wand2 className="w-3.5 h-3.5" />
-                      AI Generate Pattern
-                    </h4>
-
-                    {/* Provider Selector */}
-                    <div className="flex items-center gap-1 bg-white/50 dark:bg-gray-800/50 rounded-full p-0.5 border">
-                      <button
-                        onClick={() => setSelectedProvider("runware")}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${selectedProvider === "runware"
-                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-sm"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          }`}
-                      >
-                        <Zap className="w-3 h-3" />
-                        Runware
-                      </button>
-                      <button
-                        onClick={() => setSelectedProvider("meshy")}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${selectedProvider === "meshy"
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          }`}
-                      >
-                        <Brain className="w-3 h-3" />
-                        Meshy AI
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Describe your pattern (e.g., geometric flames, abstract waves)..."
-                      value={uvPrompt}
-                      onChange={(e) => setUvPrompt(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" &&
-                        !uvGenerating &&
-                        handleGenerateOnUV()
-                      }
-                      disabled={uvGenerating}
-                      className="text-sm h-9"
-                    />
-
-                    {/* Quick Suggestions */}
-                    <div className="flex flex-wrap gap-1">
-                      {[
-                        "geometric flames",
-                        "abstract waves",
-                        "camouflage",
-                        "galaxy nebula",
-                        "tiger stripes",
-                        "honeycomb",
-                      ].map((suggestion) => (
-                        <button
-                          key={suggestion}
-                          onClick={() => setUvPrompt(suggestion)}
-                          className="px-2 py-0.5 text-[10px] bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 rounded-full border border-purple-200/50 transition-colors"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleGenerateOnUV}
-                    disabled={uvGenerating || !uvPrompt.trim()}
-                    className={`w-full h-9 text-xs ${selectedProvider === "meshy"
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                      : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-                      }`}
-                  >
-                    {uvGenerating ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                        {currentProgress || "Generating..."}
-                      </>
-                    ) : (
-                      <>
-                        {selectedProvider === "meshy" ? (
-                          <Brain className="w-3.5 h-3.5 mr-2" />
-                        ) : (
-                          <Zap className="w-3.5 h-3.5 mr-2" />
-                        )}
-                        Generate with {selectedProvider === "meshy" ? "Meshy AI" : "Runware"}
-                      </>
-                    )}
-                  </Button>
-
-                  <p className="text-[10px] text-muted-foreground text-center">
-                    {selectedProvider === "meshy"
-                      ? "Meshy AI generates advanced 3D textures with PBR maps"
-                      : "Runware provides fast AI texture generation"}
-                  </p>
+                {/* AI Generate on UV Section (New Component) */}
+                <div className="pt-2">
+                  <h4 className="text-xs font-semibold flex items-center gap-2 text-purple-700 dark:text-purple-300 mb-3">
+                    <Wand2 className="w-3.5 h-3.5" />
+                    AI Advanced Texture Generator
+                  </h4>
+                  <AITextureGenerator
+                    onTextureGenerated={handleGeneratedTexture}
+                  />
                 </div>
               </div>
             ) : (
