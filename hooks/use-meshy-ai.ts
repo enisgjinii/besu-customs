@@ -63,12 +63,44 @@ export function useMeshyAI(): UseMeshyAIReturn {
     const loaderRef = useRef(new THREE.TextureLoader());
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Load texture with proper UV settings
-    const loadTexture = useCallback((url: string): Promise<THREE.Texture> => {
+    // Load texture with proper UV settings - uses server proxy to bypass CORS
+    const loadTexture = useCallback(async (url: string): Promise<THREE.Texture> => {
+        // Use our proxy endpoint to bypass CORS
+        const proxyUrl = `/api/meshy/image-proxy?url=${encodeURIComponent(url)}`;
+
+        console.log("Loading texture via proxy:", proxyUrl.substring(0, 80) + "...");
+
+        const response = await fetch(proxyUrl);
+
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => "Unknown error");
+            console.error("Proxy fetch failed:", response.status, errorText);
+            throw new Error(`Failed to fetch image via proxy: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        console.log("Proxy response content-type:", contentType);
+
+        // Check if we got an error response instead of an image
+        if (contentType?.includes("application/json")) {
+            const errorData = await response.json();
+            console.error("Proxy returned error:", errorData);
+            throw new Error(errorData.error || "Proxy returned error response");
+        }
+
+        const blob = await response.blob();
+        console.log("Received blob:", blob.size, "bytes, type:", blob.type);
+
+        const blobUrl = URL.createObjectURL(blob);
+
         return new Promise((resolve, reject) => {
             loaderRef.current.load(
-                url,
+                blobUrl,
                 (tex) => {
+                    // Clean up the blob URL after loading
+                    URL.revokeObjectURL(blobUrl);
+                    console.log("Texture loaded successfully");
+
                     tex.flipY = false;
                     tex.colorSpace = THREE.SRGBColorSpace;
                     tex.wrapS = THREE.ClampToEdgeWrapping;
@@ -80,7 +112,12 @@ export function useMeshyAI(): UseMeshyAIReturn {
                     resolve(tex);
                 },
                 undefined,
-                reject
+                (error) => {
+                    URL.revokeObjectURL(blobUrl);
+                    console.error("THREE.TextureLoader failed:", error);
+                    // Ensure we always reject with a proper Error object
+                    reject(new Error("Failed to load texture into THREE.js"));
+                }
             );
         });
     }, []);

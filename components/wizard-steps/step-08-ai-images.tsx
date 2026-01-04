@@ -116,7 +116,24 @@ export function Step08AIImages() {
         throw new Error("Failed to generate texture");
       }
 
-      const generatedUrl = result.imageUrl;
+      let generatedUrl = result.imageUrl;
+
+      // For Meshy, we need to proxy the image to avoid CORS issues with PBR generation
+      if (selectedProvider === "meshy") {
+        toast.loading("Downloading generated texture...", { id: toastId });
+
+        // Download via proxy and convert to blob URL for local use
+        const proxyUrl = `/api/meshy/image-proxy?url=${encodeURIComponent(result.imageUrl)}`;
+        const response = await fetch(proxyUrl);
+
+        if (!response.ok) {
+          throw new Error("Failed to download generated texture");
+        }
+
+        const blob = await response.blob();
+        generatedUrl = URL.createObjectURL(blob);
+        console.log("Proxied Meshy image to blob URL:", generatedUrl);
+      }
 
       // Generate PBR Maps (use Meshy's if available, otherwise generate locally)
       let maps;
@@ -319,8 +336,8 @@ export function Step08AIImages() {
                       <button
                         onClick={() => setSelectedProvider("runware")}
                         className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${selectedProvider === "runware"
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-sm"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-sm"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           }`}
                       >
                         <Zap className="w-3 h-3" />
@@ -329,8 +346,8 @@ export function Step08AIImages() {
                       <button
                         onClick={() => setSelectedProvider("meshy")}
                         className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${selectedProvider === "meshy"
-                            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           }`}
                       >
                         <Brain className="w-3 h-3" />
@@ -378,8 +395,8 @@ export function Step08AIImages() {
                     onClick={handleGenerateOnUV}
                     disabled={uvGenerating || !uvPrompt.trim()}
                     className={`w-full h-9 text-xs ${selectedProvider === "meshy"
-                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                        : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
                       }`}
                   >
                     {uvGenerating ? (
