@@ -29,6 +29,8 @@ export type Category =
   | "Baseball"
   | "Other";
 
+export type PrintingMethod = "sublimated" | "embroidered";
+
 export interface Product {
   id: string;
   title: string;
@@ -271,6 +273,10 @@ export interface ConfiguratorState {
     }>;
   };
   setRoster: (roster: ConfiguratorState["roster"]) => void;
+
+  // Printing Method
+  printingMethod: PrintingMethod;
+  setPrintingMethod: (method: PrintingMethod) => void;
 }
 
 // Generate all possible products (for fallback and reference)
@@ -637,6 +643,10 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
 
       currentStep: 0,
       setStep: (step: number) => set({ currentStep: step }),
+
+      // Printing Method
+      printingMethod: "sublimated",
+      setPrintingMethod: (method: PrintingMethod) => set({ printingMethod: method }),
 
       // Texture layers management
       textureLayers: [],

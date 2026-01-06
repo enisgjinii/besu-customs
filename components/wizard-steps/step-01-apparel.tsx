@@ -10,6 +10,8 @@ import {
 import { Product } from "@/lib/store";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getModelCache } from "@/lib/model-cache";
+import { supportsEmbroidery, getProductPrice, PrintingMethod } from "@/lib/pricing";
+import { cn } from "@/lib/utils";
 
 export function Step01Apparel() {
   const products = useConfiguratorStore((state) => state.products);
@@ -25,6 +27,10 @@ export function Step01Apparel() {
   );
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
+  );
+  const printingMethod = useConfiguratorStore((state) => state.printingMethod);
+  const setPrintingMethod = useConfiguratorStore(
+    (state) => state.setPrintingMethod,
   );
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
@@ -171,7 +177,13 @@ export function Step01Apparel() {
                   onMouseEnter={() => handleProductHover(product)}
                   onFocus={() => handleProductHover(product)}
                 >
-                  {product.title}
+                  <div className="flex justify-between items-center w-full gap-4">
+                    <span className="font-medium">{product.title}</span>
+                    <span className="text-muted-foreground font-normal">
+                      {supportsEmbroidery(product.title) ? "From " : ""}
+                      ${getProductPrice(product.title, "sublimated")}
+                    </span>
+                  </div>
                 </SelectItem>
               ))}
             </div>
@@ -182,6 +194,64 @@ export function Step01Apparel() {
       {!selectedProductId && (
         <div className="text-center py-6 text-muted-foreground">
           <p className="text-sm">👆 Select an apparel to start customizing</p>
+        </div>
+      )}
+
+      {selectedProductId && (
+        <div className="pt-4 border-t border-border/50">
+          <div className="mb-3">
+            <h3 className="text-sm font-semibold mb-1">Printing Method</h3>
+            <p className="text-xs text-muted-foreground">Select how your design should be applied</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Sublimated Option */}
+            <button
+              onClick={() => setPrintingMethod("sublimated")}
+              className={cn(
+                "flex flex-col items-center justify-between rounded-md border-2 p-4 transition-all h-full text-left",
+                printingMethod === "sublimated"
+                  ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                  : "border-muted bg-popover hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <div className="mb-2 text-center w-full">
+                <div className="font-semibold">Sublimated</div>
+                <div className="text-xs text-muted-foreground mt-1">Ink infused into fabric</div>
+              </div>
+              <div className="text-sm font-bold text-primary">
+                ${getProductPrice(selectedProductId, "sublimated")}
+              </div>
+            </button>
+
+            {/* Embroidered Option */}
+            {supportsEmbroidery(selectedProductId) ? (
+              <button
+                onClick={() => setPrintingMethod("embroidered")}
+                className={cn(
+                  "flex flex-col items-center justify-between rounded-md border-2 p-4 transition-all h-full text-left",
+                  printingMethod === "embroidered"
+                    ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                    : "border-muted bg-popover hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <div className="mb-2 text-center w-full">
+                  <div className="font-semibold">Embroidered/Tackle Twill</div>
+                  <div className="text-xs text-muted-foreground mt-1">Stitched design</div>
+                </div>
+                <div className="text-sm font-bold text-primary">
+                  ${getProductPrice(selectedProductId, "embroidered")}
+                </div>
+              </button>
+            ) : (
+              <div className="opacity-50 pointer-events-none grayscale flex flex-col items-center justify-between rounded-md border-2 border-muted bg-muted/50 p-4 h-full">
+                <div className="mb-2 text-center w-full">
+                  <div className="font-semibold text-muted-foreground">Embroidered</div>
+                  <div className="text-xs text-muted-foreground mt-1">Not available</div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

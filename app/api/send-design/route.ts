@@ -379,53 +379,87 @@ export async function POST(req: NextRequest) {
                                                         </tr>
                                                     </table>
 
-                                    <!--Team Roster-->
-                                                                                                                    ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
+                <!--Team Roster-->
+                ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
+                    <tr>
+                        <td>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                                 <tr>
-                                    <td>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
+                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">👥</td>
+                                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Team Roster</td>
+                                    <td style="border-bottom: 1px solid #e4e4e7;"></td>
+                                </tr>
+                            </table>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
+                                <tr style="background-color: #18181b;">
+                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; width: 50px;">#</th>
+                                    <th style="padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Player Name</th>
+                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Jersey #</th>
+                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Top</th>
+                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Shorts</th>
+                                </tr>
+                                ${orderMetadata.roster.map((p: any, i: number) => `
+                                <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f4f4f5'};">
+                                    <td style="padding: 14px 16px; text-align: center; font-size: 12px; color: #71717a; font-weight: 500; border-bottom: 1px solid #e4e4e7;">${i + 1}</td>
+                                    <td style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: #09090b; border-bottom: 1px solid #e4e4e7;">${p.nameOnJersey || "—"}</td>
+                                    <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; min-width: 36px; padding: 4px 10px; background-color: #18181b; color: #fafafa; font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; border-radius: 6px;">${p.jerseyNumber || "—"}</span></td>
+                                    <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; padding: 4px 10px; background-color: #f4f4f5; color: #18181b; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid #e4e4e7;">${p.sizes?.top || "—"}</span></td>
+                                    <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; padding: 4px 10px; background-color: #f4f4f5; color: #18181b; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid #e4e4e7;">${p.sizes?.shorts || "—"}</span></td>
+                                </tr>
+                                `).join("")}
+                            </table>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 12px; background-color: #18181b; border-radius: 8px;">
+                                <tr>
+                                    <td style="padding: 16px 20px;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                             <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">👥</td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Team Roster</td>
-                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                            </tr>
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                            <tr style="background-color: #18181b;">
-                                                <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; width: 50px;">#</th>
-                                                <th style="padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Player Name</th>
-                                                <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Jersey #</th>
-                                                <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Top</th>
-                                                <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Shorts</th>
-                                            </tr>
-                                            ${orderMetadata.roster.map((p: any, i: number) => `
-                                            <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f4f4f5'};">
-                                                <td style="padding: 14px 16px; text-align: center; font-size: 12px; color: #71717a; font-weight: 500; border-bottom: 1px solid #e4e4e7;">${i + 1}</td>
-                                                <td style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: #09090b; border-bottom: 1px solid #e4e4e7;">${p.nameOnJersey || "—"}</td>
-                                                <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; min-width: 36px; padding: 4px 10px; background-color: #18181b; color: #fafafa; font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; border-radius: 6px;">${p.jerseyNumber || "—"}</span></td>
-                                                <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; padding: 4px 10px; background-color: #f4f4f5; color: #18181b; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid #e4e4e7;">${p.sizes?.top || "—"}</span></td>
-                                                <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; padding: 4px 10px; background-color: #f4f4f5; color: #18181b; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid #e4e4e7;">${p.sizes?.shorts || "—"}</span></td>
-                                            </tr>
-                                            `).join("")}
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 12px; background-color: #18181b; border-radius: 8px;">
-                                            <tr>
-                                                <td style="padding: 16px 20px;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9);">📊 Total Uniform Sets</td>
-                                                            <td align="right" style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -1px;">${totalItems} <span style="font-size: 14px; opacity: 0.7;">sets</span></td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
+                                                <td style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9);">📊 Total Uniform Sets</td>
+                                                <td align="right" style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -1px;">${totalItems} <span style="font-size: 14px; opacity: 0.7;">sets</span></td>
                                             </tr>
                                         </table>
                                     </td>
                                 </tr>
                             </table>
-                            ` : ""
-            }
+                        </td>
+                    </tr>
+                </table>
+                ` : ""}
+
+                <!--Pricing Summary-->
+                ${orderDetails?.pricing ? `
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
+                    <tr>
+                        <td>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
+                                <tr>
+                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">💰</td>
+                                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Pricing Breakdown</td>
+                                    <td style="border-bottom: 1px solid #e4e4e7;"></td>
+                                </tr>
+                            </table>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; background-color: #fafafa;">
+                                <tr>
+                                    <td style="padding-bottom: 8px; color: #71717a; font-size: 14px;">Printing Method:</td>
+                                    <td align="right" style="padding-bottom: 8px; font-weight: 600; color: #09090b; text-transform: capitalize;">${orderDetails.pricing.method}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-bottom: 8px; color: #71717a; font-size: 14px;">Unit Price:</td>
+                                    <td align="right" style="padding-bottom: 8px; font-weight: 600; color: #09090b;">$${orderDetails.pricing.unitPrice}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-bottom: 12px; color: #71717a; font-size: 14px; border-bottom: 1px solid #e4e4e7;">Quantity:</td>
+                                    <td align="right" style="padding-bottom: 12px; font-weight: 600; color: #09090b; border-bottom: 1px solid #e4e4e7;">${orderDetails.pricing.quantity}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-top: 12px; font-weight: 600; color: #09090b; font-size: 16px;">Total Estimated:</td>
+                                    <td align="right" style="padding-top: 12px; font-weight: 700; color: #166534; font-size: 18px;">$${orderDetails.pricing.total}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                ` : ""}
 
     <!--Color Specifications-->
         ${orderDetails?.materials && orderDetails.materials.length > 0 ? `

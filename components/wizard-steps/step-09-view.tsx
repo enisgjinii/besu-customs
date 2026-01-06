@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { findNearestPantone } from "@/lib/pantone";
 import { RosterInput } from "@/components/roster-input";
+import { calculateTotalPrice, getProductPrice } from "@/lib/pricing";
 import jsPDF from "jspdf";
 
 export function Step09View(): React.JSX.Element {
@@ -30,6 +31,8 @@ export function Step09View(): React.JSX.Element {
   const roster = useConfiguratorStore((state) => state.roster);
   const setRoster = useConfiguratorStore((state) => state.setRoster);
   const setLockedView = useConfiguratorStore((state) => state.setLockedView);
+  const selectedProductId = useConfiguratorStore((state) => state.selectedProductId);
+  const printingMethod = useConfiguratorStore((state) => state.printingMethod);
 
   // Local UI State
   const [firstName, setFirstName] = useState("");
@@ -517,6 +520,12 @@ export function Step09View(): React.JSX.Element {
               detail: l.type === "text" ? `"${l.text}"` : "Image",
             })),
             notes: deliveryNotes,
+            pricing: {
+              method: printingMethod,
+              unitPrice: selectedProductId ? getProductPrice(selectedProductId, printingMethod) : 0,
+              quantity: roster.players.length,
+              total: calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)
+            }
           },
         }),
       });
@@ -699,6 +708,36 @@ export function Step09View(): React.JSX.Element {
               className="min-h-[100px] resize-none bg-white"
             />
             <span className="text-xs text-slate-500">Any specific requests for the team?</span>
+          </div>
+
+          {/* Pricing Summary */}
+          <div className="space-y-4 pt-6 border-t border-slate-200">
+            <Label className="text-slate-700 font-semibold text-lg">Order Summary</Label>
+            <div className="bg-slate-50 rounded-lg p-6 border border-slate-200 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Product:</span>
+                <span className="font-medium text-slate-900 capitalize">{selectedProductId?.replace(/-/g, " ")}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Printing Method:</span>
+                <span className="font-medium text-slate-900 capitalize">{printingMethod}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Unit Price:</span>
+                <span className="font-medium text-slate-900">${selectedProductId ? getProductPrice(selectedProductId, printingMethod) : 0}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Quantity:</span>
+                <span className="font-medium text-slate-900">{roster.players.length} units</span>
+              </div>
+              <div className="border-t border-slate-200 pt-3 flex justify-between items-center mt-2">
+                <span className="text-base font-bold text-slate-800">Total Estimated Cost:</span>
+                <span className="text-xl font-bold text-primary">${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}</span>
+              </div>
+              <p className="text-xs text-slate-500 pt-2 italic">
+                * Final invoice may adjust for tax and shipping.
+              </p>
+            </div>
           </div>
 
           {/* Confirmation Checkbox */}
