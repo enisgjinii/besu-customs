@@ -728,11 +728,19 @@ export function Step09View(): React.JSX.Element {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Quantity:</span>
-                <span className="font-medium text-slate-900">{roster.players.length} units</span>
+                <span className="font-medium text-slate-900">
+                  {roster.players.length > 0 ? (
+                    `${roster.players.length} units`
+                  ) : (
+                    <span className="text-amber-600 font-bold">0 units (Add players above)</span>
+                  )}
+                </span>
               </div>
               <div className="border-t border-slate-200 pt-3 flex justify-between items-center mt-2">
                 <span className="text-base font-bold text-slate-800">Total Estimated Cost:</span>
-                <span className="text-xl font-bold text-primary">${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}</span>
+                <span className="text-xl font-bold text-primary">
+                  ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
+                </span>
               </div>
               <p className="text-xs text-slate-500 pt-2 italic">
                 * Final invoice may adjust for tax and shipping.
