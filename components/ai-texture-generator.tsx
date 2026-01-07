@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRunwareAI } from "@/hooks/use-runware-ai";
+import { useGeminiAI } from "@/hooks/use-gemini-ai";
 import { useHitemAI } from "@/hooks/use-hitem-ai";
 import { useConfiguratorStore } from "@/lib/store";
 import { Loader2, Sparkles, Layers, Check, Image as ImageIcon, Box } from "lucide-react";
@@ -78,15 +79,27 @@ export function AITextureGenerator({
     generateTexture: generateHitem,
   } = useHitemAI();
 
-  const [provider, setProvider] = useState<"runware" | "hitem">("runware");
+  const {
+    textureUrl: googleUrl,
+    texture: googleTexture,
+    normalMapUrl: googleNormalUrl,
+    roughnessMapUrl: googleRoughnessUrl,
+    isGenerating: isGoogleGenerating,
+    error: googleError,
+    progress: googleProgress,
+    generateTexture: generateGoogle,
+    applyToScene: applyGoogle,
+  } = useGeminiAI();
+
+  const [provider, setProvider] = useState<"runware" | "hitem" | "google">("runware");
   // For Hitem generated textures (persistent state for preview)
   const [hitemTexture, setHitemTexture] = useState<THREE.Texture | null>(null);
   const [hitemTextureUrl, setHitemTextureUrl] = useState<string | null>(null);
   const [hitemMaps, setHitemMaps] = useState<{ normal?: string; roughness?: string }>({});
 
-  const isGenerating = isRunwareGenerating || isHitemGenerating;
-  const progress = isRunwareGenerating ? runwareProgress : hitemProgress;
-  const error = runwareError || hitemError;
+  const isGenerating = isRunwareGenerating || isHitemGenerating || isGoogleGenerating;
+  const progress = isRunwareGenerating ? runwareProgress : (isGoogleGenerating ? googleProgress : hitemProgress);
+  const error = runwareError || hitemError || googleError;
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim() || !uvMap) return;
@@ -111,6 +124,17 @@ export function AITextureGenerator({
 
     if (provider === "runware") {
       onTextureGenerated?.(runwareResult.texture, runwareResult.imageUrl);
+    } else if (provider === "google") {
+      // Google Gemini Generation
+      const googleResult = await generateGoogle({
+        prompt: finalPrompt,
+        uvMap,
+        generatePbr
+      });
+
+      if (googleResult && onTextureGenerated) {
+        onTextureGenerated(googleResult.texture, googleResult.imageUrl);
+      }
     } else {
       // 2. Chain to Hitem3D
       // We need to convert the Runware Image URL to a Blob/File
@@ -156,12 +180,12 @@ export function AITextureGenerator({
         console.error("Hitem Chain Error", e);
       }
     }
-  }, [prompt, style, seamless, generatePbr, uvMap, provider, generateRunware, generateHitem, onTextureGenerated, scene]);
+  }, [prompt, style, seamless, generatePbr, uvMap, provider, generateRunware, generateHitem, generateGoogle, onTextureGenerated, scene]);
 
   // Display var helpers
-  const currentTextureUrl = provider === "runware" ? runwareUrl : hitemTextureUrl;
-  const currentNormalUrl = provider === "runware" ? runwareNormalUrl : hitemMaps.normal;
-  const currentRoughnessUrl = provider === "runware" ? runwareRoughnessUrl : hitemMaps.roughness;
+  const currentTextureUrl = provider === "runware" ? runwareUrl : (provider === "google" ? googleUrl : hitemTextureUrl);
+  const currentNormalUrl = provider === "runware" ? runwareNormalUrl : (provider === "google" ? googleNormalUrl : hitemMaps.normal);
+  const currentRoughnessUrl = provider === "runware" ? runwareRoughnessUrl : (provider === "google" ? googleRoughnessUrl : hitemMaps.roughness);
 
   const handlePresetClick = (preset: string) => {
     if (selectedPreset === preset) {
@@ -177,11 +201,13 @@ export function AITextureGenerator({
     if (scene) {
       if (provider === "runware" && runwareTexture) {
         applyRunware(scene);
+      } else if (provider === "google" && googleTexture) {
+        applyGoogle(scene);
       }
       // Hitem texture is applied in handleGenerate, but we can re-apply if scene changes
       // or just rely on manual application.
     }
-  }, [runwareTexture, provider, scene, applyRunware]);
+  }, [runwareTexture, googleTexture, provider, scene, applyRunware, applyGoogle]);
 
   const canGenerate = prompt.trim() && uvMap && !isGenerating;
 
@@ -210,11 +236,27 @@ export function AITextureGenerator({
             <Box className="w-3.5 h-3.5" />
             Advanced 3D
           </button>
+          <button
+            onClick={() => setProvider("google")}
+            className={cn(
+              "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
+              provider === "google" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Google AI
+          </button>
         </div>
 
         {provider === "hitem" && (
           <div className="text-[10px] text-muted-foreground px-1 bg-blue-50/50 p-2 rounded border border-blue-100">
             <strong>Note:</strong> Hitem3D generates a base using Runware, then enhances it into a 3D texture.
+          </div>
+        )}
+
+        {provider === "google" && (
+          <div className="text-[10px] text-muted-foreground px-1 bg-blue-50/50 p-2 rounded border border-blue-100">
+            <strong>Note:</strong> Uses Gemini 3 Pro "Nano Banana" (Image Preview) for advanced UV-aware texturing.
           </div>
         )}
 
