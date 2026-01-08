@@ -51,10 +51,10 @@ const STYLES = [
   { value: "fabric", label: "Fabric / Textile" },
 ];
 
-interface TextureWithOptionalSrc extends THREE.Texture {
+type TextureWithOptionalSrc = THREE.Texture & {
   source?: { data?: { src?: string } };
   image?: { src?: string } | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement;
-}
+};
 
 const extractTextureSrc = (texture?: THREE.Texture | null): string | null => {
   if (!texture) return null;
