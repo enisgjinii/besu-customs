@@ -51,6 +51,30 @@ const STYLES = [
   { value: "fabric", label: "Fabric / Textile" },
 ];
 
+interface TextureWithOptionalSrc extends THREE.Texture {
+  source?: { data?: { src?: string } };
+  image?: { src?: string } | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement;
+}
+
+const extractTextureSrc = (texture?: THREE.Texture | null): string | null => {
+  if (!texture) return null;
+  const tex = texture as TextureWithOptionalSrc;
+  const sourceSrc = tex.source?.data?.src;
+  if (typeof sourceSrc === "string" && sourceSrc.length > 0) {
+    return sourceSrc;
+  }
+
+  if (typeof tex.image === "string") {
+    return tex.image;
+  }
+
+  if (tex.image && typeof (tex.image as { src?: string }).src === "string") {
+    return (tex.image as { src?: string }).src || null;
+  }
+
+  return null;
+};
+
 export function AITextureGenerator({
   scene,
   onTextureGenerated,
@@ -187,11 +211,13 @@ export function AITextureGenerator({
         if (hitemResult) {
           setHitemTexture(hitemResult.texture);
           setHitemTextureUrl(hitemResult.coverUrl || runwareResult.imageUrl);
+
+          const hitemNormalSrc = extractTextureSrc(hitemResult.normalMap);
+          const hitemRoughnessSrc = extractTextureSrc(hitemResult.roughnessMap);
+
           setHitemMaps({
-            // @ts-ignore - Assuming source.data.src exists on loaded texture if it's an image
-            normal: hitemResult.normalMap?.source?.data?.src || hitemResult.normalMap?.image?.src,
-            // @ts-ignore
-            roughness: hitemResult.roughnessMap?.source?.data?.src || hitemResult.roughnessMap?.image?.src
+            normal: hitemNormalSrc || undefined,
+            roughness: hitemRoughnessSrc || undefined,
           });
 
           if (onTextureGenerated) {
@@ -199,14 +225,8 @@ export function AITextureGenerator({
               hitemResult.texture,
               hitemResult.coverUrl || runwareResult.imageUrl,
               {
-                // @ts-ignore
-                normalMapUrl:
-                  hitemResult.normalMap?.source?.data?.src ||
-                  hitemResult.normalMap?.image?.src,
-                // @ts-ignore
-                roughnessMapUrl:
-                  hitemResult.roughnessMap?.source?.data?.src ||
-                  hitemResult.roughnessMap?.image?.src,
+                normalMapUrl: hitemNormalSrc,
+                roughnessMapUrl: hitemRoughnessSrc,
               },
             );
           }
