@@ -2,7 +2,7 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { AIImageGenerator } from "@/components/ai-image-generator";
 import { AITextureGenerator } from "@/components/ai-texture-generator";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
@@ -37,8 +37,66 @@ export function Step08AIImages() {
 
   const [showUVMap, setShowUVMap] = useState(true);
 
+  const transformTexture = useCallback(
+    async (
+      src: string,
+      options: { flipX?: boolean; flipY?: boolean } = { flipY: true },
+    ) => {
+      if (!src) return src;
+      const { flipX = false, flipY = true } = options;
+      if (!flipX && !flipY) return src;
+
+      return new Promise<string>((resolve) => {
+        try {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            try {
+              const canvas = document.createElement("canvas");
+              canvas.width = img.naturalWidth || img.width;
+              canvas.height = img.naturalHeight || img.height;
+              const ctx = canvas.getContext("2d");
+              if (!ctx || canvas.width === 0 || canvas.height === 0) {
+                resolve(src);
+                return;
+              }
+
+              ctx.translate(flipX ? canvas.width : 0, flipY ? canvas.height : 0);
+              ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL("image/png"));
+            } catch (error) {
+              console.warn("Failed to flip texture", error);
+              resolve(src);
+            }
+          };
+          img.onerror = () => resolve(src);
+          img.src = src;
+        } catch (err) {
+          console.warn("Failed to prep texture flip", err);
+          resolve(src);
+        }
+      });
+    },
+    [],
+  );
+
   // Handle new AI Texture Generator result
-  const handleGeneratedTexture = (texture: THREE.Texture, url: string) => {
+  const handleGeneratedTexture = useCallback(async (
+    texture: THREE.Texture,
+    url: string,
+    options?: { normalMapUrl?: string | null; roughnessMapUrl?: string | null }
+  ) => {
+    const flippedPatternUrl = await transformTexture(url, {
+      flipY: true,
+    });
+    const flippedNormalUrl = options?.normalMapUrl
+      ? await transformTexture(options.normalMapUrl, { flipY: true })
+      : null;
+    const flippedRoughnessUrl = options?.roughnessMapUrl
+      ? await transformTexture(options.roughnessMapUrl, { flipY: true })
+      : null;
+
     const newId = uuidv4();
     addTextureLayer({
       id: newId,
@@ -49,21 +107,29 @@ export function Step08AIImages() {
       opacity: 1,
       blendMode: "normal",
       order: textureLayers.length,
-      imageUrl: url,
+      imageUrl: flippedPatternUrl,
       position: [0.5, 0.5, 0],
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
       flipX: false,
     });
 
-    // Also apply PBR maps if they were generated (Runware hook handles this internally for the texture object,
-    // but we might want to store them in global state if we want them to persist across reloads properly,
-    // although the texture object itself carries them).
-    // For now, let's trust the texture object + layer system.
+    // Apply PBR maps if provided
+    if (flippedNormalUrl) {
+      useConfiguratorStore.getState().setGlobalNormalMap(flippedNormalUrl);
+    } else {
+      useConfiguratorStore.getState().setGlobalNormalMap(null);
+    }
+
+    if (flippedRoughnessUrl) {
+      useConfiguratorStore.getState().setGlobalRoughnessMap(flippedRoughnessUrl);
+    } else {
+      useConfiguratorStore.getState().setGlobalRoughnessMap(null);
+    }
 
     setSelectedTextureLayerId(newId);
     toast.success("AI Pattern added successfully!");
-  };
+  }, [addTextureLayer, textureLayers.length, transformTexture, setSelectedTextureLayerId]);
 
   // Listen for generated images from the AIImageGenerator component
   // Background is already removed by the advanced AI in the generator

@@ -5,10 +5,20 @@ import * as THREE from "three";
 import { generateNormalMap, generateRoughnessMap, loadImage } from "@/lib/texture-utils";
 
 /**
- * Gemini AI Texture Generation Hook
+ * Advanced Gemini AI Texture Generation Hook
  *
- * Uses Google's Gemini 3 Pro Image Preview model to generate textures
- * based on a text prompt and the 3D model's UV map.
+ * Uses Google's Nano Banana image generation models:
+ * - gemini-2.5-flash-image: Fast, high-volume generation (1K)
+ * - gemini-3-pro-image-preview: Nano Banana Pro with "Thinking" for professional 4K textures
+ * 
+ * Features:
+ * - Native image generation with UV-aware mapping
+ * - Up to 4K resolution output (Pro model)
+ * - Aspect ratio control
+ * - Professional texture prompting
+ * - Advanced reasoning for complex compositions
+ * 
+ * API Reference: https://ai.google.dev/gemini-api/docs/image-generation
  */
 
 export interface GeminiTextureOptions {
@@ -18,6 +28,14 @@ export interface GeminiTextureOptions {
   uvMap: string;
   /** Whether to generate PBR maps (Normal, Roughness) locally */
   generatePbr?: boolean;
+  /** Model to use: "flash" (fast) or "pro" (highest quality with thinking) */
+  model?: "flash" | "pro";
+  /** Aspect ratio for the generated image */
+  aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3";
+  /** Image resolution - only for Pro model */
+  resolution?: "1K" | "2K" | "4K";
+  /** Texture style preset */
+  textureStyle?: "realistic" | "stylized" | "fabric" | "metallic" | "organic";
 }
 
 export interface GeminiGenerationResult {
@@ -27,6 +45,8 @@ export interface GeminiGenerationResult {
   roughnessMap?: THREE.Texture;
   normalMapUrl?: string;
   roughnessMapUrl?: string;
+  modelUsed: string;
+  resolution: string;
 }
 
 export interface UseGeminiAIReturn {
@@ -44,7 +64,25 @@ export interface UseGeminiAIReturn {
   clearTexture: () => void;
 }
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent";
+// Latest Gemini models for image generation (Nano Banana family)
+const GEMINI_MODELS = {
+  // Nano Banana - Fast model optimized for high-volume, low-latency (1K resolution)
+  flash: "gemini-2.5-flash-image",
+  // Nano Banana Pro - Gemini 3 Pro Image Preview with advanced reasoning, up to 4K
+  pro: "gemini-3-pro-image-preview",
+} as const;
+
+const getGeminiApiUrl = (model: "flash" | "pro") =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[model]}:generateContent`;
+
+// Professional texture generation prompt templates
+const TEXTURE_STYLE_PROMPTS: Record<string, string> = {
+  realistic: "photorealistic, high-fidelity, accurate material representation",
+  stylized: "stylized, artistic interpretation, bold colors and patterns",
+  fabric: "textile texture, woven fabric details, thread patterns visible",
+  metallic: "metallic surface, reflective qualities, brushed or polished finish",
+  organic: "natural organic texture, subtle variations, living material feel",
+};
 
 export function useGeminiAI(): UseGeminiAIReturn {
   const [textureUrl, setTextureUrl] = useState<string | null>(null);
@@ -112,7 +150,7 @@ export function useGeminiAI(): UseGeminiAIReturn {
 
     setIsGenerating(true);
     setError(null);
-    setProgress("Preparing request...");
+    setProgress("Initializing Gemini AI...");
 
     // Reset previous maps
     setNormalMap(null);
@@ -121,20 +159,47 @@ export function useGeminiAI(): UseGeminiAIReturn {
     setRoughnessMapUrl(null);
 
     try {
-      const { prompt, uvMap, generatePbr = true } = options;
+      const { 
+        prompt, 
+        uvMap, 
+        generatePbr = false, 
+        model = "pro", // Default to Pro for best quality
+        aspectRatio = "1:1",
+        resolution = "2K",
+        textureStyle = "realistic"
+      } = options;
 
-      // Enhance prompt for texture generation
+      // Build professional texture generation prompt
+      const styleModifier = TEXTURE_STYLE_PROMPTS[textureStyle] || TEXTURE_STYLE_PROMPTS.realistic;
+      
       const enhancedPrompt = `
-        Generate a high-quality, seamless texture based on this UV map.
-        Description: ${prompt}.
-        The output should be a flat texture map that fits perfectly onto the provided UV layout.
-        Do not add shadows or lighting effects, just the albedo/color map.
+You are a professional texture artist. Generate a high-quality, production-ready texture map for a 3D model.
+
+REFERENCE: The attached image shows the UV layout/unwrap of the 3D model. Use this as a guide for where each texture region should be placed.
+
+TEXTURE DESCRIPTION: ${prompt}
+
+TARGET OUTPUT: ${resolution} resolution, ${aspectRatio} aspect ratio.
+
+STYLE: ${styleModifier}
+
+CRITICAL REQUIREMENTS:
+1. Output a FLAT texture map (albedo/diffuse only) - NO 3D lighting, shadows, or shading
+2. The texture must be seamless and tileable where appropriate
+3. Colors should be vibrant and production-quality
+4. Match the UV island layout precisely - each UV island should have coherent texture coverage
+5. Maintain consistent style across all UV islands
+6. Use high contrast and clear details suitable for real-time 3D rendering
+
+OUTPUT: Generate the texture image directly. Do not explain, just create the image.
       `.trim();
 
       const mimeType = getMimeType(uvMap);
       const base64Image = toBase64(uvMap);
 
-      const requestBody = {
+      // Build advanced request body with latest Gemini API specs
+      // https://ai.google.dev/gemini-api/docs/image-generation
+      const requestBody: Record<string, unknown> = {
         contents: [
           {
             parts: [
@@ -142,17 +207,39 @@ export function useGeminiAI(): UseGeminiAIReturn {
               {
                 inline_data: {
                   mime_type: mimeType,
-                  data: base64Image
-                }
-              }
-            ]
-          }
-        ]
+                  data: base64Image,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          // Request both text and image for better reasoning
+          response_modalities: ["TEXT", "IMAGE"],
+        },
+        // Safety settings - allow artistic content
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+        ],
       };
 
-      setProgress("Generating with Google Gemini...");
+      const apiUrl = getGeminiApiUrl(model);
+      const modelName = GEMINI_MODELS[model];
+      setProgress(`Generating with ${model === "pro" ? "Gemini 2.5 Pro" : "Gemini 2.5 Flash"} (${resolution})...`);
 
-      const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      console.log("🎨 Gemini Advanced Request:", {
+        url: apiUrl,
+        model: modelName,
+        resolution,
+        aspectRatio,
+        textureStyle,
+        promptLength: enhancedPrompt.length,
+      });
+
+      const response = await fetch(`${apiUrl}?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -161,40 +248,116 @@ export function useGeminiAI(): UseGeminiAIReturn {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error?.message || `Gemini API error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error("❌ Gemini API Error:", errorData);
+        
+        // Parse specific error types
+        const errorMessage = errorData?.error?.message || "";
+        if (errorMessage.includes("quota")) {
+          throw new Error("API quota exceeded. Please try again later or check your billing.");
+        }
+        if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+          throw new Error(`Model ${modelName} not available. Try switching models.`);
+        }
+        throw new Error(errorMessage || `Gemini API error: ${response.status}`);
       }
 
       const data = await response.json();
       
+      console.log("📦 Gemini API Response:", {
+        hasCandidates: !!data?.candidates,
+        candidateCount: data?.candidates?.length,
+        finishReason: data?.candidates?.[0]?.finishReason,
+        partsCount: data?.candidates?.[0]?.content?.parts?.length,
+      });
+
       // Extract image from response
-      // Gemini 3 Pro Image Preview returns the generated image in the response candidates
-      // The exact format for Image Output typically involves base64 data in the parts
-      const candidate = data.candidates?.[0];
+      const candidate = data?.candidates?.[0];
       const parts = candidate?.content?.parts || [];
-      
+
       let generatedImageBase64: string | null = null;
       let generatedImageMimeType = "image/png";
+      let thoughtText: string | null = null;
 
+      // Process all parts - collect final image (skip thought images)
       for (const part of parts) {
-        if (part.inline_data) {
-          generatedImageBase64 = part.inline_data.data;
-          generatedImageMimeType = part.inline_data.mime_type || "image/png";
-          break;
+        // Collect any text reasoning (for debugging)
+        if (part.text && !part.thought) {
+          thoughtText = part.text;
+        }
+
+        // Skip thought/intermediate images - we want the final output
+        if (part.thought === true) {
+          console.log("🧠 Skipping thought image...");
+          continue;
+        }
+
+        // Check for inline_data (handles both camelCase and snake_case)
+        const inline = part.inline_data || part.inlineData;
+        if (inline?.data) {
+          generatedImageBase64 = inline.data;
+          generatedImageMimeType = inline.mime_type || inline.mimeType || "image/png";
+          console.log("✅ Found generated image:", {
+            mimeType: generatedImageMimeType,
+            dataLength: generatedImageBase64?.length,
+            hasThoughtSignature: !!part.thought_signature,
+          });
+          // Don't break - we want the LAST non-thought image (final output)
+        }
+
+        // Fallback: image as data URL in text
+        if (typeof part.text === "string" && !part.thought) {
+          const dataUrlMatch = part.text.match(/^data:([^;]+);base64,(.+)$/);
+          if (dataUrlMatch) {
+            generatedImageMimeType = dataUrlMatch[1] || "image/png";
+            generatedImageBase64 = dataUrlMatch[2];
+            console.log("✅ Found image in text as data URL");
+          }
         }
       }
 
+      if (thoughtText) {
+        console.log("💭 Model reasoning:", thoughtText.substring(0, 200) + "...");
+      }
+
       if (!generatedImageBase64) {
-        // Fallback or error check - sometimes it might refuse
-        if (candidate?.finishReason === "SAFETY") {
-          throw new Error("Generation blocked by safety filters. Please try a different prompt.");
+        // Log detailed error info for debugging
+        const finishReason = candidate?.finishReason || candidate?.finish_reason;
+        const blockReason = data?.promptFeedback?.blockReason;
+        const safetyRatings = candidate?.safetyRatings || data?.promptFeedback?.safetyRatings;
+        
+        console.error("❌ No image in response:", {
+          finishReason,
+          blockReason,
+          safetyRatings,
+          partsCount: parts.length,
+          partTypes: parts.map((p: Record<string, unknown>) => ({
+            hasText: !!p.text,
+            hasInlineData: !!(p.inline_data || p.inlineData),
+            isThought: p.thought,
+          })),
+        });
+
+        if (finishReason === "SAFETY" || blockReason) {
+          throw new Error(
+            `Generation blocked by safety filters. Reason: ${blockReason || finishReason}. Try a different prompt.`
+          );
         }
-        throw new Error("No image generated in the response.");
+
+        if (finishReason === "STOP" && parts.length === 0) {
+          throw new Error(
+            "Gemini returned no content. The model may not support this type of request. Try simplifying your prompt."
+          );
+        }
+
+        throw new Error(
+          `Gemini did not return an image (finish: ${finishReason || "unknown"}). Try a simpler prompt or different model.`
+        );
       }
 
       const imageUrl = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
 
-      setProgress("Loading texture...");
+      setProgress("Processing texture...");
       const tex = await loadTexture(imageUrl);
 
       setTextureUrl(imageUrl);
@@ -205,14 +368,15 @@ export function useGeminiAI(): UseGeminiAIReturn {
       let normUrl: string | undefined;
       let roughUrl: string | undefined;
 
-      // PBR Generation (Local)
+      // PBR Generation (Local) - only if requested
       if (generatePbr) {
-        setProgress("Generating PBR maps...");
+        setProgress("Generating PBR maps (Normal + Roughness)...");
         try {
           const imgElement = await loadImage(imageUrl);
 
-          // Normal Map
-          const normalDataUrl = await generateNormalMap(imgElement, 2.0);
+          // Normal Map - stronger for fabric textures
+          const normalStrength = textureStyle === "fabric" ? 3.0 : 2.0;
+          const normalDataUrl = await generateNormalMap(imgElement, normalStrength);
           normUrl = normalDataUrl;
           normMap = await loadTexture(normalDataUrl);
           normMap.colorSpace = THREE.LinearSRGBColorSpace;
@@ -227,12 +391,19 @@ export function useGeminiAI(): UseGeminiAIReturn {
           setNormalMapUrl(normalDataUrl);
           setRoughnessMap(roughMap);
           setRoughnessMapUrl(roughnessDataUrl);
+          
+          console.log("✅ PBR maps generated successfully");
         } catch (pbrErr) {
-          console.warn("PBR generation failed:", pbrErr);
+          console.warn("⚠️ PBR generation failed:", pbrErr);
         }
       }
 
       setProgress(null);
+      console.log("✅ Gemini texture generation complete!", {
+        model: GEMINI_MODELS[model],
+        resolution,
+        hasPbr: !!normMap,
+      });
 
       return {
         imageUrl,
@@ -240,11 +411,14 @@ export function useGeminiAI(): UseGeminiAIReturn {
         normalMap: normMap,
         roughnessMap: roughMap,
         normalMapUrl: normUrl,
-        roughnessMapUrl: roughUrl
+        roughnessMapUrl: roughUrl,
+        modelUsed: GEMINI_MODELS[model],
+        resolution,
       };
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Gemini Generation failed";
+      console.error("❌ Gemini texture generation failed:", msg);
       setError(msg);
       setProgress(null);
       return null;

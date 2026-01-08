@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Environment, Center } from "@react-three/drei";
-import { useConfiguratorStore, MaterialSection } from "@/lib/store";
+import { useConfiguratorStore, MaterialSection, TextureLayer } from "@/lib/store";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
@@ -54,6 +54,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const setActiveLayerBounds = useConfiguratorStore(
     (s) => s.setActiveLayerBounds,
   );
+  const globalCustomTexture = useConfiguratorStore(
+    (s) => s.globalCustomTexture,
+  );
   const perfConfig = useMobilePerformance();
 
   // PBR Maps from AI Generator
@@ -103,8 +106,26 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       .filter((l) => l.visible)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
+    const baseLayer: TextureLayer | null = globalCustomTexture
+      ? {
+          id: "__global_texture_layer",
+          name: "Global Texture",
+          type: "pattern",
+          visible: true,
+          locked: true,
+          opacity: 1,
+          blendMode: "normal",
+          order: Number.MIN_SAFE_INTEGER,
+          imageUrl: globalCustomTexture,
+        }
+      : null;
+
+    const layersToRender = baseLayer
+      ? [baseLayer, ...visibleLayers]
+      : visibleLayers;
+
     // Check if we have stripe layers (only stripes need transparent background)
-    const hasStripeLayer = visibleLayers.some((l) =>
+    const hasStripeLayer = layersToRender.some((l) =>
       l.name?.includes("Side Stripe"),
     );
 
@@ -117,7 +138,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
 
-    if (visibleLayers.length === 0) {
+    if (layersToRender.length === 0) {
       texture.needsUpdate = true;
       return;
     }
@@ -128,7 +149,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     const renderAllLayers = () => {
       // Check if we have stripe layers (only stripes need transparent background)
-      const hasStripeLayer = visibleLayers.some((l) =>
+      const hasStripeLayer = layersToRender.some((l) =>
         l.name?.includes("Side Stripe"),
       );
 
@@ -148,7 +169,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         height: number;
       } | null = null;
 
-      visibleLayers.forEach((layer) => {
+      layersToRender.forEach((layer) => {
         ctx.save();
 
         // Set opacity and blend mode
@@ -386,7 +407,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     };
 
     // Load all images first
-    visibleLayers.forEach((layer) => {
+    layersToRender.forEach((layer) => {
       const url = layer.imageUrl;
       if (!url) return;
 
@@ -432,6 +453,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     CANVAS_SIZE,
     perfConfig.isLowEndDevice,
     setActiveLayerBounds,
+    globalCustomTexture,
   ]);
 
   useEffect(() => {
@@ -446,7 +468,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture.flipY = false;
     texture.colorSpace = THREE.SRGBColorSpace;
 
-    const hasLayers = textureLayers.some((l) => l.visible);
+    const hasRenderableTexture =
+      !!globalCustomTexture || textureLayers.some((l) => l.visible);
 
     // Load PBR maps if available
     const loader = new THREE.TextureLoader();
@@ -459,7 +482,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       if (child instanceof THREE.Mesh && child.material) {
         const mat = child.material as THREE.MeshStandardMaterial;
 
-        if (hasLayers) {
+        if (hasRenderableTexture) {
           // Apply texture to all visible layers
           mat.map = texture;
           // Don't use alphaTest - it was making transparent areas invisible
@@ -511,7 +534,16 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       aoTex?.dispose();
       dispTex?.dispose();
     };
-  }, [scene, texture, textureLayers, globalNormalMap, globalRoughnessMap, globalAOMap, globalDisplacementMap]);
+  }, [
+    scene,
+    texture,
+    textureLayers,
+    globalCustomTexture,
+    globalNormalMap,
+    globalRoughnessMap,
+    globalAOMap,
+    globalDisplacementMap,
+  ]);
 
   // Expose canvas to global for UV map capture (email export)
   useEffect(() => {

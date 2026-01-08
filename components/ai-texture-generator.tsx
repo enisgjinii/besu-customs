@@ -23,7 +23,11 @@ import * as THREE from "three";
 
 interface AITextureGeneratorProps {
   scene?: THREE.Object3D;
-  onTextureGenerated?: (texture: THREE.Texture, url: string) => void;
+  onTextureGenerated?: (
+    texture: THREE.Texture,
+    url: string,
+    options?: { normalMapUrl?: string | null; roughnessMapUrl?: string | null }
+  ) => void | Promise<void>;
   className?: string;
 }
 
@@ -101,12 +105,52 @@ export function AITextureGenerator({
   const progress = isRunwareGenerating ? runwareProgress : (isGoogleGenerating ? googleProgress : hitemProgress);
   const error = runwareError || hitemError || googleError;
 
+  useEffect(() => {
+    if (provider === "google" && generatePbr) {
+      setGeneratePbr(false);
+    }
+  }, [provider, generatePbr]);
+
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim() || !uvMap) return;
 
-    // 1. Generate Base with Runware (Always needed as input for Hitem if no image upload)
+    // For Google AI, we call it directly with advanced options
+    if (provider === "google") {
+      // Build clean prompt for Google Gemini
+      let googlePrompt = prompt.trim();
+      if (seamless) {
+        googlePrompt += ", seamless tileable pattern";
+      }
+
+      console.log("🎨 Calling Google Gemini Pro with advanced settings:", {
+        prompt: googlePrompt,
+        model: "pro",
+        resolution: "2K",
+      });
+
+      const googleResult = await generateGoogle({
+        prompt: googlePrompt,
+        uvMap,
+        generatePbr: false, // PBR handled locally if needed
+        model: "pro", // Use Pro model for best quality
+        aspectRatio: "1:1",
+        resolution: "2K", // Higher resolution for better textures
+        textureStyle: "realistic", // Professional realistic style
+      });
+
+      if (googleResult && onTextureGenerated) {
+        await onTextureGenerated(googleResult.texture, googleResult.imageUrl, {
+          normalMapUrl: googleResult.normalMapUrl,
+          roughnessMapUrl: googleResult.roughnessMapUrl,
+        });
+      }
+      return;
+    }
+
+    // For Runware and Hitem, generate base with Runware first
     let finalPrompt = prompt.trim();
-    if (style && style !== "photorealistic") {
+    const shouldApplyStyle = style && style !== "photorealistic";
+    if (shouldApplyStyle) {
       finalPrompt += `, ${style} style`;
     }
     if (seamless) {
@@ -123,24 +167,15 @@ export function AITextureGenerator({
     if (!runwareResult) return;
 
     if (provider === "runware") {
-      onTextureGenerated?.(runwareResult.texture, runwareResult.imageUrl);
-    } else if (provider === "google") {
-      // Google Gemini Generation
-      const googleResult = await generateGoogle({
-        prompt: finalPrompt,
-        uvMap,
-        generatePbr
-      });
-
-      if (googleResult && onTextureGenerated) {
-        onTextureGenerated(googleResult.texture, googleResult.imageUrl);
+      if (onTextureGenerated) {
+        await onTextureGenerated(runwareResult.texture, runwareResult.imageUrl, {
+          normalMapUrl: runwareResult.normalMapUrl,
+          roughnessMapUrl: runwareResult.roughnessMapUrl,
+        });
       }
     } else {
-      // 2. Chain to Hitem3D
-      // We need to convert the Runware Image URL to a Blob/File
+      // Chain to Hitem3D
       try {
-        // Proxy fetch if needed, but the URL is likely remote.
-        // Runware URLs are public.
         const imgRes = await fetch(runwareResult.imageUrl);
         const imgBlob = await imgRes.blob();
 
@@ -159,7 +194,22 @@ export function AITextureGenerator({
             roughness: hitemResult.roughnessMap?.source?.data?.src || hitemResult.roughnessMap?.image?.src
           });
 
-          onTextureGenerated?.(hitemResult.texture, hitemResult.coverUrl || runwareResult.imageUrl);
+          if (onTextureGenerated) {
+            await onTextureGenerated(
+              hitemResult.texture,
+              hitemResult.coverUrl || runwareResult.imageUrl,
+              {
+                // @ts-ignore
+                normalMapUrl:
+                  hitemResult.normalMap?.source?.data?.src ||
+                  hitemResult.normalMap?.image?.src,
+                // @ts-ignore
+                roughnessMapUrl:
+                  hitemResult.roughnessMap?.source?.data?.src ||
+                  hitemResult.roughnessMap?.image?.src,
+              },
+            );
+          }
 
           // Apply Hitem texture to scene
           if (scene) {
@@ -255,8 +305,8 @@ export function AITextureGenerator({
         )}
 
         {provider === "google" && (
-          <div className="text-[10px] text-muted-foreground px-1 bg-blue-50/50 p-2 rounded border border-blue-100">
-            <strong>Note:</strong> Uses Gemini 3 Pro "Nano Banana" (Image Preview) for advanced UV-aware texturing.
+          <div className="text-[10px] text-muted-foreground px-1 bg-gradient-to-r from-blue-50/50 to-purple-50/50 p-2 rounded border border-blue-100">
+            <strong>🍌 Nano Banana Pro:</strong> Uses Gemini 3 Pro Image Preview with advanced "Thinking" for professional 2K texture generation.
           </div>
         )}
 
@@ -264,7 +314,11 @@ export function AITextureGenerator({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Style</Label>
-            <Select value={style} onValueChange={setStyle} disabled={isGenerating}>
+            <Select
+              value={style}
+              onValueChange={setStyle}
+              disabled={isGenerating || provider === "google"}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -276,6 +330,9 @@ export function AITextureGenerator({
                 ))}
               </SelectContent>
             </Select>
+            {provider === "google" && (
+              <p className="text-[10px] text-muted-foreground">Google AI ignores style to improve reliability.</p>
+            )}
           </div>
 
           <div className="space-y-2 flex flex-col justify-end pb-2">
@@ -284,12 +341,12 @@ export function AITextureGenerator({
                 id="pbr-mode"
                 checked={generatePbr}
                 onCheckedChange={setGeneratePbr}
-                disabled={isGenerating}
+                disabled={isGenerating || provider === "google"}
               />
               <Label htmlFor="pbr-mode" className="text-sm cursor-pointer">Generate PBR</Label>
             </div>
             <p className="text-[10px] text-muted-foreground leading-tight">
-              Adds depth (Normal/Roughness maps) to the texture.
+              {provider === "google" ? "PBR maps are disabled for Google AI generation." : "Adds depth (Normal/Roughness maps) to the texture."}
             </p>
           </div>
         </div>
