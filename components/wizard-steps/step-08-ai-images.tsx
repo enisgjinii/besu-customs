@@ -40,11 +40,18 @@ export function Step08AIImages() {
   const transformTexture = useCallback(
     async (
       src: string,
-      options: { flipX?: boolean; flipY?: boolean } = { flipY: true },
+      options: { flipX?: boolean; flipY?: boolean; rotateDegrees?: number } = {
+        flipY: true,
+      },
     ) => {
       if (!src) return src;
-      const { flipX = false, flipY = true } = options;
-      if (!flipX && !flipY) return src;
+      const {
+        flipX = false,
+        flipY = true,
+        rotateDegrees = 0,
+      } = options;
+      const normalizedRotation = ((rotateDegrees % 360) + 360) % 360;
+      if (!flipX && !flipY && normalizedRotation === 0) return src;
 
       return new Promise<string>((resolve) => {
         try {
@@ -52,28 +59,45 @@ export function Step08AIImages() {
           img.crossOrigin = "anonymous";
           img.onload = () => {
             try {
-              const canvas = document.createElement("canvas");
-              canvas.width = img.naturalWidth || img.width;
-              canvas.height = img.naturalHeight || img.height;
-              const ctx = canvas.getContext("2d");
-              if (!ctx || canvas.width === 0 || canvas.height === 0) {
+              const baseWidth = img.naturalWidth || img.width;
+              const baseHeight = img.naturalHeight || img.height;
+              if (!baseWidth || !baseHeight) {
                 resolve(src);
                 return;
               }
 
-              ctx.translate(flipX ? canvas.width : 0, flipY ? canvas.height : 0);
+              const needsSwap = normalizedRotation === 90 || normalizedRotation === 270;
+              const canvas = document.createElement("canvas");
+              canvas.width = needsSwap ? baseHeight : baseWidth;
+              canvas.height = needsSwap ? baseWidth : baseHeight;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) {
+                resolve(src);
+                return;
+              }
+
+              ctx.translate(canvas.width / 2, canvas.height / 2);
+              if (normalizedRotation !== 0) {
+                ctx.rotate((normalizedRotation * Math.PI) / 180);
+              }
               ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              ctx.drawImage(
+                img,
+                -baseWidth / 2,
+                -baseHeight / 2,
+                baseWidth,
+                baseHeight,
+              );
               resolve(canvas.toDataURL("image/png"));
             } catch (error) {
-              console.warn("Failed to flip texture", error);
+              console.warn("Failed to transform texture", error);
               resolve(src);
             }
           };
           img.onerror = () => resolve(src);
           img.src = src;
         } catch (err) {
-          console.warn("Failed to prep texture flip", err);
+          console.warn("Failed to prep texture transform", err);
           resolve(src);
         }
       });
@@ -87,14 +111,18 @@ export function Step08AIImages() {
     url: string,
     options?: { normalMapUrl?: string | null; roughnessMapUrl?: string | null }
   ) => {
-    const flippedPatternUrl = await transformTexture(url, {
+    const transformedPatternUrl = await transformTexture(url, {
       flipY: true,
     });
     const flippedNormalUrl = options?.normalMapUrl
-      ? await transformTexture(options.normalMapUrl, { flipY: true })
+      ? await transformTexture(options.normalMapUrl, {
+        flipY: true,
+      })
       : null;
     const flippedRoughnessUrl = options?.roughnessMapUrl
-      ? await transformTexture(options.roughnessMapUrl, { flipY: true })
+      ? await transformTexture(options.roughnessMapUrl, {
+        flipY: true,
+      })
       : null;
 
     const newId = uuidv4();
@@ -107,7 +135,7 @@ export function Step08AIImages() {
       opacity: 1,
       blendMode: "normal",
       order: textureLayers.length,
-      imageUrl: flippedPatternUrl,
+      imageUrl: transformedPatternUrl,
       position: [0.5, 0.5, 0],
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
