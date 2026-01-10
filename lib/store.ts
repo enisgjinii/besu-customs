@@ -972,10 +972,20 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       name: "besu-configurator-storage",
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
-        // Only persist these specific fields
-        textureLayers: state.textureLayers,
-        globalCustomTexture: state.globalCustomTexture,
-        sections: state.sections,
+        // Only persist essential fields, excluding large data URLs
+        textureLayers: state.textureLayers.map((l) => ({
+          ...l,
+          // Don't persist large data URLs (can be MB each)
+          imageUrl: l.imageUrl?.startsWith("data:") ? undefined : l.imageUrl,
+          dataUrl: undefined, // Always exclude dataUrl
+        })),
+        // Don't persist globalCustomTexture (can be MB)
+        // globalCustomTexture: state.globalCustomTexture,
+        sections: state.sections.map((s) => ({
+          ...s,
+          // Don't persist custom textures on sections
+          customTexture: undefined,
+        })),
         selectedProductId: state.selectedProductId,
         currentModelUrl: state.currentModelUrl,
         deliveryNotes: state.deliveryNotes,

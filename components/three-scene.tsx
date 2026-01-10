@@ -8,6 +8,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
 import {
+  MobileImageCache,
+} from "@/lib/mobile-performance-utils";
+import { useDebounce } from "@/hooks/use-mobile-performance";
+import {
   extractSectionsFromThreeModel,
   applyMaterialsToThreeModel,
   extractUVMapFromThreeModel,
@@ -20,6 +24,7 @@ import { GLTF } from "three-stdlib";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
+import { useAutoMemoryCleanup } from "@/lib/memory-monitor";
 
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
@@ -47,23 +52,30 @@ function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
 // UV Texture Compositor Component - Handles ALL layer types (patterns, images, text)
 // Renders textures directly onto the model surface (no floating elements)
 function TextureCompositor({ scene }: { scene: THREE.Group }) {
-  const textureLayers = useConfiguratorStore((s) => s.textureLayers);
-  const selectedTextureLayerId = useConfiguratorStore(
-    (s) => s.selectedTextureLayerId,
-  );
-  const setActiveLayerBounds = useConfiguratorStore(
-    (s) => s.setActiveLayerBounds,
-  );
-  const globalCustomTexture = useConfiguratorStore(
-    (s) => s.globalCustomTexture,
-  );
+  // Consolidated store subscriptions to reduce re-renders
+  const {
+    textureLayers,
+    selectedTextureLayerId,
+    setActiveLayerBounds,
+    globalCustomTexture,
+    globalNormalMap,
+    globalRoughnessMap,
+    globalAOMap,
+    globalDisplacementMap,
+  } = useConfiguratorStore((s) => ({
+    textureLayers: s.textureLayers,
+    selectedTextureLayerId: s.selectedTextureLayerId,
+    setActiveLayerBounds: s.setActiveLayerBounds,
+    globalCustomTexture: s.globalCustomTexture,
+    globalNormalMap: s.globalNormalMap,
+    globalRoughnessMap: s.globalRoughnessMap,
+    globalAOMap: s.globalAOMap,
+    globalDisplacementMap: s.globalDisplacementMap,
+  }));
   const perfConfig = useMobilePerformance();
 
-  // PBR Maps from AI Generator
-  const globalNormalMap = useConfiguratorStore((s) => s.globalNormalMap);
-  const globalRoughnessMap = useConfiguratorStore((s) => s.globalRoughnessMap);
-  const globalAOMap = useConfiguratorStore((s) => s.globalAOMap);
-  const globalDisplacementMap = useConfiguratorStore((s) => s.globalDisplacementMap);
+  // Debounce texture layers to prevent rapid re-renders
+  const debouncedLayers = useDebounce(textureLayers, perfConfig.debounceMs);
 
   // Use optimal canvas size based on device performance
   const CANVAS_SIZE = perfConfig.uvCanvasSize;
@@ -84,8 +96,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     return tex;
   });
 
-  // Track loaded images to avoid reloading
-  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  // Track loaded images with LRU eviction to prevent memory leaks
+  const imageCache = useRef<MobileImageCache>(new MobileImageCache(30));
 
   // Control icons removed as per UX request (moved to bottom panel only)
   const drawControlIcon = () => { }; // No-op
@@ -101,23 +113,23 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     ctx.imageSmoothingEnabled = !perfConfig.isLowEndDevice;
     ctx.imageSmoothingQuality = perfConfig.isLowEndDevice ? "low" : "high";
 
-    // Get visible layers sorted by order
-    const visibleLayers = textureLayers
+    // Get visible layers sorted by order (use debounced layers for performance)
+    const visibleLayers = debouncedLayers
       .filter((l) => l.visible)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     const baseLayer: TextureLayer | null = globalCustomTexture
       ? {
-          id: "__global_texture_layer",
-          name: "Global Texture",
-          type: "pattern",
-          visible: true,
-          locked: true,
-          opacity: 1,
-          blendMode: "normal",
-          order: Number.MIN_SAFE_INTEGER,
-          imageUrl: globalCustomTexture,
-        }
+        id: "__global_texture_layer",
+        name: "Global Texture",
+        type: "pattern",
+        visible: true,
+        locked: true,
+        opacity: 1,
+        blendMode: "normal",
+        order: Number.MIN_SAFE_INTEGER,
+        imageUrl: globalCustomTexture,
+      }
       : null;
 
     const layersToRender = baseLayer
@@ -446,7 +458,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       renderAllLayers();
     }
   }, [
-    textureLayers,
+    debouncedLayers,
     selectedTextureLayerId,
     canvas,
     texture,
@@ -462,6 +474,15 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     };
   }, [setActiveLayerBounds]);
 
+  // Cleanup: dispose texture and clear image cache on unmount
+  useEffect(() => {
+    return () => {
+      texture.dispose();
+      imageCache.current.clear();
+      console.log('🧹 TextureCompositor cleanup: disposed texture and cleared image cache');
+    };
+  }, [texture]);
+
   // Apply Texture to Material
   useEffect(() => {
     if (!scene) return;
@@ -469,7 +490,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     texture.colorSpace = THREE.SRGBColorSpace;
 
     const hasRenderableTexture =
-      !!globalCustomTexture || textureLayers.some((l) => l.visible);
+      !!globalCustomTexture || debouncedLayers.some((l) => l.visible);
 
     // Load PBR maps if available
     const loader = new THREE.TextureLoader();
@@ -537,7 +558,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   }, [
     scene,
     texture,
-    textureLayers,
+    debouncedLayers,
     globalCustomTexture,
     globalNormalMap,
     globalRoughnessMap,
@@ -1227,6 +1248,9 @@ export function ThreeScene({
   const setSections = useConfiguratorStore((s) => s.setSections);
   const isPlacementMode = useConfiguratorStore((s) => s.isPlacementMode);
   const perfConfig = useMobilePerformance();
+
+  // Monitor memory pressure and cleanup automatically
+  useAutoMemoryCleanup(0.80);
 
   // Check if mobile for camera positioning
   useEffect(() => {
