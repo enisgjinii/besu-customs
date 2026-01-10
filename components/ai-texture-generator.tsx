@@ -5,6 +5,7 @@ import { useRunwareAI } from "@/hooks/use-runware-ai";
 import { useGeminiAI } from "@/hooks/use-gemini-ai";
 import { useHitemAI } from "@/hooks/use-hitem-ai";
 import { useConfiguratorStore } from "@/lib/store";
+import { analyzeUvLayoutFromDataUrl } from "@/lib/uv-layout-analyzer";
 import { Loader2, Sparkles, Layers, Check, Image as ImageIcon, Box, User, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +94,40 @@ export function AITextureGenerator({
 
   const uvMap = useConfiguratorStore((s) => s.completeUVMap);
 
+  const [uvAnalysisSummary, setUvAnalysisSummary] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!uvMap) {
+        setUvAnalysisSummary(null);
+        return;
+      }
+      try {
+        const analysis = await analyzeUvLayoutFromDataUrl(uvMap, {
+          maxSize: 384,
+          threshold: 215,
+          dilationPasses: 1,
+          minComponentPixels: 35,
+          maxIslands: 28,
+        });
+        if (!cancelled) {
+          setUvAnalysisSummary(analysis?.summary ?? null);
+          if (analysis?.summary) {
+            console.log("🧩 UV layout summary:", analysis.summary);
+          }
+        }
+      } catch (e) {
+        if (!cancelled) setUvAnalysisSummary(null);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [uvMap]);
+
   const {
     textureUrl: runwareUrl,
     texture: runwareTexture,
@@ -169,10 +204,17 @@ export function AITextureGenerator({
       "Flat 2D jersey texture for sublimation; no lighting, shading, or baked shadows";
 
     const partHints =
-      "UV guide: upper-left = front torso; upper-right = back torso; vertical strips = side panels/piping; curved loops = collar/arm trims; lower blocks = shorts fronts/backs; small horizontals = waistbands. Keep circuitry/lines flowing vertically and mirrored left/right. Avoid splitting key motifs across seams."
+      "UV guide: upper-left = front torso; upper-right = back torso; vertical strips = side panels/piping; curved loops = collar/arm trims; lower blocks = shorts fronts/backs; small horizontals = waistbands. Keep circuitry/lines flowing vertically and mirrored left/right. Avoid splitting key motifs across seams.";
 
     const flowHints =
       "Use large-scale motifs centered on torso, smaller repeats on side strips, subtle details on trims; keep shorts consistent with torso palette and flow";
+
+    const safetyGuard =
+      "Safety: no nudity, no people, no faces, no violence, no hate symbols, no weapons. No brand logos or copyrighted characters.";
+
+    const uvAutoAnalysis = uvAnalysisSummary
+      ? `Auto UV analysis: ${uvAnalysisSummary}`
+      : null;
 
     // For Google AI, we call it directly with advanced options
     if (provider === "google") {
@@ -181,9 +223,11 @@ export function AITextureGenerator({
         prompt.trim(),
         seamless ? "seamless tileable pattern" : null,
         uvDiscipline,
+        uvAutoAnalysis,
         partHints,
         flowHints,
         textGuardrail,
+        safetyGuard,
         "Use the UV image as strict placement guide for each jersey panel",
         baseTextureNote,
       ]
@@ -222,9 +266,11 @@ export function AITextureGenerator({
       shouldApplyStyle ? `${style} style` : null,
       seamless ? "seamless tileable pattern, texture map" : null,
       uvDiscipline,
+      uvAutoAnalysis,
       partHints,
       flowHints,
       textGuardrail,
+      safetyGuard,
       baseTextureNote,
     ].filter(Boolean);
 
@@ -234,12 +280,18 @@ export function AITextureGenerator({
       ? "watermark, duplicate text, extra numbers, random letters, gibberish typography, double numbers"
       : "numbers, letters, names, jersey number, typography, text overlay, watermark, brand logo, digits";
 
+    // Always keep safety + non-human guardrails in the negative prompt for Runware.
+    const negativeSafety =
+      "nudity, nude, naked, cleavage, porn, sexual content, person, people, human, face, violence, blood, weapon, hate symbol";
+
+    const negativePrompt = `${negativeTextPrompt}, ${negativeSafety}`;
+
     const runwareResult = await generateRunware({
       prompt: finalPrompt,
       uvMap,
       strength: 0.85,
       generatePbr: generatePbr && provider === "runware", // Only gen local PBR if Runware is final
-      negativePrompt: negativeTextPrompt,
+      negativePrompt,
     });
 
     if (!runwareResult) return;
