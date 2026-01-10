@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Environment, Center } from "@react-three/drei";
 import { useConfiguratorStore, MaterialSection, TextureLayer } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
 import { Spinner } from "@/components/ui/spinner";
 import { useTheme } from "next-themes";
 import { useMobilePerformance } from "@/hooks/use-mobile-performance";
@@ -62,7 +63,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     globalRoughnessMap,
     globalAOMap,
     globalDisplacementMap,
-  } = useConfiguratorStore((s) => ({
+    applyTextureToBack,
+  } = useConfiguratorStore(useShallow((s) => ({
     textureLayers: s.textureLayers,
     selectedTextureLayerId: s.selectedTextureLayerId,
     setActiveLayerBounds: s.setActiveLayerBounds,
@@ -71,7 +73,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     globalRoughnessMap: s.globalRoughnessMap,
     globalAOMap: s.globalAOMap,
     globalDisplacementMap: s.globalDisplacementMap,
-  }));
+    applyTextureToBack: s.applyTextureToBack,
+  })));
   const perfConfig = useMobilePerformance();
 
   // Debounce texture layers to prevent rapid re-renders
@@ -499,12 +502,28 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     const aoTex = globalAOMap ? loader.load(globalAOMap) : null;
     const dispTex = globalDisplacementMap ? loader.load(globalDisplacementMap) : null;
 
+    // Helper to detect back jersey materials (these should remain blank per client request)
+    const isBackJerseyMaterial = (name: string): boolean => {
+      const lowerName = name.toLowerCase();
+      return (
+        lowerName.includes('body_b') ||
+        lowerName.includes('body_back') ||
+        lowerName.includes('_back') ||
+        lowerName === 'back'
+      );
+    };
+
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
         const mat = child.material as THREE.MeshStandardMaterial;
+        const materialName = mat.name || child.name || '';
 
-        if (hasRenderableTexture) {
-          // Apply texture to all visible layers
+        // Skip back materials if user disabled texture on back
+        const isBack = isBackJerseyMaterial(materialName);
+        const shouldApplyTexture = hasRenderableTexture && (!isBack || applyTextureToBack);
+
+        if (shouldApplyTexture) {
+          // Apply texture to this material
           mat.map = texture;
           // Don't use alphaTest - it was making transparent areas invisible
           mat.transparent = false;
@@ -539,7 +558,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
         } else {
           mat.map = null;
-          // Clear PBR if no layers (optional, maybe we want to keep them? usually if generic layers are off, we revert to base)
+          // Clear PBR if no layers or is back material
           mat.normalMap = null;
           mat.roughnessMap = null;
           mat.aoMap = null;
@@ -564,6 +583,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     globalRoughnessMap,
     globalAOMap,
     globalDisplacementMap,
+    applyTextureToBack,
   ]);
 
   // Expose canvas to global for UV map capture (email export)

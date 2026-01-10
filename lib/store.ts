@@ -167,6 +167,10 @@ export interface ConfiguratorState {
   globalDisplacementMap: string | null;
   setGlobalDisplacementMap: (url: string | null) => void;
 
+  // Back texture option - allows users to exclude back from AI texture
+  applyTextureToBack: boolean;
+  setApplyTextureToBack: (apply: boolean) => void;
+
   currentStep: number;
   setStep: (step: number) => void;
 
@@ -640,6 +644,10 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       setGlobalAOMap: (url: string | null) => set({ globalAOMap: url }),
       globalDisplacementMap: null,
       setGlobalDisplacementMap: (url: string | null) => set({ globalDisplacementMap: url }),
+
+      // Back texture option - default true (apply to back)
+      applyTextureToBack: true,
+      setApplyTextureToBack: (apply: boolean) => set({ applyTextureToBack: apply }),
 
       currentStep: 0,
       setStep: (step: number) => set({ currentStep: step }),

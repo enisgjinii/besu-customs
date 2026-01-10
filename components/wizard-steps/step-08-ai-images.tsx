@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 // AI Provider types
 // Removed as we strictly use Runware now
@@ -34,6 +36,8 @@ export function Step08AIImages() {
     (state) => state.setSelectedTextureLayerId,
   );
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
+  const applyTextureToBack = useConfiguratorStore((state) => state.applyTextureToBack);
+  const setApplyTextureToBack = useConfiguratorStore((state) => state.setApplyTextureToBack);
 
   const [showUVMap, setShowUVMap] = useState(true);
 
@@ -299,6 +303,24 @@ export function Step08AIImages() {
                     <Wand2 className="w-3.5 h-3.5" />
                     AI Advanced Texture Generator
                   </h4>
+
+                  {/* Back Texture Toggle */}
+                  <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex flex-col">
+                      <Label htmlFor="back-texture" className="text-sm font-medium">
+                        Apply to Back
+                      </Label>
+                      <span className="text-xs text-muted-foreground">
+                        Include jersey back in texture
+                      </span>
+                    </div>
+                    <Switch
+                      id="back-texture"
+                      checked={applyTextureToBack}
+                      onCheckedChange={setApplyTextureToBack}
+                    />
+                  </div>
+
                   <AITextureGenerator
                     onTextureGenerated={handleGeneratedTexture}
                   />
