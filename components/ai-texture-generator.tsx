@@ -168,6 +168,12 @@ export function AITextureGenerator({
     const baseTextureNote =
       "Flat 2D jersey texture for sublimation; no lighting, shading, or baked shadows";
 
+    const partHints =
+      "UV guide: upper-left = front torso; upper-right = back torso; vertical strips = side panels/piping; curved loops = collar/arm trims; lower blocks = shorts fronts/backs; small horizontals = waistbands. Keep circuitry/lines flowing vertically and mirrored left/right. Avoid splitting key motifs across seams."
+
+    const flowHints =
+      "Use large-scale motifs centered on torso, smaller repeats on side strips, subtle details on trims; keep shorts consistent with torso palette and flow";
+
     // For Google AI, we call it directly with advanced options
     if (provider === "google") {
       // Build clean prompt for Google Gemini
@@ -175,6 +181,8 @@ export function AITextureGenerator({
         prompt.trim(),
         seamless ? "seamless tileable pattern" : null,
         uvDiscipline,
+        partHints,
+        flowHints,
         textGuardrail,
         "Use the UV image as strict placement guide for each jersey panel",
         baseTextureNote,
@@ -214,6 +222,8 @@ export function AITextureGenerator({
       shouldApplyStyle ? `${style} style` : null,
       seamless ? "seamless tileable pattern, texture map" : null,
       uvDiscipline,
+      partHints,
+      flowHints,
       textGuardrail,
       baseTextureNote,
     ].filter(Boolean);
