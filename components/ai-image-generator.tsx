@@ -15,10 +15,13 @@ import {
   RotateCw,
   ZoomIn,
   AlertCircle,
+  User,
+  Hash,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfiguratorStore } from "@/lib/store";
 import { removeBackgroundAdvanced } from "@/lib/background-removal";
+import { Switch } from "@/components/ui/switch";
 
 export function AIImageGenerator() {
   const [prompt, setPrompt] = useState("");
@@ -39,6 +42,11 @@ export function AIImageGenerator() {
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
 
+  // Player info for jersey design
+  const [includePlayerInfo, setIncludePlayerInfo] = useState(false);
+  const [playerName, setPlayerName] = useState("");
+  const [jerseyNumber, setJerseyNumber] = useState("");
+
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt");
@@ -49,6 +57,28 @@ export function AIImageGenerator() {
     setGeneratedImage(null);
     setPreviewMode(false);
 
+    const cleanName = playerName.trim().toUpperCase();
+    const cleanNumber = jerseyNumber.trim().replace(/\D/g, "").slice(0, 3);
+    const wantsPersonalization =
+      includePlayerInfo && (cleanName.length > 0 || cleanNumber.length > 0);
+
+    const promptWithGuards = (() => {
+      let finalPrompt = prompt.trim();
+      if (wantsPersonalization) {
+        if (cleanName) {
+          finalPrompt += `, featuring player name "${cleanName}" on the back`;
+        }
+        if (cleanNumber) {
+          finalPrompt += `, with jersey number "${cleanNumber}" centered on the back`;
+        }
+        finalPrompt += ", no extra text or numbers anywhere else";
+      } else {
+        finalPrompt +=
+          ", no names, numbers, letters, or text anywhere on the design, no watermarks";
+      }
+      return finalPrompt;
+    })();
+
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -58,7 +88,7 @@ export function AIImageGenerator() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          prompt,
+          prompt: promptWithGuards,
           width: 512,
           height: 512,
           numberResults: 1,
@@ -239,6 +269,62 @@ export function AIImageGenerator() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Player Info for Jersey Design */}
+          <div className="space-y-3 p-3 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <Label htmlFor="design-player-info-toggle" className="text-sm font-medium">
+                  Include Name & Number
+                </Label>
+              </div>
+              <Switch
+                id="design-player-info-toggle"
+                checked={includePlayerInfo}
+                onCheckedChange={setIncludePlayerInfo}
+                disabled={loading}
+              />
+            </div>
+
+            {includePlayerInfo && (
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="design-player-name" className="text-xs text-muted-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    Player Name
+                  </Label>
+                  <Input
+                    id="design-player-name"
+                    placeholder="SMITH"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
+                    disabled={loading}
+                    className="h-9 uppercase"
+                    maxLength={20}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="design-jersey-number" className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Hash className="w-3 h-3" />
+                    Number
+                  </Label>
+                  <Input
+                    id="design-jersey-number"
+                    placeholder="23"
+                    value={jerseyNumber}
+                    onChange={(e) => setJerseyNumber(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    disabled={loading}
+                    className="h-9"
+                    maxLength={3}
+                  />
+                </div>
+                <p className="col-span-2 text-[10px] text-muted-foreground">
+                  AI will include name/number in the generated design.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Usage Information */}

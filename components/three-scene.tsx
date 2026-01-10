@@ -502,7 +502,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     const aoTex = globalAOMap ? loader.load(globalAOMap) : null;
     const dispTex = globalDisplacementMap ? loader.load(globalDisplacementMap) : null;
 
-    // Helper to detect back jersey materials (these should remain blank per client request)
+    // Helper to detect back jersey materials
     const isBackJerseyMaterial = (name: string): boolean => {
       const lowerName = name.toLowerCase();
       return (
@@ -518,12 +518,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         const mat = child.material as THREE.MeshStandardMaterial;
         const materialName = mat.name || child.name || '';
 
-        // Skip back materials if user disabled texture on back
+        // Check if this is a back material
         const isBack = isBackJerseyMaterial(materialName);
         const shouldApplyTexture = hasRenderableTexture && (!isBack || applyTextureToBack);
 
         if (shouldApplyTexture) {
-          // Apply texture to this material
+          // Apply same texture to all materials - AI texture is designed for full UV layout
           mat.map = texture;
           // Don't use alphaTest - it was making transparent areas invisible
           mat.transparent = false;

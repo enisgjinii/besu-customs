@@ -5,7 +5,7 @@ import { useRunwareAI } from "@/hooks/use-runware-ai";
 import { useGeminiAI } from "@/hooks/use-gemini-ai";
 import { useHitemAI } from "@/hooks/use-hitem-ai";
 import { useConfiguratorStore } from "@/lib/store";
-import { Loader2, Sparkles, Layers, Check, Image as ImageIcon, Box } from "lucide-react";
+import { Loader2, Sparkles, Layers, Check, Image as ImageIcon, Box, User, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -86,6 +86,11 @@ export function AITextureGenerator({
   const [seamless, setSeamless] = useState(true);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
+  // Player info for back of jersey
+  const [includePlayerInfo, setIncludePlayerInfo] = useState(false);
+  const [playerName, setPlayerName] = useState("");
+  const [jerseyNumber, setJerseyNumber] = useState("");
+
   const uvMap = useConfiguratorStore((s) => s.completeUVMap);
 
   const {
@@ -138,13 +143,44 @@ export function AITextureGenerator({
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim() || !uvMap) return;
 
+    const cleanName = playerName.trim().toUpperCase();
+    const cleanNumber = jerseyNumber.trim().replace(/\D/g, "").slice(0, 3);
+    const wantsPersonalization =
+      includePlayerInfo && (cleanName.length > 0 || cleanNumber.length > 0);
+
+    const textGuardrail = wantsPersonalization
+      ? [
+        cleanName
+          ? `Place the player name "${cleanName}" once across the upper back`
+          : null,
+        cleanNumber
+          ? `Place a single jersey number "${cleanNumber}" centered on the back`
+          : null,
+        "Do not add any other names, numbers, letters, words, or watermarks anywhere else on the garment",
+      ]
+        .filter(Boolean)
+        .join(". ")
+      : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography";
+
+    const uvDiscipline =
+      "Respect the provided UV layout: map artwork cleanly to front, back, sleeves, collar, and shorts without stretching across seams; keep orientation upright and symmetric";
+
+    const baseTextureNote =
+      "Flat 2D jersey texture for sublimation; no lighting, shading, or baked shadows";
+
     // For Google AI, we call it directly with advanced options
     if (provider === "google") {
       // Build clean prompt for Google Gemini
-      let googlePrompt = prompt.trim();
-      if (seamless) {
-        googlePrompt += ", seamless tileable pattern";
-      }
+      const googlePrompt = [
+        prompt.trim(),
+        seamless ? "seamless tileable pattern" : null,
+        uvDiscipline,
+        textGuardrail,
+        "Use the UV image as strict placement guide for each jersey panel",
+        baseTextureNote,
+      ]
+        .filter(Boolean)
+        .join(". ");
 
       console.log("🎨 Calling Google Gemini Pro with advanced settings:", {
         prompt: googlePrompt,
@@ -172,20 +208,28 @@ export function AITextureGenerator({
     }
 
     // For Runware and Hitem, generate base with Runware first
-    let finalPrompt = prompt.trim();
     const shouldApplyStyle = style && style !== "photorealistic";
-    if (shouldApplyStyle) {
-      finalPrompt += `, ${style} style`;
-    }
-    if (seamless) {
-      finalPrompt += ", seamless tileable pattern, texture map";
-    }
+    const finalPromptParts = [
+      prompt.trim(),
+      shouldApplyStyle ? `${style} style` : null,
+      seamless ? "seamless tileable pattern, texture map" : null,
+      uvDiscipline,
+      textGuardrail,
+      baseTextureNote,
+    ].filter(Boolean);
+
+    const finalPrompt = finalPromptParts.join(". ");
+
+    const negativeTextPrompt = wantsPersonalization
+      ? "watermark, duplicate text, extra numbers, random letters, gibberish typography, double numbers"
+      : "numbers, letters, names, jersey number, typography, text overlay, watermark, brand logo, digits";
 
     const runwareResult = await generateRunware({
       prompt: finalPrompt,
       uvMap,
       strength: 0.85,
       generatePbr: generatePbr && provider === "runware", // Only gen local PBR if Runware is final
+      negativePrompt: negativeTextPrompt,
     });
 
     if (!runwareResult) return;
@@ -250,7 +294,7 @@ export function AITextureGenerator({
         console.error("Hitem Chain Error", e);
       }
     }
-  }, [prompt, style, seamless, generatePbr, uvMap, provider, generateRunware, generateHitem, generateGoogle, onTextureGenerated, scene]);
+  }, [prompt, style, seamless, generatePbr, uvMap, provider, includePlayerInfo, playerName, jerseyNumber, generateRunware, generateHitem, generateGoogle, onTextureGenerated, scene]);
 
   // Display var helpers
   const currentTextureUrl = provider === "runware" ? runwareUrl : (provider === "google" ? googleUrl : hitemTextureUrl);
@@ -406,6 +450,62 @@ export function AITextureGenerator({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Player Info for Back of Jersey */}
+        <div className="space-y-3 p-3 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <Label htmlFor="player-info-toggle" className="text-sm font-medium">
+                Include Name & Number
+              </Label>
+            </div>
+            <Switch
+              id="player-info-toggle"
+              checked={includePlayerInfo}
+              onCheckedChange={setIncludePlayerInfo}
+              disabled={isGenerating}
+            />
+          </div>
+
+          {includePlayerInfo && (
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="player-name" className="text-xs text-muted-foreground flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  Player Name
+                </Label>
+                <Input
+                  id="player-name"
+                  placeholder="SMITH"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
+                  disabled={isGenerating}
+                  className="h-9 uppercase"
+                  maxLength={20}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="jersey-number" className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Hash className="w-3 h-3" />
+                  Number
+                </Label>
+                <Input
+                  id="jersey-number"
+                  placeholder="23"
+                  value={jerseyNumber}
+                  onChange={(e) => setJerseyNumber(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                  disabled={isGenerating}
+                  className="h-9"
+                  maxLength={3}
+                />
+              </div>
+              <p className="col-span-2 text-[10px] text-muted-foreground">
+                AI will incorporate these into the texture design for the jersey back.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
