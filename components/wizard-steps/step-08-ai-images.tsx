@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -52,6 +53,14 @@ export function Step08AIImages() {
   const setBakeBackFlipIntoTexture = useConfiguratorStore((state) => state.setBakeBackFlipIntoTexture);
   const backUvSide = useConfiguratorStore((state) => state.backUvSide);
   const setBackUvSide = useConfiguratorStore((state) => state.setBackUvSide);
+  const backTextureDebugEnabled = useConfiguratorStore((state) => state.backTextureDebugEnabled);
+  const setBackTextureDebugEnabled = useConfiguratorStore((state) => state.setBackTextureDebugEnabled);
+  const backTextureDebugRotationDeg = useConfiguratorStore((state) => state.backTextureDebugRotationDeg);
+  const setBackTextureDebugRotationDeg = useConfiguratorStore((state) => state.setBackTextureDebugRotationDeg);
+  const backTextureDebugOffsetX = useConfiguratorStore((state) => state.backTextureDebugOffsetX);
+  const setBackTextureDebugOffsetX = useConfiguratorStore((state) => state.setBackTextureDebugOffsetX);
+  const backTextureDebugOffsetY = useConfiguratorStore((state) => state.backTextureDebugOffsetY);
+  const setBackTextureDebugOffsetY = useConfiguratorStore((state) => state.setBackTextureDebugOffsetY);
 
   const [showUVMap, setShowUVMap] = useState(true);
 
@@ -563,6 +572,82 @@ export function Step08AIImages() {
                         disabled={!applyTextureToBack}
                       />
                     </div>
+
+                    {/* Debug-only real-time tweak controls */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <Label htmlFor="back-debug" className="text-xs font-medium">
+                          Back Debug Controls
+                        </Label>
+                        <span className="text-[11px] text-muted-foreground">
+                          Rotate/offset back only (disable Bake Back Fix)
+                        </span>
+                      </div>
+                      <Switch
+                        id="back-debug"
+                        checked={backTextureDebugEnabled}
+                        onCheckedChange={setBackTextureDebugEnabled}
+                        disabled={!applyTextureToBack || bakeBackFlipIntoTexture}
+                      />
+                    </div>
+
+                    {applyTextureToBack && backTextureDebugEnabled && !bakeBackFlipIntoTexture && (
+                      <div className="space-y-2 pt-1">
+                        <div className="grid grid-cols-3 gap-2 items-center">
+                          <Label className="text-[11px] text-muted-foreground col-span-1">
+                            Rotate
+                          </Label>
+                          <div className="col-span-2">
+                            <Slider
+                              value={[backTextureDebugRotationDeg]}
+                              min={-180}
+                              max={180}
+                              step={1}
+                              onValueChange={(v) => setBackTextureDebugRotationDeg(v[0] ?? 0)}
+                            />
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                              {backTextureDebugRotationDeg}°
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 items-center">
+                          <Label className="text-[11px] text-muted-foreground col-span-1">
+                            Offset X
+                          </Label>
+                          <div className="col-span-2">
+                            <Slider
+                              value={[backTextureDebugOffsetX]}
+                              min={-0.25}
+                              max={0.25}
+                              step={0.005}
+                              onValueChange={(v) => setBackTextureDebugOffsetX(v[0] ?? 0)}
+                            />
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                              {backTextureDebugOffsetX.toFixed(3)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 items-center">
+                          <Label className="text-[11px] text-muted-foreground col-span-1">
+                            Offset Y
+                          </Label>
+                          <div className="col-span-2">
+                            <Slider
+                              value={[backTextureDebugOffsetY]}
+                              min={-0.25}
+                              max={0.25}
+                              step={0.005}
+                              onValueChange={(v) => setBackTextureDebugOffsetY(v[0] ?? 0)}
+                            />
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                              {backTextureDebugOffsetY.toFixed(3)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <AITextureGenerator

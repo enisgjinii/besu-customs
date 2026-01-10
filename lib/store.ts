@@ -195,6 +195,19 @@ export interface ConfiguratorState {
   backUvSide: "left" | "right";
   setBackUvSide: (side: "left" | "right") => void;
 
+  /**
+   * Debug-only: real-time tweak controls for the back texture sampling.
+   * These affect only back materials (via backTexture) and are meant for diagnosing UV orientation.
+   */
+  backTextureDebugEnabled: boolean;
+  setBackTextureDebugEnabled: (enabled: boolean) => void;
+  backTextureDebugRotationDeg: number; // -180..180
+  setBackTextureDebugRotationDeg: (deg: number) => void;
+  backTextureDebugOffsetX: number; // -0.25..0.25
+  setBackTextureDebugOffsetX: (x: number) => void;
+  backTextureDebugOffsetY: number; // -0.25..0.25
+  setBackTextureDebugOffsetY: (y: number) => void;
+
   currentStep: number;
   setStep: (step: number) => void;
 
@@ -683,6 +696,18 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         set({ bakeBackFlipIntoTexture: enabled }),
       backUvSide: "right",
       setBackUvSide: (side) => set({ backUvSide: side }),
+
+      // Debug back texture controls
+      backTextureDebugEnabled: false,
+      setBackTextureDebugEnabled: (enabled) =>
+        set({ backTextureDebugEnabled: enabled }),
+      backTextureDebugRotationDeg: 0,
+      setBackTextureDebugRotationDeg: (deg) =>
+        set({ backTextureDebugRotationDeg: deg }),
+      backTextureDebugOffsetX: 0,
+      setBackTextureDebugOffsetX: (x) => set({ backTextureDebugOffsetX: x }),
+      backTextureDebugOffsetY: 0,
+      setBackTextureDebugOffsetY: (y) => set({ backTextureDebugOffsetY: y }),
 
       currentStep: 0,
       setStep: (step: number) => set({ currentStep: step }),

@@ -67,6 +67,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     sections,
     backTextureTransform,
     bakeBackFlipIntoTexture,
+    backTextureDebugEnabled,
+    backTextureDebugRotationDeg,
+    backTextureDebugOffsetX,
+    backTextureDebugOffsetY,
   } = useConfiguratorStore(useShallow((s) => ({
     textureLayers: s.textureLayers,
     selectedTextureLayerId: s.selectedTextureLayerId,
@@ -80,6 +84,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     sections: s.sections,
     backTextureTransform: s.backTextureTransform,
     bakeBackFlipIntoTexture: s.bakeBackFlipIntoTexture,
+    backTextureDebugEnabled: s.backTextureDebugEnabled,
+    backTextureDebugRotationDeg: s.backTextureDebugRotationDeg,
+    backTextureDebugOffsetX: s.backTextureDebugOffsetX,
+    backTextureDebugOffsetY: s.backTextureDebugOffsetY,
   })));
   const perfConfig = useMobilePerformance();
 
@@ -485,6 +493,21 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
       texture.needsUpdate = true;
       backTexture.needsUpdate = true;
+
+      // Debug-only: allow real-time rotation/offset on back texture sampling.
+      // This affects ONLY back materials because only they use backTexture.
+      // If we bake the fix into the texture image, backTexture is not used (avoid confusion).
+      const enableDebug =
+        backTextureDebugEnabled && !bakeBackFlipIntoTexture && applyTextureToBack;
+      backTexture.center.set(0.5, 0.5);
+      backTexture.rotation = enableDebug
+        ? (backTextureDebugRotationDeg * Math.PI) / 180
+        : 0;
+      backTexture.offset.set(
+        enableDebug ? backTextureDebugOffsetX : 0,
+        enableDebug ? backTextureDebugOffsetY : 0,
+      );
+      backTexture.updateMatrix();
     };
 
     // Load all images first
@@ -687,6 +710,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     globalDisplacementMap,
     applyTextureToBack,
     bakeBackFlipIntoTexture,
+    backTextureTransform,
+    backTextureDebugEnabled,
+    backTextureDebugRotationDeg,
+    backTextureDebugOffsetX,
+    backTextureDebugOffsetY,
+    sections,
   ]);
 
   // Expose canvas to global for UV map capture (email export)
