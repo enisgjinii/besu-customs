@@ -514,58 +514,67 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     };
 
     scene.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material) {
-        const mat = child.material as THREE.MeshStandardMaterial;
-        const materialName = mat.name || child.name || '';
+      if (!(child instanceof THREE.Mesh) || !child.material) return;
+
+      const materials = Array.isArray(child.material)
+        ? child.material
+        : [child.material];
+
+      materials.forEach((m) => {
+        if (!(m instanceof THREE.MeshStandardMaterial)) return;
+
+        const materialName = m.name || child.name || "";
 
         // Check if this is a back material
         const isBack = isBackJerseyMaterial(materialName);
-        const shouldApplyTexture = hasRenderableTexture && (!isBack || applyTextureToBack);
+        const shouldApplyTexture =
+          hasRenderableTexture && (!isBack || applyTextureToBack);
 
         if (shouldApplyTexture) {
           // Apply same texture to all materials - AI texture is designed for full UV layout
-          mat.map = texture;
+          m.map = texture;
+
           // Don't use alphaTest - it was making transparent areas invisible
-          mat.transparent = false;
-          mat.alphaTest = 0;
+          m.transparent = false;
+          m.alphaTest = 0;
 
           // Apply PBR maps
           if (normalTex) {
-            mat.normalMap = normalTex;
-            mat.normalScale.set(1, 1);
+            m.normalMap = normalTex;
+            m.normalScale.set(1, 1);
           } else {
-            mat.normalMap = null;
+            m.normalMap = null;
           }
 
           if (roughnessTex) {
-            mat.roughnessMap = roughnessTex;
+            m.roughnessMap = roughnessTex;
           } else {
-            mat.roughnessMap = null;
+            m.roughnessMap = null;
           }
 
           if (aoTex) {
-            mat.aoMap = aoTex;
+            m.aoMap = aoTex;
           } else {
-            mat.aoMap = null;
+            m.aoMap = null;
           }
 
           if (dispTex) {
-            mat.displacementMap = dispTex;
-            mat.displacementScale = 0.05; // Gentle displacement
+            m.displacementMap = dispTex;
+            m.displacementScale = 0.05; // Gentle displacement
           } else {
-            mat.displacementMap = null;
+            m.displacementMap = null;
           }
-
         } else {
-          mat.map = null;
+          m.map = null;
           // Clear PBR if no layers or is back material
-          mat.normalMap = null;
-          mat.roughnessMap = null;
-          mat.aoMap = null;
-          mat.displacementMap = null;
+          m.normalMap = null;
+          m.roughnessMap = null;
+          m.aoMap = null;
+          m.displacementMap = null;
         }
-        mat.needsUpdate = true;
-      }
+
+        m.needsUpdate = true;
+      });
     });
 
     return () => {
