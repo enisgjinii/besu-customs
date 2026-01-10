@@ -171,6 +171,30 @@ export interface ConfiguratorState {
   applyTextureToBack: boolean;
   setApplyTextureToBack: (apply: boolean) => void;
 
+  /**
+   * Controls how the generated/composited texture is transformed on the BACK materials.
+   * Different models export back UVs with different orientation.
+   */
+  backTextureTransform: "mirrorX" | "mirrorY" | "rotate180" | "none";
+  setBackTextureTransform: (
+    mode: "mirrorX" | "mirrorY" | "rotate180" | "none",
+  ) => void;
+
+  /**
+   * If enabled, we bake the back correction into the generated UV texture image itself
+   * (useful when the modeler authored mirrored back UVs and you want the exported
+   * texture file to look correct outside this app).
+   */
+  bakeBackFlipIntoTexture: boolean;
+  setBakeBackFlipIntoTexture: (enabled: boolean) => void;
+
+  /**
+   * Which side the back torso UV island sits on in the UV template image.
+   * Only used when baking back flip into the generated texture.
+   */
+  backUvSide: "left" | "right";
+  setBackUvSide: (side: "left" | "right") => void;
+
   currentStep: number;
   setStep: (step: number) => void;
 
@@ -648,6 +672,17 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       // Back texture option - default true (apply to back)
       applyTextureToBack: true,
       setApplyTextureToBack: (apply: boolean) => set({ applyTextureToBack: apply }),
+
+      // Back texture orientation - default mirrorX (most common for jersey backs)
+      backTextureTransform: "mirrorX",
+      setBackTextureTransform: (mode) => set({ backTextureTransform: mode }),
+
+      // Back UV baking (off by default)
+      bakeBackFlipIntoTexture: false,
+      setBakeBackFlipIntoTexture: (enabled: boolean) =>
+        set({ bakeBackFlipIntoTexture: enabled }),
+      backUvSide: "right",
+      setBackUvSide: (side) => set({ backUvSide: side }),
 
       currentStep: 0,
       setStep: (step: number) => set({ currentStep: step }),

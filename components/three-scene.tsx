@@ -64,6 +64,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     globalAOMap,
     globalDisplacementMap,
     applyTextureToBack,
+    sections,
+    backTextureTransform,
+    bakeBackFlipIntoTexture,
   } = useConfiguratorStore(useShallow((s) => ({
     textureLayers: s.textureLayers,
     selectedTextureLayerId: s.selectedTextureLayerId,
@@ -74,6 +77,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     globalAOMap: s.globalAOMap,
     globalDisplacementMap: s.globalDisplacementMap,
     applyTextureToBack: s.applyTextureToBack,
+    sections: s.sections,
+    backTextureTransform: s.backTextureTransform,
+    bakeBackFlipIntoTexture: s.bakeBackFlipIntoTexture,
   })));
   const perfConfig = useMobilePerformance();
 
@@ -89,6 +95,15 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     c.height = CANVAS_SIZE;
     return c;
   });
+
+  // Back-side canvas (mirrored horizontally). We keep a separate canvas so we can flip
+  // without relying on UV repeat/offset tricks (which can break on some models).
+  const [backCanvas] = useState(() => {
+    const c = document.createElement("canvas");
+    c.width = CANVAS_SIZE;
+    c.height = CANVAS_SIZE;
+    return c;
+  });
   const [texture] = useState(() => {
     const tex = new THREE.CanvasTexture(canvas);
     // Enable smooth filtering for better quality
@@ -96,6 +111,17 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
     tex.anisotropy = 16; // Max anisotropic filtering for sharp textures at angles
+    return tex;
+  });
+
+  // Back-side texture variant. Uses a separate canvas (backCanvas) that mirrors the main
+  // canvas, so we can reliably correct back-panel orientation across different UV layouts.
+  const [backTexture] = useState(() => {
+    const tex = new THREE.CanvasTexture(backCanvas);
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 16;
     return tex;
   });
 
@@ -418,7 +444,47 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         setActiveLayerBounds(null);
       }
 
+      // Update the back canvas using the chosen transform.
+      // This avoids UV repeat/offset artifacts and keeps the front canvas unchanged.
+      const backCtx = backCanvas.getContext("2d", {
+        alpha: true,
+        willReadFrequently: false,
+      });
+      if (backCtx) {
+        backCtx.setTransform(1, 0, 0, 1, 0, 0);
+        backCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+        switch (backTextureTransform) {
+          case "none": {
+            backCtx.drawImage(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            break;
+          }
+          case "mirrorY": {
+            // Flip vertically
+            backCtx.translate(0, CANVAS_SIZE);
+            backCtx.scale(1, -1);
+            backCtx.drawImage(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            break;
+          }
+          case "rotate180": {
+            backCtx.translate(CANVAS_SIZE, CANVAS_SIZE);
+            backCtx.scale(-1, -1);
+            backCtx.drawImage(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            break;
+          }
+          case "mirrorX":
+          default: {
+            // Mirror horizontally
+            backCtx.translate(CANVAS_SIZE, 0);
+            backCtx.scale(-1, 1);
+            backCtx.drawImage(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            break;
+          }
+        }
+      }
+
       texture.needsUpdate = true;
+      backTexture.needsUpdate = true;
     };
 
     // Load all images first
@@ -481,16 +547,19 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   useEffect(() => {
     return () => {
       texture.dispose();
+      backTexture.dispose();
       imageCache.current.clear();
       console.log('🧹 TextureCompositor cleanup: disposed texture and cleared image cache');
     };
-  }, [texture]);
+  }, [texture, backTexture]);
 
   // Apply Texture to Material
   useEffect(() => {
     if (!scene) return;
     texture.flipY = false;
     texture.colorSpace = THREE.SRGBColorSpace;
+    backTexture.flipY = false;
+    backTexture.colorSpace = THREE.SRGBColorSpace;
 
     const hasRenderableTexture =
       !!globalCustomTexture || debouncedLayers.some((l) => l.visible);
@@ -509,7 +578,28 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         lowerName.includes('body_b') ||
         lowerName.includes('body_back') ||
         lowerName.includes('_back') ||
+        lowerName.includes('back_body') ||
+        lowerName.includes('backbody') ||
         lowerName === 'back'
+      );
+    };
+
+    // Prefer store-derived semantic labels when available (more reliable than mesh/material naming).
+    const isBackJerseySection = (materialName: string): boolean => {
+      if (!sections || sections.length === 0) return false;
+      const section = sections.find((s) => s.id === materialName || s.originalName === materialName);
+      if (!section) return false;
+
+      // Only treat Jersey category as "back flip" target.
+      if (section.category !== "Jersey") return false;
+
+      const name = (section.name || "").toLowerCase();
+      const original = (section.originalName || "").toLowerCase();
+      return (
+        name.includes("back") ||
+        original.includes("body_b") ||
+        original.includes("body_back") ||
+        original.includes("_back")
       );
     };
 
@@ -526,13 +616,15 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         const materialName = m.name || child.name || "";
 
         // Check if this is a back material
-        const isBack = isBackJerseyMaterial(materialName);
+        const isBack =
+          isBackJerseySection(m.name || "") ||
+          isBackJerseyMaterial(materialName);
         const shouldApplyTexture =
           hasRenderableTexture && (!isBack || applyTextureToBack);
 
         if (shouldApplyTexture) {
           // Apply same texture to all materials - AI texture is designed for full UV layout
-          m.map = texture;
+          m.map = bakeBackFlipIntoTexture ? texture : isBack ? backTexture : texture;
 
           // Don't use alphaTest - it was making transparent areas invisible
           m.transparent = false;
@@ -586,6 +678,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   }, [
     scene,
     texture,
+    backTexture,
     debouncedLayers,
     globalCustomTexture,
     globalNormalMap,
@@ -593,6 +686,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     globalAOMap,
     globalDisplacementMap,
     applyTextureToBack,
+    bakeBackFlipIntoTexture,
   ]);
 
   // Expose canvas to global for UV map capture (email export)

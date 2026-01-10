@@ -209,6 +209,15 @@ export function AITextureGenerator({
     const flowHints =
       "Use large-scale motifs centered on torso, smaller repeats on side strips, subtle details on trims; keep shorts consistent with torso palette and flow";
 
+    const consistencyHints =
+      "Front + back large torso panels must match stylistically: same palette, same centerline flow, same motif scale. If you place an emblem/animal, keep it centered within the large torso panels and ensure it still looks correct when UV shells are mirrored";
+
+    const trimHints =
+      "Keep thin trim/strap/waistband islands simple (solid color or clean stripes). Avoid complex icons on thin strips to prevent distortion";
+
+    const uvLineGuard =
+      "Do not render the UV wireframe/black outline lines; the final image must be clean artwork only";
+
     const safetyGuard =
       "Safety: no nudity, no people, no faces, no violence, no hate symbols, no weapons. No brand logos or copyrighted characters.";
 
@@ -226,6 +235,9 @@ export function AITextureGenerator({
         uvAutoAnalysis,
         partHints,
         flowHints,
+        consistencyHints,
+        trimHints,
+        uvLineGuard,
         textGuardrail,
         safetyGuard,
         "Use the UV image as strict placement guide for each jersey panel",
@@ -269,6 +281,9 @@ export function AITextureGenerator({
       uvAutoAnalysis,
       partHints,
       flowHints,
+      consistencyHints,
+      trimHints,
+      uvLineGuard,
       textGuardrail,
       safetyGuard,
       baseTextureNote,
@@ -284,12 +299,18 @@ export function AITextureGenerator({
     const negativeSafety =
       "nudity, nude, naked, cleavage, porn, sexual content, person, people, human, face, violence, blood, weapon, hate symbol";
 
-    const negativePrompt = `${negativeTextPrompt}, ${negativeSafety}`;
+    const negativeUvArtifacts =
+      "uv lines, wireframe, outline template, black contour lines, seam guide";
+
+    const negativeMismatch =
+      "asymmetric, mismatched front and back, different styles per panel";
+
+    const negativePrompt = `${negativeTextPrompt}, ${negativeSafety}, ${negativeUvArtifacts}, ${negativeMismatch}`;
 
     const runwareResult = await generateRunware({
       prompt: finalPrompt,
       uvMap,
-      strength: 0.85,
+      strength: 0.82,
       generatePbr: generatePbr && provider === "runware", // Only gen local PBR if Runware is final
       negativePrompt,
     });

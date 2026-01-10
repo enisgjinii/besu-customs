@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
+import { analyzeUvLayoutFromDataUrl } from "@/lib/uv-layout-analyzer";
 import {
   compressImageForMobile,
   isMobile,
@@ -23,6 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // AI Provider types
 // Removed as we strictly use Runware now
@@ -38,6 +46,12 @@ export function Step08AIImages() {
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
   const applyTextureToBack = useConfiguratorStore((state) => state.applyTextureToBack);
   const setApplyTextureToBack = useConfiguratorStore((state) => state.setApplyTextureToBack);
+  const backTextureTransform = useConfiguratorStore((state) => state.backTextureTransform);
+  const setBackTextureTransform = useConfiguratorStore((state) => state.setBackTextureTransform);
+  const bakeBackFlipIntoTexture = useConfiguratorStore((state) => state.bakeBackFlipIntoTexture);
+  const setBakeBackFlipIntoTexture = useConfiguratorStore((state) => state.setBakeBackFlipIntoTexture);
+  const backUvSide = useConfiguratorStore((state) => state.backUvSide);
+  const setBackUvSide = useConfiguratorStore((state) => state.setBackUvSide);
 
   const [showUVMap, setShowUVMap] = useState(true);
 
@@ -109,6 +123,150 @@ export function Step08AIImages() {
     [],
   );
 
+  const bakeBackFlipIntoUvTexture = useCallback(
+    async (
+      src: string,
+      opts: {
+        uvTemplateDataUrl: string;
+        // The image already went through transformTexture(flipY: true)
+        srcWasFlipY: boolean;
+        backSide: "left" | "right";
+        transform: "mirrorX" | "mirrorY" | "rotate180" | "none";
+      },
+    ) => {
+      if (!src || !opts.uvTemplateDataUrl) return src;
+      if (opts.transform === "none") return src;
+
+      try {
+        const analysis = await analyzeUvLayoutFromDataUrl(opts.uvTemplateDataUrl, {
+          maxSize: 384,
+          threshold: 215,
+          dilationPasses: 1,
+          minComponentPixels: 35,
+          maxIslands: 28,
+        });
+
+        const islands = analysis?.islands ?? [];
+        const torsoCandidates = islands
+          .filter((i) => i.cy < 0.6)
+          .filter((i) => (opts.backSide === "left" ? i.cx < 0.5 : i.cx > 0.5))
+          .sort((a, b) => b.w * b.h - a.w * a.h);
+
+        const backIsland = torsoCandidates[0];
+        if (!backIsland) return src;
+
+        // If src image was flipped vertically already, map UV-template bounds to src bounds.
+        const bounds = {
+          x1: backIsland.x1,
+          y1: opts.srcWasFlipY ? 1 - backIsland.y2 : backIsland.y1,
+          x2: backIsland.x2,
+          y2: opts.srcWasFlipY ? 1 - backIsland.y1 : backIsland.y2,
+        };
+
+        // IMPORTANT: Some UV wireframes connect the left/right torso outlines into one cluster,
+        // producing a bounding box that spans both sides. When baking we must never touch the
+        // front side, so we hard-clip to the chosen half.
+        const halfX1 = opts.backSide === "left" ? 0 : 0.5;
+        const halfX2 = opts.backSide === "left" ? 0.5 : 1;
+        bounds.x1 = Math.max(bounds.x1, halfX1);
+        bounds.x2 = Math.min(bounds.x2, halfX2);
+
+        // Also clamp to a reasonable torso band (avoid shorts/other pieces).
+        bounds.y1 = Math.max(0, Math.min(1, bounds.y1));
+        bounds.y2 = Math.max(0, Math.min(1, bounds.y2));
+
+        if (bounds.x2 - bounds.x1 < 0.02 || bounds.y2 - bounds.y1 < 0.02) {
+          return src;
+        }
+
+        return await new Promise<string>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            try {
+              const w = img.naturalWidth || img.width;
+              const h = img.naturalHeight || img.height;
+              if (!w || !h) {
+                resolve(src);
+                return;
+              }
+
+              const x = Math.max(0, Math.floor(bounds.x1 * w));
+              const y = Math.max(0, Math.floor(bounds.y1 * h));
+              const rw = Math.max(1, Math.floor((bounds.x2 - bounds.x1) * w));
+              const rh = Math.max(1, Math.floor((bounds.y2 - bounds.y1) * h));
+
+              const canvas = document.createElement("canvas");
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) {
+                resolve(src);
+                return;
+              }
+
+              // Draw original
+              ctx.drawImage(img, 0, 0, w, h);
+
+              // Extract region
+              const region = document.createElement("canvas");
+              region.width = rw;
+              region.height = rh;
+              const rctx = region.getContext("2d");
+              if (!rctx) {
+                resolve(src);
+                return;
+              }
+              rctx.drawImage(canvas, x, y, rw, rh, 0, 0, rw, rh);
+
+              // Clear original region
+              ctx.clearRect(x, y, rw, rh);
+
+              // Draw transformed region back
+              ctx.save();
+              ctx.translate(x, y);
+
+              switch (opts.transform) {
+                case "mirrorY": {
+                  // Vertical flip
+                  ctx.translate(0, rh);
+                  ctx.scale(1, -1);
+                  break;
+                }
+                case "rotate180": {
+                  ctx.translate(rw, rh);
+                  ctx.scale(-1, -1);
+                  break;
+                }
+                case "mirrorX":
+                default: {
+                  // Horizontal mirror
+                  ctx.translate(rw, 0);
+                  ctx.scale(-1, 1);
+                  break;
+                }
+              }
+
+              ctx.drawImage(region, 0, 0, rw, rh);
+              ctx.restore();
+
+              resolve(canvas.toDataURL("image/png"));
+            } catch (e) {
+              console.warn("Failed to bake back flip into texture", e);
+              resolve(src);
+            }
+          };
+          img.onerror = () => resolve(src);
+          img.src = src;
+        });
+      } catch (e) {
+        console.warn("Failed to analyze UV layout for baking", e);
+        return src;
+      }
+    },
+    [],
+  );
+
   // Handle new AI Texture Generator result
   const handleGeneratedTexture = useCallback(async (
     texture: THREE.Texture,
@@ -118,6 +276,16 @@ export function Step08AIImages() {
     const transformedPatternUrl = await transformTexture(url, {
       flipY: true,
     });
+
+    const finalPatternUrl =
+      applyTextureToBack && bakeBackFlipIntoTexture && completeUVMap
+        ? await bakeBackFlipIntoUvTexture(transformedPatternUrl, {
+            uvTemplateDataUrl: completeUVMap,
+            srcWasFlipY: true,
+            backSide: backUvSide,
+            transform: backTextureTransform,
+          })
+        : transformedPatternUrl;
     const flippedNormalUrl = options?.normalMapUrl
       ? await transformTexture(options.normalMapUrl, {
         flipY: true,
@@ -139,7 +307,7 @@ export function Step08AIImages() {
       opacity: 1,
       blendMode: "normal",
       order: textureLayers.length,
-      imageUrl: transformedPatternUrl,
+      imageUrl: finalPatternUrl,
       position: [0.5, 0.5, 0],
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
@@ -161,7 +329,18 @@ export function Step08AIImages() {
 
     setSelectedTextureLayerId(newId);
     toast.success("AI Pattern added successfully!");
-  }, [addTextureLayer, textureLayers.length, transformTexture, setSelectedTextureLayerId]);
+  }, [
+    addTextureLayer,
+    textureLayers.length,
+    transformTexture,
+    setSelectedTextureLayerId,
+    applyTextureToBack,
+    bakeBackFlipIntoTexture,
+    completeUVMap,
+    backUvSide,
+    backTextureTransform,
+    bakeBackFlipIntoUvTexture,
+  ]);
 
   // Listen for generated images from the AIImageGenerator component
   // Background is already removed by the advanced AI in the generator
@@ -304,21 +483,86 @@ export function Step08AIImages() {
                     AI Advanced Texture Generator
                   </h4>
 
-                  {/* Back Texture Toggle */}
-                  <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg border">
-                    <div className="flex flex-col">
-                      <Label htmlFor="back-texture" className="text-sm font-medium">
-                        Apply to Back
-                      </Label>
-                      <span className="text-xs text-muted-foreground">
-                        Include jersey back in texture
-                      </span>
+                  {/* Compact Back Controls */}
+                  <div className="mb-3 p-3 bg-muted/40 rounded-lg border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <Label htmlFor="back-texture" className="text-xs font-medium">
+                          Apply to Back
+                        </Label>
+                        <span className="text-[11px] text-muted-foreground">
+                          Include jersey back panels
+                        </span>
+                      </div>
+                      <Switch
+                        id="back-texture"
+                        checked={applyTextureToBack}
+                        onCheckedChange={setApplyTextureToBack}
+                      />
                     </div>
-                    <Switch
-                      id="back-texture"
-                      checked={applyTextureToBack}
-                      onCheckedChange={setApplyTextureToBack}
-                    />
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="back-orientation" className="text-[11px] text-muted-foreground">
+                          Back Flip (3D only)
+                        </Label>
+                        <Select
+                          value={backTextureTransform}
+                          onValueChange={(v) =>
+                            setBackTextureTransform(
+                              v as "mirrorX" | "mirrorY" | "rotate180" | "none",
+                            )
+                          }
+                          disabled={!applyTextureToBack}
+                        >
+                          <SelectTrigger id="back-orientation" className="h-8">
+                            <SelectValue placeholder="Back flip" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mirrorX">Mirror (left-right)</SelectItem>
+                            <SelectItem value="mirrorY">Flip (up-down)</SelectItem>
+                            <SelectItem value="rotate180">Rotate 180°</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="back-uv-side" className="text-[11px] text-muted-foreground">
+                          Back Panel Side (UV)
+                        </Label>
+                        <Select
+                          value={backUvSide}
+                          onValueChange={(v) => setBackUvSide(v as "left" | "right")}
+                          disabled={!applyTextureToBack || !bakeBackFlipIntoTexture}
+                        >
+                          <SelectTrigger id="back-uv-side" className="h-8">
+                            <SelectValue placeholder="Back side" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="left">Left</SelectItem>
+                            <SelectItem value="right">Right</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <Label htmlFor="bake-back-fix" className="text-xs font-medium">
+                          Bake Back Fix (UV export)
+                        </Label>
+                        <span className="text-[11px] text-muted-foreground">
+                          Only flips the back UV half (does not touch front)
+                        </span>
+                      </div>
+                      <Switch
+                        id="bake-back-fix"
+                        checked={bakeBackFlipIntoTexture}
+                        onCheckedChange={setBakeBackFlipIntoTexture}
+                        disabled={!applyTextureToBack}
+                      />
+                    </div>
                   </div>
 
                   <AITextureGenerator
