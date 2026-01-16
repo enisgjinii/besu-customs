@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
 import { analyzeUvLayoutFromDataUrl } from "@/lib/uv-layout-analyzer";
+import { generateTestPattern, visualizeTransformations, generateComparisonGrid } from "@/lib/uv-debug-helper";
+import { loadImage } from "@/lib/texture-utils";
 import {
   compressImageForMobile,
   isMobile,
@@ -45,6 +47,7 @@ export function Step08AIImages() {
     (state) => state.setSelectedTextureLayerId,
   );
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
   const applyTextureToBack = useConfiguratorStore((state) => state.applyTextureToBack);
   const setApplyTextureToBack = useConfiguratorStore((state) => state.setApplyTextureToBack);
   const backTextureTransform = useConfiguratorStore((state) => state.backTextureTransform);
@@ -63,6 +66,9 @@ export function Step08AIImages() {
   const setBackTextureDebugOffsetY = useConfiguratorStore((state) => state.setBackTextureDebugOffsetY);
 
   const [showUVMap, setShowUVMap] = useState(true);
+  const [showDebugTools, setShowDebugTools] = useState(false);
+  const [debugPattern, setDebugPattern] = useState<string | null>(null);
+  const [isGeneratingDebug, setIsGeneratingDebug] = useState(false);
 
   const transformTexture = useCallback(
     async (
@@ -276,6 +282,304 @@ export function Step08AIImages() {
     [],
   );
 
+  /**
+   * Bake a horizontal flip into the FRONT panel UV region.
+   * This corrects models whose front UVs are horizontally mirrored.
+   */
+  const bakeFrontFlipIntoUvTexture = useCallback(
+    async (
+      src: string,
+      opts: {
+        uvTemplateDataUrl: string;
+        srcWasFlipY: boolean;
+        frontSide: "left" | "right";
+        transform?: "mirrorX" | "mirrorY" | "rotate180" | "none";
+      },
+    ) => {
+      if (!src || !opts.uvTemplateDataUrl) return src;
+      if (opts.transform === "none") return src;
+
+      try {
+        const analysis = await analyzeUvLayoutFromDataUrl(opts.uvTemplateDataUrl, {
+          maxSize: 384,
+          threshold: 215,
+          dilationPasses: 1,
+          minComponentPixels: 35,
+          maxIslands: 28,
+        });
+
+        const islands = analysis?.islands ?? [];
+        // Find top-left or top-right torso island (front panel)
+        const torsoCandidates = islands
+          .filter((i) => i.cy < 0.6)
+          .filter((i) => (opts.frontSide === "left" ? i.cx < 0.5 : i.cx > 0.5))
+          .sort((a, b) => b.w * b.h - a.w * a.h);
+
+        const frontIsland = torsoCandidates[0];
+        if (!frontIsland) return src;
+
+        // Map bounds
+        const bounds = {
+          x1: frontIsland.x1,
+          y1: opts.srcWasFlipY ? 1 - frontIsland.y2 : frontIsland.y1,
+          x2: frontIsland.x2,
+          y2: opts.srcWasFlipY ? 1 - frontIsland.y1 : frontIsland.y2,
+        };
+
+        // Clip to chosen half
+        const halfX1 = opts.frontSide === "left" ? 0 : 0.5;
+        const halfX2 = opts.frontSide === "left" ? 0.5 : 1;
+        bounds.x1 = Math.max(bounds.x1, halfX1);
+        bounds.x2 = Math.min(bounds.x2, halfX2);
+        bounds.y1 = Math.max(0, Math.min(1, bounds.y1));
+        bounds.y2 = Math.max(0, Math.min(1, bounds.y2));
+
+        if (bounds.x2 - bounds.x1 < 0.02 || bounds.y2 - bounds.y1 < 0.02) {
+          return src;
+        }
+
+        return await new Promise<string>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            try {
+              const w = img.naturalWidth || img.width;
+              const h = img.naturalHeight || img.height;
+              if (!w || !h) {
+                resolve(src);
+                return;
+              }
+
+              const x = Math.max(0, Math.floor(bounds.x1 * w));
+              const y = Math.max(0, Math.floor(bounds.y1 * h));
+              const rw = Math.max(1, Math.floor((bounds.x2 - bounds.x1) * w));
+              const rh = Math.max(1, Math.floor((bounds.y2 - bounds.y1) * h));
+
+              const canvas = document.createElement("canvas");
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) {
+                resolve(src);
+                return;
+              }
+
+              // Draw original
+              ctx.drawImage(img, 0, 0, w, h);
+
+              // Extract region
+              const region = document.createElement("canvas");
+              region.width = rw;
+              region.height = rh;
+              const rctx = region.getContext("2d");
+              if (!rctx) {
+                resolve(src);
+                return;
+              }
+              rctx.drawImage(canvas, x, y, rw, rh, 0, 0, rw, rh);
+
+              // Clear original region
+              ctx.clearRect(x, y, rw, rh);
+
+              // Draw transformed region back
+              ctx.save();
+              ctx.translate(x, y);
+
+              switch (opts.transform ?? "mirrorX") {
+                case "mirrorY": {
+                  ctx.translate(0, rh);
+                  ctx.scale(1, -1);
+                  break;
+                }
+                case "rotate180": {
+                  ctx.translate(rw, rh);
+                  ctx.scale(-1, -1);
+                  break;
+                }
+                case "mirrorX":
+                default: {
+                  ctx.translate(rw, 0);
+                  ctx.scale(-1, 1);
+                  break;
+                }
+              }
+
+              ctx.drawImage(region, 0, 0, rw, rh);
+              ctx.restore();
+
+              resolve(canvas.toDataURL("image/png"));
+            } catch (e) {
+              console.warn("Failed to bake front flip into texture", e);
+              resolve(src);
+            }
+          };
+          img.onerror = () => resolve(src);
+          img.src = src;
+        });
+      } catch (e) {
+        console.warn("Failed to analyze UV layout for front baking", e);
+        return src;
+      }
+    },
+    [],
+  );
+
+  /**
+   * Bake a flip into an arbitrary region defined by UV bounds.
+   */
+  const bakeRegionFlipIntoUvTexture = useCallback(
+    async (
+      src: string,
+      opts: {
+        bounds: { x1: number; y1: number; x2: number; y2: number };
+        srcWasFlipY: boolean;
+        transform: "mirrorX" | "mirrorY" | "rotate180" | "none";
+      },
+    ) => {
+      if (!src || opts.transform === "none") return src;
+
+      const bounds = {
+        x1: opts.bounds.x1,
+        y1: opts.srcWasFlipY ? 1 - opts.bounds.y2 : opts.bounds.y1,
+        x2: opts.bounds.x2,
+        y2: opts.srcWasFlipY ? 1 - opts.bounds.y1 : opts.bounds.y2,
+      };
+
+      bounds.x1 = Math.max(0, Math.min(1, bounds.x1));
+      bounds.y1 = Math.max(0, Math.min(1, bounds.y1));
+      bounds.x2 = Math.max(0, Math.min(1, bounds.x2));
+      bounds.y2 = Math.max(0, Math.min(1, bounds.y2));
+
+      if (bounds.x2 - bounds.x1 < 0.02 || bounds.y2 - bounds.y1 < 0.02) {
+        return src;
+      }
+
+      return await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          try {
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
+            if (!w || !h) {
+              resolve(src);
+              return;
+            }
+
+            const x = Math.max(0, Math.floor(bounds.x1 * w));
+            const y = Math.max(0, Math.floor(bounds.y1 * h));
+            const rw = Math.max(1, Math.floor((bounds.x2 - bounds.x1) * w));
+            const rh = Math.max(1, Math.floor((bounds.y2 - bounds.y1) * h));
+
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(src);
+              return;
+            }
+
+            ctx.drawImage(img, 0, 0, w, h);
+
+            const region = document.createElement("canvas");
+            region.width = rw;
+            region.height = rh;
+            const rctx = region.getContext("2d");
+            if (!rctx) {
+              resolve(src);
+              return;
+            }
+
+            rctx.drawImage(canvas, x, y, rw, rh, 0, 0, rw, rh);
+            ctx.clearRect(x, y, rw, rh);
+
+            ctx.save();
+            ctx.translate(x, y);
+
+            switch (opts.transform) {
+              case "mirrorY": {
+                ctx.translate(0, rh);
+                ctx.scale(1, -1);
+                break;
+              }
+              case "rotate180": {
+                ctx.translate(rw, rh);
+                ctx.scale(-1, -1);
+                break;
+              }
+              case "mirrorX":
+              default: {
+                ctx.translate(rw, 0);
+                ctx.scale(-1, 1);
+                break;
+              }
+            }
+
+            ctx.drawImage(region, 0, 0, rw, rh);
+            ctx.restore();
+
+            resolve(canvas.toDataURL("image/png"));
+          } catch (e) {
+            console.warn("Failed to bake region flip into texture", e);
+            resolve(src);
+          }
+        };
+        img.onerror = () => resolve(src);
+        img.src = src;
+      });
+    },
+    [],
+  );
+
+  const detectTorsoSides = useCallback(
+    async (
+      uvTemplateDataUrl: string | null,
+      fallbackBackSide: "left" | "right",
+    ): Promise<{ frontSide: "left" | "right"; backSide: "left" | "right" }> => {
+      const fallback: { frontSide: "left" | "right"; backSide: "left" | "right" } = {
+        frontSide: fallbackBackSide === "right" ? "left" : "right",
+        backSide: fallbackBackSide,
+      };
+
+      if (!uvTemplateDataUrl) return fallback;
+
+      try {
+        const analysis = await analyzeUvLayoutFromDataUrl(uvTemplateDataUrl, {
+          maxSize: 384,
+          threshold: 215,
+          dilationPasses: 1,
+          minComponentPixels: 35,
+          maxIslands: 28,
+        });
+
+        const islands = analysis?.islands ?? [];
+        const torsoIslands = islands.filter((i) => i.cy < 0.6);
+
+        const leftArea = torsoIslands
+          .filter((i) => i.cx < 0.5)
+          .reduce((sum, i) => sum + i.w * i.h, 0);
+        const rightArea = torsoIslands
+          .filter((i) => i.cx >= 0.5)
+          .reduce((sum, i) => sum + i.w * i.h, 0);
+
+        if (leftArea <= 0 && rightArea <= 0) return fallback;
+
+        const areaRatio = rightArea > 0 ? leftArea / rightArea : 0;
+        if (areaRatio > 0.83 && areaRatio < 1.2) {
+          return fallback;
+        }
+
+        const backSide: "left" | "right" = rightArea >= leftArea ? "right" : "left";
+        const frontSide: "left" | "right" = backSide === "right" ? "left" : "right";
+        return { backSide, frontSide };
+      } catch (e) {
+        return fallback;
+      }
+    },
+    [],
+  );
+
   // Handle new AI Texture Generator result
   const handleGeneratedTexture = useCallback(async (
     texture: THREE.Texture,
@@ -283,27 +587,85 @@ export function Step08AIImages() {
     options?: { normalMapUrl?: string | null; roughnessMapUrl?: string | null }
   ) => {
     const transformedPatternUrl = await transformTexture(url, {
-      flipY: true,
+      flipY: false, // Three.js now uses flipY=true via TextureCompositor
     });
 
-    const finalPatternUrl =
-      applyTextureToBack && bakeBackFlipIntoTexture && completeUVMap
-        ? await bakeBackFlipIntoUvTexture(transformedPatternUrl, {
-            uvTemplateDataUrl: completeUVMap,
-            srcWasFlipY: true,
-            backSide: backUvSide,
-            transform: backTextureTransform,
-          })
-        : transformedPatternUrl;
+    let finalPatternUrl = transformedPatternUrl;
+
+    // 1. Fix Back Panel
+    if (applyTextureToBack && bakeBackFlipIntoTexture && completeUVMap) {
+      const { backSide } = await detectTorsoSides(completeUVMap, backUvSide);
+      finalPatternUrl = await bakeBackFlipIntoUvTexture(transformedPatternUrl, {
+        uvTemplateDataUrl: completeUVMap,
+        srcWasFlipY: false,
+        backSide,
+        transform: backTextureTransform,
+      });
+    }
+
+    // 2. Fix Front Panel (for NON-Flag Football UV models)
+    // For flag football UV models, we skip this to avoid double-flipping, 
+    // and instead let the region flip (below) handle it.
+    const isFlagFootballUvModel = currentModelUrl?.includes("flag-football-top-with-hoodie_UV_MAP");
+    
+    if (completeUVMap && !isFlagFootballUvModel) {
+      const { frontSide } = await detectTorsoSides(completeUVMap, backUvSide);
+      finalPatternUrl = await bakeFrontFlipIntoUvTexture(finalPatternUrl, {
+        uvTemplateDataUrl: completeUVMap,
+        srcWasFlipY: false,
+        frontSide,
+        transform: "mirrorX",
+      });
+    }
+
+    // 3. Fix Other Regions (Side panels, shorts, etc.)
+    // For flag football UV models, we flip ALL non-back regions vertically (mirrorY)
+    if (completeUVMap) {
+      try {
+        const analysis = await analyzeUvLayoutFromDataUrl(completeUVMap, {
+          maxSize: 384,
+          threshold: 215,
+          dilationPasses: 1,
+          minComponentPixels: 35,
+          maxIslands: 28,
+        });
+
+        const allIslands = analysis?.islands ?? [];
+
+        // For flag football UV_MAP models: flip ALL islands except the back torso
+        // For other models: flip only islands explicitly marked as "inverted" (legacy logic - comment out if missing property)
+        const islandsToFlip = isFlagFootballUvModel
+          ? allIslands.filter((i) => i.labelHint !== "back-torso")
+          : []; // allIslands.filter((i) => ... orientationHint ... ) - logic removed temporarily to safely fix flag football sans orientationHint
+
+        for (const island of islandsToFlip) {
+          finalPatternUrl = await bakeRegionFlipIntoUvTexture(finalPatternUrl, {
+            bounds: {
+              x1: island.x1,
+              y1: island.y1,
+              x2: island.x2,
+              y2: island.y2,
+            },
+            srcWasFlipY: false,
+            transform: "mirrorY",
+          });
+        }
+      } catch (e) {
+        console.warn("Failed to auto-correct region orientation", e);
+      }
+    }
+
+    // strict UV mask removed as helper is missing
+    // finalPatternUrl = await applyUvMaskToTexture(finalPatternUrl, completeUVMask);
     const flippedNormalUrl = options?.normalMapUrl
       ? await transformTexture(options.normalMapUrl, {
-        flipY: true,
-      })
+          flipY: false,
+        })
       : null;
     const flippedRoughnessUrl = options?.roughnessMapUrl
       ? await transformTexture(options.roughnessMapUrl, {
-        flipY: true,
-      })
+          flipY: false,
+        })
       : null;
 
     const newId = uuidv4();
@@ -349,7 +711,56 @@ export function Step08AIImages() {
     backUvSide,
     backTextureTransform,
     bakeBackFlipIntoUvTexture,
+    bakeFrontFlipIntoUvTexture,
+    bakeRegionFlipIntoUvTexture,
+    detectTorsoSides,
+    currentModelUrl,
   ]);
+
+  const handleGenerateTestPattern = async () => {
+    if (!completeUVMap) {
+      toast.error("No UV map available for test pattern");
+      return;
+    }
+
+    setIsGeneratingDebug(true);
+    try {
+      const pattern = await generateTestPattern(completeUVMap, {
+        width: 2048,
+        height: 2048,
+        showGrid: true,
+        showLabels: true,
+        showUvWireframe: true,
+      });
+
+      setDebugPattern(pattern.url);
+
+      const newId = uuidv4();
+      addTextureLayer({
+        id: newId,
+        name: "🔧 Debug Test Pattern",
+        type: "pattern",
+        visible: true,
+        locked: false,
+        opacity: 1,
+        blendMode: "normal",
+        order: textureLayers.length,
+        imageUrl: pattern.url,
+        position: [0.5, 0.5, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        flipX: false,
+      });
+
+      setSelectedTextureLayerId(newId);
+      toast.success("Test pattern applied! Check directional markers.");
+    } catch (error) {
+      console.error("Failed to generate test pattern", error);
+      toast.error("Failed to generate test pattern");
+    } finally {
+      setIsGeneratingDebug(false);
+    }
+  };
 
   // Listen for generated images from the AIImageGenerator component
   // Background is already removed by the advanced AI in the generator
@@ -457,15 +868,27 @@ export function Step08AIImages() {
               {showUVMap ? "Hide" : "Show"}
             </Button>
             {completeUVMap && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleDownloadUVMap}
-              >
-                <Download className="w-3 h-3 mr-1" />
-                Download
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={handleDownloadUVMap}
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Download
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs bg-amber-50 hover:bg-amber-100 border-amber-200"
+                  onClick={handleGenerateTestPattern}
+                  disabled={isGeneratingDebug}
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  {isGeneratingDebug ? "Generating..." : "Test Pattern"}
+                </Button>
+              </>
             )}
           </div>
         </div>
