@@ -578,9 +578,9 @@ export function extractUVMapFromThreeModel(
           );
 
           ctx.beginPath();
-          ctx.moveTo(uvA.x * width, (1 - uvA.y) * height);
-          ctx.lineTo(uvB.x * width, (1 - uvB.y) * height);
-          ctx.lineTo(uvC.x * width, (1 - uvC.y) * height);
+          ctx.moveTo(uvA.x * width, uvA.y * height);
+          ctx.lineTo(uvB.x * width, uvB.y * height);
+          ctx.lineTo(uvC.x * width, uvC.y * height);
           ctx.closePath();
           ctx.stroke();
         }
@@ -601,9 +601,9 @@ export function extractUVMapFromThreeModel(
           );
 
           ctx.beginPath();
-          ctx.moveTo(uvA.x * width, (1 - uvA.y) * height);
-          ctx.lineTo(uvB.x * width, (1 - uvB.y) * height);
-          ctx.lineTo(uvC.x * width, (1 - uvC.y) * height);
+          ctx.moveTo(uvA.x * width, uvA.y * height);
+          ctx.lineTo(uvB.x * width, uvB.y * height);
+          ctx.lineTo(uvC.x * width, uvC.y * height);
           ctx.closePath();
           ctx.stroke();
         }
