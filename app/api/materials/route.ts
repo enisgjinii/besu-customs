@@ -117,7 +117,7 @@ export async function GET(request: Request) {
   // Function to rename sections for specific models
   const renameSectionForModel = (originalName: string): string | null => {
     // Baseball Cap renaming
-    if (modelParam.includes("baseball-caps.glb")) {
+    if (modelParam.includes("baseball-caps")) {
       if (originalName === "Default Topstitch_2473") return "Stitching Color";
       if (originalName === "Strap_2456") return "Strap Color";
       if (originalName === "Brim_2452") return "Brim Color";
@@ -637,7 +637,7 @@ export async function GET(request: Request) {
     }
 
     // Baseball Caps categories
-    if (modelParam.includes("baseball-caps.glb")) {
+    if (modelParam.includes("baseball-caps")) {
       return "Baseball Cap Colors";
     }
 

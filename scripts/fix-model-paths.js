@@ -33,7 +33,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Map of model names to correct file paths (using actual DB names)
 const filePathUpdates = {
   Backpack: "/models/Backpack.glb",
-  "Baseball Caps": "/models/baseball-caps.glb",
+  "Baseball Caps": "/models/baseball-caps_UV_FIX.glb",
   "Baseball Jersey": "/models/Baseball-Jersey.glb",
   "Basketball Jersey Top And Long Shorts":
     "/models/basketball-jersey-top-and-long-shorts.glb",

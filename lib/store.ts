@@ -333,7 +333,7 @@ function generateAllProducts(): Product[] {
     {
       id: "baseball-caps",
       title: "Baseball Caps",
-      modelUrl: "/models/baseball-caps.glb",
+      modelUrl: "/models/baseball-caps_UV_FIX.glb",
       category: "Caps",
     },
     {
@@ -1050,8 +1050,12 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       migrate: (persistedState, fromVersion) => {
         if (!persistedState) return persistedState;
         try {
-          if (persistedState.applyTextureToBack && !persistedState.bakeBackFlipIntoTexture) {
-            return { ...persistedState, bakeBackFlipIntoTexture: true } as any;
+          const state = persistedState as Partial<ConfiguratorState> & {
+            applyTextureToBack?: boolean;
+            bakeBackFlipIntoTexture?: boolean;
+          };
+          if (state.applyTextureToBack && !state.bakeBackFlipIntoTexture) {
+            return { ...state, bakeBackFlipIntoTexture: true } as any;
           }
         } catch (e) {
           // If migration fails, return persisted state unchanged
