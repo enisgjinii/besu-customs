@@ -838,6 +838,7 @@ function Model({
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
   const storeAutoRotate = useConfiguratorStore((s) => s.autoRotate);
   const storeSections = useConfiguratorStore((s) => s.sections);
+  const perfConfig = useMobilePerformance();
 
   // Use custom props if provided, otherwise fallback to store
   const autoRotate =
@@ -902,8 +903,8 @@ function Model({
           !isFlagFootballUvMapV2;
         const uvMapDataUrl = extractUVMapFromThreeModel(
           cloned,
-          1024,
-          1024,
+          4096,
+          4096,
           shouldFlipUvMap,
         );
         if (uvMapDataUrl) {
@@ -924,7 +925,7 @@ function Model({
         });
       }, 0);
     }
-  }, [scene, url]);
+  }, [scene, url, perfConfig.uvCanvasSize]);
 
   // Sync Colors - Base Layer
   useEffect(() => {

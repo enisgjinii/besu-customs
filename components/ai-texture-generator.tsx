@@ -86,6 +86,7 @@ export function AITextureGenerator({
   const [generatePbr, setGeneratePbr] = useState(true);
   const [seamless, setSeamless] = useState(true);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [uvOnlyMode, setUvOnlyMode] = useState(true);
 
   // Player info for back of jersey
   const [includePlayerInfo, setIncludePlayerInfo] = useState(false);
@@ -93,6 +94,7 @@ export function AITextureGenerator({
   const [jerseyNumber, setJerseyNumber] = useState("");
 
   const uvMap = useConfiguratorStore((s) => s.completeUVMap);
+  const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
 
   const [uvAnalysisSummary, setUvAnalysisSummary] = useState<string | null>(null);
 
@@ -159,7 +161,8 @@ export function AITextureGenerator({
     applyToScene: applyGoogle,
   } = useGeminiAI();
 
-  const [provider, setProvider] = useState<"runware" | "hitem" | "google">("runware");
+  const [provider, setProvider] = useState<"runware" | "hitem" | "google">("google");
+  const forceGoogle = true;
   // For Hitem generated textures (persistent state for preview)
   const [hitemTexture, setHitemTexture] = useState<THREE.Texture | null>(null);
   const [hitemTextureUrl, setHitemTextureUrl] = useState<string | null>(null);
@@ -170,13 +173,38 @@ export function AITextureGenerator({
   const error = runwareError || hitemError || googleError;
 
   useEffect(() => {
+    if (forceGoogle && provider !== "google") {
+      setProvider("google");
+    }
     if (provider === "google" && generatePbr) {
       setGeneratePbr(false);
     }
-  }, [provider, generatePbr]);
+  }, [provider, generatePbr, forceGoogle]);
 
   const handleGenerate = useCallback(async () => {
-    if (!prompt.trim() || !uvMap) return;
+    if (!uvMap) return;
+
+    const modelUrl = (currentModelUrl || "").toLowerCase();
+    const modelType = modelUrl.includes("baseball-caps")
+      ? "baseball cap"
+      : modelUrl.includes("jersey") || modelUrl.includes("short")
+        ? "jersey and shorts"
+        : modelUrl.includes("hoodie")
+          ? "hoodie"
+          : modelUrl.includes("bag") || modelUrl.includes("backpack")
+            ? "bag"
+            : "sportswear";
+
+    const modelGuard =
+      modelType === "baseball cap"
+        ? "This design is for a baseball cap only: crown panels, brim, button, and strap. Ignore any request to generate jerseys, shorts, sleeves, or torso panels."
+        : modelType === "bag"
+          ? "This design is for a bag only. Ignore any request to generate jerseys, shorts, or apparel."
+          : modelType === "hoodie"
+            ? "This design is for a hoodie only. Ignore any request to generate shorts."
+            : modelType === "jersey and shorts"
+              ? "This design is for jersey and shorts."
+              : "Match the current product type only.";
 
     const cleanName = playerName.trim().toUpperCase();
     const cleanNumber = jerseyNumber.trim().replace(/\D/g, "").slice(0, 3);
@@ -198,16 +226,20 @@ export function AITextureGenerator({
       : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography";
 
     const uvDiscipline =
-      "Respect the provided UV layout: map artwork cleanly to front, back, sleeves, collar, and shorts without stretching across seams; keep orientation upright and symmetric";
+      "Respect the provided UV layout: map artwork cleanly to the correct panels without stretching across seams; keep orientation upright and symmetric";
 
     const baseTextureNote =
       "Flat 2D jersey texture for sublimation; no lighting, shading, or baked shadows";
 
     const partHints =
-      "UV guide: upper-left = front torso; upper-right = back torso; vertical strips = side panels/piping; curved loops = collar/arm trims; lower blocks = shorts fronts/backs; small horizontals = waistbands. Keep circuitry/lines flowing vertically and mirrored left/right. Avoid splitting key motifs across seams.";
+      modelType === "baseball cap"
+        ? "UV guide for cap: crown panels are large curved islands; brim is a long curved shell; strap and button are small islands. Keep motifs aligned across crown panels; keep brim clean and avoid tiny details on strap/button."
+        : "UV guide: large torso panels, side strips, trims, and small bands. Keep flow vertical and mirrored. Avoid splitting key motifs across seams.";
 
     const flowHints =
-      "Use large-scale motifs centered on torso, smaller repeats on side strips, subtle details on trims; keep shorts consistent with torso palette and flow";
+      modelType === "baseball cap"
+        ? "Use a primary motif across crown panels, with a cleaner treatment on the brim. Keep strap/button simple."
+        : "Use large-scale motifs on main panels, smaller repeats on side strips, subtle details on trims; keep all panels consistent in palette and flow";
 
     const consistencyHints =
       "Front + back large torso panels must match stylistically: same palette, same centerline flow, same motif scale. If you place an emblem/animal, keep it centered within the large torso panels and ensure it still looks correct when UV shells are mirrored";
@@ -225,12 +257,20 @@ export function AITextureGenerator({
       ? `Auto UV analysis: ${uvAnalysisSummary}`
       : null;
 
+    const uvOnlyPrompt =
+      modelType === "baseball cap"
+        ? "Create an ultra-premium, advanced baseball cap texture using the UV map as the only placement guide. Build layered material depth: primary motif, secondary micro-pattern, and subtle fabric weave. Keep motifs centered and symmetric across crown panels with clean mirrored flow. Use high-end technical aesthetics: precision lines, controlled gradients, refined edge detailing. Preserve safe margins near seams; avoid splitting key motifs across crown seams. Keep brim clean and bold, and keep strap/button minimal (solid or clean stripe accents)."
+        : "Create an ultra-premium, advanced sportswear texture using the UV map as the only placement guide. Build layered material depth: primary motif, secondary micro-pattern, and subtle fabric weave. Keep motifs centered and symmetric on large panels, with clean mirrored flow. Use high-end technical aesthetics: precision lines, controlled gradients, refined edge detailing. Preserve safe margins near seams; avoid splitting key motifs across seams or thin strips. Use quieter, simplified treatments on trims/straps/waistbands (solid or clean stripe accents).";
+
+    const effectivePrompt = uvOnlyMode ? uvOnlyPrompt : prompt.trim();
+
     // For Google AI, we call it directly with advanced options
     if (provider === "google") {
       // Build clean prompt for Google Gemini
       const googlePrompt = [
-        prompt.trim(),
+        effectivePrompt,
         seamless ? "seamless tileable pattern" : null,
+        modelGuard,
         uvDiscipline,
         uvAutoAnalysis,
         partHints,
@@ -274,9 +314,10 @@ export function AITextureGenerator({
     // For Runware and Hitem, generate base with Runware first
     const shouldApplyStyle = style && style !== "photorealistic";
     const finalPromptParts = [
-      prompt.trim(),
+      effectivePrompt,
       shouldApplyStyle ? `${style} style` : null,
       seamless ? "seamless tileable pattern, texture map" : null,
+      modelGuard,
       uvDiscipline,
       uvAutoAnalysis,
       partHints,
@@ -303,7 +344,9 @@ export function AITextureGenerator({
       "uv lines, wireframe, outline template, black contour lines, seam guide";
 
     const negativeMismatch =
-      "asymmetric, mismatched front and back, different styles per panel";
+      modelType === "baseball cap"
+        ? "jersey, shorts, sleeves, torso panels, pants"
+        : "asymmetric, mismatched front and back, different styles per panel";
 
     const negativePrompt = `${negativeTextPrompt}, ${negativeSafety}, ${negativeUvArtifacts}, ${negativeMismatch}`;
 
@@ -377,7 +420,7 @@ export function AITextureGenerator({
         console.error("Hitem Chain Error", e);
       }
     }
-  }, [prompt, style, seamless, generatePbr, uvMap, provider, includePlayerInfo, playerName, jerseyNumber, generateRunware, generateHitem, generateGoogle, onTextureGenerated, scene]);
+  }, [prompt, uvOnlyMode, style, seamless, generatePbr, uvMap, provider, includePlayerInfo, playerName, jerseyNumber, generateRunware, generateHitem, generateGoogle, onTextureGenerated, scene, currentModelUrl]);
 
   // Display var helpers
   const currentTextureUrl = provider === "runware" ? runwareUrl : (provider === "google" ? googleUrl : hitemTextureUrl);
@@ -406,7 +449,7 @@ export function AITextureGenerator({
     }
   }, [runwareTexture, googleTexture, provider, scene, applyRunware, applyGoogle]);
 
-  const canGenerate = prompt.trim() && uvMap && !isGenerating;
+  const canGenerate = (uvOnlyMode || prompt.trim()) && uvMap && !isGenerating;
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -415,9 +458,11 @@ export function AITextureGenerator({
         <div className="flex p-1 bg-muted rounded-lg">
           <button
             onClick={() => setProvider("runware")}
+            disabled={forceGoogle}
             className={cn(
               "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
-              provider === "runware" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              provider === "runware" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              forceGoogle && "opacity-50 cursor-not-allowed"
             )}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -425,9 +470,11 @@ export function AITextureGenerator({
           </button>
           <button
             onClick={() => setProvider("hitem")}
+            disabled={forceGoogle}
             className={cn(
               "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
-              provider === "hitem" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              provider === "hitem" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              forceGoogle && "opacity-50 cursor-not-allowed"
             )}
           >
             <Box className="w-3.5 h-3.5" />
@@ -435,15 +482,23 @@ export function AITextureGenerator({
           </button>
           <button
             onClick={() => setProvider("google")}
+            disabled={forceGoogle}
             className={cn(
               "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
-              provider === "google" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              provider === "google" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              forceGoogle && "opacity-50 cursor-not-allowed"
             )}
           >
             <Sparkles className="w-3.5 h-3.5" />
             Google AI
           </button>
         </div>
+
+        {forceGoogle && (
+          <div className="text-[10px] text-muted-foreground px-1">
+            Gemini 3 Pro is enforced for all AI texture generation.
+          </div>
+        )}
 
         {provider === "hitem" && (
           <div className="text-[10px] text-muted-foreground px-1 bg-blue-50/50 p-2 rounded border border-blue-100">
@@ -498,17 +553,41 @@ export function AITextureGenerator({
           </div>
         </div>
 
+        {/* UV-only Mode */}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <Label htmlFor="uv-only" className="text-xs font-medium">
+              UV-only Generation (Advanced)
+            </Label>
+            <span className="text-[11px] text-muted-foreground">
+              Uses the UV map as the sole guide and auto-builds an advanced prompt.
+            </span>
+          </div>
+          <Switch
+            id="uv-only"
+            checked={uvOnlyMode}
+            onCheckedChange={setUvOnlyMode}
+            disabled={isGenerating}
+          />
+        </div>
+
         {/* Pattern Input */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Description</Label>
+          <Label className="text-xs text-muted-foreground">
+            {uvOnlyMode ? "Description (optional)" : "Description"}
+          </Label>
           <Input
-            placeholder="Describe your texture (e.g., weathered red leather, gold honeycomb)..."
+            placeholder={
+              uvOnlyMode
+                ? "Optional: add extra style notes (disabled in UV-only mode)"
+                : "Describe your texture (e.g., weathered red leather, gold honeycomb)..."
+            }
             value={prompt}
             onChange={(e) => {
               setPrompt(e.target.value);
               setSelectedPreset(null);
             }}
-            disabled={isGenerating}
+            disabled={isGenerating || uvOnlyMode}
             className="h-10"
           />
         </div>
