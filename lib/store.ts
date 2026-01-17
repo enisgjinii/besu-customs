@@ -684,14 +684,20 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
 
       // Back texture option - default true (apply to back)
       applyTextureToBack: true,
-      setApplyTextureToBack: (apply: boolean) => set({ applyTextureToBack: apply }),
+      setApplyTextureToBack: (apply: boolean) =>
+        set((state) => ({
+          applyTextureToBack: apply,
+          // Automatically enable Bake Back Fix whenever we turn on Apply-to-Back,
+          // ensuring the fix is applied by default for users.
+          bakeBackFlipIntoTexture: apply ? true : state.bakeBackFlipIntoTexture,
+        })),
 
       // Back texture orientation - default mirrorX (most common for jersey backs)
       backTextureTransform: "mirrorX",
       setBackTextureTransform: (mode) => set({ backTextureTransform: mode }),
 
-      // Back UV baking (off by default)
-      bakeBackFlipIntoTexture: false,
+      // Back UV baking (enabled by default)
+      bakeBackFlipIntoTexture: true,
       setBakeBackFlipIntoTexture: (enabled: boolean) =>
         set({ bakeBackFlipIntoTexture: enabled }),
       backUvSide: "right",
@@ -1038,6 +1044,21 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
     }),
     {
       name: "besu-configurator-storage",
+      version: 1,
+      // Migrate persisted state so that users who already had Apply-to-Back enabled
+      // also get Bake Back Fix enabled by default going forward.
+      migrate: (persistedState, fromVersion) => {
+        if (!persistedState) return persistedState;
+        try {
+          if (persistedState.applyTextureToBack && !persistedState.bakeBackFlipIntoTexture) {
+            return { ...persistedState, bakeBackFlipIntoTexture: true } as any;
+          }
+        } catch (e) {
+          // If migration fails, return persisted state unchanged
+          console.warn("Failed to migrate persisted store for bakeBackFlipIntoTexture", e);
+        }
+        return persistedState;
+      },
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         // Only persist essential fields, excluding large data URLs
