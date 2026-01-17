@@ -592,6 +592,17 @@ export function Step08AIImages() {
 
     let finalPatternUrl = transformedPatternUrl;
 
+    const isFlagFootballUvModel =
+      currentModelUrl?.includes("flag-football-top-with-hoodie_UV_MAP") &&
+      !currentModelUrl?.toLowerCase().includes(
+        "flag-football-top-with-hoodie_uv_map_v2.glb",
+      );
+    const backTransformForBake = currentModelUrl?.toLowerCase().includes(
+      "flag-football-top-with-hoodie_uv_map_v2.glb",
+    )
+      ? "none"
+      : backTextureTransform;
+
     // 1. Fix Back Panel
     if (applyTextureToBack && bakeBackFlipIntoTexture && completeUVMap) {
       const { backSide } = await detectTorsoSides(completeUVMap, backUvSide);
@@ -599,15 +610,13 @@ export function Step08AIImages() {
         uvTemplateDataUrl: completeUVMap,
         srcWasFlipY: false,
         backSide,
-        transform: backTextureTransform,
+        transform: backTransformForBake,
       });
     }
 
     // 2. Fix Front Panel (for NON-Flag Football UV models)
     // For flag football UV models, we skip this to avoid double-flipping, 
     // and instead let the region flip (below) handle it.
-    const isFlagFootballUvModel = currentModelUrl?.includes("flag-football-top-with-hoodie_UV_MAP");
-    
     if (completeUVMap && !isFlagFootballUvModel) {
       const { frontSide } = await detectTorsoSides(completeUVMap, backUvSide);
       finalPatternUrl = await bakeFrontFlipIntoUvTexture(finalPatternUrl, {

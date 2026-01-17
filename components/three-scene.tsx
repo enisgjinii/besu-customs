@@ -71,6 +71,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     backTextureDebugRotationDeg,
     backTextureDebugOffsetX,
     backTextureDebugOffsetY,
+    currentModelUrl,
   } = useConfiguratorStore(useShallow((s) => ({
     textureLayers: s.textureLayers,
     selectedTextureLayerId: s.selectedTextureLayerId,
@@ -88,8 +89,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     backTextureDebugRotationDeg: s.backTextureDebugRotationDeg,
     backTextureDebugOffsetX: s.backTextureDebugOffsetX,
     backTextureDebugOffsetY: s.backTextureDebugOffsetY,
+    currentModelUrl: s.currentModelUrl,
   })));
   const perfConfig = useMobilePerformance();
+
+  const modelUrl = (currentModelUrl || "").toLowerCase();
+  const isFlagFootballUvV2 = modelUrl.includes(
+    "flag-football-top-with-hoodie_uv_map_v2.glb",
+  );
 
   // Debounce texture layers to prevent rapid re-renders
   const debouncedLayers = useDebounce(textureLayers, perfConfig.debounceMs);
@@ -458,11 +465,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         alpha: true,
         willReadFrequently: false,
       });
+      const effectiveBackTransform = isFlagFootballUvV2
+        ? "none"
+        : backTextureTransform;
       if (backCtx) {
         backCtx.setTransform(1, 0, 0, 1, 0, 0);
         backCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-        switch (backTextureTransform) {
+        switch (effectiveBackTransform) {
           case "none": {
             backCtx.drawImage(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
             break;
@@ -558,6 +568,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     perfConfig.isLowEndDevice,
     setActiveLayerBounds,
     globalCustomTexture,
+    backTextureTransform,
+    bakeBackFlipIntoTexture,
+    applyTextureToBack,
+    backTextureDebugEnabled,
+    backTextureDebugRotationDeg,
+    backTextureDebugOffsetX,
+    backTextureDebugOffsetY,
+    currentModelUrl,
   ]);
 
   useEffect(() => {
@@ -579,9 +597,13 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   // Apply Texture to Material
   useEffect(() => {
     if (!scene) return;
-    texture.flipY = false;
+    const shouldFlipY =
+      modelUrl.includes("flag-football-top-with-hoodie.glb") &&
+      !isFlagFootballUvV2;
+
+    texture.flipY = shouldFlipY;
     texture.colorSpace = THREE.SRGBColorSpace;
-    backTexture.flipY = false;
+    backTexture.flipY = shouldFlipY;
     backTexture.colorSpace = THREE.SRGBColorSpace;
 
     const hasRenderableTexture =
@@ -715,6 +737,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     backTextureDebugRotationDeg,
     backTextureDebugOffsetX,
     backTextureDebugOffsetY,
+    currentModelUrl,
     sections,
   ]);
 
@@ -870,7 +893,19 @@ function Model({
         console.log("💡 Access model analysis via: window.__modelAnalysis");
 
         // Extract UV map and store it for AI design section
-        const uvMapDataUrl = extractUVMapFromThreeModel(cloned, 1024, 1024);
+        const uvMapModelUrl = (url || "").toLowerCase();
+        const isFlagFootballUvMapV2 = uvMapModelUrl.includes(
+          "flag-football-top-with-hoodie_uv_map_v2.glb",
+        );
+        const shouldFlipUvMap =
+          uvMapModelUrl.includes("flag-football-top-with-hoodie_uv_map") &&
+          !isFlagFootballUvMapV2;
+        const uvMapDataUrl = extractUVMapFromThreeModel(
+          cloned,
+          1024,
+          1024,
+          shouldFlipUvMap,
+        );
         if (uvMapDataUrl) {
           useConfiguratorStore.getState().setCompleteUVMap(uvMapDataUrl);
           console.log("🗺️ UV map extracted and stored");

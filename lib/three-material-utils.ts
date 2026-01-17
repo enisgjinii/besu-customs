@@ -531,6 +531,7 @@ export function extractUVMapFromThreeModel(
   scene: THREE.Object3D,
   width: number = 2048,
   height: number = 2048,
+  flipY: boolean = false,
 ): string | null {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -577,10 +578,14 @@ export function extractUVMapFromThreeModel(
             uvAttribute.getY(c),
           );
 
+          const yA = (flipY ? 1 - uvA.y : uvA.y) * height;
+          const yB = (flipY ? 1 - uvB.y : uvB.y) * height;
+          const yC = (flipY ? 1 - uvC.y : uvC.y) * height;
+
           ctx.beginPath();
-          ctx.moveTo(uvA.x * width, uvA.y * height);
-          ctx.lineTo(uvB.x * width, uvB.y * height);
-          ctx.lineTo(uvC.x * width, uvC.y * height);
+          ctx.moveTo(uvA.x * width, yA);
+          ctx.lineTo(uvB.x * width, yB);
+          ctx.lineTo(uvC.x * width, yC);
           ctx.closePath();
           ctx.stroke();
         }
@@ -600,10 +605,14 @@ export function extractUVMapFromThreeModel(
             uvAttribute.getY(i + 2),
           );
 
+          const yA = (flipY ? 1 - uvA.y : uvA.y) * height;
+          const yB = (flipY ? 1 - uvB.y : uvB.y) * height;
+          const yC = (flipY ? 1 - uvC.y : uvC.y) * height;
+
           ctx.beginPath();
-          ctx.moveTo(uvA.x * width, uvA.y * height);
-          ctx.lineTo(uvB.x * width, uvB.y * height);
-          ctx.lineTo(uvC.x * width, uvC.y * height);
+          ctx.moveTo(uvA.x * width, yA);
+          ctx.lineTo(uvB.x * width, yB);
+          ctx.lineTo(uvC.x * width, yC);
           ctx.closePath();
           ctx.stroke();
         }
