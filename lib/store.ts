@@ -181,19 +181,30 @@ export interface ConfiguratorState {
   ) => void;
 
   /**
-   * Debug options for soccer jersey crew neck model
+   * Debug options for soccer jersey models (crew neck and v-neck)
    */
   soccerJerseyDebug: {
     flipY: boolean;
     backTransform: "mirrorX" | "mirrorY" | "rotate180" | "none";
     applyToBack: boolean;
     useBackTexture: boolean;
+    // UV transform controls for fine-tuning texture alignment
+    uvOffsetX: number; // -1 to 1
+    uvOffsetY: number; // -1 to 1
+    uvRepeatX: number; // 0.1 to 2
+    uvRepeatY: number; // 0.1 to 2
+    uvRotation: number; // degrees -180 to 180
   };
   setSoccerJerseyDebug: (options: {
     flipY?: boolean;
     backTransform?: "mirrorX" | "mirrorY" | "rotate180" | "none";
     applyToBack?: boolean;
     useBackTexture?: boolean;
+    uvOffsetX?: number;
+    uvOffsetY?: number;
+    uvRepeatX?: number;
+    uvRepeatY?: number;
+    uvRotation?: number;
   }) => void;
 
   /**
@@ -712,12 +723,18 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       backTextureTransform: "mirrorX",
       setBackTextureTransform: (mode) => set({ backTextureTransform: mode }),
 
-      // Soccer jersey crew neck debug options
+      // Soccer jersey debug options
       soccerJerseyDebug: {
         flipY: false,
         backTransform: "none",
         applyToBack: true,
         useBackTexture: false,
+        // UV transform defaults - centered with no scale
+        uvOffsetX: 0,
+        uvOffsetY: 0,
+        uvRepeatX: 1,
+        uvRepeatY: 1,
+        uvRotation: 0,
       },
       setSoccerJerseyDebug: (options) =>
         set((state) => ({

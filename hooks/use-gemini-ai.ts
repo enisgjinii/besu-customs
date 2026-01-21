@@ -36,6 +36,13 @@ export interface GeminiTextureOptions {
   resolution?: "1K" | "2K" | "4K";
   /** Texture style preset */
   textureStyle?: "realistic" | "stylized" | "fabric" | "metallic" | "organic";
+  /** Optional debug options for specific models */
+  debugOptions?: {
+    flipY?: boolean;
+    backTransform?: "mirrorX" | "mirrorY" | "rotate180" | "none";
+    applyToBack?: boolean;
+    useBackTexture?: boolean;
+  };
 }
 
 export interface GeminiGenerationResult {

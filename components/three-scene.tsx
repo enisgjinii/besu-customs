@@ -686,12 +686,18 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           if (isSoccerJerseyForTexture) {
             const soccerDebug = useConfiguratorStore.getState().soccerJerseyDebug;
             
-            if (soccerDebug.useBackTexture && isBack) {
-              m.map = backTexture; // Use back texture for back materials
-            } else {
-              m.map = texture; // Use main texture for all materials
-            }
+            // Select which texture to use
+            const texToApply = (soccerDebug.useBackTexture && isBack) ? backTexture : texture;
+            m.map = texToApply;
             
+            // Apply UV transforms for fine-tuning alignment
+            if (m.map) {
+              m.map.offset.set(soccerDebug.uvOffsetX, soccerDebug.uvOffsetY);
+              m.map.repeat.set(soccerDebug.uvRepeatX, soccerDebug.uvRepeatY);
+              m.map.center.set(0.5, 0.5);
+              m.map.rotation = (soccerDebug.uvRotation * Math.PI) / 180; // Convert degrees to radians
+              m.map.updateMatrix();
+            }
 
           } else {
             // Apply same texture to all materials - AI texture is designed for full UV layout

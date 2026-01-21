@@ -481,9 +481,90 @@ export function AITextureGenerator({
               </div>
             </div>
 
+            {/* UV Transform Controls */}
+            <div className="space-y-2 pt-2 border-t border-red-200/50">
+              <Label className="text-xs font-medium">UV Alignment Controls</Label>
+              
+              <div className="grid grid-cols-2 gap-2">
+                {/* UV Offset X */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Offset X: {soccerJerseyDebug.uvOffsetX?.toFixed(2) ?? 0}</Label>
+                  <input
+                    type="range"
+                    min="-1"
+                    max="1"
+                    step="0.01"
+                    value={soccerJerseyDebug.uvOffsetX ?? 0}
+                    onChange={(e) => setSoccerJerseyDebug({ uvOffsetX: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    disabled={isGenerating}
+                  />
+                </div>
+                
+                {/* UV Offset Y */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Offset Y: {soccerJerseyDebug.uvOffsetY?.toFixed(2) ?? 0}</Label>
+                  <input
+                    type="range"
+                    min="-1"
+                    max="1"
+                    step="0.01"
+                    value={soccerJerseyDebug.uvOffsetY ?? 0}
+                    onChange={(e) => setSoccerJerseyDebug({ uvOffsetY: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    disabled={isGenerating}
+                  />
+                </div>
+                
+                {/* UV Repeat X (Scale) */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Scale X: {soccerJerseyDebug.uvRepeatX?.toFixed(2) ?? 1}</Label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.01"
+                    value={soccerJerseyDebug.uvRepeatX ?? 1}
+                    onChange={(e) => setSoccerJerseyDebug({ uvRepeatX: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    disabled={isGenerating}
+                  />
+                </div>
+                
+                {/* UV Repeat Y (Scale) */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Scale Y: {soccerJerseyDebug.uvRepeatY?.toFixed(2) ?? 1}</Label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.01"
+                    value={soccerJerseyDebug.uvRepeatY ?? 1}
+                    onChange={(e) => setSoccerJerseyDebug({ uvRepeatY: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    disabled={isGenerating}
+                  />
+                </div>
+              </div>
+              
+              {/* UV Rotation */}
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Rotation: {soccerJerseyDebug.uvRotation?.toFixed(0) ?? 0}°</Label>
+                <input
+                  type="range"
+                  min="-180"
+                  max="180"
+                  step="1"
+                  value={soccerJerseyDebug.uvRotation ?? 0}
+                  onChange={(e) => setSoccerJerseyDebug({ uvRotation: parseFloat(e.target.value) })}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  disabled={isGenerating}
+                />
+              </div>
+            </div>
+
             <div className="text-[10px] text-red-600 bg-red-100/50 p-2 rounded">
-              <strong>Debug Mode:</strong> These options only affect the Soccer Jersey Crew Neck model. 
-              Try different combinations to fix texture mapping issues.
+              <strong>Debug Mode:</strong> Use UV controls to fix texture alignment on the 3D model.
             </div>
           </div>
         )}
