@@ -82,19 +82,23 @@ export function AITextureGenerator({
   className,
 }: AITextureGeneratorProps) {
   const [prompt, setPrompt] = useState("");
-  const [style, setStyle] = useState("photorealistic");
-  const [generatePbr, setGeneratePbr] = useState(true);
-  const [seamless, setSeamless] = useState(true);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [uvOnlyMode, setUvOnlyMode] = useState(true);
+  const [uvOnlyMode, setUvOnlyMode] = useState(true); // Always start with UV-only mode enabled
 
   // Player info for back of jersey
   const [includePlayerInfo, setIncludePlayerInfo] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [jerseyNumber, setJerseyNumber] = useState("");
 
+  // Debug options specifically for soccer jersey crew neck
+  const soccerJerseyDebug = useConfiguratorStore((s) => s.soccerJerseyDebug);
+  const setSoccerJerseyDebug = useConfiguratorStore((s) => s.setSoccerJerseyDebug);
+
   const uvMap = useConfiguratorStore((s) => s.completeUVMap);
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
+
+  // Check if current model is soccer jersey crew neck
+  const isSoccerJerseyCrewNeck = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || false;
 
   const [uvAnalysisSummary, setUvAnalysisSummary] = useState<string | null>(null);
 
@@ -131,29 +135,8 @@ export function AITextureGenerator({
   }, [uvMap]);
 
   const {
-    textureUrl: runwareUrl,
-    texture: runwareTexture,
-    normalMapUrl: runwareNormalUrl,
-    roughnessMapUrl: runwareRoughnessUrl,
-    isGenerating: isRunwareGenerating,
-    error: runwareError,
-    progress: runwareProgress,
-    generateTexture: generateRunware,
-    applyToScene: applyRunware,
-  } = useRunwareAI();
-
-  const {
-    isGenerating: isHitemGenerating,
-    progress: hitemProgress,
-    error: hitemError,
-    generateTexture: generateHitem,
-  } = useHitemAI();
-
-  const {
     textureUrl: googleUrl,
     texture: googleTexture,
-    normalMapUrl: googleNormalUrl,
-    roughnessMapUrl: googleRoughnessUrl,
     isGenerating: isGoogleGenerating,
     error: googleError,
     progress: googleProgress,
@@ -161,25 +144,10 @@ export function AITextureGenerator({
     applyToScene: applyGoogle,
   } = useGeminiAI();
 
-  const [provider, setProvider] = useState<"runware" | "hitem" | "google">("google");
-  const forceGoogle = true;
-  // For Hitem generated textures (persistent state for preview)
-  const [hitemTexture, setHitemTexture] = useState<THREE.Texture | null>(null);
-  const [hitemTextureUrl, setHitemTextureUrl] = useState<string | null>(null);
-  const [hitemMaps, setHitemMaps] = useState<{ normal?: string; roughness?: string }>({});
-
-  const isGenerating = isRunwareGenerating || isHitemGenerating || isGoogleGenerating;
-  const progress = isRunwareGenerating ? runwareProgress : (isGoogleGenerating ? googleProgress : hitemProgress);
-  const error = runwareError || hitemError || googleError;
-
-  useEffect(() => {
-    if (forceGoogle && provider !== "google") {
-      setProvider("google");
-    }
-    if (provider === "google" && generatePbr) {
-      setGeneratePbr(false);
-    }
-  }, [provider, generatePbr, forceGoogle]);
+  const provider = "google"; // Force Google AI only
+  const isGenerating = isGoogleGenerating;
+  const progress = googleProgress;
+  const error = googleError;
 
   const handleGenerate = useCallback(async () => {
     if (!uvMap) return;
@@ -262,61 +230,15 @@ export function AITextureGenerator({
         ? "Create an ultra-premium, advanced baseball cap texture using the UV map as the only placement guide. Build layered material depth: primary motif, secondary micro-pattern, and subtle fabric weave. Keep motifs centered and symmetric across crown panels with clean mirrored flow. Use high-end technical aesthetics: precision lines, controlled gradients, refined edge detailing. Preserve safe margins near seams; avoid splitting key motifs across crown seams. Keep brim clean and bold, and keep strap/button minimal (solid or clean stripe accents)."
         : "Create an ultra-premium, advanced sportswear texture using the UV map as the only placement guide. Build layered material depth: primary motif, secondary micro-pattern, and subtle fabric weave. Keep motifs centered and symmetric on large panels, with clean mirrored flow. Use high-end technical aesthetics: precision lines, controlled gradients, refined edge detailing. Preserve safe margins near seams; avoid splitting key motifs across seams or thin strips. Use quieter, simplified treatments on trims/straps/waistbands (solid or clean stripe accents).";
 
-    const effectivePrompt = uvOnlyMode ? uvOnlyPrompt : prompt.trim();
+    // Always use UV-guided generation, but incorporate user prompt if provided
+    const effectivePrompt = prompt.trim() 
+      ? `${uvOnlyPrompt} Style notes: ${prompt.trim()}`
+      : uvOnlyPrompt;
 
-    // For Google AI, we call it directly with advanced options
-    if (provider === "google") {
-      // Build clean prompt for Google Gemini
-      const googlePrompt = [
-        effectivePrompt,
-        seamless ? "seamless tileable pattern" : null,
-        modelGuard,
-        uvDiscipline,
-        uvAutoAnalysis,
-        partHints,
-        flowHints,
-        consistencyHints,
-        trimHints,
-        uvLineGuard,
-        textGuardrail,
-        safetyGuard,
-        "Use the UV image as strict placement guide for each jersey panel",
-        baseTextureNote,
-      ]
-        .filter(Boolean)
-        .join(". ");
-
-      console.log("🎨 Calling Google Gemini Pro with advanced settings:", {
-        prompt: googlePrompt,
-        model: "pro",
-        resolution: "2K",
-      });
-
-      const googleResult = await generateGoogle({
-        prompt: googlePrompt,
-        uvMap,
-        generatePbr: false, // PBR handled locally if needed
-        model: "pro", // Use Pro model for best quality
-        aspectRatio: "1:1",
-        resolution: "2K", // Higher resolution for better textures
-        textureStyle: "realistic", // Professional realistic style
-      });
-
-      if (googleResult && onTextureGenerated) {
-        await onTextureGenerated(googleResult.texture, googleResult.imageUrl, {
-          normalMapUrl: googleResult.normalMapUrl,
-          roughnessMapUrl: googleResult.roughnessMapUrl,
-        });
-      }
-      return;
-    }
-
-    // For Runware and Hitem, generate base with Runware first
-    const shouldApplyStyle = style && style !== "photorealistic";
-    const finalPromptParts = [
+    // Build clean prompt for Google Gemini
+    const googlePrompt = [
       effectivePrompt,
-      shouldApplyStyle ? `${style} style` : null,
-      seamless ? "seamless tileable pattern, texture map" : null,
+      "seamless tileable pattern",
       modelGuard,
       uvDiscipline,
       uvAutoAnalysis,
@@ -327,105 +249,45 @@ export function AITextureGenerator({
       uvLineGuard,
       textGuardrail,
       safetyGuard,
+      "Use the UV image as strict placement guide for each jersey panel",
       baseTextureNote,
-    ].filter(Boolean);
+    ]
+      .filter(Boolean)
+      .join(". ");
 
-    const finalPrompt = finalPromptParts.join(". ");
-
-    const negativeTextPrompt = wantsPersonalization
-      ? "watermark, duplicate text, extra numbers, random letters, gibberish typography, double numbers"
-      : "numbers, letters, names, jersey number, typography, text overlay, watermark, brand logo, digits";
-
-    // Always keep safety + non-human guardrails in the negative prompt for Runware.
-    const negativeSafety =
-      "nudity, nude, naked, cleavage, porn, sexual content, person, people, human, face, violence, blood, weapon, hate symbol";
-
-    const negativeUvArtifacts =
-      "uv lines, wireframe, outline template, black contour lines, seam guide";
-
-    const negativeMismatch =
-      modelType === "baseball cap"
-        ? "jersey, shorts, sleeves, torso panels, pants"
-        : "asymmetric, mismatched front and back, different styles per panel";
-
-    const negativePrompt = `${negativeTextPrompt}, ${negativeSafety}, ${negativeUvArtifacts}, ${negativeMismatch}`;
-
-    const runwareResult = await generateRunware({
-      prompt: finalPrompt,
-      uvMap,
-      strength: 0.82,
-      generatePbr: generatePbr && provider === "runware", // Only gen local PBR if Runware is final
-      negativePrompt,
+    console.log("🎨 Calling Google Gemini Pro with advanced settings:", {
+      prompt: googlePrompt,
+      model: "pro",
+      resolution: "2K",
     });
 
-    if (!runwareResult) return;
+    const googleResult = await generateGoogle({
+      prompt: googlePrompt,
+      uvMap,
+      generatePbr: false,
+      model: "pro", // Always use Gemini 3 Pro for best quality
+      aspectRatio: "1:1",
+      resolution: "2K", // High resolution for professional textures
+      textureStyle: "realistic",
+      // Pass debug options for soccer jersey crew neck
+      debugOptions: isSoccerJerseyCrewNeck ? {
+        flipY: soccerJerseyDebug.flipY,
+        backTransform: soccerJerseyDebug.backTransform,
+        applyToBack: soccerJerseyDebug.applyToBack,
+        useBackTexture: soccerJerseyDebug.useBackTexture,
+      } : undefined,
+    });
 
-    if (provider === "runware") {
-      if (onTextureGenerated) {
-        await onTextureGenerated(runwareResult.texture, runwareResult.imageUrl, {
-          normalMapUrl: runwareResult.normalMapUrl,
-          roughnessMapUrl: runwareResult.roughnessMapUrl,
-        });
-      }
-    } else {
-      // Chain to Hitem3D
-      try {
-        const imgRes = await fetch(runwareResult.imageUrl);
-        const imgBlob = await imgRes.blob();
-
-        const hitemResult = await generateHitem({
-          image: imgBlob,
-          prompt: finalPrompt,
-        });
-
-        if (hitemResult) {
-          setHitemTexture(hitemResult.texture);
-          setHitemTextureUrl(hitemResult.coverUrl || runwareResult.imageUrl);
-
-          const hitemNormalSrc = extractTextureSrc(hitemResult.normalMap);
-          const hitemRoughnessSrc = extractTextureSrc(hitemResult.roughnessMap);
-
-          setHitemMaps({
-            normal: hitemNormalSrc || undefined,
-            roughness: hitemRoughnessSrc || undefined,
-          });
-
-          if (onTextureGenerated) {
-            await onTextureGenerated(
-              hitemResult.texture,
-              hitemResult.coverUrl || runwareResult.imageUrl,
-              {
-                normalMapUrl: hitemNormalSrc,
-                roughnessMapUrl: hitemRoughnessSrc,
-              },
-            );
-          }
-
-          // Apply Hitem texture to scene
-          if (scene) {
-            scene.traverse((child) => {
-              if ((child as THREE.Mesh).isMesh) {
-                const m = child as THREE.Mesh;
-                if (m.material instanceof THREE.MeshStandardMaterial) {
-                  m.material.map = hitemResult.texture;
-                  if (hitemResult.normalMap) m.material.normalMap = hitemResult.normalMap;
-                  if (hitemResult.roughnessMap) m.material.roughnessMap = hitemResult.roughnessMap;
-                  m.material.needsUpdate = true;
-                }
-              }
-            });
-          }
-        }
-      } catch (e) {
-        console.error("Hitem Chain Error", e);
-      }
+    if (googleResult && onTextureGenerated) {
+      await onTextureGenerated(googleResult.texture, googleResult.imageUrl, {
+        normalMapUrl: googleResult.normalMapUrl,
+        roughnessMapUrl: googleResult.roughnessMapUrl,
+      });
     }
-  }, [prompt, uvOnlyMode, style, seamless, generatePbr, uvMap, provider, includePlayerInfo, playerName, jerseyNumber, generateRunware, generateHitem, generateGoogle, onTextureGenerated, scene, currentModelUrl]);
+  }, [prompt, uvMap, includePlayerInfo, playerName, jerseyNumber, generateGoogle, onTextureGenerated, currentModelUrl, uvAnalysisSummary, isSoccerJerseyCrewNeck, soccerJerseyDebug]);
 
   // Display var helpers
-  const currentTextureUrl = provider === "runware" ? runwareUrl : (provider === "google" ? googleUrl : hitemTextureUrl);
-  const currentNormalUrl = provider === "runware" ? runwareNormalUrl : (provider === "google" ? googleNormalUrl : hitemMaps.normal);
-  const currentRoughnessUrl = provider === "runware" ? runwareRoughnessUrl : (provider === "google" ? googleRoughnessUrl : hitemMaps.roughness);
+  const currentTextureUrl = googleUrl;
 
   const handlePresetClick = (preset: string) => {
     if (selectedPreset === preset) {
@@ -438,171 +300,51 @@ export function AITextureGenerator({
   };
 
   useEffect(() => {
-    if (scene) {
-      if (provider === "runware" && runwareTexture) {
-        applyRunware(scene);
-      } else if (provider === "google" && googleTexture) {
-        applyGoogle(scene);
-      }
-      // Hitem texture is applied in handleGenerate, but we can re-apply if scene changes
-      // or just rely on manual application.
+    if (scene && googleTexture) {
+      applyGoogle(scene);
     }
-  }, [runwareTexture, googleTexture, provider, scene, applyRunware, applyGoogle]);
+  }, [googleTexture, scene, applyGoogle]);
 
-  const canGenerate = (uvOnlyMode || prompt.trim()) && uvMap && !isGenerating;
+  const canGenerate = uvMap && !isGenerating; // UV map is required, prompt is optional
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-3", className)}>
       <div className="space-y-3">
-        {/* Provider Selector */}
-        <div className="flex p-1 bg-muted rounded-lg">
-          <button
-            onClick={() => setProvider("runware")}
-            disabled={forceGoogle}
-            className={cn(
-              "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
-              provider === "runware" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              forceGoogle && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Standard
-          </button>
-          <button
-            onClick={() => setProvider("hitem")}
-            disabled={forceGoogle}
-            className={cn(
-              "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
-              provider === "hitem" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              forceGoogle && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <Box className="w-3.5 h-3.5" />
-            Advanced 3D
-          </button>
-          <button
-            onClick={() => setProvider("google")}
-            disabled={forceGoogle}
-            className={cn(
-              "flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1.5",
-              provider === "google" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              forceGoogle && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Google AI
-          </button>
+        {/* AI Provider Info */}
+        <div className="text-center p-2 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-lg border border-blue-100">
+          <div className="text-xs font-medium text-blue-700 mb-1">🤖 Google AI Gemini 3 Pro + UV Auto-Design</div>
+          <div className="text-[10px] text-muted-foreground">Always uses UV map guidance for intelligent texture generation</div>
         </div>
 
-        {forceGoogle && (
-          <div className="text-[10px] text-muted-foreground px-1">
-            Gemini 3 Pro is enforced for all AI texture generation.
-          </div>
-        )}
-
-        {provider === "hitem" && (
-          <div className="text-[10px] text-muted-foreground px-1 bg-blue-50/50 p-2 rounded border border-blue-100">
-            <strong>Note:</strong> Hitem3D generates a base using Runware, then enhances it into a 3D texture.
-          </div>
-        )}
-
-        {provider === "google" && (
-          <div className="text-[10px] text-muted-foreground px-1 bg-gradient-to-r from-blue-50/50 to-purple-50/50 p-2 rounded border border-blue-100">
-            <strong>🍌 Nano Banana Pro:</strong> Uses Gemini 3 Pro Image Preview with advanced "Thinking" for professional 2K texture generation.
-          </div>
-        )}
-
-        {/* Style Selector */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Style</Label>
-            <Select
-              value={style}
-              onValueChange={setStyle}
-              disabled={isGenerating || provider === "google"}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STYLES.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {provider === "google" && (
-              <p className="text-[10px] text-muted-foreground">Google AI ignores style to improve reliability.</p>
-            )}
-          </div>
-
-          <div className="space-y-2 flex flex-col justify-end pb-2">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="pbr-mode"
-                checked={generatePbr}
-                onCheckedChange={setGeneratePbr}
-                disabled={isGenerating || provider === "google"}
-              />
-              <Label htmlFor="pbr-mode" className="text-sm cursor-pointer">Generate PBR</Label>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-tight">
-              {provider === "google" ? "PBR maps are disabled for Google AI generation." : "Adds depth (Normal/Roughness maps) to the texture."}
-            </p>
-          </div>
-        </div>
-
-        {/* UV-only Mode */}
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <Label htmlFor="uv-only" className="text-xs font-medium">
-              UV-only Generation (Advanced)
-            </Label>
-            <span className="text-[11px] text-muted-foreground">
-              Uses the UV map as the sole guide and auto-builds an advanced prompt.
-            </span>
-          </div>
-          <Switch
-            id="uv-only"
-            checked={uvOnlyMode}
-            onCheckedChange={setUvOnlyMode}
-            disabled={isGenerating}
-          />
-        </div>
-
-        {/* Pattern Input */}
+        {/* Pattern Input - Optional when UV mode is active */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">
-            {uvOnlyMode ? "Description (optional)" : "Description"}
-          </Label>
+          <Label className="text-xs text-muted-foreground">Custom Style Notes (Optional)</Label>
           <Input
-            placeholder={
-              uvOnlyMode
-                ? "Optional: add extra style notes (disabled in UV-only mode)"
-                : "Describe your texture (e.g., weathered red leather, gold honeycomb)..."
-            }
+            placeholder="Add extra style details (e.g., weathered, metallic, vintage)..."
             value={prompt}
             onChange={(e) => {
               setPrompt(e.target.value);
               setSelectedPreset(null);
             }}
-            disabled={isGenerating || uvOnlyMode}
-            className="h-10"
+            disabled={isGenerating}
+            className="h-9"
           />
+          <div className="text-[10px] text-muted-foreground">
+            AI will create advanced patterns using UV map guidance. Add style notes to customize the look.
+          </div>
         </div>
 
         {/* Pattern Presets */}
         <div>
-          <Label className="text-xs text-muted-foreground mb-2 block">Quick Presets</Label>
-          <div className="flex flex-wrap gap-2">
+          <Label className="text-xs text-muted-foreground mb-2 block">Quick Style Presets</Label>
+          <div className="flex flex-wrap gap-1.5">
             {PATTERN_PRESETS.map((preset) => (
               <button
                 key={preset}
                 onClick={() => handlePresetClick(preset)}
                 disabled={isGenerating}
                 className={cn(
-                  "px-3 py-1 text-xs rounded-full border transition-all",
+                  "px-2 py-1 text-[10px] rounded-full border transition-all",
                   selectedPreset === preset
                     ? "bg-primary/10 border-primary text-primary font-medium"
                     : "bg-background border-border text-muted-foreground hover:bg-muted"
@@ -612,15 +354,18 @@ export function AITextureGenerator({
               </button>
             ))}
           </div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            Presets are applied with UV-guided placement for optimal results
+          </div>
         </div>
 
         {/* Player Info for Back of Jersey */}
-        <div className="space-y-3 p-3 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+        <div className="space-y-2 p-2 bg-amber-50/50 rounded-lg border border-amber-200/50">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <Label htmlFor="player-info-toggle" className="text-sm font-medium">
-                Include Name & Number
+            <div className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-amber-600" />
+              <Label htmlFor="player-info-toggle" className="text-xs font-medium">
+                Add Name & Number
               </Label>
             </div>
             <Switch
@@ -632,10 +377,9 @@ export function AITextureGenerator({
           </div>
 
           {includePlayerInfo && (
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="player-name" className="text-xs text-muted-foreground flex items-center gap-1">
-                  <User className="w-3 h-3" />
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="space-y-1">
+                <Label htmlFor="player-name" className="text-[10px] text-muted-foreground">
                   Player Name
                 </Label>
                 <Input
@@ -644,13 +388,12 @@ export function AITextureGenerator({
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
                   disabled={isGenerating}
-                  className="h-9 uppercase"
+                  className="h-8 text-xs uppercase"
                   maxLength={20}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="jersey-number" className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Hash className="w-3 h-3" />
+              <div className="space-y-1">
+                <Label htmlFor="jersey-number" className="text-[10px] text-muted-foreground">
                   Number
                 </Label>
                 <Input
@@ -659,35 +402,108 @@ export function AITextureGenerator({
                   value={jerseyNumber}
                   onChange={(e) => setJerseyNumber(e.target.value.replace(/\D/g, '').slice(0, 3))}
                   disabled={isGenerating}
-                  className="h-9"
+                  className="h-8 text-xs"
                   maxLength={3}
                 />
               </div>
-              <p className="col-span-2 text-[10px] text-muted-foreground">
-                AI will incorporate these into the texture design for the jersey back.
-              </p>
             </div>
           )}
         </div>
+
+        {/* Debug Options for Soccer Jersey Crew Neck */}
+        {isSoccerJerseyCrewNeck && (
+          <div className="space-y-3 p-3 bg-red-50/50 rounded-lg border border-red-200/50">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <Label className="text-sm font-medium text-red-700">
+                Soccer Jersey Debug Options
+              </Label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              {/* Flip Y Debug */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="debug-flip-y" className="text-xs">
+                  Flip Y Texture
+                </Label>
+                <Switch
+                  id="debug-flip-y"
+                  checked={soccerJerseyDebug.flipY}
+                  onCheckedChange={(checked) => setSoccerJerseyDebug({ flipY: checked })}
+                  disabled={isGenerating}
+                />
+              </div>
+
+              {/* Apply to Back Debug */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="debug-apply-back" className="text-xs">
+                  Apply to Back
+                </Label>
+                <Switch
+                  id="debug-apply-back"
+                  checked={soccerJerseyDebug.applyToBack}
+                  onCheckedChange={(checked) => setSoccerJerseyDebug({ applyToBack: checked })}
+                  disabled={isGenerating}
+                />
+              </div>
+
+              {/* Use Back Texture Debug */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="debug-back-texture" className="text-xs">
+                  Use Back Texture
+                </Label>
+                <Switch
+                  id="debug-back-texture"
+                  checked={soccerJerseyDebug.useBackTexture}
+                  onCheckedChange={(checked) => setSoccerJerseyDebug({ useBackTexture: checked })}
+                  disabled={isGenerating}
+                />
+              </div>
+
+              {/* Back Transform Debug */}
+              <div className="space-y-1">
+                <Label className="text-xs">Back Transform</Label>
+                <Select
+                  value={soccerJerseyDebug.backTransform}
+                  onValueChange={(value: "none" | "mirrorX" | "mirrorY" | "rotate180") => setSoccerJerseyDebug({ backTransform: value })}
+                  disabled={isGenerating}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="mirrorX">Mirror X</SelectItem>
+                    <SelectItem value="mirrorY">Mirror Y</SelectItem>
+                    <SelectItem value="rotate180">Rotate 180°</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-red-600 bg-red-100/50 p-2 rounded">
+              <strong>Debug Mode:</strong> These options only affect the Soccer Jersey Crew Neck model. 
+              Try different combinations to fix texture mapping issues.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
         disabled={!canGenerate}
-        className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md transition-all duration-300 transform active:scale-95"
+        className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md transition-all duration-300"
       >
         {isGenerating ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             {progress || "Generating..."}
-            {provider === "hitem" && isRunwareGenerating && " (Base)"}
-            {provider === "hitem" && hitemProgress > 0 && ` (3D: ${hitemProgress}%)`}
           </>
         ) : (
           <>
             <Sparkles className="mr-2 h-4 w-4" />
-            Generate {provider === "hitem" ? "Advanced 3D" : "Advanced"} Texture
+            Generate Design
           </>
         )}
       </Button>
@@ -699,54 +515,19 @@ export function AITextureGenerator({
         </div>
       )}
 
-      {/* Result Preview & Layers */}
+      {/* Result Preview */}
       {currentTextureUrl && (
         <div className="space-y-2 pt-2 border-t">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Generated Maps</h4>
-            {generatePbr && (
-              <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded flex items-center">
-                <Check className="w-3 h-3 mr-1" /> PBR Ready
-              </span>
-            )}
+            <h4 className="text-xs font-medium text-muted-foreground">Generated Texture</h4>
           </div>
 
-          <Tabs defaultValue="color" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-7">
-              <TabsTrigger value="color" className="text-xs">Color</TabsTrigger>
-              <TabsTrigger value="normal" disabled={!currentNormalUrl} className="text-xs">Normal</TabsTrigger>
-              <TabsTrigger value="roughness" disabled={!currentRoughnessUrl} className="text-xs">Roughness</TabsTrigger>
-            </TabsList>
-
-            <div className="mt-2 aspect-square rounded-lg overflow-hidden border bg-muted/30 relative group">
-              <TabsContent value="color" className="m-0 h-full">
-                <img src={currentTextureUrl} alt="Color Map" className="w-full h-full object-cover" />
-                <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">Base Color</div>
-              </TabsContent>
-
-              <TabsContent value="normal" className="m-0 h-full">
-                {currentNormalUrl ? (
-                  <>
-                    <img src={currentNormalUrl} alt="Normal Map" className="w-full h-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">Normal (Bump)</div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-xs">No Normal Map</div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="roughness" className="m-0 h-full">
-                {currentRoughnessUrl ? (
-                  <>
-                    <img src={currentRoughnessUrl} alt="Roughness Map" className="w-full h-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">Roughness</div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-xs">No Roughness Map</div>
-                )}
-              </TabsContent>
+          <div className="aspect-square rounded-lg overflow-hidden border bg-muted/30 relative">
+            <img src={currentTextureUrl} alt="Generated Texture" className="w-full h-full object-cover" />
+            <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">
+              AI Generated Design
             </div>
-          </Tabs>
+          </div>
         </div>
       )}
     </div>

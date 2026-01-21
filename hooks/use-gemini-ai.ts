@@ -228,7 +228,7 @@ OUTPUT: Generate the texture image directly. Do not explain, just create the ima
 
       const apiUrl = getGeminiApiUrl(model);
       const modelName = GEMINI_MODELS[model];
-      setProgress(`Generating with ${model === "pro" ? "Gemini 2.5 Pro" : "Gemini 2.5 Flash"} (${resolution})...`);
+      setProgress(`Generating with ${model === "pro" ? "Gemini 3 Pro" : "Gemini 2.5 Flash"} (${resolution})...`);
 
       console.log("🎨 Gemini Advanced Request:", {
         url: apiUrl,

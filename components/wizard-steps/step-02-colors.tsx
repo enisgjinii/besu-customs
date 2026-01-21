@@ -1,14 +1,10 @@
 "use client";
 import { useConfiguratorStore } from "@/lib/store";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import {
-  Link2,
-  RotateCcw,
   Loader2,
-  Palette,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -241,8 +237,8 @@ export function Step02Colors() {
           ))}
         </div>
 
-        {/* Bottom row - custom color + actions (very compact) */}
-        <div className="flex items-center gap-1.5 pt-1 border-t border-border/30">
+        {/* Bottom row - custom color only (more compact) */}
+        <div className="flex items-center gap-2 pt-1">
           <div
             className="w-8 h-8 rounded-lg border border-border flex-shrink-0 shadow-sm"
             style={{ backgroundColor: activeSection?.color || "#ffffff" }}
@@ -260,36 +256,6 @@ export function Step02Colors() {
             className="h-8 text-[11px] font-mono uppercase flex-1 px-2"
             placeholder="#000000"
           />
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2 text-[10px]"
-            onClick={() =>
-              activeSectionId && openSectionColorPicker(activeSectionId)
-            }
-            disabled={!activeSectionId}
-          >
-            <Palette className="w-3.5 h-3.5 mr-1" />
-            More
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={handleApplyToAll}
-            title="Apply to all"
-          >
-            <Link2 className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => updateAllSections({ color: "#ffffff" })}
-            title="Reset all"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </Button>
         </div>
       </div>
     );
@@ -297,7 +263,7 @@ export function Step02Colors() {
 
   // Desktop layout
   return (
-    <div className="space-y-4 w-full h-full flex flex-col">
+    <div className="space-y-3 w-full h-full flex flex-col">
       {/* Section pills with navigation - Clean & Visible */}
       <div className="relative group shrink-0">
         <button
@@ -343,12 +309,9 @@ export function Step02Colors() {
         </button>
       </div>
 
-      <div className="flex gap-6 h-full min-h-0">
+      <div className="flex gap-4 h-full min-h-0">
         {/* Left: Color Grid (Scrollable) */}
         <div className="flex-1 overflow-y-auto pr-2 min-h-0">
-          <h3 className="text-xs font-semibold text-muted-foreground mb-3 sticky top-0 bg-white dark:bg-black py-1 z-10">
-            Usage Palette
-          </h3>
           <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
             {PRESET_COLORS.map((color) => (
               <button
@@ -376,20 +339,17 @@ export function Step02Colors() {
           </div>
         </div>
 
-        {/* Right: Actions Panel (Fixed) */}
-        <div className="w-64 shrink-0 flex flex-col gap-4 border-l pl-6">
-          {/* Custom Color Input Group */}
+        {/* Right: Compact Actions Panel */}
+        <div className="w-48 shrink-0 flex flex-col gap-3">
+          {/* Custom Color Input - Simplified */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground">
-              Custom Color
-            </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <div
-                className="w-12 h-12 rounded-lg border shadow-sm flex-shrink-0"
+                className="w-10 h-10 rounded-lg border shadow-sm flex-shrink-0"
                 style={{ backgroundColor: activeSection?.color || "#ffffff" }}
                 title="Color preview"
               />
-              <div className="flex-1 flex flex-col gap-1">
+              <div className="flex-1">
                 <Input
                   type="text"
                   value={activeSection?.color || "#ffffff"}
@@ -399,55 +359,11 @@ export function Step02Colors() {
                       handleColorChange(val);
                     }
                   }}
-                  className="h-7 text-xs font-mono uppercase"
+                  className="h-8 text-xs font-mono uppercase"
                   placeholder="#000000"
                 />
-                <span className="text-[10px] text-muted-foreground px-1">
-                  Hex Code
-                </span>
               </div>
             </div>
-          </div>
-
-          {/* Advanced Tools */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground">
-              Tools
-            </label>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-xs h-8"
-              onClick={() =>
-                activeSectionId && openSectionColorPicker(activeSectionId)
-              }
-              disabled={!activeSectionId}
-            >
-              <Palette className="w-3.5 h-3.5 mr-2" />
-              Detailed Picker
-            </Button>
-          </div>
-
-          {/* Global Actions */}
-          <div className="pt-2 border-t mt-auto space-y-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start text-xs h-8"
-              onClick={handleApplyToAll}
-            >
-              <Link2 className="w-3.5 h-3.5 mr-2" />
-              Apply to All Parts
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-xs h-8 text-muted-foreground hover:text-destructive"
-              onClick={() => updateAllSections({ color: "#ffffff" })}
-            >
-              <RotateCcw className="w-3.5 h-3.5 mr-2" />
-              Reset Colors
-            </Button>
           </div>
         </div>
       </div>

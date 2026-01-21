@@ -181,6 +181,22 @@ export interface ConfiguratorState {
   ) => void;
 
   /**
+   * Debug options for soccer jersey crew neck model
+   */
+  soccerJerseyDebug: {
+    flipY: boolean;
+    backTransform: "mirrorX" | "mirrorY" | "rotate180" | "none";
+    applyToBack: boolean;
+    useBackTexture: boolean;
+  };
+  setSoccerJerseyDebug: (options: {
+    flipY?: boolean;
+    backTransform?: "mirrorX" | "mirrorY" | "rotate180" | "none";
+    applyToBack?: boolean;
+    useBackTexture?: boolean;
+  }) => void;
+
+  /**
    * If enabled, we bake the back correction into the generated UV texture image itself
    * (useful when the modeler authored mirrored back UVs and you want the exported
    * texture file to look correct outside this app).
@@ -695,6 +711,18 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       // Back texture orientation - default mirrorX (most common for jersey backs)
       backTextureTransform: "mirrorX",
       setBackTextureTransform: (mode) => set({ backTextureTransform: mode }),
+
+      // Soccer jersey crew neck debug options
+      soccerJerseyDebug: {
+        flipY: false,
+        backTransform: "none",
+        applyToBack: true,
+        useBackTexture: false,
+      },
+      setSoccerJerseyDebug: (options) =>
+        set((state) => ({
+          soccerJerseyDebug: { ...state.soccerJerseyDebug, ...options },
+        })),
 
       // Back UV baking (enabled by default)
       bakeBackFlipIntoTexture: true,

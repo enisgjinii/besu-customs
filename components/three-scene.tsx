@@ -467,6 +467,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       });
       const effectiveBackTransform = isFlagFootballUvV2
         ? "none"
+        : modelUrl.includes("soccer-jersey-crew-neck.glb")
+        ? useConfiguratorStore.getState().soccerJerseyDebug.backTransform // Use debug setting for soccer jersey
         : backTextureTransform;
       if (backCtx) {
         backCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -597,9 +599,16 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   // Apply Texture to Material
   useEffect(() => {
     if (!scene) return;
-    const shouldFlipY =
-      modelUrl.includes("flag-football-top-with-hoodie.glb") &&
-      !isFlagFootballUvV2;
+    
+    // Get debug options for soccer jersey crew neck
+    const soccerJerseyDebug = useConfiguratorStore.getState().soccerJerseyDebug;
+    const isSoccerJerseyCrewNeck = modelUrl.includes("soccer-jersey-crew-neck.glb");
+    const isSoccerJerseyVNeck = modelUrl.includes("soccer-jersey-v-neck.glb");
+    const isSoccerJersey = isSoccerJerseyCrewNeck || isSoccerJerseyVNeck;
+    
+    const shouldFlipY = isSoccerJersey 
+      ? soccerJerseyDebug.flipY
+      : (modelUrl.includes("flag-football-top-with-hoodie.glb") && !isFlagFootballUvV2);
 
     texture.flipY = shouldFlipY;
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -664,12 +673,32 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         const isBack =
           isBackJerseySection(m.name || "") ||
           isBackJerseyMaterial(materialName);
-        const shouldApplyTexture =
-          hasRenderableTexture && (!isBack || applyTextureToBack);
+        
+        
+        const isSoccerJerseyForApply = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
+        const shouldApplyTexture = isSoccerJerseyForApply
+          ? hasRenderableTexture && (!isBack || useConfiguratorStore.getState().soccerJerseyDebug.applyToBack)
+          : hasRenderableTexture && (!isBack || applyTextureToBack);
 
         if (shouldApplyTexture) {
-          // Apply same texture to all materials - AI texture is designed for full UV layout
-          m.map = bakeBackFlipIntoTexture ? texture : isBack ? backTexture : texture;
+          // Special handling for soccer jerseys - use debug options
+          const isSoccerJerseyForTexture = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
+          if (isSoccerJerseyForTexture) {
+            const soccerDebug = useConfiguratorStore.getState().soccerJerseyDebug;
+            
+            if (soccerDebug.useBackTexture && isBack) {
+              m.map = backTexture; // Use back texture for back materials
+            } else {
+              m.map = texture; // Use main texture for all materials
+            }
+            
+
+          } else {
+            // Apply same texture to all materials - AI texture is designed for full UV layout
+            m.map = bakeBackFlipIntoTexture ? texture : isBack ? backTexture : texture;
+          }
+
+
 
           // Don't use alphaTest - it was making transparent areas invisible
           m.transparent = false;
@@ -901,6 +930,7 @@ function Model({
         const shouldFlipUvMap =
           uvMapModelUrl.includes("flag-football-top-with-hoodie_uv_map") &&
           !isFlagFootballUvMapV2;
+          // Soccer jersey crew neck should NOT flip UV map - it's already correctly oriented
         const uvMapDataUrl = extractUVMapFromThreeModel(
           cloned,
           4096,
