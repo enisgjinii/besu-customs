@@ -98,7 +98,7 @@ export function AITextureGenerator({
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
 
   // Check if current model is soccer jersey crew neck
-  const isSoccerJerseyCrewNeck = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || false;
+  const isSoccerJerseyCrewNeck = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || false;
 
   const [uvAnalysisSummary, setUvAnalysisSummary] = useState<string | null>(null);
 

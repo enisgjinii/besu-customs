@@ -467,7 +467,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       });
       const effectiveBackTransform = isFlagFootballUvV2
         ? "none"
-        : modelUrl.includes("soccer-jersey-crew-neck.glb")
+        : (modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_FIXED.glb"))
         ? useConfiguratorStore.getState().soccerJerseyDebug.backTransform // Use debug setting for soccer jersey
         : backTextureTransform;
       if (backCtx) {
@@ -602,7 +602,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     
     // Get debug options for soccer jersey crew neck
     const soccerJerseyDebug = useConfiguratorStore.getState().soccerJerseyDebug;
-    const isSoccerJerseyCrewNeck = modelUrl.includes("soccer-jersey-crew-neck.glb");
+    const isSoccerJerseyCrewNeck = modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_FIXED.glb");
     const isSoccerJerseyVNeck = modelUrl.includes("soccer-jersey-v-neck.glb");
     const isSoccerJersey = isSoccerJerseyCrewNeck || isSoccerJerseyVNeck;
     
@@ -675,14 +675,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           isBackJerseyMaterial(materialName);
         
         
-        const isSoccerJerseyForApply = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
+        const isSoccerJerseyForApply = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
         const shouldApplyTexture = isSoccerJerseyForApply
           ? hasRenderableTexture && (!isBack || useConfiguratorStore.getState().soccerJerseyDebug.applyToBack)
           : hasRenderableTexture && (!isBack || applyTextureToBack);
 
         if (shouldApplyTexture) {
           // Special handling for soccer jerseys - use debug options
-          const isSoccerJerseyForTexture = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
+          const isSoccerJerseyForTexture = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
           if (isSoccerJerseyForTexture) {
             const soccerDebug = useConfiguratorStore.getState().soccerJerseyDebug;
             

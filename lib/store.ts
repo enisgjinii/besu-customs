@@ -447,7 +447,7 @@ function generateAllProducts(): Product[] {
     {
       id: "soccer-crew",
       title: "Soccer Jersey Crew Neck",
-      modelUrl: "/models/soccer-jersey-crew-neck.glb",
+      modelUrl: "/models/soccer-jersey-crew-neck_FIXED.glb",
       category: "Soccer",
     },
     {
@@ -483,7 +483,7 @@ function generateAllProducts(): Product[] {
     {
       id: "track-crop",
       title: "Track & Field Crop Top",
-      modelUrl: "/models/track-and-field-top-crop-top.glb",
+      modelUrl: "/models/track-and-field-top-crop-top_FIXED.glb",
       category: "Track & Field",
     },
     {
@@ -495,7 +495,7 @@ function generateAllProducts(): Product[] {
     {
       id: "track-tank",
       title: "Track & Field Tank Top",
-      modelUrl: "/models/track-and-field-top-tank-top.glb",
+      modelUrl: "/models/track-and-field-top-tank-top_FIXED.glb",
       category: "Track & Field",
     },
     {

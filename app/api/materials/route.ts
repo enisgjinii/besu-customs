@@ -269,7 +269,7 @@ export async function GET(request: Request) {
     }
 
     // Soccer Jersey Crew Neck renaming
-    if (modelParam.includes("soccer-jersey-crew-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-crew-neck.glb") || modelParam.includes("soccer-jersey-crew-neck_FIXED.glb")) {
       if (originalName === "Body_B_301116") return "Jersey Back Color";
       if (originalName === "Body_F_279881") return "Jersey Front Color";
       if (originalName === "Collar_Stand_441436") return "Jersey Collar Color";
@@ -322,7 +322,7 @@ export async function GET(request: Request) {
     }
 
     // Track and Field Crop Top renaming
-    if (modelParam.includes("track-and-field-top-crop-top.glb")) {
+    if (modelParam.includes("track-and-field-top-crop-top.glb") || modelParam.includes("track-and-field-top-crop-top_FIXED.glb")) {
       if (originalName === "Body_10697153") return "Front of Crop Top Color";
       if (originalName === "Body_10792617") return "Back of Crop Top Color";
     }
@@ -336,7 +336,7 @@ export async function GET(request: Request) {
     }
 
     // Track and Field Tank Top renaming
-    if (modelParam.includes("track-and-field-top-tank-top.glb")) {
+    if (modelParam.includes("track-and-field-top-tank-top.glb") || modelParam.includes("track-and-field-top-tank-top_FIXED.glb")) {
       if (originalName === "Body_4659223") return "Front of Tank Top Color";
       if (originalName === "Body_4717163") return "Back of Tank Top Color";
     }
@@ -549,7 +549,7 @@ export async function GET(request: Request) {
     }
 
     // Soccer Jersey Crew Neck categories
-    if (modelParam.includes("soccer-jersey-crew-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-crew-neck.glb") || modelParam.includes("soccer-jersey-crew-neck_FIXED.glb")) {
       return "Soccer Jersey Crew Neck Colors";
     }
 
@@ -582,7 +582,7 @@ export async function GET(request: Request) {
     }
 
     // Track and Field Crop Top categories
-    if (modelParam.includes("track-and-field-top-crop-top.glb")) {
+    if (modelParam.includes("track-and-field-top-crop-top.glb") || modelParam.includes("track-and-field-top-crop-top_FIXED.glb")) {
       return "Track and Field Crop Top Colors";
     }
 
@@ -592,7 +592,7 @@ export async function GET(request: Request) {
     }
 
     // Track and Field Tank Top categories
-    if (modelParam.includes("track-and-field-top-tank-top.glb")) {
+    if (modelParam.includes("track-and-field-top-tank-top.glb") || modelParam.includes("track-and-field-top-tank-top_FIXED.glb")) {
       return "Track and Field Tank Top Colors";
     }
 
@@ -881,7 +881,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("soccer-jersey-crew-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-crew-neck.glb") || modelParam.includes("soccer-jersey-crew-neck_FIXED.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Sleeves, Collar
