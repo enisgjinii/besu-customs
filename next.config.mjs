@@ -18,8 +18,6 @@ const nextConfig = {
       "node_modules/@esbuild/linux-x64",
       "node_modules/@imgly/**",
       "node_modules/onnxruntime-web/**",
-      "node_modules/@babylonjs/**",
-      "node_modules/react-babylonjs/**",
     ],
   },
   webpack: (config, { isServer }) => {
@@ -42,15 +40,30 @@ const nextConfig = {
       ];
     }
 
-    // Tree-shake unused Babylon.js to reduce bundle (migration leftover)
+    // Optimize client bundle splitting for better caching
     if (!isServer) {
-      config.resolve = config.resolve || {};
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        "@babylonjs/core": false,
-        "@babylonjs/loaders": false,
-        "@babylonjs/materials": false,
-        "react-babylonjs": false,
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization?.splitChunks,
+          cacheGroups: {
+            ...config.optimization?.splitChunks?.cacheGroups,
+            // Separate Three.js into its own chunk (large, rarely changes)
+            three: {
+              test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
+              name: 'three-vendor',
+              chunks: 'all',
+              priority: 20,
+            },
+            // Separate UI libraries
+            ui: {
+              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react|framer-motion)[\\/]/,
+              name: 'ui-vendor',
+              chunks: 'all',
+              priority: 15,
+            },
+          },
+        },
       };
     }
 

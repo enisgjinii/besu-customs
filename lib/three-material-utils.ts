@@ -178,9 +178,6 @@ export function extractSectionsFromThreeModel(
     }
   });
 
-  console.log(
-    `📋 Extracted ${sections.length} material sections from Three.js model`,
-  );
   return sections;
 }
 
@@ -522,7 +519,8 @@ function createTrimDesignTexture(
   texture.wrapT = THREE.RepeatWrapping;
   texture.needsUpdate = true;
 
-  console.log(`🎨 Generated trim texture: ${trimDesign} (${size}x${size})`);
+  texture.needsUpdate = true;
+
   return texture;
 }
 

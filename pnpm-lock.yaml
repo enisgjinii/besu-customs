@@ -8,15 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@babylonjs/core':
-        specifier: ^8.37.0
-        version: 8.43.0
-      '@babylonjs/loaders':
-        specifier: ^8.37.0
-        version: 8.43.0(@babylonjs/core@8.43.0)(babylonjs-gltf2interface@8.43.0)
-      '@babylonjs/materials':
-        specifier: ^8.37.0
-        version: 8.43.0(@babylonjs/core@8.43.0)
       '@imgly/background-removal':
         specifier: ^1.7.0
         version: 1.7.0(onnxruntime-web@1.21.0)
@@ -167,9 +158,6 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.3
-      react-babylonjs:
-        specifier: ^3.2.5-beta.2
-        version: 3.2.5-beta.2(@babylonjs/core@8.43.0)(@babylonjs/gui@8.43.0(@babylonjs/core@8.43.0))(react-dom@19.2.3(react@19.2.3))(react-reconciler@0.33.0(react@19.2.3))(react@19.2.3)
       react-dom:
         specifier: ^19.0.0
         version: 19.2.3(react@19.2.3)
@@ -455,25 +443,6 @@ packages:
   '@babel/types@7.28.5':
     resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
     engines: {node: '>=6.9.0'}
-
-  '@babylonjs/core@8.43.0':
-    resolution: {integrity: sha512-O3HOfNKBNAHNsntK3o1hJHjRyDC9up0mPd4/j9yQWxbxEgJ+zskQyvk5cu2mA5JYHonwvQDtYnH8TIQRGfDcBg==}
-
-  '@babylonjs/gui@8.43.0':
-    resolution: {integrity: sha512-XNXkwrSlML9kgZ9cTbIPK6ohwDdSVdubfqIVloQTf3tQ3YkjcxIEHu5/JpROy+29Q0MXLScKVVTmaHUUVb7oLA==}
-    peerDependencies:
-      '@babylonjs/core': ^8.0.0
-
-  '@babylonjs/loaders@8.43.0':
-    resolution: {integrity: sha512-UaDlekqxohhz0ZPjQXleeUfH+Irur2sfgdQZqXKJjQJzMSfZFzeyMYAPImHwHPsgRcBUzJfKUzamji2v+YMKeA==}
-    peerDependencies:
-      '@babylonjs/core': ^8.0.0
-      babylonjs-gltf2interface: ^8.0.0
-
-  '@babylonjs/materials@8.43.0':
-    resolution: {integrity: sha512-UslKZY6I/8tkPRitz1nytXL7knEGMCogEwslg17xMDTsd5cOE8AjZPA+9xJVGbYKmQexY8CaMPUiuWHm32gjsg==}
-    peerDependencies:
-      '@babylonjs/core': ^8.6.0
 
   '@cesium/engine@22.1.0':
     resolution: {integrity: sha512-grL8/wiIkKLFG+FrizORhUTMpOcFMFawa0fmLH3I/1K46TcDQn6Gom+qrcGqbJoc4diYM75xsAC9M8Yajgh4rQ==}
@@ -2387,9 +2356,6 @@ packages:
     resolution: {integrity: sha512-Cg7TFGpIr01vOQNODXOOaGz2NpCU5gl8x1qJFbb6hbZxR7XrcE2vtbAsTAbJ7/xwJtUuJEw8K8Zr/AE0LHlesg==}
     engines: {node: '>=10', npm: '>=6'}
 
-  babylonjs-gltf2interface@8.43.0:
-    resolution: {integrity: sha512-xJIFgeSc9yZ4h+/qYxoxYrvwFTZO5lUhpQJjCiJUsBcP9TWBoqct8M02fdJorBzXhaV5CtvsrvlAbS8M+bf0Qw==}
-
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
@@ -3941,19 +3907,6 @@ packages:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
 
-  react-babylonjs@3.2.5-beta.2:
-    resolution: {integrity: sha512-loYNlDCVj9MK8ftd5Tmyzp/iZtmVM7jk314kCQOSDubnw63OvOiwlPeY8s8bptLLIHSnSLyYQB8Tos6A275o8A==}
-    engines: {node: '>=14.0.0'}
-    peerDependencies:
-      '@babylonjs/core': 5.x || 6.x || 7.x || 8.x
-      '@babylonjs/gui': 5.x || 6.x || 7.x || 8.x
-      react: '>=17'
-      react-dom: '>=17'
-      react-reconciler: 0.29.2 || 0.31.0
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-
   react-dom@19.2.3:
     resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
     peerDependencies:
@@ -5195,21 +5148,6 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
-
-  '@babylonjs/core@8.43.0': {}
-
-  '@babylonjs/gui@8.43.0(@babylonjs/core@8.43.0)':
-    dependencies:
-      '@babylonjs/core': 8.43.0
-
-  '@babylonjs/loaders@8.43.0(@babylonjs/core@8.43.0)(babylonjs-gltf2interface@8.43.0)':
-    dependencies:
-      '@babylonjs/core': 8.43.0
-      babylonjs-gltf2interface: 8.43.0
-
-  '@babylonjs/materials@8.43.0(@babylonjs/core@8.43.0)':
-    dependencies:
-      '@babylonjs/core': 8.43.0
 
   '@cesium/engine@22.1.0':
     dependencies:
@@ -7225,8 +7163,6 @@ snapshots:
       cosmiconfig: 7.1.0
       resolve: 1.22.11
 
-  babylonjs-gltf2interface@8.43.0: {}
-
   balanced-match@1.0.2: {}
 
   base64-arraybuffer@1.0.2:
@@ -8926,15 +8862,6 @@ snapshots:
       ini: 1.3.8
       minimist: 1.2.8
       strip-json-comments: 2.0.1
-
-  react-babylonjs@3.2.5-beta.2(@babylonjs/core@8.43.0)(@babylonjs/gui@8.43.0(@babylonjs/core@8.43.0))(react-dom@19.2.3(react@19.2.3))(react-reconciler@0.33.0(react@19.2.3))(react@19.2.3):
-    dependencies:
-      '@babylonjs/core': 8.43.0
-      '@babylonjs/gui': 8.43.0(@babylonjs/core@8.43.0)
-      react: 19.2.3
-      react-reconciler: 0.33.0(react@19.2.3)
-    optionalDependencies:
-      react-dom: 19.2.3(react@19.2.3)
 
   react-dom@19.2.3(react@19.2.3):
     dependencies:

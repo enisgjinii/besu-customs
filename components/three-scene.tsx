@@ -27,6 +27,9 @@ import { toast } from "sonner";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import { useAutoMemoryCleanup } from "@/lib/memory-monitor";
 
+// Shared TextureLoader instance - reuse instead of creating per render
+const sharedTextureLoader = typeof window !== 'undefined' ? new THREE.TextureLoader() : null;
+
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
   const boxRef = useRef<THREE.Mesh>(null);
@@ -592,7 +595,6 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       texture.dispose();
       backTexture.dispose();
       imageCache.current.clear();
-      console.log('🧹 TextureCompositor cleanup: disposed texture and cleared image cache');
     };
   }, [texture, backTexture]);
 
@@ -603,7 +605,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     // Get debug options for soccer jersey crew neck
     const soccerJerseyDebug = useConfiguratorStore.getState().soccerJerseyDebug;
     const isSoccerJerseyCrewNeck = modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_FIXED.glb");
-    const isSoccerJerseyVNeck = modelUrl.includes("soccer-jersey-v-neck.glb") || modelUrl.includes("soccer_jersey_v_neck_combined_fixed.glb") || modelUrl.includes("soccer_jersey_v_neck_separated_fixed.glb");
+    const isSoccerJerseyVNeck = modelUrl.includes("soccer-jersey-v-neck.glb") || modelUrl.includes("soccer_jersey_v_neck_combined_fixed.glb") || modelUrl.includes("soccer_jersey_v_neck_separated_fixed.glb") || modelUrl.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb".toLowerCase());
     const isSoccerJersey = isSoccerJerseyCrewNeck || isSoccerJerseyVNeck;
     
     const shouldFlipY = isSoccerJersey 
@@ -618,8 +620,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     const hasRenderableTexture =
       !!globalCustomTexture || debouncedLayers.some((l) => l.visible);
 
-    // Load PBR maps if available
-    const loader = new THREE.TextureLoader();
+    // Load PBR maps if available (reuse shared loader)
+    const loader = sharedTextureLoader || new THREE.TextureLoader();
     const normalTex = globalNormalMap ? loader.load(globalNormalMap) : null;
     const roughnessTex = globalRoughnessMap ? loader.load(globalRoughnessMap) : null;
     const aoTex = globalAOMap ? loader.load(globalAOMap) : null;
@@ -885,9 +887,9 @@ function Model({
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
   const onLoadRef = useRef(onLoad);
 
-  // Log cache stats on load
+  // Cache stats - only in dev
   useEffect(() => {
-    if (gltf && !gltfLoading) {
+    if (gltf && !gltfLoading && process.env.NODE_ENV === 'development') {
       const stats = getModelCache().getStats();
       console.log(
         `📊 Model cache: ${stats.cachedModels} models, ${stats.totalMemoryMB.toFixed(1)} MB`,
@@ -921,12 +923,12 @@ function Model({
         onSectionsExtractedRef.current?.(extracted);
         onLoadRef.current?.();
 
-        // Analyze model structure (meshes, materials, UVs)
-        const analysis = analyzeModel(cloned);
-        printModelAnalysis(analysis);
-        // Store analysis for debugging
-        (window as any).__modelAnalysis = analysis;
-        console.log("💡 Access model analysis via: window.__modelAnalysis");
+        // Analyze model structure only in development (skip in production for performance)
+        if (process.env.NODE_ENV === 'development') {
+          const analysis = analyzeModel(cloned);
+          printModelAnalysis(analysis);
+          (window as any).__modelAnalysis = analysis;
+        }
 
         // Extract UV map and store it for AI design section
         const uvMapModelUrl = (url || "").toLowerCase();
@@ -939,13 +941,12 @@ function Model({
           // Soccer jersey crew neck should NOT flip UV map - it's already correctly oriented
         const uvMapDataUrl = extractUVMapFromThreeModel(
           cloned,
-          4096,
-          4096,
+          2048,
+          2048,
           shouldFlipUvMap,
         );
         if (uvMapDataUrl) {
           useConfiguratorStore.getState().setCompleteUVMap(uvMapDataUrl);
-          console.log("🗺️ UV map extracted and stored");
         }
 
         // Ensure materials are ready for decals
@@ -967,10 +968,6 @@ function Model({
   useEffect(() => {
     if (!clonedScene || sections.length === 0) return;
 
-    console.log(
-      "🎨 Applying materials with trim support to model, sections:",
-      sections.length,
-    );
     applyMaterialsToThreeModel(clonedScene, sections);
   }, [clonedScene, sections]);
 
@@ -1126,10 +1123,6 @@ function Model({
         const hitV = uv.y;
 
         const controlClicked = checkControlClickUV(hitU, hitV);
-        console.log(
-      "🎯 Control clicked:",
-      controlClicked,
-    );
 
         if (controlClicked) {
           const store = useConfiguratorStore.getState();
@@ -1139,20 +1132,11 @@ function Model({
             const layer = store.textureLayers.find(
               (l) => l.id === selectedLayerId,
             );
-            console.log(
-              "🎮 Processing control:",
-              controlClicked,
-              "for layer:",
-              layer?.name,
-            );
-
             switch (controlClicked) {
               case "duplicate":
                 duplicateTextureLayer(selectedLayerId);
-                console.log("📋 Layer duplicated!");
                 break;
               case "rotate":
-                // Start rotate dragging mode
                 if (layer) {
                   isRotatingRef.current = true;
                   selectedLayerRef.current = selectedLayerId;
@@ -1166,15 +1150,12 @@ function Model({
                     centerV: centerV,
                   };
                   if (controls) (controls as any).enabled = false;
-                  console.log("🔄 Started rotating...");
                 }
                 break;
               case "delete":
                 removeTextureLayer(selectedLayerId);
-                console.log("🗑️ Layer deleted!");
                 break;
               case "resize":
-                // Start resize dragging mode
                 if (layer) {
                   isResizingRef.current = true;
                   selectedLayerRef.current = selectedLayerId;
@@ -1188,7 +1169,6 @@ function Model({
                     centerV: centerV,
                   };
                   if (controls) (controls as any).enabled = false;
-                  console.log("📐 Started resizing...");
                 }
                 break;
             }
@@ -1312,6 +1292,29 @@ function Model({
           const deltaAngle = currentAngle - startAngle;
           const newRotation = rotation + deltaAngle;
 
+          updateTextureLayer(selectedLayerRef.current, {
+            rotation: [0, 0, newRotation],
+          });
+          return;
+        }
+
+        // Handle position dragging
+        if (isDraggingRef.current) {
+          const newU = hitU + dragOffsetRef.current.u;
+          const newV = hitV + dragOffsetRef.current.v;
+
+          updateTextureLayer(selectedLayerRef.current, {
+            position: [
+              Math.max(0, Math.min(1, newU)),
+              Math.max(0, Math.min(1, newV)),
+              0,
+            ],
+          });
+        }
+      }
+    };
+
+    const handlePointerUp = () => {
       isDraggingRef.current = false;
       isResizingRef.current = false;
       isRotatingRef.current = false;

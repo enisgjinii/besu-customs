@@ -639,19 +639,6 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       highlightedSectionId: null,
       linkedSections: new Set<string>(),
       setSections: (sections: MaterialSection[], fromApi?: boolean) => {
-        console.log("🏪 Store.setSections called:", {
-          count: sections.length,
-          fromApi: fromApi ?? false,
-          withTextures: sections.filter((s) => s.customTexture).length,
-          sampleSection: sections[0]
-            ? {
-              id: sections[0].id,
-              name: sections[0].name,
-              hasTexture: !!sections[0].customTexture,
-              textureLength: sections[0].customTexture?.length || 0,
-            }
-            : null,
-        });
         return set({ sections, sectionsFromApi: fromApi ?? false });
       },
       updateSection: (id: string, updates: Partial<MaterialSection>) =>
@@ -779,14 +766,6 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       textureLayers: [],
       selectedTextureLayerId: null,
       addTextureLayer: (layer: TextureLayer) => {
-        // Log when layer is added - useful for capturing preset positions
-        console.log("🎨 LAYER ADDED:", {
-          name: layer.name,
-          type: layer.type,
-          position: layer.position,
-          scale: layer.scale,
-          rotation: layer.rotation,
-        });
 
         // Auto-rotate camera to front when adding image/logo layers
         if (layer.type === "image") {
