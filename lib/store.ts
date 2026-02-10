@@ -435,13 +435,13 @@ function generateAllProducts(): Product[] {
     {
       id: "polo-long",
       title: "Polo Shirts Long Sleeve",
-      modelUrl: "/models/polo-shirts-long-sleeve.glb",
+      modelUrl: "/models/polo-shirts-long-sleeve_FIXED.glb",
       category: "Polos",
     },
     {
       id: "polo-short",
       title: "Polo Shirts Short Sleeve",
-      modelUrl: "/models/polo-shirts-short-sleeve.glb",
+      modelUrl: "/models/polo-shirts-short-sleeve_FIXED.glb",
       category: "Polos",
     },
     {
@@ -453,7 +453,7 @@ function generateAllProducts(): Product[] {
     {
       id: "soccer-vneck",
       title: "Soccer Jersey V-Neck",
-      modelUrl: "/models/soccer-jersey-v-neck.glb",
+      modelUrl: "/models/soccer_jersey_v_neck_COMBINED_FIXED.glb",
       category: "Soccer",
     },
     {
@@ -519,7 +519,7 @@ function generateAllProducts(): Product[] {
     {
       id: "volleyball-spandex",
       title: "Volleyball Shorts Spandex",
-      modelUrl: "/models/volleyball-shorts-spandex.glb",
+      modelUrl: "/models/volleyball-shorts-spandex_FIXED.glb",
       category: "Volleyball",
     },
     {
@@ -529,6 +529,14 @@ function generateAllProducts(): Product[] {
       category: "Volleyball",
     },
   ];
+}
+
+// Export fallback products for components that need them
+export function getFallbackProducts(): Product[] {
+  return generateAllProducts().filter((p) => {
+    // Filter out inactive models (like "long-pants" which was set to inactive)
+    return p.id !== "long-pants";
+  });
 }
 
 // Start with empty products and load active ones from Supabase

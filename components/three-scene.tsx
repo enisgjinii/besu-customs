@@ -125,7 +125,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
-    tex.anisotropy = 16; // Max anisotropic filtering for sharp textures at angles
+    tex.anisotropy = perfConfig.isLowEndDevice ? 4 : 16; // Reduce on low-end devices
     return tex;
   });
 
@@ -136,7 +136,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
-    tex.anisotropy = 16;
+    tex.anisotropy = perfConfig.isLowEndDevice ? 4 : 16;
     return tex;
   });
 
@@ -603,7 +603,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     // Get debug options for soccer jersey crew neck
     const soccerJerseyDebug = useConfiguratorStore.getState().soccerJerseyDebug;
     const isSoccerJerseyCrewNeck = modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_FIXED.glb");
-    const isSoccerJerseyVNeck = modelUrl.includes("soccer-jersey-v-neck.glb");
+    const isSoccerJerseyVNeck = modelUrl.includes("soccer-jersey-v-neck.glb") || modelUrl.includes("soccer_jersey_v_neck_combined_fixed.glb") || modelUrl.includes("soccer_jersey_v_neck_separated_fixed.glb");
     const isSoccerJersey = isSoccerJerseyCrewNeck || isSoccerJerseyVNeck;
     
     const shouldFlipY = isSoccerJersey 
@@ -675,14 +675,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           isBackJerseyMaterial(materialName);
         
         
-        const isSoccerJerseyForApply = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
+        const isSoccerJerseyForApply = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb") || currentModelUrl?.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb");
         const shouldApplyTexture = isSoccerJerseyForApply
           ? hasRenderableTexture && (!isBack || useConfiguratorStore.getState().soccerJerseyDebug.applyToBack)
           : hasRenderableTexture && (!isBack || applyTextureToBack);
 
         if (shouldApplyTexture) {
           // Special handling for soccer jerseys - use debug options
-          const isSoccerJerseyForTexture = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb");
+          const isSoccerJerseyForTexture = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb") || currentModelUrl?.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb");
           if (isSoccerJerseyForTexture) {
             const soccerDebug = useConfiguratorStore.getState().soccerJerseyDebug;
             
@@ -1127,12 +1127,9 @@ function Model({
 
         const controlClicked = checkControlClickUV(hitU, hitV);
         console.log(
-          "🎯 Control clicked:",
-          controlClicked,
-          "at UV:",
-          hitU.toFixed(3),
-          hitV.toFixed(3),
-        );
+      "🎯 Control clicked:",
+      controlClicked,
+    );
 
         if (controlClicked) {
           const store = useConfiguratorStore.getState();
@@ -1315,39 +1312,6 @@ function Model({
           const deltaAngle = currentAngle - startAngle;
           const newRotation = rotation + deltaAngle;
 
-          console.log("🔄 Rotating:", {
-            currentAngle: ((currentAngle * 180) / Math.PI).toFixed(1) + "°",
-            startAngle: ((startAngle * 180) / Math.PI).toFixed(1) + "°",
-            deltaAngle: ((deltaAngle * 180) / Math.PI).toFixed(1) + "°",
-            newRotation: ((newRotation * 180) / Math.PI).toFixed(1) + "°",
-          });
-
-          updateTextureLayer(selectedLayerRef.current, {
-            rotation: [0, 0, newRotation],
-          });
-          return;
-        }
-
-        // Handle position dragging
-        if (isDraggingRef.current) {
-          const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-          const newU = clamp01(hitU + dragOffsetRef.current.u);
-          const newV = clamp01(hitV + dragOffsetRef.current.v);
-
-          updateTextureLayer(selectedLayerRef.current, {
-            position: [newU, newV, 0],
-          });
-        }
-      }
-    };
-
-    const handlePointerUp = () => {
-      if (isResizingRef.current) {
-        console.log("📐 Resize complete!");
-      }
-      if (isRotatingRef.current) {
-        console.log("🔄 Rotate complete!");
-      }
       isDraggingRef.current = false;
       isResizingRef.current = false;
       isRotatingRef.current = false;

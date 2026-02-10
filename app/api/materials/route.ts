@@ -245,7 +245,7 @@ export async function GET(request: Request) {
     }
 
     // Polo Long Sleeve renaming
-    if (modelParam.includes("polo-shirts-long-sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-long-sleeve.glb") || modelParam.includes("polo-shirts-long-sleeve_FIXED.glb")) {
       if (originalName === "Body_B_18747644")
         return "Back of Polo Long Sleeve Shirt Color";
       if (originalName === "Body_F_18571006")
@@ -258,7 +258,7 @@ export async function GET(request: Request) {
     }
 
     // Polo Short Sleeve renaming
-    if (modelParam.includes("polo-shirts-short-sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-short-sleeve.glb") || modelParam.includes("polo-shirts-short-sleeve_FIXED.glb")) {
       if (originalName === "Body_B_17912114") return "Back of Polo Shirt";
       if (originalName === "Body_F_17850235") return "Front of Polo Shirt";
       if (originalName === "Bodyr_F_Placket_17850241")
@@ -277,7 +277,7 @@ export async function GET(request: Request) {
     }
 
     // Soccer Jersey V Neck renaming
-    if (modelParam.includes("soccer-jersey-v-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-v-neck.glb") || modelParam.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb") || modelParam.includes("soccer_jersey_v_neck_SEPARATED_FIXED.glb")) {
       if (originalName === "Body_14111705") return "Jersey Front Color";
       if (originalName === "Body_14135701") return "Jersey Back Color";
       if (originalName === "Body_14258581") return "Jersey V-Neck Color";
@@ -385,7 +385,7 @@ export async function GET(request: Request) {
     }
 
     // Volleyball Shorts Spandex (Small Length) renaming
-    if (modelParam.includes("volleyball-shorts-spandex.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex.glb") || modelParam.includes("volleyball-shorts-spandex_FIXED.glb") || modelParam.includes("volleyball-shorts-spandex_v2_FIXED.glb")) {
       if (originalName === "FABRIC 1_2587") return "Front of Shorts Color";
       if (originalName === "FABRIC 1_2590") return "Waist of Shorts Color";
       if (originalName === "FABRIC 1_2593") return "Back of Shorts Color";
@@ -525,7 +525,7 @@ export async function GET(request: Request) {
     }
 
     // Polo Long Sleeve categories
-    if (modelParam.includes("polo-shirts-long-sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-long-sleeve.glb") || modelParam.includes("polo-shirts-long-sleeve_FIXED.glb")) {
       if (
         originalName === "Button_1_18571034" ||
         originalName === "FABRIC_1_18569862"
@@ -536,7 +536,7 @@ export async function GET(request: Request) {
     }
 
     // Polo Short Sleeve categories
-    if (modelParam.includes("polo-shirts-short-sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-short-sleeve.glb") || modelParam.includes("polo-shirts-short-sleeve_FIXED.glb")) {
       if (originalName === "Button_1_17850263") {
         return "Button Colors";
       }
@@ -554,7 +554,7 @@ export async function GET(request: Request) {
     }
 
     // Soccer Jersey V Neck categories
-    if (modelParam.includes("soccer-jersey-v-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-v-neck.glb") || modelParam.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb") || modelParam.includes("soccer_jersey_v_neck_SEPARATED_FIXED.glb")) {
       if (originalName.includes("FABRIC_1_")) {
         return "Soccer Shorts Colors";
       }
@@ -607,7 +607,7 @@ export async function GET(request: Request) {
     }
 
     // Volleyball Shorts Spandex (Small Length) categories
-    if (modelParam.includes("volleyball-shorts-spandex.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex.glb") || modelParam.includes("volleyball-shorts-spandex_FIXED.glb") || modelParam.includes("volleyball-shorts-spandex_v2_FIXED.glb")) {
       return "Volleyball Shorts Spandex Colors";
     }
 
@@ -810,7 +810,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("polo-shirts-long-sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-long-sleeve.glb") || modelParam.includes("polo-shirts-long-sleeve_FIXED.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Sleeves, Collar, Placket, Button, Cuff
@@ -846,7 +846,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("polo-shirts-short-sleeve.glb")) {
+    if (modelParam.includes("polo-shirts-short-sleeve.glb") || modelParam.includes("polo-shirts-short-sleeve_FIXED.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Sleeves, Collar, Placket, Button
@@ -914,7 +914,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("soccer-jersey-v-neck.glb")) {
+    if (modelParam.includes("soccer-jersey-v-neck.glb") || modelParam.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb") || modelParam.includes("soccer_jersey_v_neck_SEPARATED_FIXED.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Jersey sections first (Front, Back, Sleeves, V-Neck), then Shorts sections (Front, Back, Waist)
@@ -1140,7 +1140,7 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("volleyball-shorts-spandex.glb")) {
+    if (modelParam.includes("volleyball-shorts-spandex.glb") || modelParam.includes("volleyball-shorts-spandex_FIXED.glb") || modelParam.includes("volleyball-shorts-spandex_v2_FIXED.glb")) {
       const reordered = [...sections];
 
       // Define the desired order: Front, Back, Waist

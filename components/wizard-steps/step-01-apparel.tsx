@@ -1,5 +1,5 @@
 "use client";
-import { useConfiguratorStore } from "@/lib/store";
+import { useConfiguratorStore, getFallbackProducts } from "@/lib/store";
 import {
   Select,
   SelectContent,
@@ -129,11 +129,18 @@ export function Step01Apparel() {
               category: model.category || undefined,
             }));
             setProducts(activeProducts);
+            setProductsLoaded(true);
+            return;
           }
         }
+        // API returned empty or failed - use fallback products
+        console.log("Using fallback products - API returned empty or unavailable");
+        setProducts(getFallbackProducts());
         setProductsLoaded(true);
       } catch (error) {
         console.error("Failed to load active products:", error);
+        // Use fallback products on error
+        setProducts(getFallbackProducts());
         setProductsLoaded(true);
       }
     };

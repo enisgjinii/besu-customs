@@ -53,11 +53,11 @@
   },
   {
     "name": "Polo Shirts Long Sleeve",
-    "url": "/models/polo-shirts-long-sleeve.glb"
+    "url": "/models/polo-shirts-long-sleeve_FIXED.glb"
   },
   {
     "name": "Polo Shirts Short Sleeve",
-    "url": "/models/polo-shirts-short-sleeve.glb"
+    "url": "/models/polo-shirts-short-sleeve_FIXED.glb"
   },
   {
     "name": "Soccer Jersey Crew Neck",
@@ -65,7 +65,7 @@
   },
   {
     "name": "Soccer Jersey V Neck",
-    "url": "/models/soccer-jersey-v-neck.glb"
+    "url": "/models/soccer_jersey_v_neck_COMBINED_FIXED.glb"
   },
   {
     "name": "Standard Bottom Cut Cuffed",
@@ -109,7 +109,11 @@
   },
   {
     "name": "Volleyball Shorts Spandex",
-    "url": "/models/volleyball-shorts-spandex.glb"
+    "url": "/models/volleyball-shorts-spandex_FIXED.glb"
+  },
+  {
+    "name": "Volleyball Shorts Spandex V2",
+    "url": "/models/volleyball-shorts-spandex_v2_FIXED.glb"
   },
   {
     "name": "Volleyball Spandex",

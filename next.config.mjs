@@ -18,6 +18,8 @@ const nextConfig = {
       "node_modules/@esbuild/linux-x64",
       "node_modules/@imgly/**",
       "node_modules/onnxruntime-web/**",
+      "node_modules/@babylonjs/**",
+      "node_modules/react-babylonjs/**",
     ],
   },
   webpack: (config, { isServer }) => {
@@ -38,6 +40,18 @@ const nextConfig = {
         "@imgly/background-removal",
         "onnxruntime-web",
       ];
+    }
+
+    // Tree-shake unused Babylon.js to reduce bundle (migration leftover)
+    if (!isServer) {
+      config.resolve = config.resolve || {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@babylonjs/core": false,
+        "@babylonjs/loaders": false,
+        "@babylonjs/materials": false,
+        "react-babylonjs": false,
+      };
     }
 
     return config;
