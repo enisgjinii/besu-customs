@@ -8,6 +8,37 @@ import type { MaterialSection } from "./store";
  * Handles material extraction, application, and UV mapping
  */
 
+// Shared TextureLoader - avoids creating a new one per material update
+const _sharedLoader = typeof window !== 'undefined' ? new THREE.TextureLoader() : null;
+function getSharedTextureLoader(): THREE.TextureLoader {
+  return _sharedLoader || new THREE.TextureLoader();
+}
+
+// Texture caches to avoid recreating identical textures
+const _gradientTextureCache = new Map<string, THREE.CanvasTexture>();
+const _trimTextureCache = new Map<string, THREE.CanvasTexture>();
+const _customTextureCache = new Map<string, THREE.Texture>();
+
+/** Generate a cache key for gradient textures */
+function gradientCacheKey(g: { type: string; colors: string[]; angle?: number; stops?: number[] }): string {
+  return `${g.type}|${g.colors.join(',')}|${g.angle ?? 90}|${(g.stops || []).join(',')}`;
+}
+
+/** Generate a cache key for trim textures */
+function trimCacheKey(design: string, baseColor: string, trimColor: string): string {
+  return `${design}|${baseColor}|${trimColor}`;
+}
+
+/** Clear all material texture caches (call on model unload) */
+export function clearMaterialTextureCache(): void {
+  _gradientTextureCache.forEach((t) => t.dispose());
+  _gradientTextureCache.clear();
+  _trimTextureCache.forEach((t) => t.dispose());
+  _trimTextureCache.clear();
+  _customTextureCache.forEach((t) => t.dispose());
+  _customTextureCache.clear();
+}
+
 // Parse material name to get display name
 function parseMaterialName(name: string, modelUrl?: string): string {
   const lowerName = name.toLowerCase();
@@ -243,12 +274,16 @@ export function applyMaterialsToThreeModel(
             targetMaterial.map = null;
           }
 
-          // Apply custom texture
+          // Apply custom texture (cached)
           if (section.customTexture) {
-            const loader = new THREE.TextureLoader();
-            const texture = loader.load(section.customTexture);
-            texture.flipY = false;
-            texture.colorSpace = THREE.SRGBColorSpace;
+            let texture = _customTextureCache.get(section.customTexture);
+            if (!texture) {
+              const loader = getSharedTextureLoader();
+              texture = loader.load(section.customTexture);
+              texture.flipY = false;
+              texture.colorSpace = THREE.SRGBColorSpace;
+              _customTextureCache.set(section.customTexture, texture);
+            }
             targetMaterial.map = texture;
             // PRESERVE original color - blend with texture instead of replacing with white
             if (section.color) {
@@ -265,7 +300,7 @@ export function applyMaterialsToThreeModel(
             }
           }
 
-          // Apply gradient
+          // Apply gradient (cached)
           if (
             section.gradient?.enabled &&
             !section.customTexture &&
@@ -328,7 +363,7 @@ export function applyMaterialsToThreeModel(
   });
 }
 
-// Create gradient texture
+// Create gradient texture (with caching)
 function createGradientTexture(gradient: {
   enabled: boolean;
   type: "linear" | "radial";
@@ -336,6 +371,10 @@ function createGradientTexture(gradient: {
   angle?: number;
   stops?: number[];
 }): THREE.CanvasTexture {
+  const cacheKey = gradientCacheKey(gradient);
+  const cached = _gradientTextureCache.get(cacheKey);
+  if (cached) return cached;
+
   const size = 512;
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -378,16 +417,21 @@ function createGradientTexture(gradient: {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  _gradientTextureCache.set(cacheKey, texture);
   return texture;
 }
 
-// Create trim design texture
+// Create trim design texture (with caching)
 function createTrimDesignTexture(
   trimDesign: string,
   baseColor: string,
   trimColor: string,
   size: number = 512,
 ): THREE.CanvasTexture {
+  const cacheKey = trimCacheKey(trimDesign, baseColor, trimColor);
+  const cached = _trimTextureCache.get(cacheKey);
+  if (cached) return cached;
+
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
@@ -521,6 +565,7 @@ function createTrimDesignTexture(
 
   texture.needsUpdate = true;
 
+  _trimTextureCache.set(cacheKey, texture);
   return texture;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 
 export interface MobilePerformanceConfig {
   isMobile: boolean;
@@ -15,6 +15,41 @@ export interface MobilePerformanceConfig {
   debounceMs: number;
   enablePostProcessing: boolean;
   hardwareScaling: number;
+}
+
+// Cache GPU tier to avoid re-creating WebGL context on every call
+let _cachedGpuTier: string | null = null;
+function detectGpuTier(): string {
+  if (_cachedGpuTier !== null) return _cachedGpuTier;
+  _cachedGpuTier = "high";
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (gl) {
+      const debugInfo = (gl as WebGLRenderingContext).getExtension(
+        "WEBGL_debug_renderer_info",
+      );
+      if (debugInfo) {
+        const renderer = (gl as WebGLRenderingContext).getParameter(
+          debugInfo.UNMASKED_RENDERER_WEBGL,
+        );
+        if (
+          /Mali-4|Mali-T|Adreno 3|Adreno 4|PowerVR SGX|Intel HD Graphics [2-4]/i.test(
+            renderer,
+          )
+        ) {
+          _cachedGpuTier = "low";
+        } else if (/Mali-G5|Adreno 5|Intel UHD/i.test(renderer)) {
+          _cachedGpuTier = "medium";
+        }
+      }
+    }
+    canvas.remove();
+  } catch (e) {
+    // Ignore errors
+  }
+  return _cachedGpuTier;
 }
 
 // Detect device capabilities
@@ -52,36 +87,8 @@ function detectDeviceCapabilities(): MobilePerformanceConfig {
   // User requested to remove slow connection checks to force high quality
   const isSlowConnection = false;
 
-  // Detect GPU capabilities (rough estimate)
-  let gpuTier = "high";
-  try {
-    const canvas = document.createElement("canvas");
-    const gl =
-      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (gl) {
-      const debugInfo = (gl as WebGLRenderingContext).getExtension(
-        "WEBGL_debug_renderer_info",
-      );
-      if (debugInfo) {
-        const renderer = (gl as WebGLRenderingContext).getParameter(
-          debugInfo.UNMASKED_RENDERER_WEBGL,
-        );
-        // Check for known low-end GPUs
-        if (
-          /Mali-4|Mali-T|Adreno 3|Adreno 4|PowerVR SGX|Intel HD Graphics [2-4]/i.test(
-            renderer,
-          )
-        ) {
-          gpuTier = "low";
-        } else if (/Mali-G5|Adreno 5|Intel UHD/i.test(renderer)) {
-          gpuTier = "medium";
-        }
-      }
-    }
-    canvas.remove();
-  } catch (e) {
-    // Ignore errors
-  }
+  // Detect GPU capabilities (cached - avoids creating WebGL context every time)
+  const gpuTier = detectGpuTier();
 
   const isLowEndDevice =
     deviceMemory <= 2 ||
@@ -177,18 +184,30 @@ export function useMobilePerformance(): MobilePerformanceConfig {
   const [config, setConfig] = useState<MobilePerformanceConfig>(() =>
     detectDeviceCapabilities(),
   );
+  const prevConfigRef = useRef(config);
 
   useEffect(() => {
     // Re-detect on resize (handles orientation changes)
     const handleResize = () => {
-      setConfig(detectDeviceCapabilities());
+      const newConfig = detectDeviceCapabilities();
+      // Only trigger re-render if config actually changed (shallow compare key fields)
+      const prev = prevConfigRef.current;
+      if (
+        prev.isMobile !== newConfig.isMobile ||
+        prev.isLowEndDevice !== newConfig.isLowEndDevice ||
+        prev.pixelRatio !== newConfig.pixelRatio ||
+        prev.uvCanvasSize !== newConfig.uvCanvasSize
+      ) {
+        prevConfigRef.current = newConfig;
+        setConfig(newConfig);
+      }
     };
 
-    // Debounce resize handler
+    // Debounce resize handler (500ms to avoid thrashing during resize drag)
     let timeoutId: NodeJS.Timeout;
     const debouncedResize = () => {
       clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleResize, 250);
+      timeoutId = setTimeout(handleResize, 500);
     };
 
     window.addEventListener("resize", debouncedResize);

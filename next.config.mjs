@@ -20,6 +20,19 @@ const nextConfig = {
       "node_modules/onnxruntime-web/**",
     ],
   },
+  // Experimental performance options
+  experimental: {
+    // Optimize package imports to reduce bundle size by tree-shaking barrel files
+    optimizePackageImports: [
+      "lucide-react",
+      "@radix-ui/react-icons",
+      "framer-motion",
+      "recharts",
+      "date-fns",
+      "three",
+      "@react-three/drei",
+    ],
+  },
   webpack: (config, { isServer }) => {
     // Optimize GLB/GLTF file loading
     config.module.rules.push({
@@ -44,6 +57,8 @@ const nextConfig = {
     if (!isServer) {
       config.optimization = {
         ...config.optimization,
+        // Enable module concatenation for smaller bundles
+        concatenateModules: true,
         splitChunks: {
           ...config.optimization?.splitChunks,
           cacheGroups: {
@@ -54,6 +69,7 @@ const nextConfig = {
               name: 'three-vendor',
               chunks: 'all',
               priority: 20,
+              reuseExistingChunk: true,
             },
             // Separate UI libraries
             ui: {
@@ -61,6 +77,24 @@ const nextConfig = {
               name: 'ui-vendor',
               chunks: 'all',
               priority: 15,
+              reuseExistingChunk: true,
+            },
+            // Separate Supabase & data libraries (auth, API calls)
+            data: {
+              test: /[\\/]node_modules[\\/](@supabase|@tanstack)[\\/]/,
+              name: 'data-vendor',
+              chunks: 'all',
+              priority: 12,
+              reuseExistingChunk: true,
+            },
+            // Common vendor chunk for remaining node_modules
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendor',
+              chunks: 'all',
+              priority: 5,
+              minSize: 20000,
+              reuseExistingChunk: true,
             },
           },
         },
@@ -103,6 +137,36 @@ const nextConfig = {
       },
       {
         source: "/:path*.(jpg|jpeg|png|webp|svg)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Cache JS/CSS chunks (hashed filenames) for long-term caching
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Cache font files
+      {
+        source: "/:path*.(woff|woff2|ttf|otf|eot)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Cache GLB/GLTF 3D model files
+      {
+        source: "/:path*.(glb|gltf)",
         headers: [
           {
             key: "Cache-Control",

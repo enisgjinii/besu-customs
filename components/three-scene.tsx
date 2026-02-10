@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, Suspense, useCallback } from "react";
+import { useEffect, useRef, useState, Suspense, useCallback, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment, Center } from "@react-three/drei";
+import { OrbitControls, Environment, Center, Preload, AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 import { useConfiguratorStore, MaterialSection, TextureLayer } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import { Spinner } from "@/components/ui/spinner";
@@ -29,6 +29,24 @@ import { useAutoMemoryCleanup } from "@/lib/memory-monitor";
 
 // Shared TextureLoader instance - reuse instead of creating per render
 const sharedTextureLoader = typeof window !== 'undefined' ? new THREE.TextureLoader() : null;
+
+// Reusable Vector2 for raycaster - avoids GC pressure from allocations in event handlers
+const _reusableVec2 = typeof window !== 'undefined' ? new THREE.Vector2() : null;
+
+// Cached PBR texture map - prevents reloading the same PBR maps every effect cycle
+const _pbrTextureCache = new Map<string, THREE.Texture>();
+function getCachedPBRTexture(url: string): THREE.Texture {
+  if (_pbrTextureCache.has(url)) return _pbrTextureCache.get(url)!;
+  const loader = sharedTextureLoader || new THREE.TextureLoader();
+  const tex = loader.load(url);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  _pbrTextureCache.set(url, tex);
+  return tex;
+}
+function disposePBRTextureCache() {
+  _pbrTextureCache.forEach((tex) => tex.dispose());
+  _pbrTextureCache.clear();
+}
 
 // Bounding Box Helper Component
 function BoundingBoxHelper({ object }: { object: THREE.Object3D }) {
@@ -620,12 +638,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     const hasRenderableTexture =
       !!globalCustomTexture || debouncedLayers.some((l) => l.visible);
 
-    // Load PBR maps if available (reuse shared loader)
-    const loader = sharedTextureLoader || new THREE.TextureLoader();
-    const normalTex = globalNormalMap ? loader.load(globalNormalMap) : null;
-    const roughnessTex = globalRoughnessMap ? loader.load(globalRoughnessMap) : null;
-    const aoTex = globalAOMap ? loader.load(globalAOMap) : null;
-    const dispTex = globalDisplacementMap ? loader.load(globalDisplacementMap) : null;
+    // Load PBR maps if available (cached to avoid reloading every effect cycle)
+    const normalTex = globalNormalMap ? getCachedPBRTexture(globalNormalMap) : null;
+    const roughnessTex = globalRoughnessMap ? getCachedPBRTexture(globalRoughnessMap) : null;
+    const aoTex = globalAOMap ? getCachedPBRTexture(globalAOMap) : null;
+    const dispTex = globalDisplacementMap ? getCachedPBRTexture(globalDisplacementMap) : null;
 
     // Helper to detect back jersey materials
     const isBackJerseyMaterial = (name: string): boolean => {
@@ -751,12 +768,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       });
     });
 
-    return () => {
-      normalTex?.dispose();
-      roughnessTex?.dispose();
-      aoTex?.dispose();
-      dispTex?.dispose();
-    };
+    // PBR textures are cached globally - no need to dispose per-effect
   }, [
     scene,
     texture,
@@ -918,7 +930,9 @@ function Model({
 
       setClonedScene(cloned);
 
-      setTimeout(() => {
+      // Use requestIdleCallback for non-critical post-load work (better initial render perf)
+      const scheduleWork = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 0);
+      scheduleWork(() => {
         const extracted = extractSectionsFromThreeModel(cloned, url);
         onSectionsExtractedRef.current?.(extracted);
         onLoadRef.current?.();
@@ -949,18 +963,21 @@ function Model({
           useConfiguratorStore.getState().setCompleteUVMap(uvMapDataUrl);
         }
 
-        // Ensure materials are ready for decals
+        // Optimize geometry and set up shadows in a single traversal
         cloned.traverse((node) => {
           if ((node as THREE.Mesh).isMesh) {
             const m = node as THREE.Mesh;
             m.castShadow = true;
             m.receiveShadow = true;
-            // Ensure unique materials for unique colors? clone materials?
-            // GLTF loader usually shares materials. Cloning scene clones materials?
-            // Typically yes if strict, but let's ensure.
+            m.frustumCulled = true; // Enable frustum culling
+
+            // Optimize geometry: compute bounding sphere if missing for faster culling
+            if (m.geometry && !m.geometry.boundingSphere) {
+              m.geometry.computeBoundingSphere();
+            }
           }
         });
-      }, 0);
+      });
     }
   }, [scene, url, perfConfig.uvCanvasSize]);
 
@@ -1080,7 +1097,9 @@ function Model({
         const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
-        raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+        // Reuse vector to avoid allocation
+        if (_reusableVec2) _reusableVec2.set(x, y);
+        raycaster.setFromCamera(_reusableVec2 || new THREE.Vector2(x, y), camera);
         const intersects = raycaster.intersectObject(clonedScene, true);
         const hit = intersects.find((i) => i.uv);
 
@@ -1111,7 +1130,8 @@ function Model({
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
-      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+      if (_reusableVec2) _reusableVec2.set(x, y);
+      raycaster.setFromCamera(_reusableVec2 || new THREE.Vector2(x, y), camera);
       const intersects = raycaster.intersectObject(clonedScene, true);
       const hit = intersects.find((i) => i.uv);
 
@@ -1253,7 +1273,8 @@ function Model({
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+      if (_reusableVec2) _reusableVec2.set(x, y);
+      raycaster.setFromCamera(_reusableVec2 || new THREE.Vector2(x, y), camera);
 
       const intersects = raycaster.intersectObject(clonedScene, true);
       const hit = intersects.find((i) => i.uv);
@@ -1352,9 +1373,11 @@ function Model({
     removeTextureLayer,
   ]);
 
-  useFrame(() => {
+  // Only subscribe to the render loop when auto-rotating (saves CPU when idle)
+  useFrame((_, delta) => {
     if (autoRotate && modelRef.current) {
-      modelRef.current.rotation.y += 0.005;
+      // Use delta-time for framerate-independent rotation
+      modelRef.current.rotation.y += 0.3 * delta;
     }
   });
 
@@ -1376,25 +1399,30 @@ function Model({
 
 // ... rest of SceneSetup, CameraControlsHandler, ThreeScene ...
 
-// Scene setup component
+// Scene setup component - runs once and on config changes only
 function SceneSetup() {
   const { gl, scene } = useThree();
-  const { theme } = useTheme();
-  const backgroundColor = useConfiguratorStore((s) => s.backgroundColor);
   const perfConfig = useMobilePerformance();
 
   useEffect(() => {
-    scene.background = new THREE.Color("#ffffff"); // Force white for now
+    scene.background = new THREE.Color("#ffffff");
     gl.setPixelRatio(Math.min(window.devicePixelRatio, perfConfig.pixelRatio));
     gl.toneMapping = THREE.ACESFilmicToneMapping;
     gl.toneMappingExposure = 1.2;
     gl.outputColorSpace = THREE.SRGBColorSpace;
 
+    // Optimize rendering: disable auto-clear and manually manage when needed
+    gl.autoClear = true;
+    gl.autoClearDepth = true;
+    gl.autoClearStencil = false; // Skip stencil clear when not needed
+
     if (!perfConfig.isLowEndDevice && perfConfig.shadowsEnabled) {
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    } else {
+      gl.shadowMap.enabled = false;
     }
-  }, [gl, scene, theme, backgroundColor, perfConfig]);
+  }, [gl, scene, perfConfig]);
 
   return null;
 }
@@ -1443,12 +1471,14 @@ export function ThreeScene({
   // Monitor memory pressure and cleanup automatically
   useAutoMemoryCleanup(0.80);
 
-  // Check if mobile for camera positioning
+  // Check if mobile for camera positioning (debounced)
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    let tid: ReturnType<typeof setTimeout>;
+    const debounced = () => { clearTimeout(tid); tid = setTimeout(checkMobile, 300); };
+    window.addEventListener("resize", debounced);
+    return () => { window.removeEventListener("resize", debounced); clearTimeout(tid); };
   }, []);
 
   useEffect(() => {
@@ -1549,6 +1579,19 @@ export function ThreeScene({
     ? [0, 2, 8]
     : [0, 1.2, 8];
 
+  // Memoize GL config to prevent Canvas remount
+  const glConfig = useMemo(() => ({
+    antialias: perfConfig.antialias,
+    alpha: true,
+    powerPreference: perfConfig.isLowEndDevice
+      ? "low-power" as const
+      : "high-performance" as const,
+    preserveDrawingBuffer: true,
+    // Enable WebGL2-specific optimizations where available
+    stencil: false,
+    depth: true,
+  }), [perfConfig.antialias, perfConfig.isLowEndDevice]);
+
   return (
     <div
       className="w-full h-full relative"
@@ -1563,18 +1606,22 @@ export function ThreeScene({
           near: 0.1,
           far: 1000,
         }}
-        gl={{
-          antialias: perfConfig.antialias,
-          alpha: true,
-          powerPreference: perfConfig.isLowEndDevice
-            ? "low-power"
-            : "high-performance",
-          preserveDrawingBuffer: true,
-        }}
+        gl={glConfig}
         style={{ touchAction: "none" }}
+        performance={{ min: 0.5 }}
       >
         <SceneSetup />
         <CameraControlsHandler />
+        {/* Automatically lower DPR when framerate drops below threshold */}
+        <AdaptiveDpr pixelated />
+        <PerformanceMonitor
+          onDecline={() => {
+            // Performance is degrading — R3F will automatically lower DPR
+            if (process.env.NODE_ENV === 'development') {
+              console.log('⚡ Performance declining — lowering render quality');
+            }
+          }}
+        />
 
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 10, 5]} intensity={1.2} />

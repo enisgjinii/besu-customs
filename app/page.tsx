@@ -37,13 +37,21 @@ export default function Home() {
     (state) => state.setSelectedSection,
   );
 
-  // Detect mobile viewport
+  // Detect mobile viewport (debounced to avoid thrashing)
   useEffect(() => {
     setMounted(true);
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const debouncedCheck = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(checkMobile, 200);
+    };
+    window.addEventListener("resize", debouncedCheck);
+    return () => {
+      window.removeEventListener("resize", debouncedCheck);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Auto-select first section when sections are loaded
