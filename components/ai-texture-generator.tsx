@@ -299,11 +299,10 @@ export function AITextureGenerator({
     }
   };
 
-  useEffect(() => {
-    if (scene && googleTexture) {
-      applyGoogle(scene);
-    }
-  }, [googleTexture, scene, applyGoogle]);
+  // NOTE: Direct applyGoogle(scene) removed — texture application is handled
+  // exclusively by the TextureCompositor via texture layers in the store.
+  // The onTextureGenerated callback adds the AI texture as a layer, and
+  // TextureCompositor composes & applies it to all materials.
 
   const canGenerate = uvMap && !isGenerating; // UV map is required, prompt is optional
 

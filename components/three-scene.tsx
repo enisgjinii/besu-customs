@@ -1437,7 +1437,7 @@ function CameraControlsHandler() {
 
   useEffect(() => {
     setCameraControlsRef(camera as any);
-  }, [camera, setCameraControlsRef]);
+  }, [camera, controls, setCameraControlsRef]);
 
   useEffect(() => {
     if (currentModelUrl && controls) {

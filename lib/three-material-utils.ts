@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import type { MaterialSection } from "./store";
+import { useConfiguratorStore, type MaterialSection } from "./store";
 
 /**
  * Three.js Material Utilities
@@ -219,6 +219,13 @@ export function applyMaterialsToThreeModel(
 ): void {
   if (sections.length === 0) return;
 
+  // Check if TextureCompositor is managing m.map (active texture layers or global texture)
+  // When true, we must NOT clear m.map — the TextureCompositor will handle it
+  const store = useConfiguratorStore.getState();
+  const hasActiveTextureLayers =
+    store.textureLayers.some((l) => l.visible) ||
+    !!store.globalCustomTexture;
+
   scene.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
       const materials = Array.isArray(child.material)
@@ -271,7 +278,12 @@ export function applyMaterialsToThreeModel(
             !section.trimDesign
           ) {
             targetMaterial.color = new THREE.Color(section.color);
-            targetMaterial.map = null;
+            // Only clear the map when TextureCompositor is NOT managing textures.
+            // When texture layers are active, TextureCompositor owns m.map and
+            // clearing it here would race against the compositor's useEffect.
+            if (!hasActiveTextureLayers) {
+              targetMaterial.map = null;
+            }
           }
 
           // Apply custom texture (cached)
