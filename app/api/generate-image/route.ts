@@ -109,12 +109,21 @@ export async function POST(request: NextRequest) {
 
     const runware = new RunwareClient({ apiKey: runwareApiKey });
 
+    // Use SDXL model for higher quality when generating at 1024+
+    const useHighQualityModel = width >= 1024 || height >= 1024;
+    const modelId = useHighQualityModel
+      ? "civitai:101055@128078" // SDXL for quality
+      : "runware:100@1";       // Fast model for small sizes
+
     const images = await runware.requestImages({
       positivePrompt: prompt,
+      negativePrompt: "blurry, low quality, distorted, watermark, text, logo, signature, jpeg artifacts, pixelated, noisy, low resolution, deformed, disfigured, bad anatomy, bad proportions, out of frame, cropped, worst quality, low quality",
       width,
       height,
       numberResults,
-      model: "runware:100@1",
+      model: modelId,
+      steps: useHighQualityModel ? 30 : 20,
+      CFGScale: useHighQualityModel ? 7.5 : 5,
     });
 
     return NextResponse.json({

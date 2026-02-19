@@ -210,10 +210,10 @@ export function AITextureGenerator({
         : "Use large-scale motifs on main panels, smaller repeats on side strips, subtle details on trims; keep all panels consistent in palette and flow";
 
     const consistencyHints =
-      "Front + back large torso panels must match stylistically: same palette, same centerline flow, same motif scale. If you place an emblem/animal, keep it centered within the large torso panels and ensure it still looks correct when UV shells are mirrored";
+      "Front + back large torso panels must match stylistically: same palette, same centerline flow, same motif scale. If you place an emblem/animal, keep it centered within the large torso panels and ensure it still looks correct when UV shells are mirrored. The overall design must look like a cohesive brand identity — not random patterns on each panel";
 
     const trimHints =
-      "Keep thin trim/strap/waistband islands simple (solid color or clean stripes). Avoid complex icons on thin strips to prevent distortion";
+      "Keep thin trim/strap/waistband islands simple (solid color or clean stripes). Avoid complex icons on thin strips to prevent distortion. Never leave any panel blank or white — every area must have intentional design";
 
     const uvLineGuard =
       "Do not render the UV wireframe/black outline lines; the final image must be clean artwork only";
@@ -227,8 +227,8 @@ export function AITextureGenerator({
 
     const uvOnlyPrompt =
       modelType === "baseball cap"
-        ? "Create an ultra-premium, advanced baseball cap texture using the UV map as the only placement guide. Build layered material depth: primary motif, secondary micro-pattern, and subtle fabric weave. Keep motifs centered and symmetric across crown panels with clean mirrored flow. Use high-end technical aesthetics: precision lines, controlled gradients, refined edge detailing. Preserve safe margins near seams; avoid splitting key motifs across crown seams. Keep brim clean and bold, and keep strap/button minimal (solid or clean stripe accents)."
-        : "Create an ultra-premium, advanced sportswear texture using the UV map as the only placement guide. Build layered material depth: primary motif, secondary micro-pattern, and subtle fabric weave. Keep motifs centered and symmetric on large panels, with clean mirrored flow. Use high-end technical aesthetics: precision lines, controlled gradients, refined edge detailing. Preserve safe margins near seams; avoid splitting key motifs across seams or thin strips. Use quieter, simplified treatments on trims/straps/waistbands (solid or clean stripe accents).";
+        ? "Create an ultra-premium, award-winning baseball cap texture using the UV map as the STRICT placement guide. Build three layers of material depth: (1) primary bold motif across crown panels, (2) secondary micro-pattern for visual richness, (3) subtle fabric weave texture for realism. Keep motifs centered and perfectly symmetric across crown panels with clean mirrored flow. Use premium technical aesthetics: precision lines, controlled color gradients, refined edge detailing, rich material feel. Preserve safe margins near seams; never split key motifs across crown seams. Keep brim bold and clean, strap/button minimal with solid or clean stripe accents. Every UV island must be filled with intentional design — no blank areas."
+        : "Create an ultra-premium, award-winning sportswear texture using the UV map as the STRICT placement guide. Build three layers of material depth: (1) primary bold motif on main panels, (2) secondary micro-pattern for visual richness, (3) subtle fabric weave texture for realism. Keep motifs centered and perfectly symmetric on large panels, with clean mirrored vertical flow. Use premium technical aesthetics: precision lines, controlled color gradients, refined edge detailing, rich material feel. Preserve safe margins near seams; never split key motifs across seams or thin strips. Use quieter, simplified treatments on trims/straps/waistbands (solid or clean stripe accents). Front and back panels must feel like a cohesive design — same palette, same visual language. Every UV island must be filled with intentional design — no blank or white areas.";
 
     // Always use UV-guided generation, but incorporate user prompt if provided
     const effectivePrompt = prompt.trim() 
@@ -238,7 +238,7 @@ export function AITextureGenerator({
     // Build clean prompt for Google Gemini
     const googlePrompt = [
       effectivePrompt,
-      "seamless tileable pattern",
+      "seamless tileable pattern, production-quality sublimation print",
       modelGuard,
       uvDiscipline,
       uvAutoAnalysis,
@@ -251,6 +251,8 @@ export function AITextureGenerator({
       safetyGuard,
       "Use the UV image as strict placement guide for each jersey panel",
       baseTextureNote,
+      "CRITICAL: Every UV island must be completely filled with design — no white, blank, or empty areas. The texture must look professional and cohesive when viewed on the 3D model from any angle",
+      "Color accuracy: use rich, vibrant, saturated colors that will reproduce well in sublimation printing — avoid washed-out or muted tones",
     ]
       .filter(Boolean)
       .join(". ");

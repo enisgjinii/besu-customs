@@ -180,25 +180,39 @@ export function useGeminiAI(): UseGeminiAIReturn {
       const styleModifier = TEXTURE_STYLE_PROMPTS[textureStyle] || TEXTURE_STYLE_PROMPTS.realistic;
       
       const enhancedPrompt = `
-You are a professional texture artist. Generate a high-quality, production-ready texture map for a 3D model.
+You are a world-class professional texture artist specializing in sportswear sublimation printing. Generate a PERFECT, production-ready texture map.
 
-REFERENCE: The attached image shows the UV layout/unwrap of the 3D model. Use this as a guide for where each texture region should be placed.
+REFERENCE IMAGE: The attached image is the UV layout/unwrap of a 3D sportswear model. This UV map shows exactly where each panel (front, back, sleeves, sides, trims) maps onto the garment. Use this as your STRICT placement guide.
 
 TEXTURE DESCRIPTION: ${prompt}
 
-TARGET OUTPUT: ${resolution} resolution, ${aspectRatio} aspect ratio.
-
 STYLE: ${styleModifier}
 
-CRITICAL REQUIREMENTS:
-1. Output a FLAT texture map (albedo/diffuse only) - NO 3D lighting, shadows, or shading
-2. The texture must be seamless and tileable where appropriate
-3. Colors should be vibrant and production-quality
-4. Match the UV island layout precisely - each UV island should have coherent texture coverage
-5. Maintain consistent style across all UV islands
-6. Use high contrast and clear details suitable for real-time 3D rendering
+RESOLUTION: ${resolution} (${resolution === "4K" ? "4096x4096" : resolution === "2K" ? "2048x2048" : "1024x1024"})
+ASPECT RATIO: ${aspectRatio}
 
-OUTPUT: Generate the texture image directly. Do not explain, just create the image.
+ABSOLUTE REQUIREMENTS (follow ALL precisely):
+1. Output a FLAT 2D texture map (albedo/diffuse ONLY) — absolutely NO 3D lighting, NO shadows, NO highlights, NO shading, NO ambient occlusion baked in
+2. The texture must precisely align with the UV islands shown in the reference image
+3. Each UV island must have coherent, complete texture coverage — no blank/white areas within islands
+4. Colors must be vibrant, saturated, and production-quality (suitable for dye-sublimation printing)
+5. Maintain visual continuity and consistent style across ALL UV islands
+6. High contrast and crisp, sharp details suitable for real-time 3D rendering at any viewing distance
+7. The design must be symmetric where the garment is symmetric (left/right panels should mirror)
+8. Fill the ENTIRE canvas — no margins, borders, or unused space
+9. Transitions between panels should feel natural when the 3D model is assembled
+10. Do NOT render any UV wireframe lines, guidelines, or grid — output CLEAN artwork only
+
+QUALITY CHECKLIST:
+- Front panel: Main design, centered composition, eye-catching
+- Back panel: Complementary design, cohesive with front
+- Sleeves: Matching accent pattern, properly scaled
+- Side panels: Consistent with main design flow
+- Trims/bands: Simple, clean treatment (solid or subtle accent)
+- Color palette: Maximum 5-7 colors, cohesive and vibrant
+- Pattern scale: Appropriate for garment size (not too small, not too large)
+
+OUTPUT: Generate the texture image DIRECTLY. No text explanation needed — just create the perfect image.
       `.trim();
 
       const mimeType = getMimeType(uvMap);
@@ -223,6 +237,10 @@ OUTPUT: Generate the texture image directly. Do not explain, just create the ima
         generationConfig: {
           // Request both text and image for better reasoning
           response_modalities: ["TEXT", "IMAGE"],
+          // Higher temperature for more creative designs (0.7-0.9 sweet spot)
+          temperature: 0.8,
+          // Increase token limit for higher quality detailed images
+          maxOutputTokens: 8192,
         },
         // Safety settings - allow artistic content
         safetySettings: [

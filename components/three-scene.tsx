@@ -142,11 +142,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   });
   const [texture] = useState(() => {
     const tex = new THREE.CanvasTexture(canvas);
-    // Enable smooth filtering for better quality
+    // Enable maximum quality filtering for crisp textures
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
-    tex.anisotropy = perfConfig.isLowEndDevice ? 4 : 16; // Reduce on low-end devices
+    tex.anisotropy = perfConfig.isLowEndDevice ? 4 : 16;
+    tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   });
 
@@ -158,6 +159,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
     tex.anisotropy = perfConfig.isLowEndDevice ? 4 : 16;
+    tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   });
 
@@ -269,15 +271,21 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         }
 
         if (layer.type === "pattern" && layer.imageUrl) {
-          // Pattern: Draw full canvas with smooth scaling
+          // Pattern: Draw full canvas with maximum quality scaling
           const img = imageCache.current.get(layer.imageUrl);
           if (img && img.complete) {
+            // For high-res source images, use native resolution drawing for best quality
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
             ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
           }
         } else if (layer.type === "image" && layer.imageUrl) {
-          // Image: Draw at UV position with scale
+          // Image: Draw at UV position with scale — use high-quality interpolation
           const img = imageCache.current.get(layer.imageUrl);
           if (img && img.complete) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            
             const u = layer.position?.[0] ?? 0.5;
             const v = layer.position?.[1] ?? 0.5;
             const scaleX = layer.scale?.[0] ?? 0.3;
@@ -728,6 +736,14 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           // Don't use alphaTest - it was making transparent areas invisible
           m.transparent = false;
           m.alphaTest = 0;
+
+          // Ensure the texture colors are displayed accurately (not multiplied by material color)
+          // Reset material color to white so texture shows at full vibrancy
+          m.color.setHex(0xffffff);
+
+          // Ensure proper material settings for AI texture display
+          m.metalness = 0.0;   // No metallic effect that could darken the texture
+          m.roughness = 0.85;  // Slight roughness for fabric-like appearance
 
           // Apply PBR maps
           if (normalTex) {

@@ -23,6 +23,59 @@ import { useConfiguratorStore } from "@/lib/store";
 import { removeBackgroundAdvanced } from "@/lib/background-removal";
 import { Switch } from "@/components/ui/switch";
 
+/**
+ * Client-side image upscaling using canvas with high-quality bicubic interpolation.
+ * Upscales the image to targetSize x targetSize for crisp 3D texture mapping.
+ */
+function upscaleImage(dataUrl: string, targetSize: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement("img");
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        // Use two-pass upscaling for better quality (avoids aliasing)
+        const srcW = img.naturalWidth || img.width;
+        const srcH = img.naturalHeight || img.height;
+
+        // If already at target size or larger, skip
+        if (srcW >= targetSize && srcH >= targetSize) {
+          resolve(dataUrl);
+          return;
+        }
+
+        // Two-pass upscale: first to 2x, then to target (reduces artifacts)
+        const midSize = Math.min(targetSize, Math.max(srcW, srcH) * 2);
+        
+        // Pass 1: intermediate upscale
+        const mid = document.createElement("canvas");
+        mid.width = midSize;
+        mid.height = midSize;
+        const midCtx = mid.getContext("2d");
+        if (!midCtx) { resolve(dataUrl); return; }
+        midCtx.imageSmoothingEnabled = true;
+        midCtx.imageSmoothingQuality = "high";
+        midCtx.drawImage(img, 0, 0, midSize, midSize);
+
+        // Pass 2: final size
+        const final = document.createElement("canvas");
+        final.width = targetSize;
+        final.height = targetSize;
+        const finalCtx = final.getContext("2d");
+        if (!finalCtx) { resolve(dataUrl); return; }
+        finalCtx.imageSmoothingEnabled = true;
+        finalCtx.imageSmoothingQuality = "high";
+        finalCtx.drawImage(mid, 0, 0, targetSize, targetSize);
+
+        resolve(final.toDataURL("image/png"));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => reject(new Error("Failed to load image for upscaling"));
+    img.src = dataUrl;
+  });
+}
+
 export function AIImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,6 +117,13 @@ export function AIImageGenerator() {
 
     const promptWithGuards = (() => {
       let finalPrompt = prompt.trim();
+
+      // Add quality boosters for consistent high-quality output
+      const qualityPrefix =
+        "Ultra high quality, professional sports jersey texture design, seamless pattern, 8K detail, sharp edges, vibrant colors, production-ready sublimation print, ";
+
+      finalPrompt = qualityPrefix + finalPrompt;
+
       if (wantsPersonalization) {
         if (cleanName) {
           finalPrompt += `, featuring player name "${cleanName}" on the back`;
@@ -71,11 +131,17 @@ export function AIImageGenerator() {
         if (cleanNumber) {
           finalPrompt += `, with jersey number "${cleanNumber}" centered on the back`;
         }
-        finalPrompt += ", no extra text or numbers anywhere else";
+        finalPrompt +=
+          ", no extra text or numbers anywhere else, clean professional layout";
       } else {
         finalPrompt +=
-          ", no names, numbers, letters, or text anywhere on the design, no watermarks";
+          ", no names, numbers, letters, or text anywhere on the design, no watermarks, no logos, clean professional design";
       }
+
+      // Add negative guidance as part of the prompt
+      finalPrompt +=
+        ". Avoid: blurry, low quality, distorted, jpeg artifacts, pixelated, noisy";
+
       return finalPrompt;
     })();
 
@@ -89,8 +155,8 @@ export function AIImageGenerator() {
         headers,
         body: JSON.stringify({
           prompt: promptWithGuards,
-          width: 512,
-          height: 512,
+          width: 1024,
+          height: 1024,
           numberResults: 1,
         }),
       });
@@ -126,7 +192,7 @@ export function AIImageGenerator() {
   const handleApplyImage = async () => {
     if (!generatedImage) return;
 
-    const toastId = toast.loading("AI removing background... 0%");
+    const toastId = toast.loading("Processing AI image... 0%");
 
     // Apply AI background removal to make the image blend better with garments
     let processedUrl = generatedImage.imageURL;
@@ -135,11 +201,13 @@ export function AIImageGenerator() {
       const response = await fetch(generatedImage.imageURL);
       const blob = await response.blob();
 
+      toast.loading("AI removing background... 10%", { id: toastId });
+
       // Use @imgly/background-removal with ultra quality for complete removal
       const result = await removeBackgroundAdvanced(blob, {
         quality: "ultra",
         onProgress: (progress) => {
-          toast.loading(`AI removing background... ${progress}%`, {
+          toast.loading(`AI removing background... ${Math.round(progress * 0.7 + 10)}%`, {
             id: toastId,
           });
         },
@@ -148,7 +216,6 @@ export function AIImageGenerator() {
       console.log(
         `✅ Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`,
       );
-      toast.success("Background removed completely!", { id: toastId });
     } catch (error) {
       console.warn("Background removal failed, using original image:", error);
       const errorMessage =
@@ -159,6 +226,15 @@ export function AIImageGenerator() {
           : "Background removal failed, using original",
         { id: toastId },
       );
+    }
+
+    // Upscale image to 2048x2048 for crisp texture mapping on 3D model
+    toast.loading("Upscaling for 3D quality... 85%", { id: toastId });
+    try {
+      processedUrl = await upscaleImage(processedUrl, 2048);
+      console.log("✅ Image upscaled to 2048px for 3D model");
+    } catch (err) {
+      console.warn("Upscale failed, using current resolution:", err);
     }
 
     // Dispatch event for other components to pick up
@@ -252,12 +328,12 @@ export function AIImageGenerator() {
             {/* Prompt Examples */}
             <div className="flex flex-wrap gap-1.5 pt-1">
               {[
-                "Futuristic orange and black cobra pattern",
-                "Minimalist geometric lines",
-                "Flame gradient effects",
-                "Abstract wave design",
-                "Lightning bolt pattern",
-                "Galaxy space theme",
+                "Electric blue and black carbon fiber racing stripes",
+                "Bold red and gold geometric panels with metallic accents",
+                "Neon green cyber circuit pattern on dark background",
+                "Sunset gradient with tribal flame design",
+                "Royal purple and silver abstract wave energy pattern",
+                "Crimson and black viper scale pattern with subtle glow",
               ].map((example) => (
                 <button
                   key={example}
