@@ -592,11 +592,11 @@ export function Step08AIImages() {
 
     let finalPatternUrl = transformedPatternUrl;
 
-    const isFlagFootballUvModel =
-      currentModelUrl?.includes("flag-football-top-with-hoodie_UV_MAP") &&
+    const isFlippedUvModel =
+      (currentModelUrl?.includes("flag-football-top-with-hoodie_UV_MAP") &&
       !currentModelUrl?.toLowerCase().includes(
         "flag-football-top-with-hoodie_uv_map_v2.glb",
-      );
+      )) || currentModelUrl?.includes("track-and-field-top-short-sleeve.glb");
     const backTransformForBake = currentModelUrl?.toLowerCase().includes(
       "flag-football-top-with-hoodie_uv_map_v2.glb",
     )
@@ -617,7 +617,7 @@ export function Step08AIImages() {
     // 2. Fix Front Panel (for NON-Flag Football UV models)
     // For flag football UV models, we skip this to avoid double-flipping, 
     // and instead let the region flip (below) handle it.
-    if (completeUVMap && !isFlagFootballUvModel) {
+    if (completeUVMap && !isFlippedUvModel) {
       const { frontSide } = await detectTorsoSides(completeUVMap, backUvSide);
       finalPatternUrl = await bakeFrontFlipIntoUvTexture(finalPatternUrl, {
         uvTemplateDataUrl: completeUVMap,
@@ -643,7 +643,7 @@ export function Step08AIImages() {
 
         // For flag football UV_MAP models: flip ALL islands except the back torso
         // For other models: flip only islands explicitly marked as "inverted" (legacy logic - comment out if missing property)
-        const islandsToFlip = isFlagFootballUvModel
+        const islandsToFlip = isFlippedUvModel
           ? allIslands.filter((i) => i.labelHint !== "back-torso")
           : []; // allIslands.filter((i) => ... orientationHint ... ) - logic removed temporarily to safely fix flag football sans orientationHint
 

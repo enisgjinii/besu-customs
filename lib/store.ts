@@ -595,6 +595,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
             sections: [],
             sectionsFromApi: false,
             sectionsLoading: true, // Start loading
+            completeUVMap: null, // Clear old UV map immediately
           });
 
           // Try to fetch precomputed material sections for this model
@@ -630,7 +631,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       },
 
       currentModelUrl: null,
-      setCurrentModelUrl: (url: string | null) => set({ currentModelUrl: url }),
+      setCurrentModelUrl: (url: string | null) => set({ currentModelUrl: url, completeUVMap: null }),
 
       sections: [],
       sectionsFromApi: false,

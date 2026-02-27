@@ -636,7 +636,8 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     
     const shouldFlipY = isSoccerJersey 
       ? soccerJerseyDebug.flipY
-      : (modelUrl.includes("flag-football-top-with-hoodie.glb") && !isFlagFootballUvV2);
+      : (modelUrl.includes("flag-football-top-with-hoodie.glb") && !isFlagFootballUvV2) ||
+        modelUrl.includes("track-and-field-top-short-sleeve.glb");
 
     texture.flipY = shouldFlipY;
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -966,8 +967,9 @@ function Model({
           "flag-football-top-with-hoodie_uv_map_v2.glb",
         );
         const shouldFlipUvMap =
-          uvMapModelUrl.includes("flag-football-top-with-hoodie_uv_map") &&
-          !isFlagFootballUvMapV2;
+          (uvMapModelUrl.includes("flag-football-top-with-hoodie_uv_map") &&
+            !isFlagFootballUvMapV2) ||
+          uvMapModelUrl.includes("track-and-field-top-short-sleeve.glb");
           // Soccer jersey crew neck should NOT flip UV map - it's already correctly oriented
         const uvMapDataUrl = extractUVMapFromThreeModel(
           cloned,
