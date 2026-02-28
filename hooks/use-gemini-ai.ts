@@ -36,6 +36,8 @@ export interface GeminiTextureOptions {
   resolution?: "1K" | "2K" | "4K";
   /** Texture style preset */
   textureStyle?: "realistic" | "stylized" | "fabric" | "metallic" | "organic";
+  /** Product type for context-aware prompt (e.g. "duffle-bag", "baseball cap") */
+  productType?: string;
   /** Optional debug options for specific models */
   debugOptions?: {
     flipY?: boolean;
@@ -173,16 +175,29 @@ export function useGeminiAI(): UseGeminiAIReturn {
         model = "pro", // Default to Pro for best quality
         aspectRatio = "1:1",
         resolution = "2K",
-        textureStyle = "realistic"
+        textureStyle = "realistic",
+        productType,
       } = options;
 
       // Build professional texture generation prompt
       const styleModifier = TEXTURE_STYLE_PROMPTS[textureStyle] || TEXTURE_STYLE_PROMPTS.realistic;
       
       const enhancedPrompt = `
-You are a world-class professional texture artist specializing in sportswear sublimation printing. Generate a PERFECT, production-ready texture map.
+You are a world-class professional texture artist. Generate a PERFECT, production-ready texture map.
 
-REFERENCE IMAGE: The attached image is the UV layout/unwrap of a 3D sportswear model. This UV map shows exactly where each panel (front, back, sleeves, sides, trims) maps onto the garment. Use this as your STRICT placement guide.
+STEP 1 — DEEP UV MAP ANALYSIS (do this FIRST, before generating anything):
+Carefully study the attached reference image. It is the UV layout/unwrap of a 3D ${productType === "duffle-bag" ? "duffle bag" : productType === "baseball cap" ? "baseball cap" : "sportswear"} model.
+- Count the EXACT number of shapes (UV islands) visible in the image
+- Note each shape's EXACT position on the canvas (top-left, center, bottom-right, etc.)
+- Note each shape's EXACT proportions (tall/narrow, wide/short, circular, triangular, etc.)
+- Note the EXACT size of each shape relative to the canvas
+- Note all the white/empty gaps between shapes — these MUST remain empty
+- The shapes are shown as gray/dark filled regions or outlines on a white background
+
+STEP 2 — GENERATE THE TEXTURE:
+Now paint your design ONLY within the shapes you identified in Step 1.
+
+${productType === "duffle-bag" ? "PRODUCT: This is a DUFFLE BAG. The shapes represent the bag's body panels, end caps, handles, straps, and zipper flap." : productType === "baseball cap" ? "PRODUCT: This is a BASEBALL CAP. The shapes represent crown panels, brim, button, and strap." : "PRODUCT: This is sportswear. The shapes represent garment panels (front, back, sleeves, sides, trims)."}
 
 TEXTURE DESCRIPTION: ${prompt}
 
@@ -193,26 +208,32 @@ ASPECT RATIO: ${aspectRatio}
 
 ABSOLUTE REQUIREMENTS (follow ALL precisely):
 1. Output a FLAT 2D texture map (albedo/diffuse ONLY) — absolutely NO 3D lighting, NO shadows, NO highlights, NO shading, NO ambient occlusion baked in
-2. The texture must precisely align with the UV islands shown in the reference image
-3. Each UV island must have coherent, complete texture coverage — no blank/white areas within islands
-4. Colors must be vibrant, saturated, and production-quality (suitable for dye-sublimation printing)
-5. Maintain visual continuity and consistent style across ALL UV islands
-6. High contrast and crisp, sharp details suitable for real-time 3D rendering at any viewing distance
-7. The design must be symmetric where the garment is symmetric (left/right panels should mirror)
-8. Fill the ENTIRE canvas — no margins, borders, or unused space
+2. The output image MUST have the EXACT SAME number of shapes, in the EXACT SAME positions, with the EXACT SAME sizes and proportions as the reference UV map
+3. Paint ONLY inside the existing UV island outlines — do NOT invent, add, move, reshape, merge, or split any islands
+4. Keep ALL white/empty space BETWEEN UV islands completely white/empty — do NOT fill gaps between shapes
+5. Each UV island must have coherent, complete texture coverage — no blank/white areas WITHIN the shapes
+6. Colors must be vibrant, saturated, and production-quality (suitable for dye-sublimation printing)
+7. Maintain visual continuity and consistent style across ALL UV islands
+8. The design must be symmetric where the product is symmetric
 9. Transitions between panels should feel natural when the 3D model is assembled
-10. Do NOT render any UV wireframe lines, guidelines, or grid — output CLEAN artwork only
+10. Do NOT render any UV wireframe lines, guidelines, or grid — output CLEAN artwork only, but the shape boundaries must match the reference exactly
 
 QUALITY CHECKLIST:
-- Front panel: Main design, centered composition, eye-catching
+${productType === "duffle-bag" ? `- Barrel body: Main design surface, bold motif that wraps seamlessly around the cylinder
+- End caps: Centered radial designs complementing the barrel body
+- Handles/Straps: Simple bold accents, solid or clean stripe
+- Zipper panel: Clean complementary treatment
+- Strap pads: Solid accent colors
+- Color palette: Maximum 5-7 colors, cohesive and vibrant
+- Pattern scale: Appropriate for bag size (not too small, not too large)` : `- Front panel: Main design, centered composition, eye-catching
 - Back panel: Complementary design, cohesive with front
 - Sleeves: Matching accent pattern, properly scaled
 - Side panels: Consistent with main design flow
 - Trims/bands: Simple, clean treatment (solid or subtle accent)
 - Color palette: Maximum 5-7 colors, cohesive and vibrant
-- Pattern scale: Appropriate for garment size (not too small, not too large)
+- Pattern scale: Appropriate for garment size (not too small, not too large)`}
 
-OUTPUT: Generate the texture image DIRECTLY. No text explanation needed — just create the perfect image.
+OUTPUT: First think carefully about the UV layout analysis (Step 1), then generate the texture image (Step 2). The final image must be pixel-perfect in matching the reference UV map's shape positions and proportions.
       `.trim();
 
       const mimeType = getMimeType(uvMap);
@@ -237,10 +258,10 @@ OUTPUT: Generate the texture image DIRECTLY. No text explanation needed — just
         generationConfig: {
           // Request both text and image for better reasoning
           response_modalities: ["TEXT", "IMAGE"],
-          // Higher temperature for more creative designs (0.7-0.9 sweet spot)
-          temperature: 0.8,
-          // Increase token limit for higher quality detailed images
-          maxOutputTokens: 8192,
+          // Lower temperature for more precise UV shape adherence
+          temperature: 0.6,
+          // High token limit to allow deep UV analysis reasoning before generation
+          maxOutputTokens: 16384,
         },
         // Safety settings - allow artistic content
         safetySettings: [
