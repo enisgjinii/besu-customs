@@ -209,7 +209,10 @@ export function useMeshyAI(): UseMeshyAIReturn {
                     const tex = await loadTexture(status.textureUrl);
 
                     setTextureUrl(status.textureUrl);
-                    setTexture(tex);
+                    setTexture((prev) => {
+                        if (prev && prev !== tex) prev.dispose();
+                        return tex;
+                    });
                     setProgress(null);
                     setProgressPercent(100);
 

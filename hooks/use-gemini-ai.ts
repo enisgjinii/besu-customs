@@ -161,9 +161,15 @@ export function useGeminiAI(): UseGeminiAIReturn {
     setError(null);
     setProgress("Initializing Gemini AI...");
 
-    // Reset previous maps
-    setNormalMap(null);
-    setRoughnessMap(null);
+    // Reset previous maps and dispose textures to avoid memory leaks
+    setNormalMap((prev) => {
+      prev?.dispose();
+      return null;
+    });
+    setRoughnessMap((prev) => {
+      prev?.dispose();
+      return null;
+    });
     setNormalMapUrl(null);
     setRoughnessMapUrl(null);
 
@@ -407,7 +413,10 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
       const tex = await loadTexture(imageUrl);
 
       setTextureUrl(imageUrl);
-      setTexture(tex);
+      setTexture((prev) => {
+        if (prev && prev !== tex) prev.dispose();
+        return tex;
+      });
 
       let normMap: THREE.Texture | undefined;
       let roughMap: THREE.Texture | undefined;
@@ -433,9 +442,15 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           roughMap = await loadTexture(roughnessDataUrl);
           roughMap.colorSpace = THREE.LinearSRGBColorSpace;
 
-          setNormalMap(normMap);
+          setNormalMap((prev) => {
+            if (prev && prev !== normMap) prev.dispose();
+            return normMap ?? null;
+          });
           setNormalMapUrl(normalDataUrl);
-          setRoughnessMap(roughMap);
+          setRoughnessMap((prev) => {
+            if (prev && prev !== roughMap) prev.dispose();
+            return roughMap ?? null;
+          });
           setRoughnessMapUrl(roughnessDataUrl);
           
           console.log("✅ PBR maps generated successfully");

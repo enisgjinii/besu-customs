@@ -128,9 +128,15 @@ export function useRunwareAI(): UseRunwareAIReturn {
     setError(null);
     setProgress("Preparing UV map...");
 
-    // Reset previous maps
-    setNormalMap(null);
-    setRoughnessMap(null);
+    // Reset previous maps and dispose textures to avoid memory leaks
+    setNormalMap((prev) => {
+      prev?.dispose();
+      return null;
+    });
+    setRoughnessMap((prev) => {
+      prev?.dispose();
+      return null;
+    });
     setNormalMapUrl(null);
     setRoughnessMapUrl(null);
 
@@ -212,7 +218,10 @@ export function useRunwareAI(): UseRunwareAIReturn {
       const tex = await loadTexture(imageUrl);
 
       setTextureUrl(imageUrl);
-      setTexture(tex);
+      setTexture((prev) => {
+        if (prev && prev !== tex) prev.dispose();
+        return tex;
+      });
 
       let normMap: THREE.Texture | undefined;
       let roughMap: THREE.Texture | undefined;
@@ -239,9 +248,15 @@ export function useRunwareAI(): UseRunwareAIReturn {
           roughMap = await loadTexture(roughnessDataUrl);
           roughMap.colorSpace = THREE.LinearSRGBColorSpace;
 
-          setNormalMap(normMap);
+          setNormalMap((prev) => {
+            if (prev && prev !== normMap) prev.dispose();
+            return normMap ?? null;
+          });
           setNormalMapUrl(normalDataUrl);
-          setRoughnessMap(roughMap);
+          setRoughnessMap((prev) => {
+            if (prev && prev !== roughMap) prev.dispose();
+            return roughMap ?? null;
+          });
           setRoughnessMapUrl(roughnessDataUrl);
         } catch (pbrErr) {
           console.warn("PBR generation failed:", pbrErr);
