@@ -683,6 +683,83 @@ export function extractUVMapFromThreeModel(
   return canvas.toDataURL("image/png");
 }
 
+// Extract a FILLED UV mask (dark islands on white background) from model UVs.
+// This is much more AI-friendly than wireframe-only UV guides.
+export function extractUVMaskFromThreeModel(
+  scene: THREE.Object3D,
+  width: number = 2048,
+  height: number = 2048,
+  flipY: boolean = false,
+): string | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  // White background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  // Fill UV islands with dark color
+  ctx.fillStyle = "#111111";
+
+  let hasUVs = false;
+
+  scene.traverse((child) => {
+    if (!(child instanceof THREE.Mesh) || !child.geometry) return;
+
+    const geometry = child.geometry;
+    const uvAttribute = geometry.getAttribute("uv");
+    const indexAttribute = geometry.getIndex();
+    if (!uvAttribute) return;
+
+    hasUVs = true;
+
+    const drawTri = (ax: number, ay: number, bx: number, by: number, cx: number, cy: number) => {
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(cx, cy);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    if (indexAttribute) {
+      for (let i = 0; i < indexAttribute.count; i += 3) {
+        const a = indexAttribute.getX(i);
+        const b = indexAttribute.getX(i + 1);
+        const c = indexAttribute.getX(i + 2);
+
+        const ax = uvAttribute.getX(a) * width;
+        const ay = (flipY ? 1 - uvAttribute.getY(a) : uvAttribute.getY(a)) * height;
+        const bx = uvAttribute.getX(b) * width;
+        const by = (flipY ? 1 - uvAttribute.getY(b) : uvAttribute.getY(b)) * height;
+        const cx = uvAttribute.getX(c) * width;
+        const cy = (flipY ? 1 - uvAttribute.getY(c) : uvAttribute.getY(c)) * height;
+        drawTri(ax, ay, bx, by, cx, cy);
+      }
+    } else {
+      for (let i = 0; i < uvAttribute.count; i += 3) {
+        const ax = uvAttribute.getX(i) * width;
+        const ay = (flipY ? 1 - uvAttribute.getY(i) : uvAttribute.getY(i)) * height;
+        const bx = uvAttribute.getX(i + 1) * width;
+        const by = (flipY ? 1 - uvAttribute.getY(i + 1) : uvAttribute.getY(i + 1)) * height;
+        const cx = uvAttribute.getX(i + 2) * width;
+        const cy = (flipY ? 1 - uvAttribute.getY(i + 2) : uvAttribute.getY(i + 2)) * height;
+        drawTri(ax, ay, bx, by, cx, cy);
+      }
+    }
+  });
+
+  if (!hasUVs) {
+    console.warn("⚠️ No UV data found in model for mask extraction");
+    return null;
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
 // Create scaled texture from URL
 export async function createScaledTextureFromUrl(
   url: string,

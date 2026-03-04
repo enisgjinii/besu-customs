@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 import {
   Copy,
@@ -11,8 +12,11 @@ import {
   ArrowDown,
   ChevronsUp,
   ChevronsDown,
+  Video,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 /**
  * LayerControlsOverlay - Floating control buttons that appear on the 3D viewer
@@ -37,6 +41,9 @@ export function LayerControlsOverlay() {
   );
   const updateTextureLayer = useConfiguratorStore((s) => s.updateTextureLayer);
   const moveLayer = useConfiguratorStore((s) => s.moveLayer);
+  const autoRotate = useConfiguratorStore((s) => s.autoRotate);
+  const setAutoRotate = useConfiguratorStore((s) => s.setAutoRotate);
+  const [isGeneratingGif, setIsGeneratingGif] = useState(false);
 
   // Find the selected layer
   const selectedLayer = textureLayers.find(
@@ -89,6 +96,104 @@ export function LayerControlsOverlay() {
   const handleMove = (direction: "forward" | "backward" | "front" | "back") => {
     if (selectedTextureLayerId) {
       moveLayer(selectedTextureLayerId, direction);
+    }
+  };
+
+  const waitForRender = () =>
+    new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+  const handleExport360Gif = async () => {
+    if (isGeneratingGif) return;
+
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement | null;
+    if (!canvas) {
+      toast.error("Canvas not found");
+      return;
+    }
+
+    const modelApi = (window as any).__besuModelExportApi as
+      | { getRotationY: () => number; setRotationY: (value: number) => void }
+      | undefined;
+
+    if (!modelApi?.getRotationY || !modelApi?.setRotationY) {
+      toast.error("Model is not ready for GIF export");
+      return;
+    }
+
+    const originalAutoRotate = autoRotate;
+    const originalRotation = modelApi.getRotationY();
+
+    setIsGeneratingGif(true);
+    toast.info("Exporting 360° GIF...");
+
+    try {
+      setAutoRotate(false);
+      await waitForRender();
+
+      const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
+      const frameCount = 72;
+      const fps = 18;
+      const delay = Math.max(20, Math.round(1000 / fps));
+      const captureSize = 512;
+
+      const captureCanvas = document.createElement("canvas");
+      captureCanvas.width = captureSize;
+      captureCanvas.height = captureSize;
+      const captureCtx = captureCanvas.getContext("2d", {
+        willReadFrequently: true,
+      });
+      if (!captureCtx) {
+        throw new Error("Failed to create GIF canvas");
+      }
+
+      const gif = GIFEncoder();
+
+      for (let i = 0; i < frameCount; i++) {
+        const t = frameCount > 1 ? i / (frameCount - 1) : 1;
+        modelApi.setRotationY(originalRotation + t * Math.PI * 2);
+        await waitForRender();
+
+        captureCtx.clearRect(0, 0, captureSize, captureSize);
+        captureCtx.drawImage(canvas, 0, 0, captureSize, captureSize);
+
+        const rgba = captureCtx.getImageData(0, 0, captureSize, captureSize).data;
+        const palette = quantize(rgba, 256);
+        const index = applyPalette(rgba, palette);
+        gif.writeFrame(index, captureSize, captureSize, {
+          palette,
+          delay,
+          repeat: 0,
+        });
+      }
+
+      gif.finish();
+      const bytes = gif.bytes();
+      const arrayBuffer = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
+      const blob = new Blob([arrayBuffer], { type: "image/gif" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `model-360-${Date.now()}.gif`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success("360° GIF exported");
+    } catch (error) {
+      console.error("GIF export failed:", error);
+      toast.error(
+        `GIF export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    } finally {
+      modelApi.setRotationY(originalRotation);
+      setAutoRotate(originalAutoRotate);
+      setIsGeneratingGif(false);
     }
   };
 
@@ -175,6 +280,22 @@ export function LayerControlsOverlay() {
           title="Flip Horizontal"
         >
           <Maximize2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        </Button>
+
+        {/* Export 360 GIF */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-10 w-10 p-0 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 active:scale-95 transition-transform"
+          onClick={handleExport360Gif}
+          title={isGeneratingGif ? "Exporting GIF..." : "Export 360° GIF"}
+          disabled={isGeneratingGif}
+        >
+          {isGeneratingGif ? (
+            <Loader2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
+          ) : (
+            <Video className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          )}
         </Button>
 
         {/* Delete */}

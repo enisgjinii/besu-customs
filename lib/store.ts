@@ -153,6 +153,8 @@ export interface ConfiguratorState {
   setUVMap: (sectionId: string, uvMapUrl: string | null) => void;
   completeUVMap: string | null;
   setCompleteUVMap: (url: string | null) => void;
+  completeUVMask: string | null;
+  setCompleteUVMask: (url: string | null) => void;
 
   // Global texture apply
   globalCustomTexture: string | null;
@@ -596,6 +598,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
             sectionsFromApi: false,
             sectionsLoading: true, // Start loading
             completeUVMap: null, // Clear old UV map immediately
+            completeUVMask: null, // Clear old UV mask immediately
           });
 
           // Try to fetch precomputed material sections for this model
@@ -631,7 +634,8 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       },
 
       currentModelUrl: null,
-      setCurrentModelUrl: (url: string | null) => set({ currentModelUrl: url, completeUVMap: null }),
+      setCurrentModelUrl: (url: string | null) =>
+        set({ currentModelUrl: url, completeUVMap: null, completeUVMask: null }),
 
       sections: [],
       sectionsFromApi: false,
@@ -690,6 +694,8 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
         }),
       completeUVMap: null,
       setCompleteUVMap: (url: string | null) => set({ completeUVMap: url }),
+      completeUVMask: null,
+      setCompleteUVMask: (url: string | null) => set({ completeUVMask: url }),
 
       // Global texture apply
       globalCustomTexture: null,

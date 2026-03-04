@@ -28,6 +28,7 @@ export function useCachedGLTF(url: string | null): UseCachedGLTFResult {
 
   useEffect(() => {
     if (!url) {
+      currentUrlRef.current = null;
       setGltf(null);
       setLoading(false);
       setError(null);
@@ -37,6 +38,8 @@ export function useCachedGLTF(url: string | null): UseCachedGLTFResult {
 
     // Track current URL to handle race conditions
     currentUrlRef.current = url;
+    // Clear previous model immediately so downstream effects never process stale scene data.
+    setGltf(null);
     
     const cache = getModelCache();
     

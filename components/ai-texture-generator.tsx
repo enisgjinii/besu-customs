@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRunwareAI } from "@/hooks/use-runware-ai";
 import { useGeminiAI } from "@/hooks/use-gemini-ai";
 import { useHitemAI } from "@/hooks/use-hitem-ai";
@@ -8,6 +8,7 @@ import { useConfiguratorStore } from "@/lib/store";
 import { analyzeUvLayoutFromDataUrl } from "@/lib/uv-layout-analyzer";
 import { normalizeUvMapForAI, restoreNormalizedTextureToOriginalUV } from "@/lib/uv-map-normalization";
 import { ensureUvIslandCoverage } from "@/lib/uv-coverage";
+import { buildUvGenerationMask, applyUvIslandMaskToTexture } from "@/lib/uv-mask-utils";
 import {
   Loader2,
   Sparkles,
@@ -112,6 +113,7 @@ export function AITextureGenerator({
   );
 
   const uvMap = useConfiguratorStore((s) => s.completeUVMap);
+  const uvMask = useConfiguratorStore((s) => s.completeUVMask);
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
 
   // Check if current model is soccer jersey crew neck
@@ -124,6 +126,27 @@ export function AITextureGenerator({
     null,
   );
   const [generatedPreviewUrl, setGeneratedPreviewUrl] = useState<string | null>(null);
+  const generationIdRef = useRef(0);
+  const generationContextRef = useRef<{
+    modelUrl: string | null;
+    uvMap: string | null;
+    uvMask: string | null;
+  }>({
+    modelUrl: currentModelUrl ?? null,
+    uvMap: uvMap ?? null,
+    uvMask: uvMask ?? null,
+  });
+
+  useEffect(() => {
+    generationContextRef.current = {
+      modelUrl: currentModelUrl ?? null,
+      uvMap: uvMap ?? null,
+      uvMask: uvMask ?? null,
+    };
+    // Invalidate any in-flight generation when model/UV context changes.
+    generationIdRef.current += 1;
+    setGeneratedPreviewUrl(null);
+  }, [currentModelUrl, uvMap, uvMask]);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,8 +218,28 @@ export function AITextureGenerator({
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    if (!uvMap) return;
+    const baseUvGuide = uvMap || uvMask;
+    if (!baseUvGuide) return;
+    const requestGenerationId = ++generationIdRef.current;
+    const requestModelUrl = currentModelUrl ?? null;
+    const requestUvMap = uvMap;
+    const requestUvMask = uvMask ?? null;
+    generationContextRef.current = {
+      modelUrl: requestModelUrl,
+      uvMap: requestUvMap,
+      uvMask: requestUvMask,
+    };
     setGeneratedPreviewUrl(null);
+
+    const isCurrentGeneration = () => {
+      const latest = generationContextRef.current;
+      return (
+        requestGenerationId === generationIdRef.current &&
+        latest.modelUrl === requestModelUrl &&
+        latest.uvMap === requestUvMap &&
+        latest.uvMask === requestUvMask
+      );
+    };
 
     const modelUrl = (currentModelUrl || "").toLowerCase();
     const modelType = modelUrl.includes("baseball-caps")
@@ -329,9 +372,23 @@ export function AITextureGenerator({
       resolution: "2K",
     });
 
-    // Some models use UVs packed into a tiny central region.
-    // Normalize UV guide for AI readability, then map the result back to raw UV space.
-    const normalizedUV = await normalizeUvMapForAI(uvMap);
+    // Use mesh-derived filled UV mask when available; fallback to generated mask from wireframe.
+    const uvGuideMask = uvMask
+      ? null
+      : await buildUvGenerationMask({
+          uvMapUrl: uvMap || baseUvGuide,
+          islandExpandPx: 4,
+        });
+    if (!isCurrentGeneration()) {
+      console.warn("Skipping stale AI generation after UV normalization");
+      return;
+    }
+    const uvGuideForAI = uvMask || uvGuideMask?.maskUrl || baseUvGuide;
+    const normalizedUV = await normalizeUvMapForAI(uvGuideForAI);
+    if (!isCurrentGeneration()) {
+      console.warn("Skipping stale AI generation after UV normalization");
+      return;
+    }
 
     const googleResult = await generateGoogle({
       prompt: googlePrompt,
@@ -352,6 +409,10 @@ export function AITextureGenerator({
           }
         : undefined,
     });
+    if (!isCurrentGeneration()) {
+      console.warn("Skipping stale AI generation after provider response");
+      return;
+    }
 
     if (googleResult && onTextureGenerated) {
       let finalImageUrl = googleResult.imageUrl;
@@ -362,22 +423,51 @@ export function AITextureGenerator({
           finalImageUrl,
           normalizedUV.transform,
         );
+        if (!isCurrentGeneration()) {
+          console.warn("Skipping stale AI generation after UV restoration");
+          return;
+        }
       }
 
       const coverageResult = await ensureUvIslandCoverage({
         textureUrl: finalImageUrl,
-        uvMapUrl: uvMap,
+        uvMapUrl: uvMask || uvMap || baseUvGuide,
       });
+      if (!isCurrentGeneration()) {
+        console.warn("Skipping stale AI generation after UV coverage correction");
+        return;
+      }
       finalImageUrl = coverageResult.imageUrl;
+
+      // Keep all non-island space clean to avoid random bleed/noise outside UV shells.
+      const strictMasked = await applyUvIslandMaskToTexture({
+        textureUrl: finalImageUrl,
+        uvMapUrl: uvMask || uvMap || baseUvGuide,
+      });
+      if (!isCurrentGeneration()) {
+        console.warn("Skipping stale AI generation after strict UV masking");
+        return;
+      }
+      if (strictMasked?.imageUrl) {
+        finalImageUrl = strictMasked.imageUrl;
+      }
 
       if (finalImageUrl !== googleResult.imageUrl) {
         try {
           finalTexture = await loadTextureFromUrl(finalImageUrl);
+          if (!isCurrentGeneration()) {
+            console.warn("Skipping stale AI generation after texture reload");
+            return;
+          }
         } catch (e) {
           console.warn("Failed to load corrected texture, using original", e);
         }
       }
 
+      if (!isCurrentGeneration()) {
+        console.warn("Skipping stale AI generation before apply callback");
+        return;
+      }
       setGeneratedPreviewUrl(finalImageUrl);
 
       await onTextureGenerated(finalTexture, finalImageUrl, {
@@ -388,6 +478,7 @@ export function AITextureGenerator({
   }, [
     prompt,
     uvMap,
+    uvMask,
     includePlayerInfo,
     playerName,
     jerseyNumber,
@@ -418,7 +509,7 @@ export function AITextureGenerator({
   // The onTextureGenerated callback adds the AI texture as a layer, and
   // TextureCompositor composes & applies it to all materials.
 
-  const canGenerate = uvMap && !isGenerating; // UV map is required, prompt is optional
+  const canGenerate = !!(uvMap || uvMask) && !isGenerating; // UV guide is required, prompt is optional
 
   return (
     <div className={cn("space-y-3", className)}>

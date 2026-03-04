@@ -33,6 +33,7 @@ import { UVTextureEditor } from "./uv-texture-editor";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { AIImageGenerator } from "./ai-image-generator";
+import { toast } from "sonner";
 
 export function ControlsPanel() {
   const [activeTab, setActiveTab] = useState<
@@ -55,7 +56,10 @@ export function ControlsPanel() {
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
+  const autoRotate = useConfiguratorStore((state) => state.autoRotate);
   const setAutoRotate = useConfiguratorStore((state) => state.setAutoRotate);
+  const [isGeneratingGif, setIsGeneratingGif] = useState(false);
+  const [gifProgress, setGifProgress] = useState(0);
 
   const handleExport = () => {
     const json = exportPreset();
@@ -186,6 +190,107 @@ export function ControlsPanel() {
     const mediaRecorder = window.mediaRecorder;
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
+    }
+  };
+
+  const waitForRender = () =>
+    new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+  const handleExport360Gif = async () => {
+    if (isGeneratingGif) return;
+
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement | null;
+    if (!canvas) {
+      toast.error("Canvas not found");
+      return;
+    }
+
+    const modelApi = (window as any).__besuModelExportApi as
+      | { getRotationY: () => number; setRotationY: (value: number) => void }
+      | undefined;
+
+    if (!modelApi?.getRotationY || !modelApi?.setRotationY) {
+      toast.error("Model is not ready for GIF export");
+      return;
+    }
+
+    const originalAutoRotate = autoRotate;
+    const originalRotation = modelApi.getRotationY();
+
+    setIsGeneratingGif(true);
+    setGifProgress(0);
+
+    try {
+      setAutoRotate(false);
+      await waitForRender();
+
+      const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
+      const frameCount = 72;
+      const fps = 18;
+      const delay = Math.max(20, Math.round(1000 / fps));
+      const captureSize = 512;
+
+      const captureCanvas = document.createElement("canvas");
+      captureCanvas.width = captureSize;
+      captureCanvas.height = captureSize;
+      const captureCtx = captureCanvas.getContext("2d", {
+        willReadFrequently: true,
+      });
+      if (!captureCtx) {
+        throw new Error("Failed to create GIF canvas");
+      }
+
+      const gif = GIFEncoder();
+
+      for (let i = 0; i < frameCount; i++) {
+        const t = frameCount > 1 ? i / (frameCount - 1) : 1;
+        modelApi.setRotationY(originalRotation + t * Math.PI * 2);
+        await waitForRender();
+
+        captureCtx.clearRect(0, 0, captureSize, captureSize);
+        captureCtx.drawImage(canvas, 0, 0, captureSize, captureSize);
+
+        const rgba = captureCtx.getImageData(0, 0, captureSize, captureSize).data;
+        const palette = quantize(rgba, 256);
+        const index = applyPalette(rgba, palette);
+        gif.writeFrame(index, captureSize, captureSize, {
+          palette,
+          delay,
+          repeat: 0,
+        });
+
+        setGifProgress(Math.round(((i + 1) / frameCount) * 100));
+      }
+
+      gif.finish();
+      const bytes = gif.bytes();
+      const arrayBuffer = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
+      const blob = new Blob([arrayBuffer], { type: "image/gif" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `model-360-${Date.now()}.gif`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success("360° GIF exported");
+    } catch (error) {
+      console.error("GIF export failed:", error);
+      toast.error(
+        `GIF export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    } finally {
+      modelApi.setRotationY(originalRotation);
+      setAutoRotate(originalAutoRotate);
+      setGifProgress(0);
+      setIsGeneratingGif(false);
     }
   };
 
@@ -438,6 +543,18 @@ export function ControlsPanel() {
               <TabsContent value="video" className="mt-4 space-y-2">
                 <h3 className="font-semibold mb-3">Export Video</h3>
                 <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport360Gif}
+                    className="w-full justify-start bg-transparent"
+                    disabled={isGeneratingGif}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    {isGeneratingGif
+                      ? `Exporting 360° GIF... ${gifProgress}%`
+                      : "Auto Rotate 360° GIF"}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

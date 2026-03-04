@@ -16,6 +16,7 @@ import {
   extractSectionsFromThreeModel,
   applyMaterialsToThreeModel,
   extractUVMapFromThreeModel,
+  extractUVMaskFromThreeModel,
 } from "@/lib/three-material-utils";
 import { analyzeModel, printModelAnalysis } from "@/lib/model-analyzer";
 import { useCachedGLTF } from "@/hooks/use-cached-gltf";
@@ -646,6 +647,11 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     const hasRenderableTexture =
       !!globalCustomTexture || debouncedLayers.some((l) => l.visible);
+    const soccerDebug = useConfiguratorStore.getState().soccerJerseyDebug;
+    const isBackToggleModel =
+      /(jersey|shirt|hoodie|polo|track-and-field-top|volleyball|football|spandex|tank-top|crop-top|short|pants)/.test(
+        modelUrl,
+      );
 
     // Load PBR maps if available (cached to avoid reloading every effect cycle)
     const normalTex = globalNormalMap ? getCachedPBRTexture(globalNormalMap) : null;
@@ -656,33 +662,72 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     // Helper to detect back jersey materials
     const isBackJerseyMaterial = (name: string): boolean => {
       const lowerName = name.toLowerCase();
+      if (!isBackToggleModel || lowerName.includes("backpack")) return false;
+      const tokens = lowerName
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const hasStandaloneBack = tokens.includes("back");
       return (
         lowerName.includes('body_b') ||
         lowerName.includes('body_back') ||
-        lowerName.includes('_back') ||
+        lowerName.includes('body back') ||
+        lowerName.includes('body-back') ||
         lowerName.includes('back_body') ||
+        lowerName.includes('back body') ||
+        lowerName.includes('back-body') ||
         lowerName.includes('backbody') ||
-        lowerName === 'back'
+        lowerName === 'back' ||
+        (hasStandaloneBack && !lowerName.includes("backpack"))
       );
     };
 
-    // Prefer store-derived semantic labels when available (more reliable than mesh/material naming).
-    const isBackJerseySection = (materialName: string): boolean => {
-      if (!sections || sections.length === 0) return false;
-      const section = sections.find((s) => s.id === materialName || s.originalName === materialName);
-      if (!section) return false;
+    const findMatchingSection = (
+      materialName: string,
+      meshName: string,
+    ): MaterialSection | undefined => {
+      if (!sections || sections.length === 0) return undefined;
+      const candidates = [materialName, meshName]
+        .map((v) => (v || "").trim())
+        .filter(Boolean);
+      if (candidates.length === 0) return undefined;
 
-      // Only treat Jersey category as "back flip" target.
-      if (section.category !== "Jersey") return false;
+      return sections.find((s) => {
+        const originals = [s.id, s.originalName]
+          .map((v) => (v || "").trim())
+          .filter(Boolean);
+        return originals.some((base) =>
+          candidates.some(
+            (c) =>
+              c === base ||
+              c.includes(base) ||
+              base.includes(c),
+          ),
+        );
+      });
+    };
 
-      const name = (section.name || "").toLowerCase();
-      const original = (section.originalName || "").toLowerCase();
-      return (
-        name.includes("back") ||
-        original.includes("body_b") ||
-        original.includes("body_back") ||
-        original.includes("_back")
-      );
+    // Prefer section metadata when available (more reliable than mesh/material naming).
+    const isBackJerseySection = (section?: MaterialSection): boolean => {
+      if (!section || !isBackToggleModel) return false;
+      const values = [section.name, section.originalName, section.id]
+        .map((v) => (v || "").toLowerCase())
+        .filter(Boolean);
+      return values.some((value) => {
+        if (value.includes("backpack")) return false;
+        return (
+          value.includes("body_b") ||
+          value.includes("body_back") ||
+          value.includes("body back") ||
+          value.includes("body-back") ||
+          value.includes("back_body") ||
+          value.includes("back body") ||
+          value.includes("back-body") ||
+          value === "back" ||
+          /(^|[^a-z0-9])back([^a-z0-9]|$)/.test(value)
+        );
+      });
     };
 
     scene.traverse((child) => {
@@ -693,92 +738,110 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
         : [child.material];
 
       materials.forEach((m) => {
-        if (!(m instanceof THREE.MeshStandardMaterial)) return;
+        const materialAny = m as THREE.Material & {
+          map?: THREE.Texture | null;
+          color?: THREE.Color;
+          transparent?: boolean;
+          alphaTest?: number;
+          metalness?: number;
+          roughness?: number;
+          normalMap?: THREE.Texture | null;
+          normalScale?: THREE.Vector2;
+          roughnessMap?: THREE.Texture | null;
+          aoMap?: THREE.Texture | null;
+          displacementMap?: THREE.Texture | null;
+          displacementScale?: number;
+        };
+        if (!("map" in materialAny)) return;
 
         const materialName = m.name || child.name || "";
+        const matchedSection = findMatchingSection(m.name || "", child.name || "");
 
-        // Check if this is a back material
+        // Check if this is a back material (section metadata first, strict name fallback second).
         const isBack =
-          isBackJerseySection(m.name || "") ||
-          isBackJerseyMaterial(materialName);
-        
-        
-        const isSoccerJerseyForApply = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb") || currentModelUrl?.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb");
-        const shouldApplyTexture = isSoccerJerseyForApply
-          ? hasRenderableTexture && (!isBack || useConfiguratorStore.getState().soccerJerseyDebug.applyToBack)
-          : hasRenderableTexture && (!isBack || applyTextureToBack);
+          isBackJerseySection(matchedSection) ||
+          (!matchedSection &&
+            isBackJerseyMaterial(materialName));
+
+        const allowBackTexture = isSoccerJersey
+          ? soccerDebug.applyToBack
+          : isBackToggleModel
+            ? applyTextureToBack
+            : true;
+        const shouldApplyTexture = hasRenderableTexture && (!isBack || allowBackTexture);
 
         if (shouldApplyTexture) {
           // Special handling for soccer jerseys - use debug options
-          const isSoccerJerseyForTexture = currentModelUrl?.includes("soccer-jersey-crew-neck.glb") || currentModelUrl?.includes("soccer-jersey-crew-neck_FIXED.glb") || currentModelUrl?.includes("soccer-jersey-v-neck.glb") || currentModelUrl?.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb");
-          if (isSoccerJerseyForTexture) {
-            const soccerDebug = useConfiguratorStore.getState().soccerJerseyDebug;
-            
+          if (isSoccerJersey) {
             // Select which texture to use
             const texToApply = (soccerDebug.useBackTexture && isBack) ? backTexture : texture;
-            m.map = texToApply;
+            materialAny.map = texToApply;
             
             // Apply UV transforms for fine-tuning alignment
-            if (m.map) {
-              m.map.offset.set(soccerDebug.uvOffsetX, soccerDebug.uvOffsetY);
-              m.map.repeat.set(soccerDebug.uvRepeatX, soccerDebug.uvRepeatY);
-              m.map.center.set(0.5, 0.5);
-              m.map.rotation = (soccerDebug.uvRotation * Math.PI) / 180; // Convert degrees to radians
-              m.map.updateMatrix();
+            if (materialAny.map) {
+              materialAny.map.offset.set(soccerDebug.uvOffsetX, soccerDebug.uvOffsetY);
+              materialAny.map.repeat.set(soccerDebug.uvRepeatX, soccerDebug.uvRepeatY);
+              materialAny.map.center.set(0.5, 0.5);
+              materialAny.map.rotation = (soccerDebug.uvRotation * Math.PI) / 180; // Convert degrees to radians
+              materialAny.map.updateMatrix();
             }
 
           } else {
             // Apply same texture to all materials - AI texture is designed for full UV layout
-            m.map = bakeBackFlipIntoTexture ? texture : isBack ? backTexture : texture;
+            materialAny.map = bakeBackFlipIntoTexture ? texture : isBack ? backTexture : texture;
           }
 
 
 
           // Don't use alphaTest - it was making transparent areas invisible
-          m.transparent = false;
-          m.alphaTest = 0;
+          materialAny.transparent = false;
+          materialAny.alphaTest = 0;
 
           // Ensure the texture colors are displayed accurately (not multiplied by material color)
           // Reset material color to white so texture shows at full vibrancy
-          m.color.setHex(0xffffff);
+          materialAny.color?.setHex(0xffffff);
 
           // Ensure proper material settings for AI texture display
-          m.metalness = 0.0;   // No metallic effect that could darken the texture
-          m.roughness = 0.85;  // Slight roughness for fabric-like appearance
+          if ("metalness" in materialAny) {
+            materialAny.metalness = 0.0; // No metallic effect that could darken the texture
+          }
+          if ("roughness" in materialAny) {
+            materialAny.roughness = 0.85; // Slight roughness for fabric-like appearance
+          }
 
           // Apply PBR maps
-          if (normalTex) {
-            m.normalMap = normalTex;
-            m.normalScale.set(1, 1);
-          } else {
-            m.normalMap = null;
+          if ("normalMap" in materialAny) {
+            if (normalTex) {
+              materialAny.normalMap = normalTex;
+              materialAny.normalScale?.set?.(1, 1);
+            } else {
+              materialAny.normalMap = null;
+            }
           }
 
-          if (roughnessTex) {
-            m.roughnessMap = roughnessTex;
-          } else {
-            m.roughnessMap = null;
+          if ("roughnessMap" in materialAny) {
+            materialAny.roughnessMap = roughnessTex || null;
           }
 
-          if (aoTex) {
-            m.aoMap = aoTex;
-          } else {
-            m.aoMap = null;
+          if ("aoMap" in materialAny) {
+            materialAny.aoMap = aoTex || null;
           }
 
-          if (dispTex) {
-            m.displacementMap = dispTex;
-            m.displacementScale = 0.05; // Gentle displacement
-          } else {
-            m.displacementMap = null;
+          if ("displacementMap" in materialAny) {
+            if (dispTex) {
+              materialAny.displacementMap = dispTex;
+              materialAny.displacementScale = 0.05; // Gentle displacement
+            } else {
+              materialAny.displacementMap = null;
+            }
           }
         } else {
-          m.map = null;
+          materialAny.map = null;
           // Clear PBR if no layers or is back material
-          m.normalMap = null;
-          m.roughnessMap = null;
-          m.aoMap = null;
-          m.displacementMap = null;
+          if ("normalMap" in materialAny) materialAny.normalMap = null;
+          if ("roughnessMap" in materialAny) materialAny.roughnessMap = null;
+          if ("aoMap" in materialAny) materialAny.aoMap = null;
+          if ("displacementMap" in materialAny) materialAny.displacementMap = null;
         }
 
         m.needsUpdate = true;
@@ -901,6 +964,7 @@ function Model({
 
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
   const modelRef = useRef<THREE.Group>(null);
+  const modelLoadIdRef = useRef(0);
   const showBoundingBox = useConfiguratorStore((s) => s.showBoundingBox);
   const storeAutoRotate = useConfiguratorStore((s) => s.autoRotate);
   const storeSections = useConfiguratorStore((s) => s.sections);
@@ -915,6 +979,27 @@ function Model({
 
   const onSectionsExtractedRef = useRef(onSectionsExtracted);
   const onLoadRef = useRef(onLoad);
+
+  // Expose model rotation helpers for export features (e.g. 360 GIF capture)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const exportApi = {
+      getRotationY: () => modelRef.current?.rotation.y ?? 0,
+      setRotationY: (value: number) => {
+        if (modelRef.current) {
+          modelRef.current.rotation.y = value;
+        }
+      },
+    };
+
+    (window as any).__besuModelExportApi = exportApi;
+    return () => {
+      if ((window as any).__besuModelExportApi === exportApi) {
+        delete (window as any).__besuModelExportApi;
+      }
+    };
+  }, []);
 
   // Cache stats - only in dev
   useEffect(() => {
@@ -935,69 +1020,119 @@ function Model({
 
   // Clone logic ... (simplified for this edit, assume similar to before)
   useEffect(() => {
-    if (scene) {
-      const cloned = scene.clone(true);
-      const box = new THREE.Box3().setFromObject(cloned);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 5 / maxDim;
-      cloned.position.sub(center.multiplyScalar(scale));
-      cloned.scale.setScalar(scale);
+    const loadId = ++modelLoadIdRef.current;
+    let cancelled = false;
+    let idleCallbackId: number | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-      setClonedScene(cloned);
+    // Clear old UV map immediately while the new model is preparing.
+    useConfiguratorStore.getState().setCompleteUVMap(null);
+    useConfiguratorStore.getState().setCompleteUVMask(null);
 
-      // Use requestIdleCallback for non-critical post-load work (better initial render perf)
-      const scheduleWork = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 0);
-      scheduleWork(() => {
-        const extracted = extractSectionsFromThreeModel(cloned, url);
-        onSectionsExtractedRef.current?.(extracted);
-        onLoadRef.current?.();
-
-        // Analyze model structure only in development (skip in production for performance)
-        if (process.env.NODE_ENV === 'development') {
-          const analysis = analyzeModel(cloned);
-          printModelAnalysis(analysis);
-          (window as any).__modelAnalysis = analysis;
-        }
-
-        // Extract UV map and store it for AI design section
-        const uvMapModelUrl = (url || "").toLowerCase();
-        const isFlagFootballUvMapV2 = uvMapModelUrl.includes(
-          "flag-football-top-with-hoodie_uv_map_v2.glb",
-        );
-        const shouldFlipUvMap =
-          (uvMapModelUrl.includes("flag-football-top-with-hoodie_uv_map") &&
-            !isFlagFootballUvMapV2) ||
-          uvMapModelUrl.includes("track-and-field-top-short-sleeve.glb");
-          // Soccer jersey crew neck should NOT flip UV map - it's already correctly oriented
-        const uvMapDataUrl = extractUVMapFromThreeModel(
-          cloned,
-          2048,
-          2048,
-          shouldFlipUvMap,
-        );
-        if (uvMapDataUrl) {
-          useConfiguratorStore.getState().setCompleteUVMap(uvMapDataUrl);
-        }
-
-        // Optimize geometry and set up shadows in a single traversal
-        cloned.traverse((node) => {
-          if ((node as THREE.Mesh).isMesh) {
-            const m = node as THREE.Mesh;
-            m.castShadow = true;
-            m.receiveShadow = true;
-            m.frustumCulled = true; // Enable frustum culling
-
-            // Optimize geometry: compute bounding sphere if missing for faster culling
-            if (m.geometry && !m.geometry.boundingSphere) {
-              m.geometry.computeBoundingSphere();
-            }
-          }
-        });
-      });
+    if (!scene) {
+      setClonedScene(null);
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [scene, url, perfConfig.uvCanvasSize]);
+
+    const cloned = scene.clone(true);
+    const box = new THREE.Box3().setFromObject(cloned);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 5 / maxDim;
+    cloned.position.sub(center.multiplyScalar(scale));
+    cloned.scale.setScalar(scale);
+
+    // Ignore stale clones created for an older load cycle.
+    if (cancelled || loadId !== modelLoadIdRef.current) {
+      return () => {
+        cancelled = true;
+      };
+    }
+    setClonedScene(cloned);
+
+    const runPostLoadWork = () => {
+      if (cancelled || loadId !== modelLoadIdRef.current) return;
+
+      const extracted = extractSectionsFromThreeModel(cloned, url);
+      onSectionsExtractedRef.current?.(extracted);
+      onLoadRef.current?.();
+
+      // Analyze model structure only in development (skip in production for performance)
+      if (process.env.NODE_ENV === "development") {
+        const analysis = analyzeModel(cloned);
+        printModelAnalysis(analysis);
+        (window as any).__modelAnalysis = analysis;
+      }
+
+      // Extract UV map and store it for AI design section
+      const uvMapModelUrl = (url || "").toLowerCase();
+      const isFlagFootballUvMapV2 = uvMapModelUrl.includes(
+        "flag-football-top-with-hoodie_uv_map_v2.glb",
+      );
+      const shouldFlipUvMap =
+        (uvMapModelUrl.includes("flag-football-top-with-hoodie_uv_map") &&
+          !isFlagFootballUvMapV2) ||
+        uvMapModelUrl.includes("track-and-field-top-short-sleeve.glb");
+      // Soccer jersey crew neck should NOT flip UV map - it's already correctly oriented
+      const uvMapDataUrl = extractUVMapFromThreeModel(
+        cloned,
+        2048,
+        2048,
+        shouldFlipUvMap,
+      );
+      if (uvMapDataUrl && !cancelled && loadId === modelLoadIdRef.current) {
+        useConfiguratorStore.getState().setCompleteUVMap(uvMapDataUrl);
+      }
+      const uvMaskDataUrl = extractUVMaskFromThreeModel(
+        cloned,
+        2048,
+        2048,
+        shouldFlipUvMap,
+      );
+      if (uvMaskDataUrl && !cancelled && loadId === modelLoadIdRef.current) {
+        useConfiguratorStore.getState().setCompleteUVMask(uvMaskDataUrl);
+      }
+
+      // Optimize geometry and set up shadows in a single traversal
+      cloned.traverse((node) => {
+        if ((node as THREE.Mesh).isMesh) {
+          const m = node as THREE.Mesh;
+          m.castShadow = true;
+          m.receiveShadow = true;
+          m.frustumCulled = true; // Enable frustum culling
+
+          // Optimize geometry: compute bounding sphere if missing for faster culling
+          if (m.geometry && !m.geometry.boundingSphere) {
+            m.geometry.computeBoundingSphere();
+          }
+        }
+      });
+    };
+
+    // Use requestIdleCallback for non-critical post-load work (better initial render perf)
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleCallbackId = window.requestIdleCallback(runPostLoadWork);
+    } else {
+      timeoutId = setTimeout(runPostLoadWork, 0);
+    }
+
+    return () => {
+      cancelled = true;
+      if (
+        idleCallbackId !== null &&
+        typeof window !== "undefined" &&
+        "cancelIdleCallback" in window
+      ) {
+        window.cancelIdleCallback(idleCallbackId);
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [scene, url]);
 
   // Sync Colors - Base Layer
   useEffect(() => {
@@ -1502,12 +1637,14 @@ export function ThreeScene({
   useEffect(() => {
     if (!currentModelUrl) {
       setModelUrl(null);
+      setModelLoading(false);
       return;
     }
+    setModelLoading(true);
     // Direct load, skipping connection check optimization
     setModelUrl(currentModelUrl);
     setModelError(null);
-  }, [currentModelUrl, setModelError]);
+  }, [currentModelUrl, setModelError, setModelLoading]);
 
   const handleModelLoad = useCallback(() => {
     setModelLoading(false);

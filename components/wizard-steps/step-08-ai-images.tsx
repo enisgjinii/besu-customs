@@ -2,7 +2,7 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { AIImageGenerator } from "@/components/ai-image-generator";
 import { AITextureGenerator } from "@/components/ai-texture-generator";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
@@ -69,6 +69,22 @@ export function Step08AIImages() {
   const [showDebugTools, setShowDebugTools] = useState(false);
   const [debugPattern, setDebugPattern] = useState<string | null>(null);
   const [isGeneratingDebug, setIsGeneratingDebug] = useState(false);
+  const applyGenerationRef = useRef(0);
+  const applyContextRef = useRef<{
+    modelUrl: string | null;
+    uvMap: string | null;
+  }>({
+    modelUrl: currentModelUrl ?? null,
+    uvMap: completeUVMap ?? null,
+  });
+
+  useEffect(() => {
+    applyContextRef.current = {
+      modelUrl: currentModelUrl ?? null,
+      uvMap: completeUVMap ?? null,
+    };
+    applyGenerationRef.current += 1;
+  }, [currentModelUrl, completeUVMap]);
 
   const transformTexture = useCallback(
     async (
@@ -586,9 +602,30 @@ export function Step08AIImages() {
     url: string,
     options?: { normalMapUrl?: string | null; roughnessMapUrl?: string | null }
   ) => {
+    const requestApplyId = applyGenerationRef.current;
+    const requestModelUrl = currentModelUrl ?? null;
+    const requestUvMap = completeUVMap ?? null;
+    const isCurrentApplyContext = () => {
+      const latest = applyContextRef.current;
+      return (
+        requestApplyId === applyGenerationRef.current &&
+        latest.modelUrl === requestModelUrl &&
+        latest.uvMap === requestUvMap
+      );
+    };
+
+    if (!isCurrentApplyContext()) {
+      console.warn("Skipping stale AI texture apply before transform");
+      return;
+    }
+
     const transformedPatternUrl = await transformTexture(url, {
       flipY: false, // Three.js now uses flipY=true via TextureCompositor
     });
+    if (!isCurrentApplyContext()) {
+      console.warn("Skipping stale AI texture apply after transform");
+      return;
+    }
 
     let finalPatternUrl = transformedPatternUrl;
 
@@ -606,12 +643,20 @@ export function Step08AIImages() {
     // 1. Fix Back Panel
     if (applyTextureToBack && bakeBackFlipIntoTexture && completeUVMap) {
       const { backSide } = await detectTorsoSides(completeUVMap, backUvSide);
+      if (!isCurrentApplyContext()) {
+        console.warn("Skipping stale AI texture apply after back-side detection");
+        return;
+      }
       finalPatternUrl = await bakeBackFlipIntoUvTexture(transformedPatternUrl, {
         uvTemplateDataUrl: completeUVMap,
         srcWasFlipY: false,
         backSide,
         transform: backTransformForBake,
       });
+      if (!isCurrentApplyContext()) {
+        console.warn("Skipping stale AI texture apply after back bake");
+        return;
+      }
     }
 
     // 2. Fix Front Panel (for NON-Flag Football UV models)
@@ -619,12 +664,20 @@ export function Step08AIImages() {
     // and instead let the region flip (below) handle it.
     if (completeUVMap && !isFlippedUvModel) {
       const { frontSide } = await detectTorsoSides(completeUVMap, backUvSide);
+      if (!isCurrentApplyContext()) {
+        console.warn("Skipping stale AI texture apply after front-side detection");
+        return;
+      }
       finalPatternUrl = await bakeFrontFlipIntoUvTexture(finalPatternUrl, {
         uvTemplateDataUrl: completeUVMap,
         srcWasFlipY: false,
         frontSide,
         transform: "mirrorX",
       });
+      if (!isCurrentApplyContext()) {
+        console.warn("Skipping stale AI texture apply after front bake");
+        return;
+      }
     }
 
     // 3. Fix Other Regions (Side panels, shorts, etc.)
@@ -658,6 +711,10 @@ export function Step08AIImages() {
             srcWasFlipY: false,
             transform: "mirrorY",
           });
+          if (!isCurrentApplyContext()) {
+            console.warn("Skipping stale AI texture apply during region bake");
+            return;
+          }
         }
       } catch (e) {
         console.warn("Failed to auto-correct region orientation", e);
@@ -671,11 +728,19 @@ export function Step08AIImages() {
           flipY: false,
         })
       : null;
+    if (!isCurrentApplyContext()) {
+      console.warn("Skipping stale AI texture apply after normal map transform");
+      return;
+    }
     const flippedRoughnessUrl = options?.roughnessMapUrl
       ? await transformTexture(options.roughnessMapUrl, {
           flipY: false,
         })
       : null;
+    if (!isCurrentApplyContext()) {
+      console.warn("Skipping stale AI texture apply after roughness map transform");
+      return;
+    }
 
     const newId = uuidv4();
     addTextureLayer({
