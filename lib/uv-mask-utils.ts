@@ -5,6 +5,24 @@ type UvMaskComputeResult = {
   wasFallback: boolean;
 };
 
+export type UvGuideCoverageStats = {
+  width: number;
+  height: number;
+  darkPixelCount: number;
+  darkPixelRatio: number;
+  bounds:
+    | {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }
+    | null;
+  boundsAreaRatio: number;
+  boundsWidthRatio: number;
+  boundsHeightRatio: number;
+};
+
 type BuildUvGenerationMaskResult = {
   maskUrl: string;
   width: number;
@@ -33,15 +51,130 @@ const loadImage = async (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
+function dilateMask(
+  baseMask: Uint8Array,
+  width: number,
+  height: number,
+  passes: number,
+): Uint8Array {
+  if (passes <= 0) return baseMask;
+  let current = new Uint8Array(baseMask);
+  const size = width * height;
+
+  for (let pass = 0; pass < passes; pass++) {
+    const next = new Uint8Array(current);
+    for (let i = 0; i < size; i++) {
+      if (current[i] === 1) continue;
+      const x = i % width;
+      const y = (i / width) | 0;
+
+      let on = false;
+      for (let oy = -1; oy <= 1 && !on; oy++) {
+        for (let ox = -1; ox <= 1; ox++) {
+          if (ox === 0 && oy === 0) continue;
+          const nx = x + ox;
+          const ny = y + oy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          if (current[ny * width + nx] === 1) {
+            on = true;
+            break;
+          }
+        }
+      }
+
+      if (on) next[i] = 1;
+    }
+    current = next;
+  }
+
+  return current;
+}
+
+export async function analyzeUvGuideCoverage(params: {
+  uvMapUrl: string;
+  threshold?: number;
+}): Promise<UvGuideCoverageStats | null> {
+  if (!isBrowser() || !params.uvMapUrl) return null;
+
+  const threshold = params.threshold ?? 240;
+  const img = await loadImage(params.uvMapUrl);
+  const width = img.naturalWidth || img.width;
+  const height = img.naturalHeight || img.height;
+  if (!width || !height) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+
+  ctx.drawImage(img, 0, 0, width, height);
+  const data = ctx.getImageData(0, 0, width, height).data;
+  const size = width * height;
+
+  let darkPixelCount = 0;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let i = 0; i < size; i++) {
+    const p = i * 4;
+    const a = data[p + 3];
+    if (a < 10) continue;
+
+    const lum = luminance(data[p], data[p + 1], data[p + 2]);
+    if (lum >= threshold) continue;
+
+    darkPixelCount++;
+    const x = i % width;
+    const y = (i / width) | 0;
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+
+  const darkPixelRatio = size > 0 ? darkPixelCount / size : 0;
+  const bounds =
+    maxX >= minX && maxY >= minY
+      ? {
+          x: minX,
+          y: minY,
+          width: maxX - minX + 1,
+          height: maxY - minY + 1,
+        }
+      : null;
+
+  const boundsAreaRatio = bounds
+    ? (bounds.width * bounds.height) / size
+    : 0;
+  const boundsWidthRatio = bounds ? bounds.width / width : 0;
+  const boundsHeightRatio = bounds ? bounds.height / height : 0;
+
+  return {
+    width,
+    height,
+    darkPixelCount,
+    darkPixelRatio,
+    bounds,
+    boundsAreaRatio,
+    boundsWidthRatio,
+    boundsHeightRatio,
+  };
+}
+
 const computeUvInteriorMask = async (params: {
   uvMapUrl: string;
   lineThreshold?: number;
   fallbackThreshold?: number;
+  closeGapPx?: number;
 }): Promise<UvMaskComputeResult | null> => {
   if (!isBrowser() || !params.uvMapUrl) return null;
 
   const lineThreshold = params.lineThreshold ?? 215;
   const fallbackThreshold = params.fallbackThreshold ?? 245;
+  const closeGapPx = Math.max(0, params.closeGapPx ?? 2);
 
   const uvImg = await loadImage(params.uvMapUrl);
   const width = uvImg.naturalWidth || uvImg.width;
@@ -72,6 +205,10 @@ const computeUvInteriorMask = async (params: {
     const lum = luminance(uvData[p], uvData[p + 1], uvData[p + 2]);
     lineMask[i] = lum < lineThreshold ? 1 : 0;
   }
+  const barrierMask =
+    closeGapPx > 0
+      ? dilateMask(lineMask, width, height, closeGapPx)
+      : lineMask;
 
   const queue = new Int32Array(size);
   let head = 0;
@@ -79,7 +216,7 @@ const computeUvInteriorMask = async (params: {
 
   const enqueueOutside = (idx: number) => {
     if (idx < 0 || idx >= size) return;
-    if (outsideMask[idx] === 1 || lineMask[idx] === 1) return;
+    if (outsideMask[idx] === 1 || barrierMask[idx] === 1) return;
     outsideMask[idx] = 1;
     queue[tail++] = idx;
   };
@@ -106,7 +243,7 @@ const computeUvInteriorMask = async (params: {
 
   let interiorCount = 0;
   for (let i = 0; i < size; i++) {
-    if (lineMask[i] === 0 && outsideMask[i] === 0) {
+    if (barrierMask[i] === 0 && outsideMask[i] === 0) {
       interiorMask[i] = 1;
       interiorCount++;
     }
@@ -140,50 +277,12 @@ const computeUvInteriorMask = async (params: {
   };
 };
 
-const dilateMask = (
-  baseMask: Uint8Array,
-  width: number,
-  height: number,
-  passes: number,
-): Uint8Array => {
-  if (passes <= 0) return baseMask;
-  let current = new Uint8Array(baseMask);
-  const size = width * height;
-
-  for (let pass = 0; pass < passes; pass++) {
-    const next = new Uint8Array(current);
-    for (let i = 0; i < size; i++) {
-      if (current[i] === 1) continue;
-      const x = i % width;
-      const y = (i / width) | 0;
-
-      let on = false;
-      for (let oy = -1; oy <= 1 && !on; oy++) {
-        for (let ox = -1; ox <= 1; ox++) {
-          if (ox === 0 && oy === 0) continue;
-          const nx = x + ox;
-          const ny = y + oy;
-          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-          if (current[ny * width + nx] === 1) {
-            on = true;
-            break;
-          }
-        }
-      }
-
-      if (on) next[i] = 1;
-    }
-    current = next;
-  }
-
-  return current;
-};
-
 export async function buildUvGenerationMask(params: {
   uvMapUrl: string;
   lineThreshold?: number;
   fallbackThreshold?: number;
   islandExpandPx?: number;
+  closeGapPx?: number;
 }): Promise<BuildUvGenerationMaskResult | null> {
   const computed = await computeUvInteriorMask(params);
   if (!computed || !isBrowser()) return null;
@@ -237,6 +336,7 @@ export async function applyUvIslandMaskToTexture(params: {
   uvMapUrl: string;
   lineThreshold?: number;
   fallbackThreshold?: number;
+  closeGapPx?: number;
 }): Promise<ApplyUvMaskResult | null> {
   if (!isBrowser() || !params.textureUrl || !params.uvMapUrl) return null;
 

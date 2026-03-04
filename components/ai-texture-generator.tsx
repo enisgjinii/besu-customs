@@ -8,7 +8,11 @@ import { useConfiguratorStore } from "@/lib/store";
 import { analyzeUvLayoutFromDataUrl } from "@/lib/uv-layout-analyzer";
 import { normalizeUvMapForAI, restoreNormalizedTextureToOriginalUV } from "@/lib/uv-map-normalization";
 import { ensureUvIslandCoverage } from "@/lib/uv-coverage";
-import { buildUvGenerationMask, applyUvIslandMaskToTexture } from "@/lib/uv-mask-utils";
+import {
+  buildUvGenerationMask,
+  applyUvIslandMaskToTexture,
+  analyzeUvGuideCoverage,
+} from "@/lib/uv-mask-utils";
 import {
   Loader2,
   Sparkles,
@@ -33,6 +37,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import * as THREE from "three";
+import { toast } from "sonner";
 
 interface AITextureGeneratorProps {
   scene?: THREE.Object3D;
@@ -218,7 +223,7 @@ export function AITextureGenerator({
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    const baseUvGuide = uvMap || uvMask;
+    const baseUvGuide = uvMask || uvMap;
     if (!baseUvGuide) return;
     const requestGenerationId = ++generationIdRef.current;
     const requestModelUrl = currentModelUrl ?? null;
@@ -322,6 +327,8 @@ export function AITextureGenerator({
 
     const uvLineGuard =
       "Do not render the UV wireframe/black outline lines; the final image must be clean artwork only";
+    const uvGuideSpecificInstruction =
+      "Reference guide format: solid dark UV islands on white background. Paint fully inside ALL dark island shapes only. Keep white background areas empty.";
 
     const safetyGuard =
       "Safety: no nudity, no people, no faces, no violence, no hate symbols, no weapons. No brand logos or copyrighted characters.";
@@ -336,6 +343,85 @@ export function AITextureGenerator({
         : modelType === "duffle-bag"
           ? "Create an ultra-premium, award-winning DUFFLE BAG texture. CRITICAL: The reference UV map image shows the EXACT shapes and positions of each bag piece as gray outlines on white background. You MUST paint your design ONLY within these existing outlined shapes — do NOT create new shapes, do NOT move or resize any shapes, do NOT add extra pieces. Keep the white space between shapes completely empty/white. Fill each existing shape with bold, cohesive design: the large body panels get the primary motif, round/oval shapes get centered complementary designs, thin rectangles (handles/straps) get simple bold accents, and small pieces get solid accent colors. Use premium technical aesthetics with vibrant colors suitable for sublimation printing."
           : "Create an ultra-premium, award-winning sportswear texture using the UV map as the STRICT placement guide. Build three layers of material depth: (1) primary bold motif on main panels, (2) secondary micro-pattern for visual richness, (3) subtle fabric weave texture for realism. Keep motifs centered and perfectly symmetric on large panels, with clean mirrored vertical flow. Use premium technical aesthetics: precision lines, controlled color gradients, refined edge detailing, rich material feel. Preserve safe margins near seams; never split key motifs across seams or thin strips. Use quieter, simplified treatments on trims/straps/waistbands (solid or clean stripe accents). Front and back panels must feel like a cohesive design — same palette, same visual language. Every UV island must be filled with intentional design — no blank or white areas.";
+
+    // Build a robust UV guide. Prefer mesh-filled UV mask, but verify it's not
+    // incomplete; fallback to wireframe-derived filled mask when needed.
+    const wireframeDerivedMask = uvMap
+      ? await buildUvGenerationMask({
+          uvMapUrl: uvMap,
+          islandExpandPx: 4,
+          closeGapPx: 2,
+        })
+      : null;
+    if (!isCurrentGeneration()) {
+      console.warn("Skipping stale AI generation after UV mask build");
+      return;
+    }
+
+    let selectedUvGuideUrl = uvMask || wireframeDerivedMask?.maskUrl || baseUvGuide;
+    let selectedGuideKind: "model-mask" | "wireframe-mask" | "raw-uv" = uvMask
+      ? "model-mask"
+      : wireframeDerivedMask?.maskUrl
+        ? "wireframe-mask"
+        : "raw-uv";
+
+    if (uvMask && (wireframeDerivedMask?.maskUrl || uvMap)) {
+      const [modelMaskStats, fallbackMaskStats] = await Promise.all([
+        analyzeUvGuideCoverage({ uvMapUrl: uvMask, threshold: 240 }),
+        analyzeUvGuideCoverage({
+          uvMapUrl: wireframeDerivedMask?.maskUrl || uvMap!,
+          threshold: 240,
+        }),
+      ]);
+      if (!isCurrentGeneration()) {
+        console.warn("Skipping stale AI generation after UV guide stats");
+        return;
+      }
+
+      if (modelMaskStats && fallbackMaskStats) {
+        const modelAreaRatio = modelMaskStats.boundsAreaRatio;
+        const fallbackAreaRatio = fallbackMaskStats.boundsAreaRatio;
+        const modelSeemsIncomplete =
+          modelAreaRatio < Math.max(0.10, fallbackAreaRatio * 0.55) ||
+          modelMaskStats.boundsWidthRatio < Math.max(0.30, fallbackMaskStats.boundsWidthRatio * 0.70) ||
+          modelMaskStats.boundsHeightRatio < Math.max(0.30, fallbackMaskStats.boundsHeightRatio * 0.70);
+
+        if (modelSeemsIncomplete) {
+          selectedUvGuideUrl = wireframeDerivedMask?.maskUrl || uvMap || baseUvGuide;
+          selectedGuideKind = wireframeDerivedMask?.maskUrl
+            ? "wireframe-mask"
+            : "raw-uv";
+          console.warn("⚠️ Detected incomplete mesh UV mask; using wireframe fallback", {
+            modelMaskStats,
+            fallbackMaskStats,
+          });
+        }
+      }
+    }
+
+    const selectedGuideStats = selectedUvGuideUrl
+      ? await analyzeUvGuideCoverage({
+          uvMapUrl: selectedUvGuideUrl,
+          threshold: 240,
+        })
+      : null;
+    if (!isCurrentGeneration()) {
+      console.warn("Skipping stale AI generation after UV guide validation");
+      return;
+    }
+
+    const minDarkRatio = selectedGuideKind === "raw-uv" ? 0.001 : 0.008;
+    const minBoundsAreaRatio = selectedGuideKind === "raw-uv" ? 0.03 : 0.08;
+
+    if (
+      !selectedUvGuideUrl ||
+      !selectedGuideStats ||
+      selectedGuideStats.darkPixelRatio < minDarkRatio ||
+      selectedGuideStats.boundsAreaRatio < minBoundsAreaRatio
+    ) {
+      toast.error("UV guide is incomplete. Reload this model and generate again.");
+      return;
+    }
 
     // Always use UV-guided generation, but incorporate user prompt if provided
     const effectivePrompt = prompt.trim()
@@ -354,6 +440,7 @@ export function AITextureGenerator({
       consistencyHints,
       trimHints,
       uvLineGuard,
+      uvGuideSpecificInstruction,
       textGuardrail,
       safetyGuard,
       modelType === "duffle-bag"
@@ -369,112 +456,194 @@ export function AITextureGenerator({
     console.log("🎨 Calling Google Gemini Pro with advanced settings:", {
       prompt: googlePrompt,
       model: "pro",
-      resolution: "2K",
+      resolution: selectedGuideKind === "raw-uv" ? "2K" : "4K",
+      selectedGuideKind,
+      selectedGuideStats,
     });
 
-    // Use mesh-derived filled UV mask when available; fallback to generated mask from wireframe.
-    const uvGuideMask = uvMask
-      ? null
-      : await buildUvGenerationMask({
-          uvMapUrl: uvMap || baseUvGuide,
-          islandExpandPx: 4,
-        });
+    const uvGuideForAI = selectedUvGuideUrl;
+    const normalizedUV = selectedGuideKind === "raw-uv"
+      ? await normalizeUvMapForAI(uvGuideForAI)
+      : {
+          normalizedUvMapUrl: uvGuideForAI,
+          transform: null,
+          wasNormalized: false,
+        };
     if (!isCurrentGeneration()) {
       console.warn("Skipping stale AI generation after UV normalization");
       return;
     }
-    const uvGuideForAI = uvMask || uvGuideMask?.maskUrl || baseUvGuide;
-    const normalizedUV = await normalizeUvMapForAI(uvGuideForAI);
-    if (!isCurrentGeneration()) {
-      console.warn("Skipping stale AI generation after UV normalization");
-      return;
-    }
 
-    const googleResult = await generateGoogle({
-      prompt: googlePrompt,
-      uvMap: normalizedUV.normalizedUvMapUrl,
-      generatePbr: false,
-      model: "pro", // Always use Gemini 3 Pro for best quality
-      aspectRatio: "1:1",
-      resolution: "2K", // High resolution for professional textures
-      textureStyle: "realistic",
-      productType: modelType,
-      // Pass debug options for soccer jersey crew neck
-      debugOptions: isSoccerJerseyCrewNeck
-        ? {
-            flipY: soccerJerseyDebug.flipY,
-            backTransform: soccerJerseyDebug.backTransform,
-            applyToBack: soccerJerseyDebug.applyToBack,
-            useBackTexture: soccerJerseyDebug.useBackTexture,
-          }
-        : undefined,
-    });
-    if (!isCurrentGeneration()) {
-      console.warn("Skipping stale AI generation after provider response");
-      return;
-    }
+    const uvGuideForCoverage = selectedUvGuideUrl;
+    const firstPassResolution: "2K" | "4K" =
+      selectedGuideKind === "raw-uv" ? "2K" : "4K";
 
-    if (googleResult && onTextureGenerated) {
-      let finalImageUrl = googleResult.imageUrl;
-      let finalTexture = googleResult.texture;
+    const runGenerationPass = async (
+      passPrompt: string,
+      passResolution: "2K" | "4K",
+    ) => {
+      const result = await generateGoogle({
+        prompt: passPrompt,
+        uvMap: normalizedUV.normalizedUvMapUrl,
+        generatePbr: false,
+        model: "pro", // Always use Gemini 3 Pro for best quality
+        aspectRatio: "1:1",
+        resolution: passResolution,
+        textureStyle: "realistic",
+        productType: modelType,
+        // Pass debug options for soccer jersey crew neck
+        debugOptions: isSoccerJerseyCrewNeck
+          ? {
+              flipY: soccerJerseyDebug.flipY,
+              backTransform: soccerJerseyDebug.backTransform,
+              applyToBack: soccerJerseyDebug.applyToBack,
+              useBackTexture: soccerJerseyDebug.useBackTexture,
+            }
+          : undefined,
+      });
+      if (!isCurrentGeneration()) {
+        console.warn("Skipping stale AI generation after provider response");
+        return null;
+      }
+      if (!result) return null;
+
+      let passImageUrl = result.imageUrl;
+      let passTexture = result.texture;
 
       if (normalizedUV.transform) {
-        finalImageUrl = await restoreNormalizedTextureToOriginalUV(
-          finalImageUrl,
+        passImageUrl = await restoreNormalizedTextureToOriginalUV(
+          passImageUrl,
           normalizedUV.transform,
         );
         if (!isCurrentGeneration()) {
           console.warn("Skipping stale AI generation after UV restoration");
-          return;
+          return null;
         }
       }
 
       const coverageResult = await ensureUvIslandCoverage({
-        textureUrl: finalImageUrl,
-        uvMapUrl: uvMask || uvMap || baseUvGuide,
+        textureUrl: passImageUrl,
+        uvMapUrl: uvGuideForCoverage,
+        closeGapPx: 2,
       });
       if (!isCurrentGeneration()) {
         console.warn("Skipping stale AI generation after UV coverage correction");
-        return;
+        return null;
       }
-      finalImageUrl = coverageResult.imageUrl;
+      passImageUrl = coverageResult.imageUrl;
 
       // Keep all non-island space clean to avoid random bleed/noise outside UV shells.
       const strictMasked = await applyUvIslandMaskToTexture({
-        textureUrl: finalImageUrl,
-        uvMapUrl: uvMask || uvMap || baseUvGuide,
+        textureUrl: passImageUrl,
+        uvMapUrl: uvGuideForCoverage,
+        closeGapPx: 2,
       });
       if (!isCurrentGeneration()) {
         console.warn("Skipping stale AI generation after strict UV masking");
-        return;
+        return null;
       }
       if (strictMasked?.imageUrl) {
-        finalImageUrl = strictMasked.imageUrl;
+        passImageUrl = strictMasked.imageUrl;
       }
 
-      if (finalImageUrl !== googleResult.imageUrl) {
+      if (passImageUrl !== result.imageUrl) {
         try {
-          finalTexture = await loadTextureFromUrl(finalImageUrl);
+          passTexture = await loadTextureFromUrl(passImageUrl);
           if (!isCurrentGeneration()) {
             console.warn("Skipping stale AI generation after texture reload");
-            return;
+            return null;
           }
         } catch (e) {
           console.warn("Failed to load corrected texture, using original", e);
         }
       }
 
-      if (!isCurrentGeneration()) {
-        console.warn("Skipping stale AI generation before apply callback");
-        return;
-      }
-      setGeneratedPreviewUrl(finalImageUrl);
+      return {
+        imageUrl: passImageUrl,
+        texture: passTexture,
+        stats: coverageResult.stats,
+        normalMapUrl: result.normalMapUrl,
+        roughnessMapUrl: result.roughnessMapUrl,
+      };
+    };
 
-      await onTextureGenerated(finalTexture, finalImageUrl, {
-        normalMapUrl: googleResult.normalMapUrl,
-        roughnessMapUrl: googleResult.roughnessMapUrl,
-      });
+    if (!onTextureGenerated) return;
+
+    const scorePass = (stats: {
+      coverageBefore: number;
+      blankBefore: number;
+      filledBlankPixels: number;
+    }) =>
+      stats.coverageBefore * 100 -
+      stats.blankBefore / 50000 -
+      stats.filledBlankPixels / 50000;
+
+    const firstPass = await runGenerationPass(
+      googlePrompt,
+      firstPassResolution,
+    );
+    if (!firstPass) return;
+
+    let chosenPass = firstPass;
+    const shouldRetryForCoverage =
+      firstPass.stats.coverageBefore < 0.92 ||
+      firstPass.stats.blankBefore > 18000 ||
+      firstPass.stats.filledBlankPixels > 40000;
+
+    if (shouldRetryForCoverage) {
+      toast.info("Improving UV coverage...");
+      const retryPrompt = [
+        googlePrompt,
+        "RETRY PRIORITY: ensure every UV island is fully covered, especially tiny/narrow strips and curved side bands",
+        "Do not leave any pale or empty regions inside any island",
+        "Avoid noisy mesh-like line patterns",
+        "Increase contrast and pattern readability on tiny pieces",
+      ]
+        .filter(Boolean)
+        .join(". ");
+
+      const secondPass = await runGenerationPass(retryPrompt, "4K");
+      if (secondPass) {
+        const secondIsBetter =
+          scorePass(secondPass.stats) > scorePass(chosenPass.stats) + 1.0;
+        if (secondIsBetter) {
+          chosenPass = secondPass;
+        }
+      }
     }
+
+    if (chosenPass.stats.coverageBefore < 0.75) {
+      const finalRetryPrompt = [
+        googlePrompt,
+        "FINAL RETRY: absolutely fill all UV islands with visible design, including very thin strips and borders",
+        "No empty white interior in any island",
+        "No random grayscale fog/noise",
+      ]
+        .filter(Boolean)
+        .join(". ");
+      const finalPass = await runGenerationPass(finalRetryPrompt, "4K");
+      if (finalPass && scorePass(finalPass.stats) > scorePass(chosenPass.stats)) {
+        chosenPass = finalPass;
+      }
+    }
+
+    if (chosenPass.stats.coverageBefore < 0.58) {
+      toast.error(
+        "AI output quality too low for this UV map. Try Generate again with a simpler prompt.",
+      );
+      return;
+    }
+
+    if (!isCurrentGeneration()) {
+      console.warn("Skipping stale AI generation before apply callback");
+      return;
+    }
+    setGeneratedPreviewUrl(chosenPass.imageUrl);
+
+    await onTextureGenerated(chosenPass.texture, chosenPass.imageUrl, {
+      normalMapUrl: chosenPass.normalMapUrl,
+      roughnessMapUrl: chosenPass.roughnessMapUrl,
+    });
   }, [
     prompt,
     uvMap,

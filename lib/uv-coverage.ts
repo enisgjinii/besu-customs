@@ -48,6 +48,45 @@ const loadImage = async (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
+function dilateMask(
+  baseMask: Uint8Array,
+  width: number,
+  height: number,
+  passes: number,
+): Uint8Array {
+  if (passes <= 0) return baseMask;
+  let current = new Uint8Array(baseMask);
+  const size = width * height;
+
+  for (let pass = 0; pass < passes; pass++) {
+    const next = new Uint8Array(current);
+    for (let i = 0; i < size; i++) {
+      if (current[i] === 1) continue;
+      const x = i % width;
+      const y = (i / width) | 0;
+
+      let on = false;
+      for (let oy = -1; oy <= 1 && !on; oy++) {
+        for (let ox = -1; ox <= 1; ox++) {
+          if (ox === 0 && oy === 0) continue;
+          const nx = x + ox;
+          const ny = y + oy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          if (current[ny * width + nx] === 1) {
+            on = true;
+            break;
+          }
+        }
+      }
+
+      if (on) next[i] = 1;
+    }
+    current = next;
+  }
+
+  return current;
+}
+
 /**
  * Ensures every enclosed UV island area has non-blank texture coverage.
  * The UV wireframe itself is used as a deterministic mask for correction.
@@ -57,6 +96,7 @@ export async function ensureUvIslandCoverage(params: {
   uvMapUrl: string;
   whiteThreshold?: number;
   lineThreshold?: number;
+  closeGapPx?: number;
 }): Promise<UVCoverageResult> {
   if (!isBrowser() || !params.textureUrl || !params.uvMapUrl) {
     return {
@@ -67,6 +107,7 @@ export async function ensureUvIslandCoverage(params: {
 
   const whiteThreshold = params.whiteThreshold ?? 245;
   const lineThreshold = params.lineThreshold ?? 215;
+  const closeGapPx = Math.max(0, params.closeGapPx ?? 2);
 
   try {
     const [textureImg, uvImg] = await Promise.all([
@@ -125,6 +166,10 @@ export async function ensureUvIslandCoverage(params: {
       const lum = luminance(uvData[p], uvData[p + 1], uvData[p + 2]);
       lineMask[i] = lum < lineThreshold ? 1 : 0;
     }
+    const barrierMask =
+      closeGapPx > 0
+        ? dilateMask(lineMask, width, height, closeGapPx)
+        : lineMask;
 
     // Flood-fill all non-line pixels reachable from canvas borders as "outside".
     const queue = new Int32Array(size);
@@ -133,7 +178,7 @@ export async function ensureUvIslandCoverage(params: {
 
     const enqueueIfOutside = (idx: number) => {
       if (idx < 0 || idx >= size) return;
-      if (outsideMask[idx] === 1 || lineMask[idx] === 1) return;
+      if (outsideMask[idx] === 1 || barrierMask[idx] === 1) return;
       outsideMask[idx] = 1;
       queue[tail++] = idx;
     };
@@ -160,7 +205,7 @@ export async function ensureUvIslandCoverage(params: {
 
     let interiorCount = 0;
     for (let i = 0; i < size; i++) {
-      if (lineMask[i] === 0 && outsideMask[i] === 0) {
+      if (barrierMask[i] === 0 && outsideMask[i] === 0) {
         interiorMask[i] = 1;
         interiorCount++;
       }
