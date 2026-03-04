@@ -6,6 +6,8 @@ import { useGeminiAI } from "@/hooks/use-gemini-ai";
 import { useHitemAI } from "@/hooks/use-hitem-ai";
 import { useConfiguratorStore } from "@/lib/store";
 import { analyzeUvLayoutFromDataUrl } from "@/lib/uv-layout-analyzer";
+import { normalizeUvMapForAI, restoreNormalizedTextureToOriginalUV } from "@/lib/uv-map-normalization";
+import { ensureUvIslandCoverage } from "@/lib/uv-coverage";
 import {
   Loader2,
   Sparkles,
@@ -121,6 +123,7 @@ export function AITextureGenerator({
   const [uvAnalysisSummary, setUvAnalysisSummary] = useState<string | null>(
     null,
   );
+  const [generatedPreviewUrl, setGeneratedPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,8 +172,31 @@ export function AITextureGenerator({
   const progress = googleProgress;
   const error = googleError;
 
+  const loadTextureFromUrl = useCallback((imageUrl: string): Promise<THREE.Texture> => {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.TextureLoader();
+      loader.load(
+        imageUrl,
+        (tex) => {
+          tex.flipY = false;
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.wrapS = THREE.ClampToEdgeWrapping;
+          tex.wrapT = THREE.ClampToEdgeWrapping;
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.anisotropy = 16;
+          tex.needsUpdate = true;
+          resolve(tex);
+        },
+        undefined,
+        () => reject(new Error("Failed to load processed AI texture")),
+      );
+    });
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     if (!uvMap) return;
+    setGeneratedPreviewUrl(null);
 
     const modelUrl = (currentModelUrl || "").toLowerCase();
     const modelType = modelUrl.includes("baseball-caps")
@@ -303,9 +329,13 @@ export function AITextureGenerator({
       resolution: "2K",
     });
 
+    // Some models use UVs packed into a tiny central region.
+    // Normalize UV guide for AI readability, then map the result back to raw UV space.
+    const normalizedUV = await normalizeUvMapForAI(uvMap);
+
     const googleResult = await generateGoogle({
       prompt: googlePrompt,
-      uvMap,
+      uvMap: normalizedUV.normalizedUvMapUrl,
       generatePbr: false,
       model: "pro", // Always use Gemini 3 Pro for best quality
       aspectRatio: "1:1",
@@ -324,7 +354,33 @@ export function AITextureGenerator({
     });
 
     if (googleResult && onTextureGenerated) {
-      await onTextureGenerated(googleResult.texture, googleResult.imageUrl, {
+      let finalImageUrl = googleResult.imageUrl;
+      let finalTexture = googleResult.texture;
+
+      if (normalizedUV.transform) {
+        finalImageUrl = await restoreNormalizedTextureToOriginalUV(
+          finalImageUrl,
+          normalizedUV.transform,
+        );
+      }
+
+      const coverageResult = await ensureUvIslandCoverage({
+        textureUrl: finalImageUrl,
+        uvMapUrl: uvMap,
+      });
+      finalImageUrl = coverageResult.imageUrl;
+
+      if (finalImageUrl !== googleResult.imageUrl) {
+        try {
+          finalTexture = await loadTextureFromUrl(finalImageUrl);
+        } catch (e) {
+          console.warn("Failed to load corrected texture, using original", e);
+        }
+      }
+
+      setGeneratedPreviewUrl(finalImageUrl);
+
+      await onTextureGenerated(finalTexture, finalImageUrl, {
         normalMapUrl: googleResult.normalMapUrl,
         roughnessMapUrl: googleResult.roughnessMapUrl,
       });
@@ -341,10 +397,11 @@ export function AITextureGenerator({
     uvAnalysisSummary,
     isSoccerJerseyCrewNeck,
     soccerJerseyDebug,
+    loadTextureFromUrl,
   ]);
 
   // Display var helpers
-  const currentTextureUrl = googleUrl;
+  const currentTextureUrl = generatedPreviewUrl || googleUrl;
 
   const handlePresetClick = (preset: string) => {
     if (selectedPreset === preset) {
