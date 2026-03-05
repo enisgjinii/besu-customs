@@ -12,6 +12,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { getModelCache } from "@/lib/model-cache";
 import { supportsEmbroidery, getProductPrice, PrintingMethod } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function Step01Apparel() {
   const products = useConfiguratorStore((state) => state.products);
@@ -36,6 +38,16 @@ export function Step01Apparel() {
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousModelRef = useRef<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyModelName = useCallback(() => {
+    if (currentModelUrl) {
+      const filename = currentModelUrl.split('/').pop() || currentModelUrl;
+      navigator.clipboard.writeText(filename);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [currentModelUrl]);
 
   // Preview model on hover (with debounce to prevent flicker)
   const handleProductHover = useCallback(
@@ -152,11 +164,25 @@ export function Step01Apparel() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold">Choose Apparel</h2>
-        <p className="text-sm text-muted-foreground">
-          Select a product to customize
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold">Choose Apparel</h2>
+          <p className="text-sm text-muted-foreground">
+            Select a product to customize
+          </p>
+        </div>
+        
+        {currentModelUrl && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleCopyModelName}
+            className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>Copy Model</span>
+          </Button>
+        )}
       </div>
 
       <Select
