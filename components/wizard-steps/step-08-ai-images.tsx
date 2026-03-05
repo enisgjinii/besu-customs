@@ -615,132 +615,12 @@ export function Step08AIImages() {
     };
 
     if (!isCurrentApplyContext()) {
-      console.warn("Skipping stale AI texture apply before transform");
+      console.warn("Skipping stale AI texture apply");
       return;
     }
-
-    const transformedPatternUrl = await transformTexture(url, {
-      flipY: false, // Three.js now uses flipY=true via TextureCompositor
-    });
-    if (!isCurrentApplyContext()) {
-      console.warn("Skipping stale AI texture apply after transform");
-      return;
-    }
-
-    let finalPatternUrl = transformedPatternUrl;
-
-    const isFlippedUvModel =
-      (currentModelUrl?.includes("flag-football-top-with-hoodie_UV_MAP") &&
-      !currentModelUrl?.toLowerCase().includes(
-        "flag-football-top-with-hoodie_uv_map_v2.glb",
-      )) || currentModelUrl?.includes("track-and-field-top-short-sleeve.glb");
-    const backTransformForBake = currentModelUrl?.toLowerCase().includes(
-      "flag-football-top-with-hoodie_uv_map_v2.glb",
-    )
-      ? "none"
-      : backTextureTransform;
-
-    // 1. Fix Back Panel
-    if (applyTextureToBack && bakeBackFlipIntoTexture && completeUVMap) {
-      const { backSide } = await detectTorsoSides(completeUVMap, backUvSide);
-      if (!isCurrentApplyContext()) {
-        console.warn("Skipping stale AI texture apply after back-side detection");
-        return;
-      }
-      finalPatternUrl = await bakeBackFlipIntoUvTexture(transformedPatternUrl, {
-        uvTemplateDataUrl: completeUVMap,
-        srcWasFlipY: false,
-        backSide,
-        transform: backTransformForBake,
-      });
-      if (!isCurrentApplyContext()) {
-        console.warn("Skipping stale AI texture apply after back bake");
-        return;
-      }
-    }
-
-    // 2. Fix Front Panel (for NON-Flag Football UV models)
-    // For flag football UV models, we skip this to avoid double-flipping, 
-    // and instead let the region flip (below) handle it.
-    if (completeUVMap && !isFlippedUvModel) {
-      const { frontSide } = await detectTorsoSides(completeUVMap, backUvSide);
-      if (!isCurrentApplyContext()) {
-        console.warn("Skipping stale AI texture apply after front-side detection");
-        return;
-      }
-      finalPatternUrl = await bakeFrontFlipIntoUvTexture(finalPatternUrl, {
-        uvTemplateDataUrl: completeUVMap,
-        srcWasFlipY: false,
-        frontSide,
-        transform: "mirrorX",
-      });
-      if (!isCurrentApplyContext()) {
-        console.warn("Skipping stale AI texture apply after front bake");
-        return;
-      }
-    }
-
-    // 3. Fix Other Regions (Side panels, shorts, etc.)
-    // For flag football UV models, we flip ALL non-back regions vertically (mirrorY)
-    if (completeUVMap) {
-      try {
-        const analysis = await analyzeUvLayoutFromDataUrl(completeUVMap, {
-          maxSize: 384,
-          threshold: 215,
-          dilationPasses: 1,
-          minComponentPixels: 35,
-          maxIslands: 28,
-        });
-
-        const allIslands = analysis?.islands ?? [];
-
-        // For flag football UV_MAP models: flip ALL islands except the back torso
-        // For other models: flip only islands explicitly marked as "inverted" (legacy logic - comment out if missing property)
-        const islandsToFlip = isFlippedUvModel
-          ? allIslands.filter((i) => i.labelHint !== "back-torso")
-          : []; // allIslands.filter((i) => ... orientationHint ... ) - logic removed temporarily to safely fix flag football sans orientationHint
-
-        for (const island of islandsToFlip) {
-          finalPatternUrl = await bakeRegionFlipIntoUvTexture(finalPatternUrl, {
-            bounds: {
-              x1: island.x1,
-              y1: island.y1,
-              x2: island.x2,
-              y2: island.y2,
-            },
-            srcWasFlipY: false,
-            transform: "mirrorY",
-          });
-          if (!isCurrentApplyContext()) {
-            console.warn("Skipping stale AI texture apply during region bake");
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to auto-correct region orientation", e);
-      }
-    }
-
-    // strict UV mask removed as helper is missing
-    // finalPatternUrl = await applyUvMaskToTexture(finalPatternUrl, completeUVMask);
-    const flippedNormalUrl = options?.normalMapUrl
-      ? await transformTexture(options.normalMapUrl, {
-          flipY: false,
-        })
-      : null;
-    if (!isCurrentApplyContext()) {
-      console.warn("Skipping stale AI texture apply after normal map transform");
-      return;
-    }
-    const flippedRoughnessUrl = options?.roughnessMapUrl
-      ? await transformTexture(options.roughnessMapUrl, {
-          flipY: false,
-        })
-      : null;
-    if (!isCurrentApplyContext()) {
-      console.warn("Skipping stale AI texture apply after roughness map transform");
-      return;
-    }
+    const finalPatternUrl = url;
+    const normalMapUrl = options?.normalMapUrl ?? null;
+    const roughnessMapUrl = options?.roughnessMapUrl ?? null;
 
     const newId = uuidv4();
     addTextureLayer({
@@ -760,14 +640,14 @@ export function Step08AIImages() {
     });
 
     // Apply PBR maps if provided
-    if (flippedNormalUrl) {
-      useConfiguratorStore.getState().setGlobalNormalMap(flippedNormalUrl);
+    if (normalMapUrl) {
+      useConfiguratorStore.getState().setGlobalNormalMap(normalMapUrl);
     } else {
       useConfiguratorStore.getState().setGlobalNormalMap(null);
     }
 
-    if (flippedRoughnessUrl) {
-      useConfiguratorStore.getState().setGlobalRoughnessMap(flippedRoughnessUrl);
+    if (roughnessMapUrl) {
+      useConfiguratorStore.getState().setGlobalRoughnessMap(roughnessMapUrl);
     } else {
       useConfiguratorStore.getState().setGlobalRoughnessMap(null);
     }
@@ -777,17 +657,8 @@ export function Step08AIImages() {
   }, [
     addTextureLayer,
     textureLayers.length,
-    transformTexture,
     setSelectedTextureLayerId,
-    applyTextureToBack,
-    bakeBackFlipIntoTexture,
     completeUVMap,
-    backUvSide,
-    backTextureTransform,
-    bakeBackFlipIntoUvTexture,
-    bakeFrontFlipIntoUvTexture,
-    bakeRegionFlipIntoUvTexture,
-    detectTorsoSides,
     currentModelUrl,
   ]);
 
