@@ -136,17 +136,24 @@ export function LayerControlsOverlay() {
       const frameCount = 72;
       const fps = 18;
       const delay = Math.max(20, Math.round(1000 / fps));
-      const captureSize = 512;
+      const sourceWidth = Math.max(1, canvas.width);
+      const sourceHeight = Math.max(1, canvas.height);
+      const maxCaptureSide = 1024;
+      const scale = Math.min(1, maxCaptureSide / Math.max(sourceWidth, sourceHeight));
+      const captureWidth = Math.max(1, Math.round(sourceWidth * scale));
+      const captureHeight = Math.max(1, Math.round(sourceHeight * scale));
 
       const captureCanvas = document.createElement("canvas");
-      captureCanvas.width = captureSize;
-      captureCanvas.height = captureSize;
+      captureCanvas.width = captureWidth;
+      captureCanvas.height = captureHeight;
       const captureCtx = captureCanvas.getContext("2d", {
         willReadFrequently: true,
       });
       if (!captureCtx) {
         throw new Error("Failed to create GIF canvas");
       }
+      captureCtx.imageSmoothingEnabled = true;
+      captureCtx.imageSmoothingQuality = "high";
 
       const gif = GIFEncoder();
 
@@ -155,13 +162,13 @@ export function LayerControlsOverlay() {
         modelApi.setRotationY(originalRotation + t * Math.PI * 2);
         await waitForRender();
 
-        captureCtx.clearRect(0, 0, captureSize, captureSize);
-        captureCtx.drawImage(canvas, 0, 0, captureSize, captureSize);
+        captureCtx.clearRect(0, 0, captureWidth, captureHeight);
+        captureCtx.drawImage(canvas, 0, 0, captureWidth, captureHeight);
 
-        const rgba = captureCtx.getImageData(0, 0, captureSize, captureSize).data;
+        const rgba = captureCtx.getImageData(0, 0, captureWidth, captureHeight).data;
         const palette = quantize(rgba, 256);
         const index = applyPalette(rgba, palette);
-        gif.writeFrame(index, captureSize, captureSize, {
+        gif.writeFrame(index, captureWidth, captureHeight, {
           palette,
           delay,
           repeat: 0,

@@ -102,6 +102,7 @@ export function AITextureGenerator({
   );
 
   const uvMap = useConfiguratorStore((s) => s.completeUVMap);
+  const uvMask = useConfiguratorStore((s) => s.completeUVMask);
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
 
   // Check if current model is soccer jersey crew neck
@@ -115,20 +116,23 @@ export function AITextureGenerator({
   const generationContextRef = useRef<{
     modelUrl: string | null;
     uvMap: string | null;
+    uvMask: string | null;
   }>({
     modelUrl: currentModelUrl ?? null,
     uvMap: uvMap ?? null,
+    uvMask: uvMask ?? null,
   });
 
   useEffect(() => {
     generationContextRef.current = {
       modelUrl: currentModelUrl ?? null,
       uvMap: uvMap ?? null,
+      uvMask: uvMask ?? null,
     };
     // Invalidate any in-flight generation when model/UV context changes.
     generationIdRef.current += 1;
     setGeneratedPreviewUrl(null);
-  }, [currentModelUrl, uvMap]);
+  }, [currentModelUrl, uvMap, uvMask]);
 
   const {
     textureUrl: googleUrl,
@@ -143,17 +147,20 @@ export function AITextureGenerator({
   const error = googleError;
 
   const handleGenerate = useCallback(async () => {
-    if (!uvMap) {
-      toast.error("UV map is not ready yet.");
+    const uvGuide = uvMap || uvMask;
+    if (!uvGuide) {
+      toast.error("UV guide is not ready yet.");
       return;
     }
 
     const requestGenerationId = ++generationIdRef.current;
     const requestModelUrl = currentModelUrl ?? null;
     const requestUvMap = uvMap;
+    const requestUvMask = uvMask ?? null;
     generationContextRef.current = {
       modelUrl: requestModelUrl,
       uvMap: requestUvMap,
+      uvMask: requestUvMask,
     };
     setGeneratedPreviewUrl(null);
 
@@ -162,7 +169,8 @@ export function AITextureGenerator({
       return (
         requestGenerationId === generationIdRef.current &&
         latest.modelUrl === requestModelUrl &&
-        latest.uvMap === requestUvMap
+        latest.uvMap === requestUvMap &&
+        latest.uvMask === requestUvMask
       );
     };
 
@@ -241,7 +249,7 @@ export function AITextureGenerator({
 
     const result = await generateGoogle({
       prompt: googlePrompt,
-      uvMap: uvMap,
+      uvMap: uvGuide,
       generatePbr: false,
       model: "pro",
       aspectRatio: "1:1",
@@ -266,6 +274,7 @@ export function AITextureGenerator({
   }, [
     prompt,
     uvMap,
+    uvMask,
     includePlayerInfo,
     playerName,
     jerseyNumber,
@@ -292,7 +301,7 @@ export function AITextureGenerator({
   // The onTextureGenerated callback adds the AI texture as a layer, and
   // TextureCompositor composes & applies it to all materials.
 
-  const canGenerate = !!uvMap && !isGenerating; // UV map is required
+  const canGenerate = !!(uvMap || uvMask) && !isGenerating; // UV guide is required
 
   return (
     <div className={cn("space-y-3", className)}>
