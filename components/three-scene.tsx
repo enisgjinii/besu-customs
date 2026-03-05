@@ -1024,6 +1024,8 @@ function Model({
     let cancelled = false;
     let idleCallbackId: number | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let fallbackTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let postLoadWorkStarted = false;
 
     // Clear old UV map immediately while the new model is preparing.
     useConfiguratorStore.getState().setCompleteUVMap(null);
@@ -1054,6 +1056,8 @@ function Model({
     setClonedScene(cloned);
 
     const runPostLoadWork = () => {
+      if (postLoadWorkStarted) return;
+      postLoadWorkStarted = true;
       if (cancelled || loadId !== modelLoadIdRef.current) return;
 
       const extracted = extractSectionsFromThreeModel(cloned, url);
@@ -1114,7 +1118,12 @@ function Model({
 
     // Use requestIdleCallback for non-critical post-load work (better initial render perf)
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleCallbackId = window.requestIdleCallback(runPostLoadWork);
+      // Provide a timeout so heavy scenes do not starve UV extraction forever.
+      idleCallbackId = window.requestIdleCallback(runPostLoadWork, {
+        timeout: 1200,
+      });
+      // Extra fallback: if idle callback still doesn't execute, run shortly after.
+      fallbackTimeoutId = setTimeout(runPostLoadWork, 1400);
     } else {
       timeoutId = setTimeout(runPostLoadWork, 0);
     }
@@ -1130,6 +1139,9 @@ function Model({
       }
       if (timeoutId !== null) {
         clearTimeout(timeoutId);
+      }
+      if (fallbackTimeoutId !== null) {
+        clearTimeout(fallbackTimeoutId);
       }
     };
   }, [scene, url]);

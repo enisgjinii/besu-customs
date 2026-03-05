@@ -602,6 +602,25 @@ export function extractUVMapFromThreeModel(
   ctx.lineWidth = 1;
 
   let hasUVs = false;
+  let totalTriangles = 0;
+
+  // Very dense models can stall the UI if we draw every UV triangle.
+  // Sample triangles adaptively to keep extraction responsive.
+  scene.traverse((child) => {
+    if (!(child instanceof THREE.Mesh) || !child.geometry) return;
+
+    const geometry = child.geometry;
+    const uvAttribute = geometry.getAttribute("uv");
+    if (!uvAttribute) return;
+
+    const indexAttribute = geometry.getIndex();
+    totalTriangles += indexAttribute
+      ? Math.floor(indexAttribute.count / 3)
+      : Math.floor(uvAttribute.count / 3);
+  });
+
+  const maxTrianglesToDraw = 200000;
+  const triangleStep = Math.max(1, Math.ceil(totalTriangles / maxTrianglesToDraw));
 
   scene.traverse((child) => {
     if (child instanceof THREE.Mesh && child.geometry) {
@@ -615,7 +634,7 @@ export function extractUVMapFromThreeModel(
 
       if (indexAttribute) {
         // Indexed geometry
-        for (let i = 0; i < indexAttribute.count; i += 3) {
+        for (let i = 0; i < indexAttribute.count; i += 3 * triangleStep) {
           const a = indexAttribute.getX(i);
           const b = indexAttribute.getX(i + 1);
           const c = indexAttribute.getX(i + 2);
@@ -646,7 +665,7 @@ export function extractUVMapFromThreeModel(
         }
       } else {
         // Non-indexed geometry
-        for (let i = 0; i < uvAttribute.count; i += 3) {
+        for (let i = 0; i < uvAttribute.count; i += 3 * triangleStep) {
           const uvA = new THREE.Vector2(
             uvAttribute.getX(i),
             uvAttribute.getY(i),
@@ -705,6 +724,24 @@ export function extractUVMaskFromThreeModel(
   ctx.fillStyle = "#111111";
 
   let hasUVs = false;
+  let totalTriangles = 0;
+
+  // Dense meshes can make mask extraction too slow; sample triangles adaptively.
+  scene.traverse((child) => {
+    if (!(child instanceof THREE.Mesh) || !child.geometry) return;
+
+    const geometry = child.geometry;
+    const uvAttribute = geometry.getAttribute("uv");
+    if (!uvAttribute) return;
+
+    const indexAttribute = geometry.getIndex();
+    totalTriangles += indexAttribute
+      ? Math.floor(indexAttribute.count / 3)
+      : Math.floor(uvAttribute.count / 3);
+  });
+
+  const maxTrianglesToDraw = 240000;
+  const triangleStep = Math.max(1, Math.ceil(totalTriangles / maxTrianglesToDraw));
 
   scene.traverse((child) => {
     if (!(child instanceof THREE.Mesh) || !child.geometry) return;
@@ -726,7 +763,7 @@ export function extractUVMaskFromThreeModel(
     };
 
     if (indexAttribute) {
-      for (let i = 0; i < indexAttribute.count; i += 3) {
+      for (let i = 0; i < indexAttribute.count; i += 3 * triangleStep) {
         const a = indexAttribute.getX(i);
         const b = indexAttribute.getX(i + 1);
         const c = indexAttribute.getX(i + 2);
@@ -740,7 +777,7 @@ export function extractUVMaskFromThreeModel(
         drawTri(ax, ay, bx, by, cx, cy);
       }
     } else {
-      for (let i = 0; i < uvAttribute.count; i += 3) {
+      for (let i = 0; i < uvAttribute.count; i += 3 * triangleStep) {
         const ax = uvAttribute.getX(i) * width;
         const ay = (flipY ? 1 - uvAttribute.getY(i) : uvAttribute.getY(i)) * height;
         const bx = uvAttribute.getX(i + 1) * width;

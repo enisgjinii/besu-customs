@@ -65,7 +65,8 @@ export function Step08AIImages() {
   const backTextureDebugOffsetY = useConfiguratorStore((state) => state.backTextureDebugOffsetY);
   const setBackTextureDebugOffsetY = useConfiguratorStore((state) => state.setBackTextureDebugOffsetY);
 
-  const [showUVMap, setShowUVMap] = useState(true);
+  const [showUVMap, setShowUVMap] = useState(false);
+  const [showGenerators, setShowGenerators] = useState(true);
   const [showDebugTools, setShowDebugTools] = useState(false);
   const [debugPattern, setDebugPattern] = useState<string | null>(null);
   const [isGeneratingDebug, setIsGeneratingDebug] = useState(false);
@@ -783,7 +784,7 @@ export function Step08AIImages() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Reference & Controls Section */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
@@ -835,7 +836,7 @@ export function Step08AIImages() {
         )}
 
         {/* Advanced Model Settings (Back Panel, etc) */}
-        <details className="text-xs group border rounded-lg bg-card mb-4">
+        <details className="text-xs group border rounded-lg bg-card mb-3">
              <summary className="px-3 py-2 font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center justify-between select-none list-none">
                  <span>Advanced Model Settings</span>
                  <span className="opacity-50 group-open:rotate-180 transition-transform">▼</span>
@@ -912,27 +913,45 @@ export function Step08AIImages() {
       </div>
 
        {/* Texture Generators */}
-       <div className="space-y-4">
+      <div className="rounded-lg border bg-amber-50/70 px-2.5 py-2 text-[10px] text-amber-900">
+        If AI output looks wrong or fails, please try again. A second generation usually fixes it.
+      </div>
+
+      <details className="group border rounded-lg bg-card" open={showGenerators}>
+        <summary
+          className="px-3 py-2 text-xs font-semibold cursor-pointer flex items-center justify-between select-none list-none"
+          onClick={(e) => {
+            e.preventDefault();
+            setShowGenerators((prev) => !prev);
+          }}
+        >
+          <span className="flex items-center gap-1.5">
+            <Wand2 className="w-3.5 h-3.5 text-purple-600" />
+            AI Generators
+          </span>
+          <span className="opacity-50 group-open:rotate-180 transition-transform">▼</span>
+        </summary>
+
+        {showGenerators && (
+          <div className="px-3 pb-3 pt-1 space-y-3 border-t">
             <div>
-                 <h3 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-purple-600">
-                    <Wand2 className="w-3.5 h-3.5" />
-                    AI Design Generator
-                 </h3>
-                 <div className="pl-1">
-                    <AITextureGenerator onTextureGenerated={handleGeneratedTexture} />
-                 </div>
+              <h3 className="text-[11px] font-semibold mb-1.5 flex items-center gap-1.5 text-purple-600">
+                <Wand2 className="w-3.5 h-3.5" />
+                AI Design Generator
+              </h3>
+              <AITextureGenerator onTextureGenerated={handleGeneratedTexture} />
             </div>
-            
-            <div className="pt-3 border-t">
-                 <h3 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-indigo-600">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Image Generator
-                 </h3>
-                  <div className="pl-1">
-                    <AIImageGenerator />
-                 </div>
+
+            <div className="pt-2 border-t">
+              <h3 className="text-[11px] font-semibold mb-1.5 flex items-center gap-1.5 text-indigo-600">
+                <Sparkles className="w-3.5 h-3.5" />
+                Image Generator
+              </h3>
+              <AIImageGenerator />
             </div>
-       </div>
+          </div>
+        )}
+      </details>
 
       {/* Generated Layers List - Compact */}
       {aiLayers.length > 0 && (

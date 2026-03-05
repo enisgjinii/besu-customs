@@ -91,6 +91,7 @@ export function AIImageGenerator() {
     used: number;
     remaining: number;
   } | null>(null);
+  const [generationWarning, setGenerationWarning] = useState<string | null>(null);
 
   const sections = useConfiguratorStore((state) => state.sections);
   const updateSection = useConfiguratorStore((state) => state.updateSection);
@@ -109,6 +110,7 @@ export function AIImageGenerator() {
     setLoading(true);
     setGeneratedImage(null);
     setPreviewMode(false);
+    setGenerationWarning(null);
 
     const cleanName = playerName.trim().toUpperCase();
     const cleanNumber = jerseyNumber.trim().replace(/\D/g, "").slice(0, 3);
@@ -173,6 +175,7 @@ export function AIImageGenerator() {
         setPreviewMode(true);
         setImageScale(100);
         setImageRotation(0);
+        setGenerationWarning(null);
         toast.success("Image generated! Review and apply when ready.");
       }
 
@@ -181,6 +184,9 @@ export function AIImageGenerator() {
       }
     } catch (error) {
       console.error("Error:", error);
+      const warningMessage =
+        error instanceof Error ? error.message : "AI output not okay. Please try again.";
+      setGenerationWarning(warningMessage);
       toast.error(
         error instanceof Error ? error.message : "Failed to generate image",
       );
@@ -325,26 +331,28 @@ export function AIImageGenerator() {
               className="text-sm h-9"
             />
 
-            {/* Prompt Examples */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {[
-                "Electric blue and black carbon fiber racing stripes",
-                "Bold red and gold geometric panels with metallic accents",
-                "Neon green cyber circuit pattern on dark background",
-                "Sunset gradient with tribal flame design",
-                "Royal purple and silver abstract wave energy pattern",
-                "Crimson and black viper scale pattern with subtle glow",
-              ].map((example) => (
-                <button
-                  key={example}
-                  type="button"
-                  onClick={() => setPrompt(example)}
-                  className="px-2 py-0.5 text-[10px] bg-muted hover:bg-muted/80 text-muted-foreground rounded-full border border-transparent hover:border-primary/30 transition-colors"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
+            <details className="pt-1 group">
+              <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground select-none list-none flex items-center justify-between">
+                <span>Prompt Examples</span>
+                <span className="opacity-60 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="flex flex-wrap gap-1.5 pt-1.5">
+                {[
+                  "Electric blue and black carbon fiber racing stripes",
+                  "Bold red and gold geometric panels with metallic accents",
+                  "Neon green cyber circuit pattern on dark background",
+                ].map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    onClick={() => setPrompt(example)}
+                    className="px-2 py-0.5 text-[10px] bg-muted hover:bg-muted/80 text-muted-foreground rounded-full border border-transparent hover:border-primary/30 transition-colors"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </details>
           </div>
 
           {/* Player Info for Jersey Design */}
@@ -421,6 +429,17 @@ export function AIImageGenerator() {
                   {usage.used}/{usage.limit} used ({usage.remaining} left)
                 </span>
               </div>
+            </div>
+          )}
+
+          {generationWarning && (
+            <div className="p-2 rounded-md border border-destructive/25 bg-destructive/10 space-y-1">
+              <p className="text-[10px] text-destructive text-center leading-tight">
+                AI is not okay right now. Please try again.
+              </p>
+              <p className="text-[9px] text-destructive/90 text-center leading-tight">
+                {generationWarning}
+              </p>
             </div>
           )}
 

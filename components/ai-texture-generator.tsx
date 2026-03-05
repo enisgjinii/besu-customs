@@ -147,7 +147,8 @@ export function AITextureGenerator({
   const error = googleError;
 
   const handleGenerate = useCallback(async () => {
-    const uvGuide = uvMap || uvMask;
+    // Prefer the filled UV mask to avoid wireframe lines leaking into generated textures.
+    const uvGuide = uvMask || uvMap;
     if (!uvGuide) {
       toast.error("UV guide is not ready yet.");
       return;
@@ -520,10 +521,23 @@ export function AITextureGenerator({
         )}
       </Button>
 
-      {/* Error */}
+      {/* Error + Retry */}
       {error && (
-        <div className="p-1.5 bg-destructive/10 text-destructive text-[10px] rounded border border-destructive/20 text-center">
-          {error}
+        <div className="p-2 bg-destructive/10 text-destructive rounded border border-destructive/20 space-y-1.5">
+          <p className="text-[10px] leading-tight text-center">
+            AI is not okay right now. Please try again.
+          </p>
+          <p className="text-[9px] leading-tight text-center opacity-90">{error}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 w-full text-[10px]"
+            onClick={handleGenerate}
+            disabled={isGenerating || !canGenerate}
+          >
+            Try Again
+          </Button>
         </div>
       )}
 
