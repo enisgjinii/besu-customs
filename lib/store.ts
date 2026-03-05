@@ -413,7 +413,7 @@ function generateAllProducts(): Product[] {
     {
       id: "flag-football-hoodie",
       title: "Flag Football Jersey with Hoodie",
-      modelUrl: "/models/flag-football-top-with-hoodie.glb",
+      modelUrl: "/models/flag-football-top-with-hoodie_UV_MAP_v2.glb",
       category: "Hoodies",
     },
     {
