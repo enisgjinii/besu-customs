@@ -16,13 +16,12 @@ type MaterialSection = {
   combinedOriginalNames?: string[]; // For combined sections like stoppers
 };
 
-// Extract materials and meshes directly from GLB file
+// Extract materials and meshes directly from GLB file (Buffer version)
 async function extractFromGLB(
-  modelPath: string,
+  modelBuffer: ArrayBuffer,
 ): Promise<{ materials: string[]; meshes: string[] }> {
   try {
-    const buffer = fs.readFileSync(modelPath);
-    const text = buffer.toString("utf8");
+    const text = new TextDecoder().decode(modelBuffer);
 
     // Extract materials array from JSON by properly handling nested brackets
     const materials: string[] = [];
@@ -85,20 +84,25 @@ export async function GET(request: Request) {
     );
   }
 
-  // Get the actual GLB file path
-  const projectRoot = path.resolve(".");
   const relative = modelParam.replace(/^\//, "").replace(/\\/g, "/");
-  const glbPath = path.join(projectRoot, "public", relative);
+  const baseUrl = `${url.protocol}//${url.host}`;
+  const fetchUrl = `${baseUrl}/${relative}`;
 
-  if (!fs.existsSync(glbPath)) {
-    return NextResponse.json(
-      { error: "GLB file not found", file: glbPath },
-      { status: 404 },
-    );
-  }
+  try {
+    // Fetch the GLB file over HTTP to avoid Vercel edge bundling limit (max 250MB) 
+    // This allows the route to stay lightweight and use the deployed static assets directly.
+    const response = await fetch(fetchUrl);
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: "GLB file not found", file: fetchUrl },
+        { status: response.status },
+      );
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
 
-  // Extract materials and meshes directly from the GLB file
-  const { materials, meshes } = await extractFromGLB(glbPath);
+    // Extract materials and meshes directly from the GLB file
+    const { materials, meshes } = await extractFromGLB(arrayBuffer);
 
   // Normalize the extracted names
   const normalizedMaterials = normalizeNames(materials);
@@ -1428,4 +1432,11 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ sections });
+  } catch (error) {
+    console.error("Error in GET /api/materials:", error);
+    return NextResponse.json(
+      { error: "Internal server error reading GLB" },
+      { status: 500 },
+    );
+  }
 }
