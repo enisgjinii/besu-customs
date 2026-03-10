@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -19,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import * as THREE from "three";
 import { toast } from "sonner";
@@ -46,44 +46,7 @@ const PATTERN_PRESETS = [
   "carbon fiber",
 ];
 
-const STYLES = [
-  { value: "photorealistic", label: "Photorealistic" },
-  { value: "hand-painted", label: "Hand Painted" },
-  { value: "cartoon", label: "Cartoon / Anime" },
-  { value: "abstract", label: "Abstract Art" },
-  { value: "fabric", label: "Fabric / Textile" },
-];
-
-type TextureWithOptionalSrc = THREE.Texture & {
-  source?: { data?: { src?: string } };
-  image?:
-    | { src?: string }
-    | HTMLImageElement
-    | HTMLCanvasElement
-    | HTMLVideoElement;
-};
-
-const extractTextureSrc = (texture?: THREE.Texture | null): string | null => {
-  if (!texture) return null;
-  const tex = texture as TextureWithOptionalSrc;
-  const sourceSrc = tex.source?.data?.src;
-  if (typeof sourceSrc === "string" && sourceSrc.length > 0) {
-    return sourceSrc;
-  }
-
-  if (typeof tex.image === "string") {
-    return tex.image;
-  }
-
-  if (tex.image && typeof (tex.image as { src?: string }).src === "string") {
-    return (tex.image as { src?: string }).src || null;
-  }
-
-  return null;
-};
-
 export function AITextureGenerator({
-  scene,
   onTextureGenerated,
   className,
 }: AITextureGeneratorProps) {
@@ -306,233 +269,246 @@ export function AITextureGenerator({
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="space-y-3">
-        {/* Pattern Input */}
-        <div className="space-y-1">
-          <Label className="text-xs font-medium">Style & Prompt</Label>
-          <Input
-            placeholder="Describe style (e.g. vintage, metallic)..."
-            value={prompt}
-            onChange={(e) => {
-              setPrompt(e.target.value);
-              setSelectedPreset(null);
-            }}
+      {!uvMap && !uvMask && (
+        <div className="rounded-xl border border-dashed px-3 py-2 text-[10px] text-muted-foreground">
+          The garment UV guide is still loading. Texture generation will unlock
+          once it is ready.
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="ai-texture-prompt" className="text-xs font-medium">
+          Describe the overall look
+        </Label>
+        <Textarea
+          id="ai-texture-prompt"
+          placeholder="Example: black base with silver geometric side panels and a subtle carbon fiber texture."
+          value={prompt}
+          onChange={(e) => {
+            setPrompt(e.target.value);
+            setSelectedPreset(null);
+          }}
+          disabled={isGenerating}
+          className="min-h-[92px] resize-none text-sm"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          This option creates a full texture mapped across the entire product.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[10px] font-medium text-muted-foreground">
+          Quick ideas
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {PATTERN_PRESETS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => handlePresetClick(preset)}
+              disabled={isGenerating}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[10px] transition-colors",
+                selectedPreset === preset
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground",
+              )}
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-muted/20 px-3 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label
+              htmlFor="player-info-toggle"
+              className="flex items-center gap-1.5 text-xs font-medium"
+            >
+              <User className="h-3.5 w-3.5" />
+              Add player name and number
+            </Label>
+            <p className="text-[10px] text-muted-foreground">
+              Optional. The AI will place them on the back area only.
+            </p>
+          </div>
+          <Switch
+            id="player-info-toggle"
+            checked={includePlayerInfo}
+            onCheckedChange={setIncludePlayerInfo}
             disabled={isGenerating}
-            className="h-8 text-xs"
+            className="scale-75 origin-right"
           />
         </div>
 
-        {/* Compact Presets - Horizontal Scroll */}
-        <div>
-          <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
-            {PATTERN_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                onClick={() => handlePresetClick(preset)}
-                disabled={isGenerating}
-                className={cn(
-                  "flex-shrink-0 px-2.5 py-1 text-[10px] rounded-full border transition-all whitespace-nowrap",
-                  selectedPreset === preset
-                    ? "bg-primary/10 border-primary text-primary font-medium"
-                    : "bg-background border-border text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {preset}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Player Info Toggle */}
-        <div className="space-y-2 border-t pt-2">
-          <div className="flex items-center justify-between">
-            <Label
-              htmlFor="player-info-toggle"
-              className="text-xs font-medium flex items-center gap-1.5"
-            >
-              <User className="w-3.5 h-3.5" />
-              Add Name & Number
-            </Label>
-            <Switch
-              id="player-info-toggle"
-              checked={includePlayerInfo}
-              onCheckedChange={setIncludePlayerInfo}
+        {includePlayerInfo && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Input
+              placeholder="NAME"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
               disabled={isGenerating}
-              className="scale-75 origin-right"
+              className="h-8 text-xs uppercase"
+              maxLength={20}
+            />
+            <Input
+              placeholder="00"
+              value={jerseyNumber}
+              onChange={(e) =>
+                setJerseyNumber(e.target.value.replace(/\D/g, "").slice(0, 3))
+              }
+              disabled={isGenerating}
+              className="h-8 text-xs"
+              maxLength={3}
             />
           </div>
-
-          {includePlayerInfo && (
-            <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-              <Input
-                placeholder="NAME"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
-                disabled={isGenerating}
-                className="h-7 text-xs uppercase"
-                maxLength={20}
-              />
-              <Input
-                placeholder="00"
-                value={jerseyNumber}
-                onChange={(e) =>
-                  setJerseyNumber(e.target.value.replace(/\D/g, "").slice(0, 3))
-                }
-                disabled={isGenerating}
-                className="h-7 text-xs"
-                maxLength={3}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Collapsible Debug Options */}
-        {isSoccerJerseyCrewNeck && (
-          <details className="text-xs border-t pt-2 group">
-            <summary className="font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-1.5 select-none list-none">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-              <span>Soccer Jersey Fixes</span>
-              <div className="ml-auto opacity-50 group-open:rotate-180 transition-transform">
-                ▼
-              </div>
-            </summary>
-
-            <div className="pt-2 space-y-3 bg-muted/30 p-2 rounded mt-2">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px]">Flip Y</span>
-                  <Switch
-                    checked={soccerJerseyDebug.flipY}
-                    onCheckedChange={(c) => setSoccerJerseyDebug({ flipY: c })}
-                    className="scale-75 origin-right"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px]">Back Tex</span>
-                  <Switch
-                    checked={soccerJerseyDebug.useBackTexture}
-                    onCheckedChange={(c) =>
-                      setSoccerJerseyDebug({ useBackTexture: c })
-                    }
-                    className="scale-75 origin-right"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] block text-muted-foreground">
-                  Back Transform
-                </span>
-                <Select
-                  value={soccerJerseyDebug.backTransform}
-                  onValueChange={(v: any) =>
-                    setSoccerJerseyDebug({ backTransform: v })
-                  }
-                >
-                  <SelectTrigger className="h-6 text-[10px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="mirrorX">Mirror X</SelectItem>
-                    <SelectItem value="mirrorY">Mirror Y</SelectItem>
-                    <SelectItem value="rotate180">Rotate 180</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2 pt-1 border-t border-border/50">
-                <span className="text-[10px] font-medium block">
-                  UV Alignment
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Compact UV Sliders */}
-                  {[
-                    "uvOffsetX",
-                    "uvOffsetY",
-                    "uvRepeatX",
-                    "uvRepeatY",
-                    "uvRotation",
-                  ].map((key) => {
-                    const val =
-                      (soccerJerseyDebug[
-                        key as keyof typeof soccerJerseyDebug
-                      ] as number) ?? 0;
-                    const label = key.replace("uv", "");
-                    const min = key.includes("Repeat")
-                      ? 0.5
-                      : key.includes("Rotation")
-                        ? -180
-                        : -1;
-                    const max = key.includes("Repeat")
-                      ? 2
-                      : key.includes("Rotation")
-                        ? 180
-                        : 1;
-                    const step = key.includes("Rotation") ? 1 : 0.01;
-
-                    return (
-                      <div key={key} className="space-y-0.5">
-                        <div className="flex justify-between text-[9px] text-muted-foreground">
-                          <span>{label}</span>
-                          <span>
-                            {val.toFixed(key.includes("Rotation") ? 0 : 2)}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={min}
-                          max={max}
-                          step={step}
-                          value={val}
-                          onChange={(e) =>
-                            setSoccerJerseyDebug({
-                              [key]: parseFloat(e.target.value),
-                            })
-                          }
-                          className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </details>
         )}
       </div>
 
-      {/* Generate Button - Full Width Bottom */}
+      {isSoccerJerseyCrewNeck && (
+        <details className="group rounded-xl border bg-muted/20 px-3 py-2.5 text-xs">
+          <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            Soccer jersey fixes
+            <span className="ml-auto text-muted-foreground transition-transform group-open:rotate-180">
+              ▼
+            </span>
+          </summary>
+
+          <div className="mt-3 space-y-3 rounded-lg border bg-background p-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px]">Flip Y</span>
+                <Switch
+                  checked={soccerJerseyDebug.flipY}
+                  onCheckedChange={(checked) =>
+                    setSoccerJerseyDebug({ flipY: checked })
+                  }
+                  className="scale-75 origin-right"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px]">Back texture</span>
+                <Switch
+                  checked={soccerJerseyDebug.useBackTexture}
+                  onCheckedChange={(checked) =>
+                    setSoccerJerseyDebug({ useBackTexture: checked })
+                  }
+                  className="scale-75 origin-right"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] text-muted-foreground">
+                Back transform
+              </span>
+              <Select
+                value={soccerJerseyDebug.backTransform}
+                onValueChange={(value: any) =>
+                  setSoccerJerseyDebug({ backTransform: value })
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="mirrorX">Mirror X</SelectItem>
+                  <SelectItem value="mirrorY">Mirror Y</SelectItem>
+                  <SelectItem value="rotate180">Rotate 180</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 border-t pt-3">
+              <span className="block text-[10px] font-medium">UV alignment</span>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  "uvOffsetX",
+                  "uvOffsetY",
+                  "uvRepeatX",
+                  "uvRepeatY",
+                  "uvRotation",
+                ].map((key) => {
+                  const value =
+                    (soccerJerseyDebug[
+                      key as keyof typeof soccerJerseyDebug
+                    ] as number) ?? 0;
+                  const label = key.replace("uv", "");
+                  const min = key.includes("Repeat")
+                    ? 0.5
+                    : key.includes("Rotation")
+                      ? -180
+                      : -1;
+                  const max = key.includes("Repeat")
+                    ? 2
+                    : key.includes("Rotation")
+                      ? 180
+                      : 1;
+                  const step = key.includes("Rotation") ? 1 : 0.01;
+
+                  return (
+                    <div key={key} className="space-y-0.5">
+                      <div className="flex justify-between text-[9px] text-muted-foreground">
+                        <span>{label}</span>
+                        <span>
+                          {value.toFixed(key.includes("Rotation") ? 0 : 2)}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={min}
+                        max={max}
+                        step={step}
+                        value={value}
+                        onChange={(e) =>
+                          setSoccerJerseyDebug({
+                            [key]: parseFloat(e.target.value),
+                          })
+                        }
+                        className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </details>
+      )}
+
       <Button
         onClick={handleGenerate}
         disabled={!canGenerate}
-        className="w-full h-9 text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm transition-all duration-300"
+        className="h-10 w-full text-sm"
       >
         {isGenerating ? (
           <>
-            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             {progress || "Generating..."}
           </>
         ) : (
           <>
-            <Sparkles className="mr-2 h-3 w-3" />
-            Generate Design
+            <Sparkles className="mr-2 h-4 w-4" />
+            Generate full texture
           </>
         )}
       </Button>
 
-      {/* Error + Retry */}
       {error && (
-        <div className="p-2 bg-destructive/10 text-destructive rounded border border-destructive/20 space-y-1.5">
-          <p className="text-[10px] leading-tight text-center">
+        <div className="space-y-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-destructive">
+          <p className="text-[10px] leading-tight">
             AI is not okay right now. Please try again.
           </p>
-          <p className="text-[9px] leading-tight text-center opacity-90">{error}</p>
+          <p className="text-[10px] leading-tight opacity-90">{error}</p>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 w-full text-[10px]"
+            className="h-8 w-full text-xs"
             onClick={handleGenerate}
             disabled={isGenerating || !canGenerate}
           >
@@ -541,14 +517,14 @@ export function AITextureGenerator({
         </div>
       )}
 
-      {/* Result Preview - Compact */}
       {currentTextureUrl && (
-        <div className="pt-2 border-t">
-          <div className="aspect-square rounded-md overflow-hidden border bg-muted/30 relative max-h-[160px] mx-auto">
+        <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+          <p className="text-xs font-medium">Latest preview</p>
+          <div className="relative mx-auto aspect-square max-h-[180px] overflow-hidden rounded-lg border bg-background">
             <img
               src={currentTextureUrl}
               alt="Result"
-              className="w-full h-full object-contain"
+              className="h-full w-full object-contain"
             />
           </div>
         </div>

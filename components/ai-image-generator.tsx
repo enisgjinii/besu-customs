@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Loader2,
   Sparkles,
@@ -19,7 +20,6 @@ import {
   Hash,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useConfiguratorStore } from "@/lib/store";
 import { removeBackgroundAdvanced } from "@/lib/background-removal";
 import { Switch } from "@/components/ui/switch";
 
@@ -92,9 +92,6 @@ export function AIImageGenerator() {
     remaining: number;
   } | null>(null);
   const [generationWarning, setGenerationWarning] = useState<string | null>(null);
-
-  const sections = useConfiguratorStore((state) => state.sections);
-  const updateSection = useConfiguratorStore((state) => state.updateSection);
 
   // Player info for jersey design
   const [includePlayerInfo, setIncludePlayerInfo] = useState(false);
@@ -306,77 +303,81 @@ export function AIImageGenerator() {
 
   return (
     <div className="space-y-3" data-tour="ai-generator">
-      {/* Prompt Input */}
       {!previewMode && (
         <>
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="ai-prompt"
-              className="flex items-center gap-2 text-xs"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Describe your design
+          <div className="space-y-2">
+            <Label htmlFor="ai-prompt" className="flex items-center gap-2 text-xs font-medium">
+              <Sparkles className="h-3.5 w-3.5" />
+              Describe the graphic
             </Label>
-            <Input
+            <Textarea
               id="ai-prompt"
-              placeholder="A futuristic sports jersey design..."
+              placeholder="Example: fierce panther head with chrome outlines and electric blue highlights."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !loading) {
+                if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !loading) {
                   handleGenerate();
                 }
               }}
               disabled={loading}
-              className="text-sm h-9"
+              className="min-h-[92px] resize-none text-sm"
             />
+            <p className="text-[10px] text-muted-foreground">
+              Creates a single graphic you can preview, resize, rotate, and then
+              place on the garment.
+            </p>
 
-            <details className="pt-1 group">
-              <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground select-none list-none flex items-center justify-between">
-                <span>Prompt Examples</span>
-                <span className="opacity-60 group-open:rotate-180 transition-transform">▼</span>
-              </summary>
-              <div className="flex flex-wrap gap-1.5 pt-1.5">
-                {[
-                  "Electric blue and black carbon fiber racing stripes",
-                  "Bold red and gold geometric panels with metallic accents",
-                  "Neon green cyber circuit pattern on dark background",
-                ].map((example) => (
-                  <button
-                    key={example}
-                    type="button"
-                    onClick={() => setPrompt(example)}
-                    className="px-2 py-0.5 text-[10px] bg-muted hover:bg-muted/80 text-muted-foreground rounded-full border border-transparent hover:border-primary/30 transition-colors"
-                  >
-                    {example}
-                  </button>
-                ))}
-              </div>
-            </details>
+            <div className="flex flex-wrap gap-2">
+              {[
+                "Mascot emblem with bold outlines",
+                "Minimal chest badge with stitched look",
+                "Lightning bolt symbol with metallic edges",
+              ].map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  onClick={() => setPrompt(example)}
+                  className="rounded-full border px-2.5 py-1 text-[10px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Player Info for Jersey Design */}
-          <div className="space-y-3 p-3 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <Label htmlFor="design-player-info-toggle" className="text-sm font-medium">
-                  Include Name & Number
+          <div className="rounded-xl border bg-muted/20 px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label
+                  htmlFor="design-player-info-toggle"
+                  className="flex items-center gap-2 text-xs font-medium"
+                >
+                  <User className="h-3.5 w-3.5" />
+                  Add player name and number
                 </Label>
+                <p className="text-[10px] text-muted-foreground">
+                  Optional. Useful when the graphic should already include player
+                  personalization.
+                </p>
               </div>
               <Switch
                 id="design-player-info-toggle"
                 checked={includePlayerInfo}
                 onCheckedChange={setIncludePlayerInfo}
                 disabled={loading}
+                className="scale-75 origin-right"
               />
             </div>
 
             {includePlayerInfo && (
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="design-player-name" className="text-xs text-muted-foreground flex items-center gap-1">
-                    <User className="w-3 h-3" />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="design-player-name"
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground"
+                  >
+                    <User className="h-3 w-3" />
                     Player Name
                   </Label>
                   <Input
@@ -385,13 +386,16 @@ export function AIImageGenerator() {
                     value={playerName}
                     onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
                     disabled={loading}
-                    className="h-9 uppercase"
+                    className="h-8 uppercase text-xs"
                     maxLength={20}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="design-jersey-number" className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Hash className="w-3 h-3" />
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="design-jersey-number"
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground"
+                  >
+                    <Hash className="h-3 w-3" />
                     Number
                   </Label>
                   <Input
@@ -400,30 +404,27 @@ export function AIImageGenerator() {
                     value={jerseyNumber}
                     onChange={(e) => setJerseyNumber(e.target.value.replace(/\D/g, '').slice(0, 3))}
                     disabled={loading}
-                    className="h-9"
+                    className="h-8 text-xs"
                     maxLength={3}
                   />
                 </div>
-                <p className="col-span-2 text-[10px] text-muted-foreground">
-                  AI will include name/number in the generated design.
-                </p>
               </div>
             )}
           </div>
 
-          {/* Usage Information */}
           {usage && (
             <div
-              className={`text-[10px] p-2 rounded-md ${usage.remaining === 0
-                ? "text-destructive bg-destructive/10 border border-destructive/20"
-                : "text-muted-foreground bg-secondary/20"
-                }`}
+              className={`rounded-lg border px-3 py-2 text-[10px] ${
+                usage.remaining === 0
+                  ? "border-destructive/20 bg-destructive/10 text-destructive"
+                  : "border-border bg-muted/20 text-muted-foreground"
+              }`}
             >
               <div className="flex items-center gap-1">
                 {usage.remaining === 0 ? (
-                  <AlertCircle className="w-3 h-3" />
+                  <AlertCircle className="h-3 w-3" />
                 ) : (
-                  <Sparkles className="w-3 h-3" />
+                  <Sparkles className="h-3 w-3" />
                 )}
                 <span>
                   {usage.used}/{usage.limit} used ({usage.remaining} left)
@@ -433,11 +434,11 @@ export function AIImageGenerator() {
           )}
 
           {generationWarning && (
-            <div className="p-2 rounded-md border border-destructive/25 bg-destructive/10 space-y-1">
-              <p className="text-[10px] text-destructive text-center leading-tight">
+            <div className="space-y-1 rounded-lg border border-destructive/25 bg-destructive/10 p-3">
+              <p className="text-[10px] leading-tight text-destructive">
                 AI is not okay right now. Please try again.
               </p>
-              <p className="text-[9px] text-destructive/90 text-center leading-tight">
+              <p className="text-[10px] leading-tight text-destructive/90">
                 {generationWarning}
               </p>
             </div>
@@ -446,35 +447,35 @@ export function AIImageGenerator() {
           <Button
             onClick={handleGenerate}
             disabled={loading || !prompt.trim()}
-            className="w-full text-xs h-9"
-            size="sm"
+            className="h-10 w-full text-sm"
           >
             {loading ? (
               <>
-                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="w-3 h-3 mr-2" />
-                Generate Image
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate graphic
               </>
             )}
           </Button>
         </>
       )}
 
-      {/* Preview Mode - Single Image with Controls */}
       {previewMode && generatedImage && (
-        <div className="space-y-3">
-          <div className="text-xs font-medium text-center">
-            Preview - Adjust size & rotation before applying
+        <div className="space-y-3 rounded-xl border bg-muted/20 p-3">
+          <div>
+            <p className="text-xs font-medium">Preview</p>
+            <p className="text-[10px] text-muted-foreground">
+              Adjust the graphic before placing it on the garment.
+            </p>
           </div>
 
-          {/* Image Preview */}
-          <div className="relative rounded-lg overflow-hidden border bg-card">
+          <div className="relative overflow-hidden rounded-lg border bg-card">
             <div
-              className="aspect-square w-full flex items-center justify-center bg-muted/20 p-4"
+              className="flex aspect-square w-full items-center justify-center bg-muted/20 p-4"
               style={{ minHeight: "150px" }}
             >
               <Image
@@ -482,7 +483,7 @@ export function AIImageGenerator() {
                 alt="Generated AI Image"
                 width={256}
                 height={256}
-                className="object-contain max-h-[200px]"
+                className="max-h-[200px] object-contain"
                 style={{
                   transform: `scale(${imageScale / 100}) rotate(${imageRotation}deg)`,
                   transition: "transform 0.2s ease",
@@ -491,10 +492,9 @@ export function AIImageGenerator() {
             </div>
           </div>
 
-          {/* Size Control */}
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <ZoomIn className="w-3 h-3 text-muted-foreground" />
+              <ZoomIn className="h-3 w-3 text-muted-foreground" />
               <span className="text-[10px] text-muted-foreground">Size</span>
               <Slider
                 value={[imageScale]}
@@ -504,16 +504,15 @@ export function AIImageGenerator() {
                 onValueChange={([val]) => setImageScale(val)}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-10 text-right">
+              <span className="w-10 text-right text-[10px] text-muted-foreground">
                 {imageScale}%
               </span>
             </div>
           </div>
 
-          {/* Rotation Control */}
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <RotateCw className="w-3 h-3 text-muted-foreground" />
+              <RotateCw className="h-3 w-3 text-muted-foreground" />
               <span className="text-[10px] text-muted-foreground">Rotate</span>
               <Slider
                 value={[imageRotation]}
@@ -523,30 +522,29 @@ export function AIImageGenerator() {
                 onValueChange={([val]) => setImageRotation(val)}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-10 text-right">
+              <span className="w-10 text-right text-[10px] text-muted-foreground">
                 {imageRotation}°
               </span>
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handleDiscard}
-              className="flex-1 h-8 text-xs"
+              className="h-8 flex-1 text-xs"
             >
-              <X className="w-3 h-3 mr-1" />
-              Discard
+              <X className="mr-1 h-3 w-3" />
+              Remove
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleRegenerate}
-              className="flex-1 h-8 text-xs"
+              className="h-8 flex-1 text-xs"
             >
-              <Sparkles className="w-3 h-3 mr-1" />
+              <Sparkles className="mr-1 h-3 w-3" />
               Regenerate
             </Button>
           </div>
@@ -556,18 +554,18 @@ export function AIImageGenerator() {
               variant="outline"
               size="sm"
               onClick={handleDownload}
-              className="flex-1 h-8 text-xs"
+              className="h-8 flex-1 text-xs"
             >
-              <Download className="w-3 h-3 mr-1" />
+              <Download className="mr-1 h-3 w-3" />
               Download
             </Button>
             <Button
               size="sm"
               onClick={handleApplyImage}
-              className="flex-1 h-8 text-xs bg-primary"
+              className="h-8 flex-1 text-xs"
             >
-              <Check className="w-3 h-3 mr-1" />
-              Apply to Design
+              <Check className="mr-1 h-3 w-3" />
+              Apply graphic
             </Button>
           </div>
         </div>

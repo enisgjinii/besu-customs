@@ -16,10 +16,7 @@ import {
 import * as THREE from "three";
 import {
   Sparkles,
-  Map,
   Download,
-  Eye,
-  EyeOff,
   Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,19 +53,8 @@ export function Step08AIImages() {
   const setBakeBackFlipIntoTexture = useConfiguratorStore((state) => state.setBakeBackFlipIntoTexture);
   const backUvSide = useConfiguratorStore((state) => state.backUvSide);
   const setBackUvSide = useConfiguratorStore((state) => state.setBackUvSide);
-  const backTextureDebugEnabled = useConfiguratorStore((state) => state.backTextureDebugEnabled);
-  const setBackTextureDebugEnabled = useConfiguratorStore((state) => state.setBackTextureDebugEnabled);
-  const backTextureDebugRotationDeg = useConfiguratorStore((state) => state.backTextureDebugRotationDeg);
-  const setBackTextureDebugRotationDeg = useConfiguratorStore((state) => state.setBackTextureDebugRotationDeg);
-  const backTextureDebugOffsetX = useConfiguratorStore((state) => state.backTextureDebugOffsetX);
-  const setBackTextureDebugOffsetX = useConfiguratorStore((state) => state.setBackTextureDebugOffsetX);
-  const backTextureDebugOffsetY = useConfiguratorStore((state) => state.backTextureDebugOffsetY);
-  const setBackTextureDebugOffsetY = useConfiguratorStore((state) => state.setBackTextureDebugOffsetY);
 
   const [showUVMap, setShowUVMap] = useState(false);
-  const [showGenerators, setShowGenerators] = useState(true);
-  const [showDebugTools, setShowDebugTools] = useState(false);
-  const [debugPattern, setDebugPattern] = useState<string | null>(null);
   const [isGeneratingDebug, setIsGeneratingDebug] = useState(false);
   const applyGenerationRef = useRef(0);
   const applyContextRef = useRef<{
@@ -679,8 +665,6 @@ export function Step08AIImages() {
         showUvWireframe: true,
       });
 
-      setDebugPattern(pattern.url);
-
       const newId = uuidv4();
       addTextureLayer({
         id: newId,
@@ -784,208 +768,266 @@ export function Step08AIImages() {
   };
 
   return (
-    <div className="space-y-3">
-      {/* Reference & Controls Section */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold tracking-tight">AI Texture Studio</h2>
-            {completeUVMap && (
-                <div className="flex gap-1">
-                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-[10px] px-2"
-                      onClick={() => setShowUVMap(!showUVMap)}
-                    >
-                      {showUVMap ? "Hide UV" : "Show UV"}
-                    </Button>
-                     <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-6 text-[10px] px-2"
-                      onClick={handleDownloadUVMap}
-                    >
-                      <Download className="w-3 h-3 mr-1" />
-                      UV
-                    </Button>
-                </div>
-            )}
+    <div className="space-y-4">
+      <section className="rounded-2xl border bg-card p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-sm font-semibold tracking-tight">AI Design</h2>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Choose one way to create your design, then fine-tune it from the
+              saved layers below.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <div className="rounded-full border px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+              {completeUVMap ? "UV guide ready" : "Preparing UV guide"}
+            </div>
+            <div className="rounded-full border px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+              {aiLayers.length} saved
+            </div>
+          </div>
         </div>
 
-        {/* UV Map Reference - Collapsible / Compact */}
-        {showUVMap && completeUVMap && (
-          <div className="rounded-lg border bg-muted/20 overflow-hidden relative mb-2">
-            <img
-                src={completeUVMap}
-                alt="UV Map"
-                className="w-full max-h-[120px] object-contain opacity-80"
-            />
-             <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10">
-                 <Button
-                  variant="secondary"
+        <details className="group mt-4 rounded-xl border bg-muted/20">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-medium text-foreground">
+            <span>Optional tools</span>
+            <span className="text-muted-foreground transition-transform group-open:rotate-180">
+              ▼
+            </span>
+          </summary>
+
+          <div className="space-y-4 border-t px-3 py-3">
+            {completeUVMap ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-medium">UV reference</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Use this if you want to inspect placement before generating.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[10px]"
+                      onClick={() => setShowUVMap((prev) => !prev)}
+                    >
+                      {showUVMap ? "Hide" : "Preview"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-[10px]"
+                      onClick={handleDownloadUVMap}
+                    >
+                      <Download className="mr-1 h-3 w-3" />
+                      Download
+                    </Button>
+                  </div>
+                </div>
+
+                {showUVMap && (
+                  <div className="overflow-hidden rounded-xl border bg-background">
+                    <img
+                      src={completeUVMap}
+                      alt="UV Map"
+                      className="max-h-[160px] w-full object-contain"
+                    />
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
                   size="sm"
-                  className="h-6 text-[10px]"
+                  className="h-8 text-[10px]"
                   onClick={handleGenerateTestPattern}
                   disabled={isGeneratingDebug}
                 >
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Generate Test Grid
+                  <Sparkles className="mr-1 h-3 w-3" />
+                  {isGeneratingDebug ? "Creating test grid..." : "Generate test grid"}
                 </Button>
-             </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed px-3 py-3 text-[10px] text-muted-foreground">
+                UV tools will appear after the current product finishes loading.
+              </div>
+            )}
+
+            <div className="space-y-3 rounded-xl border bg-background px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label htmlFor="back-texture" className="text-xs font-medium">
+                    Apply generated texture to the back
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Turn this on only when you want the AI texture mirrored onto
+                    the rear panel.
+                  </p>
+                </div>
+                <Switch
+                  id="back-texture"
+                  checked={applyTextureToBack}
+                  onCheckedChange={setApplyTextureToBack}
+                  className="scale-75 origin-right"
+                />
+              </div>
+
+              {applyTextureToBack && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground">
+                      Back transform
+                    </Label>
+                    <Select
+                      value={backTextureTransform}
+                      onValueChange={(value) =>
+                        setBackTextureTransform(
+                          value as "mirrorX" | "mirrorY" | "rotate180" | "none",
+                        )
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mirrorX">Mirror left/right</SelectItem>
+                        <SelectItem value="mirrorY">Flip up/down</SelectItem>
+                        <SelectItem value="rotate180">Rotate 180</SelectItem>
+                        <SelectItem value="none">No transform</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground">
+                      Back UV side
+                    </Label>
+                    <Select
+                      value={backUvSide}
+                      onValueChange={(value) => setBackUvSide(value as "left" | "right")}
+                      disabled={!bakeBackFlipIntoTexture}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
+                <div>
+                  <Label htmlFor="bake-back-fix" className="text-xs font-medium">
+                    Bake UV correction into texture
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Helps when the back panel is flipped on certain models.
+                  </p>
+                </div>
+                <Switch
+                  id="bake-back-fix"
+                  checked={bakeBackFlipIntoTexture}
+                  onCheckedChange={setBakeBackFlipIntoTexture}
+                  disabled={!applyTextureToBack}
+                  className="scale-75 origin-right"
+                />
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Advanced Model Settings (Back Panel, etc) */}
-        <details className="text-xs group border rounded-lg bg-card mb-3">
-             <summary className="px-3 py-2 font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center justify-between select-none list-none">
-                 <span>Advanced Model Settings</span>
-                 <span className="opacity-50 group-open:rotate-180 transition-transform">▼</span>
-             </summary>
-             <div className="px-3 pb-3 pt-1 space-y-3 border-t bg-muted/30">
-                 <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <Label htmlFor="back-texture" className="text-xs font-medium">Apply to Back</Label>
-                        <span className="text-[10px] text-muted-foreground">Include rear design</span>
-                      </div>
-                      <Switch
-                        id="back-texture"
-                        checked={applyTextureToBack}
-                        onCheckedChange={setApplyTextureToBack}
-                        className="scale-75 origin-right"
-                      />
-                 </div>
-
-                 {applyTextureToBack && (
-                     <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1">
-                         <div className="space-y-1">
-                             <Label className="text-[10px]">Back Flip (3D)</Label>
-                            <Select
-                              value={backTextureTransform}
-                              onValueChange={(v) =>
-                                setBackTextureTransform(
-                                  v as "mirrorX" | "mirrorY" | "rotate180" | "none",
-                                )
-                              }
-                            >
-                              <SelectTrigger className="h-7 text-[10px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="mirrorX">Mirror (L-R)</SelectItem>
-                                <SelectItem value="mirrorY">Flip (U-D)</SelectItem>
-                                <SelectItem value="rotate180">Rotate 180</SelectItem>
-                                <SelectItem value="none">None</SelectItem>
-                              </SelectContent>
-                            </Select>
-                         </div>
-                         <div className="space-y-1">
-                            <Label className="text-[10px]">Back Side (UV)</Label>
-                            <Select
-                              value={backUvSide}
-                              onValueChange={(v) => setBackUvSide(v as "left" | "right")}
-                              disabled={!bakeBackFlipIntoTexture}
-                            >
-                              <SelectTrigger className="h-7 text-[10px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="left">Left</SelectItem>
-                                <SelectItem value="right">Right</SelectItem>
-                              </SelectContent>
-                            </Select>
-                         </div>
-                     </div>
-                 )}
-                 
-                 {/* Bake Fix Toggle */}
-                  <div className="flex items-center justify-between pt-1">
-                      <Label htmlFor="bake-back-fix" className="text-[10px] text-muted-foreground">Bake UV Layout Fix</Label>
-                      <Switch
-                        id="bake-back-fix"
-                        checked={bakeBackFlipIntoTexture}
-                        onCheckedChange={setBakeBackFlipIntoTexture}
-                         disabled={!applyTextureToBack}
-                        className="scale-75 origin-right"
-                      />
-                 </div>
-             </div>
         </details>
-      </div>
+      </section>
 
-       {/* Texture Generators */}
-      <div className="rounded-lg border bg-amber-50/70 px-2.5 py-2 text-[10px] text-amber-900">
-        If AI output looks wrong or fails, please try again. A second generation usually fixes it.
-      </div>
-
-      <details className="group border rounded-lg bg-card" open={showGenerators}>
-        <summary
-          className="px-3 py-2 text-xs font-semibold cursor-pointer flex items-center justify-between select-none list-none"
-          onClick={(e) => {
-            e.preventDefault();
-            setShowGenerators((prev) => !prev);
-          }}
-        >
-          <span className="flex items-center gap-1.5">
-            <Wand2 className="w-3.5 h-3.5 text-purple-600" />
-            AI Generators
-          </span>
-          <span className="opacity-50 group-open:rotate-180 transition-transform">▼</span>
-        </summary>
-
-        {showGenerators && (
-          <div className="px-3 pb-3 pt-1 space-y-3 border-t">
-            <div>
-              <h3 className="text-[11px] font-semibold mb-1.5 flex items-center gap-1.5 text-purple-600">
-                <Wand2 className="w-3.5 h-3.5" />
-                AI Design Generator
-              </h3>
-              <AITextureGenerator onTextureGenerated={handleGeneratedTexture} />
-            </div>
-
-            <div className="pt-2 border-t">
-              <h3 className="text-[11px] font-semibold mb-1.5 flex items-center gap-1.5 text-indigo-600">
-                <Sparkles className="w-3.5 h-3.5" />
-                Image Generator
-              </h3>
-              <AIImageGenerator />
-            </div>
+      <section className="rounded-2xl border bg-card p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Wand2 className="h-4 w-4" />
           </div>
-        )}
-      </details>
+          <div>
+            <h3 className="text-sm font-semibold">Full garment texture</h3>
+            <p className="text-xs text-muted-foreground">
+              Generate a complete texture that follows the current UV layout.
+            </p>
+          </div>
+        </div>
+        <AITextureGenerator onTextureGenerated={handleGeneratedTexture} />
+      </section>
 
-      {/* Generated Layers List - Compact */}
-      {aiLayers.length > 0 && (
-        <div className="space-y-2 pt-2 border-t">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Saved Designs ({aiLayers.length})
-          </h3>
-          <div className="grid gap-2 grid-cols-2">
+      <section className="rounded-2xl border bg-card p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold">Placed graphic</h3>
+            <p className="text-xs text-muted-foreground">
+              Generate a single image, review it, then place it on the design.
+            </p>
+          </div>
+        </div>
+        <AIImageGenerator />
+      </section>
+
+      <section className="rounded-2xl border bg-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Saved AI layers</h3>
+            <p className="text-xs text-muted-foreground">
+              Select a layer to adjust it or reorder it with the layer controls.
+            </p>
+          </div>
+          <div className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+            {aiLayers.length}
+          </div>
+        </div>
+
+        {aiLayers.length > 0 ? (
+          <div className="space-y-2">
             {aiLayers.map((layer) => (
               <div
                 key={layer.id}
-                className="group relative flex items-center gap-2 p-1.5 rounded-lg border bg-card hover:border-primary/50 transition-all cursor-pointer"
-                onClick={() => setSelectedTextureLayerId(layer.id)}
+                className="flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors hover:border-primary/40"
               >
-                <div className="w-8 h-8 rounded bg-muted flex-shrink-0 overflow-hidden border">
-                  {layer.imageUrl && (
-                    <img
-                      src={layer.imageUrl}
-                      alt={layer.name}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium truncate">{layer.name}</p>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity px-1">
-                   <LayerControls layerId={layer.id} compact />
-                </div>
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  onClick={() => setSelectedTextureLayerId(layer.id)}
+                >
+                  <div className="h-10 w-10 overflow-hidden rounded-lg border bg-muted">
+                    {layer.imageUrl && (
+                      <img
+                        src={layer.imageUrl}
+                        alt={layer.name}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium">{layer.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Click to edit this layer
+                    </p>
+                  </div>
+                </button>
+
+                <LayerControls layerId={layer.id} compact />
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-xl border border-dashed px-4 py-6 text-center">
+            <p className="text-xs font-medium">No AI layers yet</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Generate a texture or graphic above and it will show up here.
+            </p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
