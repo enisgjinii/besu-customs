@@ -42,12 +42,67 @@ export function clearMaterialTextureCache(): void {
 // Parse material name to get display name
 function parseMaterialName(name: string, modelUrl?: string): string {
   const lowerName = name.toLowerCase();
+  const lowerModelUrl = modelUrl?.toLowerCase() || "";
 
   // Model-specific overrides
   if (modelUrl) {
+    // Soccer Jersey Crew Neck specific material mappings
+    if (lowerModelUrl.includes("soccer-jersey-crew-neck")) {
+      if (/^lambert[\s._-]*2\b/.test(lowerName)) return "Front and Back";
+      if (/^lambert[\s._-]*4\b/.test(lowerName)) return "Inside Collar";
+      if (/^lambert[\s._-]*3\b/.test(lowerName)) return "Collar";
+    }
+
+    // Soccer Jersey V-Neck specific material mappings
     if (
-      modelUrl.includes("basketball-jersey-top-and-long-shorts") ||
-      modelUrl.includes("basketball-jersey-and-shorts")
+      lowerModelUrl.includes("soccer-jersey-v-neck") ||
+      lowerModelUrl.includes("soccer_jersey_v_neck_combined_fixed") ||
+      lowerModelUrl.includes("soccer_jersey_v_neck_separated_fixed")
+    ) {
+      if (name === "Soccer_Outfit_Kit_01_1002") return "Shorts";
+      if (/^lambert[\s._-]*2\b/.test(lowerName)) return "Front and Back";
+      if (/^lambert[\s._-]*4\b/.test(lowerName)) return "Inside Collar";
+      if (/^lambert[\s._-]*3\b/.test(lowerName)) return "Collar";
+    }
+
+    // Flag Football Top with Hoodie (supports _UV_MAP_v2 variant)
+    if (lowerModelUrl.includes("flag-football-top-with-hoodie")) {
+      const compact = lowerName.replace(/[^a-z0-9]/g, "");
+
+      // Remove cord ends (no visible color impact)
+      if (/cord[\s_\-]*end/i.test(name) || compact.includes("cordend")) {
+        return "HIDDEN";
+      }
+
+      if (lowerName.includes("10070542") || compact === "fabric") {
+        return "Football Jersey Main Color";
+      }
+
+      if (lowerName.includes("tapefabric")) return "Zipper Outline Color";
+      if (lowerName.includes("teeth")) return "Zipper Teeth Color";
+      if (lowerName.includes("slider")) return "Zipper Slider Color";
+      if (lowerName.includes("puller")) return "Zipper Puller Color";
+
+      if (lowerName.includes("x_1") || lowerName.includes("x 1") || compact.startsWith("x110070714")) {
+        return "Neck Collar, Top of Hoodie, and Side of Jersey Stitching Color";
+      }
+      if (lowerName.includes("x_2") || lowerName.includes("x 2") || compact.startsWith("x210070836")) {
+        return "Hoodie Face Area Stitching Color";
+      }
+
+      if (lowerName.includes("10235055")) return "Zipper Top Stopper Color Left Side";
+      if (lowerName.includes("10235057")) return "Zipper Top Stopper Color Right Side";
+      if (lowerName.includes("10235075")) return "Zipper Bottom Stopper Color Left Side";
+      if (lowerName.includes("10235077")) return "Zipper Bottom Stopper Color Right Side";
+
+      if (lowerName.includes("2587") || compact === "fabric1") return "Shorts Waist Color";
+      if (lowerName.includes("2590") || compact === "fabric2") return "Shorts Back Color";
+      if (/^material([\s._-]*0*0*1)?$/i.test(name) || compact === "material") return "Shorts Front Color";
+    }
+
+    if (
+      lowerModelUrl.includes("basketball-jersey-top-and-long-shorts") ||
+      lowerModelUrl.includes("basketball-jersey-and-shorts")
     ) {
       // Buttons should be hidden
       if (lowerName.includes("button")) return "HIDDEN";
@@ -76,7 +131,7 @@ function parseMaterialName(name: string, modelUrl?: string): string {
     }
 
     // Volleyball specific
-    if (modelUrl.includes("volleyball")) {
+    if (lowerModelUrl.includes("volleyball")) {
       if (lowerName.includes("body")) return "Body";
       if (lowerName.includes("sleeve")) return "Sleeves";
     }

@@ -1,0 +1,402 @@
+{
+  "generatedAt": "2026-03-31",
+  "project": "besu-customs",
+  "purpose": "Reference for how raw mesh/material names are renamed into user-facing part names.",
+  "sources": [
+    "lib/material-name-parser.ts",
+    "lib/three-material-utils.ts",
+    "components/three-scene.tsx"
+  ],
+  "pipelines": {
+    "parserA_materialNameParserTs": {
+      "file": "lib/material-name-parser.ts",
+      "ruleOrder": "first-match-wins",
+      "rules": [
+        {
+          "id": 1,
+          "when": "name contains 'body'",
+          "result": {
+            "category": "Body",
+            "partType": "body",
+            "priorityBase": 10
+          },
+          "subRules": [
+            {
+              "when": "contains '_f' or 'front'",
+              "displayName": "Body Front",
+              "defaultColor": "#3b82f6",
+              "priority": 11
+            },
+            {
+              "when": "contains '_b' or 'back'",
+              "displayName": "Body Back",
+              "defaultColor": "#ef4444",
+              "priority": 12
+            },
+            {
+              "when": "contains '_l' or 'left'",
+              "displayName": "Body Left",
+              "defaultColor": "#10b981",
+              "priority": 13
+            },
+            {
+              "when": "contains '_r' or 'right'",
+              "displayName": "Body Right",
+              "defaultColor": "#f59e0b",
+              "priority": 14
+            },
+            {
+              "when": "matches /Body[_\\s]*(\\d+)/i",
+              "displayName": "Body Part <n>",
+              "defaultColor": "rotating palette via getColorByIndex(n-1)"
+            },
+            {
+              "when": "no sub-match",
+              "displayName": "Body",
+              "defaultColor": "#3b82f6"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "when": "name contains 'fabric'",
+          "result": {
+            "category": "Fabric",
+            "partType": "fabric",
+            "priorityBase": 20
+          },
+          "subRules": [
+            {
+              "when": "matches /FABRIC[_\\s]*(\\d+)/i",
+              "displayName": "Fabric <n>",
+              "defaultColor": "rotating palette via getColorByIndex(n-1)",
+              "priority": "20 + n"
+            },
+            {
+              "when": "no number",
+              "displayName": "Fabric",
+              "defaultColor": "#6366f1"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "when": "contains 'sleeve'",
+          "displayName": "Sleeves",
+          "category": "Sleeves",
+          "partType": "sleeve",
+          "defaultColor": "#8b5cf6",
+          "priority": 30
+        },
+        {
+          "id": 4,
+          "when": "contains 'collar'",
+          "displayName": "Collar",
+          "category": "Collar",
+          "partType": "collar",
+          "defaultColor": "#ec4899",
+          "priority": 40
+        },
+        {
+          "id": 5,
+          "when": "contains 'zipper' or 'slider'",
+          "category": "Hardware",
+          "partType": "zipper",
+          "priority": 90,
+          "subRules": [
+            {
+              "when": "contains 'teeth'",
+              "displayName": "Zipper Teeth",
+              "defaultColor": "#94a3b8"
+            },
+            {
+              "when": "contains 'slider'",
+              "displayName": "Zipper Slider",
+              "defaultColor": "#64748b"
+            },
+            {
+              "when": "fallback",
+              "displayName": "Zipper",
+              "defaultColor": "#71717a"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "when": "contains 'button'",
+          "category": "Hardware",
+          "partType": "button",
+          "priority": 91,
+          "subRules": [
+            {
+              "when": "contains 'hole'",
+              "displayName": "Buttonhole",
+              "defaultColor": "#1e293b"
+            },
+            {
+              "when": "fallback",
+              "displayName": "Button",
+              "defaultColor": "#334155"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "when": "lowercased name startsWith 'ble'",
+          "displayName": "Binding/Edge",
+          "category": "Trim",
+          "partType": "binding",
+          "defaultColor": "#14b8a6",
+          "priority": 50
+        },
+        {
+          "id": 8,
+          "when": "matches /^m_\\d+/i",
+          "displayName": "Hardware",
+          "category": "Hardware",
+          "partType": "hardware",
+          "defaultColor": "#78716c",
+          "priority": 92
+        },
+        {
+          "id": 9,
+          "when": "name is only digits (e.g. '79499')",
+          "displayName": "Part <rawNumber>",
+          "category": "Other",
+          "partType": "misc",
+          "defaultColor": "#a8a29e",
+          "priority": 95
+        },
+        {
+          "id": 10,
+          "when": "matches /^material\\.?\\d*/i",
+          "category": "Material",
+          "partType": "material",
+          "subRules": [
+            {
+              "when": "contains a number",
+              "displayName": "Material <n>",
+              "defaultColor": "rotating palette via getColorByIndex(n-1)",
+              "priority": "60 + n"
+            },
+            {
+              "when": "no number",
+              "displayName": "Material",
+              "defaultColor": "#6b7280",
+              "priority": 60
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "when": "fallback",
+          "displayName": "name with trailing _<digits> removed",
+          "category": "Other",
+          "partType": "unknown",
+          "defaultColor": "#9ca3af",
+          "priority": 100
+        }
+      ],
+      "palette_getColorByIndex": [
+        "#3b82f6",
+        "#ef4444",
+        "#10b981",
+        "#f59e0b",
+        "#8b5cf6",
+        "#ec4899",
+        "#14b8a6",
+        "#f97316",
+        "#06b6d4",
+        "#84cc16",
+        "#a855f7",
+        "#f43f5e"
+      ]
+    },
+    "parserB_threeMaterialUtilsParseMaterialName": {
+      "file": "lib/three-material-utils.ts",
+      "modelSpecificOverrides": {
+        "appliesWhenModelUrlContains": [
+          "basketball-jersey-top-and-long-shorts",
+          "basketball-jersey-and-shorts"
+        ],
+        "rules": [
+          {
+            "when": "lowerName contains 'button'",
+            "displayName": "HIDDEN",
+            "notes": "section is skipped by extractor"
+          },
+          {
+            "when": "raw name contains '2842'",
+            "displayName": "Pants Waist Trim"
+          },
+          {
+            "when": "raw name contains '2845'",
+            "displayName": "Back of Shorts"
+          },
+          {
+            "when": "raw name contains '2848'",
+            "displayName": "Front of Shorts"
+          },
+          {
+            "when": "lowerName contains 'body_f' or 'front'",
+            "displayName": "Front of Jersey"
+          },
+          {
+            "when": "lowerName contains 'body_b' or 'back'",
+            "displayName": "Back of Jersey"
+          },
+          {
+            "when": "raw name contains '66694'",
+            "displayName": "Shorts Side Panels"
+          },
+          {
+            "when": "lowerName contains 'ble'",
+            "displayName": "Jersey Sleeve & Collar Trim"
+          },
+          {
+            "when": "lowerName contains 'fabric_1' or equals 'fabric 1'",
+            "displayName": "Shorts"
+          },
+          {
+            "when": "lowerName contains 'waist'",
+            "displayName": "Waistband"
+          }
+        ]
+      },
+      "volleyballOverrides": {
+        "appliesWhenModelUrlContains": ["volleyball"],
+        "rules": [
+          {
+            "when": "lowerName contains 'body'",
+            "displayName": "Body"
+          },
+          {
+            "when": "lowerName contains 'sleeve'",
+            "displayName": "Sleeves"
+          }
+        ]
+      },
+      "soccerCrewNeckOverrides": {
+        "appliesWhenModelUrlContains": [
+          "soccer-jersey-crew-neck"
+        ],
+        "rules": [
+          {
+            "when": "material name matches /^lambert[\\s._-]*2\\b/i",
+            "displayName": "Front and Back"
+          },
+          {
+            "when": "material name matches /^lambert[\\s._-]*4\\b/i",
+            "displayName": "Inside Collar"
+          },
+          {
+            "when": "material name matches /^lambert[\\s._-]*3\\b/i",
+            "displayName": "Collar"
+          }
+        ]
+      },
+      "strictOverridesMap": {
+        "fabric_front": "Front Body",
+        "fabric_back": "Back Body",
+        "fabric_sleeve_l": "Left Sleeve",
+        "fabric_sleeve_r": "Right Sleeve",
+        "collar_1": "Collar",
+        "trim_neck": "Neck Trim",
+        "fabric 1": "Main Body",
+        "fabric_1": "Main Body",
+        "fabic 1": "Main Body",
+        "material": "Base",
+        "default_button": "Button"
+      },
+      "cleanupNormalization": [
+        "remove keywords: generated|instance|clone|copy",
+        "remove prefixes: mat_|material_|mtl_|mesh_|obj_",
+        "remove trailing numeric suffixes: /[._-]\\d+$/",
+        "replace separators . _ - with spaces",
+        "split camelCase with /([a-z])([A-Z])/",
+        "split alpha+digit boundary with /([a-zA-Z])(\\d)/",
+        "remove material keywords: lambert|phong|standard|pbr|blinn",
+        "title-case each word"
+      ],
+      "finalTokenReplacements": {
+        "L": "Left",
+        "R": "Right",
+        "F": "Front",
+        "B": "Back"
+      },
+      "fallback": "If empty after cleanup, returns 'Part'."
+    }
+  },
+  "sectionExtractionAndMatching": {
+    "extractSectionsFromThreeModel": {
+      "file": "lib/three-material-utils.ts",
+      "dedupe": "one section per unique material.name",
+      "skipRules": [
+        "if displayName is 'HIDDEN', skip section"
+      ],
+      "sectionFields": [
+        "id = material.name",
+        "originalName = material.name",
+        "name = parsed displayName",
+        "category = inferred (Jersey/Shorts for basketball models, otherwise Other)",
+        "color = material color or #ffffff"
+      ]
+    },
+    "applyMaterialsToThreeModelMatching": {
+      "file": "lib/three-material-utils.ts",
+      "matchingOrder": [
+        "originalName === material.name",
+        "id === material.name",
+        "material.name includes section.originalName",
+        "if not found: match against mesh child.name (exact/includes both directions)"
+      ]
+    },
+    "threeSceneApiExtractedMerge": {
+      "file": "components/three-scene.tsx",
+      "mergeIntent": "keep API-friendly names but merge real extracted colors",
+      "mergeKeys": [
+        "extracted.id === apiSection.id",
+        "extracted.originalName === apiSection.originalName",
+        "extracted.id === apiSection.originalName"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "input": "Body_F_301116",
+      "parserAOutput": "Body Front"
+    },
+    {
+      "input": "FABRIC_2_79203",
+      "parserAOutput": "Fabric 2"
+    },
+    {
+      "input": "M_00005",
+      "parserAOutput": "Hardware"
+    },
+    {
+      "input": "material.003",
+      "parserAOutput": "Material 3"
+    },
+    {
+      "input": "fabric_front",
+      "parserBOutput": "Front Body"
+    },
+    {
+      "input": "Body_B_XXXX (basketball model)",
+      "parserBOutput": "Back of Jersey"
+    },
+    {
+      "input": "lambert2 (soccer-jersey-crew-neck_FIXED.glb)",
+      "parserBOutput": "Front and Back"
+    },
+    {
+      "input": "lambert4 (soccer-jersey-crew-neck_FIXED.glb)",
+      "parserBOutput": "Inside Collar"
+    },
+    {
+      "input": "lambert3 (soccer-jersey-crew-neck_FIXED.glb)",
+      "parserBOutput": "Collar"
+    }
+  ]
+}

@@ -85,6 +85,7 @@ export async function GET(request: Request) {
   }
 
   const relative = modelParam.replace(/^\//, "").replace(/\\/g, "/");
+  const modelParamLower = modelParam.toLowerCase();
   const baseUrl = `${url.protocol}//${url.host}`;
   const fetchUrl = `${baseUrl}/${relative}`;
 
@@ -274,6 +275,12 @@ export async function GET(request: Request) {
 
     // Soccer Jersey Crew Neck renaming
     if (modelParam.includes("soccer-jersey-crew-neck.glb") || modelParam.includes("soccer-jersey-crew-neck_FIXED.glb")) {
+      // Newer exports may use generic lambert material names
+      const lowerOriginal = originalName.toLowerCase();
+      if (/^lambert[\s._-]*2\b/.test(lowerOriginal)) return "Front and Back";
+      if (/^lambert[\s._-]*4\b/.test(lowerOriginal)) return "Inside Collar";
+      if (/^lambert[\s._-]*3\b/.test(lowerOriginal)) return "Collar";
+
       if (originalName === "Body_B_301116") return "Jersey Back Color";
       if (originalName === "Body_F_279881") return "Jersey Front Color";
       if (originalName === "Collar_Stand_441436") return "Jersey Collar Color";
@@ -282,6 +289,15 @@ export async function GET(request: Request) {
 
     // Soccer Jersey V Neck renaming
     if (modelParam.includes("soccer-jersey-v-neck.glb") || modelParam.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb") || modelParam.includes("soccer_jersey_v_neck_SEPARATED_FIXED.glb")) {
+      // Combined V-neck export naming
+      if (originalName === "Soccer_Outfit_Kit_01_1002") return "Shorts";
+
+      // Generic lambert material names (same convention as crew-neck)
+      const lowerOriginal = originalName.toLowerCase();
+      if (/^lambert[\s._-]*2\b/.test(lowerOriginal)) return "Front and Back";
+      if (/^lambert[\s._-]*4\b/.test(lowerOriginal)) return "Inside Collar";
+      if (/^lambert[\s._-]*3\b/.test(lowerOriginal)) return "Collar";
+
       if (originalName === "Body_14111705") return "Jersey Front Color";
       if (originalName === "Body_14135701") return "Jersey Back Color";
       if (originalName === "Body_14258581") return "Jersey V-Neck Color";
@@ -390,9 +406,9 @@ export async function GET(request: Request) {
 
     // Volleyball Shorts Spandex (Small Length) renaming
     if (modelParam.includes("volleyball-shorts-spandex.glb") || modelParam.includes("volleyball-shorts-spandex_FIXED.glb") || modelParam.includes("volleyball-shorts-spandex_v2_FIXED.glb")) {
-      if (originalName === "FABRIC 1_2587") return "Front of Shorts Color";
-      if (originalName === "FABRIC 1_2590") return "Waist of Shorts Color";
-      if (originalName === "FABRIC 1_2593") return "Back of Shorts Color";
+      if (originalName === "FABRIC 1_2587") return "Front Panel Color";
+      if (originalName === "FABRIC 1_2590") return "Waistband Color";
+      if (originalName === "FABRIC 1_2593") return "Back Panel Color";
     }
 
     // Volleyball Spandex (Medium Length) renaming
@@ -409,34 +425,47 @@ export async function GET(request: Request) {
       if (originalName === "FABRIC_1_2587") return "Shorts Waist Color"; // FABRIC_1_2587 is Waist
     }
 
-    // Flag Football Top with Hoodie renaming
-    if (modelParam.includes("flag-football-top-with-hoodie.glb")) {
-      if (originalName === "FABRIC_1_10070542") return "Jersey Main Color";
-      if (originalName === "Zipper_4_TapeFabric_10234985")
-        return "Zipper Tape Color";
-      if (originalName === "Zipper_4_Teeth_10235089")
-        return "Zipper Teeth Color";
-      if (originalName === "Zipper_4_Slider_10235018")
-        return "Zipper Slider Color";
-      if (originalName === "Zipper_4_Puller_10235037")
-        return "Zipper Puller Color";
-      if (originalName === "Zipper_4_TopStopper_10235055")
-        return "Zipper Top Stoppers Color";
-      if (originalName === "Zipper_4_TopStopper_10235057")
-        return "Zipper Top Stoppers Color";
-      if (originalName === "Zipper_4_BottomStopper_10235075")
-        return "Zipper Bottom Stoppers Color";
-      if (originalName === "Zipper_4_BottomStopper_10235077")
-        return "Zipper Bottom Stoppers Color";
-      if (originalName === "FABRIC_1_2587") return "Shorts Waist Color";
-      if (originalName === "FABRIC_1_2590") return "Shorts Back Color";
-      if (originalName === "Material_001") return "Shorts Front Color";
-      if (originalName === "X_1_10070714")
-        return "Jersey & Hoodie Stitching Color";
-      if (originalName === "X_2_10070836") return "Hoodie Face Stitching Color";
-      // Remove cord ends as they don't change anything visually
-      if (originalName === "Cord_end_01_10233876") return null;
-      if (originalName === "Cord_end_01_10233907") return null;
+    // Flag Football Top with Hoodie renaming (supports .glb and _UV_MAP_v2.glb variants)
+    if (modelParamLower.includes("flag-football-top-with-hoodie")) {
+      const lowerOriginal = originalName.toLowerCase();
+      const compactOriginal = lowerOriginal.replace(/[^a-z0-9]/g, "");
+
+      // Remove cord ends - no visible color impact in configurator
+      if (/cord[\s_\-]*end/i.test(originalName) || compactOriginal.includes("cordend")) {
+        return null;
+      }
+
+      // Main jersey color
+      if (lowerOriginal.includes("10070542") || compactOriginal === "fabric") {
+        return "Football Jersey Main Color";
+      }
+
+      // Zipper parts
+      if (lowerOriginal.includes("tapefabric")) return "Zipper Outline Color";
+      if (lowerOriginal.includes("teeth")) return "Zipper Teeth Color";
+      if (lowerOriginal.includes("slider")) return "Zipper Slider Color";
+      if (lowerOriginal.includes("puller")) return "Zipper Puller Color";
+
+      // Stitching groups
+      if (lowerOriginal.includes("x_1") || lowerOriginal.includes("x 1") || compactOriginal.startsWith("x110070714")) {
+        return "Neck Collar, Top of Hoodie, and Side of Jersey Stitching Color";
+      }
+      if (lowerOriginal.includes("x_2") || lowerOriginal.includes("x 2") || compactOriginal.startsWith("x210070836")) {
+        return "Hoodie Face Area Stitching Color";
+      }
+
+      // Top stoppers (left/right)
+      if (lowerOriginal.includes("10235055")) return "Zipper Top Stopper Color Left Side";
+      if (lowerOriginal.includes("10235057")) return "Zipper Top Stopper Color Right Side";
+
+      // Bottom stoppers (left/right)
+      if (lowerOriginal.includes("10235075")) return "Zipper Bottom Stopper Color Left Side";
+      if (lowerOriginal.includes("10235077")) return "Zipper Bottom Stopper Color Right Side";
+
+      // Shorts colors
+      if (lowerOriginal.includes("2587") || compactOriginal === "fabric1") return "Shorts Waist Color";
+      if (lowerOriginal.includes("2590") || compactOriginal === "fabric2") return "Shorts Back Color";
+      if (/^material([\s._-]*0*0*1)?$/i.test(originalName) || compactOriginal === "material") return "Shorts Front Color";
     }
 
     // Backpack renaming
@@ -559,7 +588,10 @@ export async function GET(request: Request) {
 
     // Soccer Jersey V Neck categories
     if (modelParam.includes("soccer-jersey-v-neck.glb") || modelParam.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb") || modelParam.includes("soccer_jersey_v_neck_SEPARATED_FIXED.glb")) {
-      if (originalName.includes("FABRIC_1_")) {
+      if (
+        originalName.includes("FABRIC_1_") ||
+        originalName === "Soccer_Outfit_Kit_01_1002"
+      ) {
         return "Soccer Shorts Colors";
       }
       return "Soccer Jersey V Neck Colors";
@@ -626,7 +658,7 @@ export async function GET(request: Request) {
     }
 
     // Flag Football Top with Hoodie categories
-    if (modelParam.includes("flag-football-top-with-hoodie.glb")) {
+    if (modelParamLower.includes("flag-football-top-with-hoodie")) {
       if (originalName.includes("FABRIC") && !originalName.includes("Zipper"))
         return "Jersey & Shorts Colors";
       if (originalName === "Material_001") return "Jersey & Shorts Colors";
@@ -717,15 +749,19 @@ export async function GET(request: Request) {
       return orderedSections;
     }
 
-    if (modelParam.includes("flag-football-top-with-hoodie.glb")) {
+    if (modelParamLower.includes("flag-football-top-with-hoodie")) {
       const reordered = [...sections];
 
       // Define the desired order: Jersey Main, Shorts Front, Shorts Back, Shorts Waist, then others
       const desiredOrder = [
         "FABRIC_1_10070542", // Jersey Main Color
+        "FABRIC", // Jersey Main Color (generic)
         "Material_001", // Shorts Front Color
+        "Material", // Shorts Front Color (generic)
         "FABRIC_1_2590", // Shorts Back Color
+        "FABRIC_2", // Shorts Back Color (generic)
         "FABRIC_1_2587", // Shorts Waist Color
+        "FABRIC_1", // Shorts Waist Color (generic)
       ];
 
       const orderedSections: MaterialSection[] = [];
@@ -894,6 +930,9 @@ export async function GET(request: Request) {
         "Body_B_301116", // Jersey Back Color
         "Sleeves_365053", // Jersey Sleeves Color
         "Collar_Stand_441436", // Jersey Collar Color
+        "lambert2", // Front and Back
+        "lambert3", // Collar
+        "lambert4", // Inside Collar
       ];
 
       const orderedSections: MaterialSection[] = [];
@@ -927,6 +966,10 @@ export async function GET(request: Request) {
         "Body_14135701", // Jersey Back Color
         "Sleeves_14199335", // Jersey Arm Sleeve Color (moved up for better UX)
         "Body_14258581", // Jersey V-Neck Color
+        "lambert2", // Front and Back
+        "lambert3", // Collar
+        "lambert4", // Inside Collar
+        "Soccer_Outfit_Kit_01_1002", // Shorts
         "FABRIC_1_14406325", // Shorts Front Color
         "FABRIC_1_14482374", // Shorts Back Color
         "FABRIC_1_14572429", // Shorts Waist Color
