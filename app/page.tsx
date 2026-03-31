@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { ConfiguratorWizard } from "@/components/configurator-wizard";
 import { LayerControlsOverlay } from "@/components/layer-controls-overlay";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
 
 // Dynamic import for Three.js Scene component
@@ -33,9 +33,14 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   const sections = useConfiguratorStore((state) => state.sections);
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const setCurrentModelUrl = useConfiguratorStore(
+    (state) => state.setCurrentModelUrl,
+  );
   const setSelectedSection = useConfiguratorStore(
     (state) => state.setSelectedSection,
   );
+  const didRefreshPersistedModelRef = useRef(false);
 
   // Detect mobile viewport (debounced to avoid thrashing)
   useEffect(() => {
@@ -63,6 +68,17 @@ export default function Home() {
       setSelectedSection(sections[0].id);
     }
   }, [sections, setSelectedSection]);
+
+  // Refresh persisted model sections once on first mount so names/categories come
+  // from the latest API mappings instead of stale persisted section data.
+  useEffect(() => {
+    if (!mounted || didRefreshPersistedModelRef.current) return;
+
+    didRefreshPersistedModelRef.current = true;
+    if (currentModelUrl) {
+      setCurrentModelUrl(currentModelUrl);
+    }
+  }, [mounted, currentModelUrl, setCurrentModelUrl]);
 
   // Prevent flash during hydration
   if (!mounted) {

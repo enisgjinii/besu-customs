@@ -570,7 +570,78 @@ const loadActiveProducts = async (): Promise<Product[]> => {
 
 export const useConfiguratorStore = create<ConfiguratorState>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      const mergeSectionsWithExisting = (
+        incomingSections: MaterialSection[],
+        existingSections: MaterialSection[],
+      ): MaterialSection[] => {
+        if (existingSections.length === 0) return incomingSections;
+
+        return incomingSections.map((incoming) => {
+          const existing = existingSections.find(
+            (section) =>
+              section.originalName === incoming.originalName ||
+              section.id === incoming.id ||
+              section.id === incoming.originalName ||
+              section.originalName === incoming.id,
+          );
+
+          if (!existing) return incoming;
+
+          return {
+            ...incoming,
+            color: existing.color ?? incoming.color,
+            roughness: existing.roughness ?? incoming.roughness,
+            metalness: existing.metalness ?? incoming.metalness,
+            wireframe: existing.wireframe ?? incoming.wireframe,
+            customTexture: existing.customTexture,
+            trimDesign: existing.trimDesign,
+            trimColor: existing.trimColor,
+            combinedOriginalNames:
+              existing.combinedOriginalNames ?? incoming.combinedOriginalNames,
+            combinedMaterialIds:
+              existing.combinedMaterialIds ?? incoming.combinedMaterialIds,
+            gradient: existing.gradient ?? incoming.gradient,
+          };
+        });
+      };
+
+      const loadSectionsForModel = async (modelUrl: string) => {
+        try {
+          const resp = await fetch(
+            `/api/materials?model=${encodeURIComponent(modelUrl)}`,
+          );
+          if (resp.ok) {
+            const json = await resp.json();
+            if (json?.sections && json.sections.length > 0) {
+              // Ignore stale responses from a previously selected or previewed model.
+              if (get().currentModelUrl !== modelUrl) return;
+
+              const mergedSections = mergeSectionsWithExisting(
+                json.sections,
+                get().sections,
+              );
+
+              console.log("📋 Loaded sections from API:", json.sections.length);
+              set({
+                sections: mergedSections,
+                sectionsFromApi: true,
+                sectionsLoading: false,
+              });
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn("⚠️ Failed to fetch sections from API:", err);
+        }
+
+        // No precomputed sections — leave sections empty so ModelLoader will extract.
+        if (get().currentModelUrl === modelUrl) {
+          set({ sectionsLoading: false });
+        }
+      };
+
+      return ({
       products: initialProducts,
       selectedProductId: null, // Start with no model selected
       setProducts: (products: Product[]) => set({ products }),
@@ -601,41 +672,40 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
             completeUVMask: null, // Clear old UV mask immediately
           });
 
-          // Try to fetch precomputed material sections for this model
-          (async () => {
-            try {
-              const resp = await fetch(
-                `/api/materials?model=${encodeURIComponent(product.modelUrl!)}`,
-              );
-              if (resp.ok) {
-                const json = await resp.json();
-                if (json?.sections && json.sections.length > 0) {
-                  // Populate sections from API - these have better names
-                  console.log(
-                    "📋 Loaded sections from API:",
-                    json.sections.length,
-                  );
-                  set({
-                    sections: json.sections,
-                    sectionsFromApi: true,
-                    sectionsLoading: false,
-                  });
-                  return;
-                }
-              }
-            } catch (err) {
-              console.warn("⚠️ Failed to fetch sections from API:", err);
-            }
-            // No precomputed sections — leave sections empty so ModelLoader will extract
-            // sectionsFromApi stays false
-            set({ sectionsLoading: false });
-          })();
+          void loadSectionsForModel(product.modelUrl);
         } else set({ selectedProductId: id });
       },
 
       currentModelUrl: null,
-      setCurrentModelUrl: (url: string | null) =>
-        set({ currentModelUrl: url, completeUVMap: null, completeUVMask: null }),
+      setCurrentModelUrl: (url: string | null) => {
+        if (!url) {
+          set({
+            currentModelUrl: null,
+            sections: [],
+            sectionsFromApi: false,
+            sectionsLoading: false,
+            completeUVMap: null,
+            completeUVMask: null,
+          });
+          return;
+        }
+
+        const preserveExistingSections =
+          get().currentModelUrl === url && get().sections.length > 0;
+
+        set({
+          currentModelUrl: url,
+          sections: preserveExistingSections ? get().sections : [],
+          sectionsFromApi: preserveExistingSections
+            ? get().sectionsFromApi
+            : false,
+          sectionsLoading: true,
+          completeUVMap: null,
+          completeUVMask: null,
+        });
+
+        void loadSectionsForModel(url);
+      },
 
       sections: [],
       sectionsFromApi: false,
@@ -1080,7 +1150,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       setRoster: (roster) => set({ roster }),
 
       // ensure the store stays valid
-    }),
+    })},
     {
       name: "besu-configurator-storage",
       version: 1,

@@ -1,5 +1,9 @@
 "use client";
-import { useConfiguratorStore, getFallbackProducts } from "@/lib/store";
+import {
+  useConfiguratorStore,
+  getFallbackProducts,
+  type MaterialSection,
+} from "@/lib/store";
 import {
   Select,
   SelectContent,
@@ -27,6 +31,9 @@ export function Step01Apparel() {
   const setCurrentModelUrl = useConfiguratorStore(
     (state) => state.setCurrentModelUrl,
   );
+  const sections = useConfiguratorStore((state) => state.sections);
+  const sectionsFromApi = useConfiguratorStore((state) => state.sectionsFromApi);
+  const setSections = useConfiguratorStore((state) => state.setSections);
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
   );
@@ -38,6 +45,8 @@ export function Step01Apparel() {
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousModelRef = useRef<string | null>(null);
+  const previousSectionsRef = useRef<MaterialSection[] | null>(null);
+  const previousSectionsFromApiRef = useRef(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopyModelName = useCallback(() => {
@@ -64,6 +73,8 @@ export function Step01Apparel() {
         // Store current model before preview (if not already stored)
         if (!previousModelRef.current && currentModelUrl) {
           previousModelRef.current = currentModelUrl;
+          previousSectionsRef.current = sections;
+          previousSectionsFromApiRef.current = sectionsFromApi;
         }
 
         // Debounce the preview to prevent rapid switching
@@ -74,7 +85,7 @@ export function Step01Apparel() {
         }, 150);
       }
     },
-    [currentModelUrl, setCurrentModelUrl],
+    [currentModelUrl, sections, sectionsFromApi, setCurrentModelUrl],
   );
 
   // Restore previous model when hover ends (if not selected)
@@ -89,10 +100,18 @@ export function Step01Apparel() {
       const selectedProduct = products.find((p) => p.id === selectedProductId);
       if (selectedProduct?.modelUrl) {
         setCurrentModelUrl(selectedProduct.modelUrl);
+        if (previousSectionsRef.current) {
+          setSections(
+            previousSectionsRef.current,
+            previousSectionsFromApiRef.current,
+          );
+        }
       }
     }
     previousModelRef.current = null;
-  }, [selectedProductId, products, setCurrentModelUrl]);
+    previousSectionsRef.current = null;
+    previousSectionsFromApiRef.current = false;
+  }, [selectedProductId, products, setCurrentModelUrl, setSections]);
 
   // Preload first few models when dropdown opens
   const handleDropdownOpen = useCallback(
