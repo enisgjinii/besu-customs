@@ -122,7 +122,7 @@ This report documents the comprehensive testing of the **AI Texture Generation**
 
 ---
 
-### Model 13: Standard Bottom Cut, Cuffed ($30)
+### Model 13: Baseball Standard Bottom Cut, Cuffed ($30)
 
 | Front | Right | Back | Left |
 |-------|-------|------|------|

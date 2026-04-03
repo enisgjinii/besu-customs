@@ -1,4 +1,4 @@
-Material Names for Standard bottom cut, cuffed
+Material Names for Baseball Standard Bottom Cut, Cuffed
 ========================
 
 Default_Button_46243

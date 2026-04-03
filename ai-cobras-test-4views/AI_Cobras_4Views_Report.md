@@ -110,7 +110,7 @@
 
 ---
 
-## Model 13 - Standard Bottom Cut, Cuffed
+## Model 13 - Baseball Standard Bottom Cut, Cuffed
 
 | Front | Right | Back | Left |
 |-------|-------|------|------|

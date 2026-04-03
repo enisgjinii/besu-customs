@@ -460,7 +460,7 @@ function generateAllProducts(): Product[] {
     },
     {
       id: "standard-bottom",
-      title: "Standard Bottom Cut, Cuffed",
+      title: "Baseball Standard Bottom Cut, Cuffed",
       modelUrl: "/models/standard-bottom-cut-cuffed.glb",
       category: "Shorts",
     },

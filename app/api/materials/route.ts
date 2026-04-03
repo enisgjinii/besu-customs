@@ -345,6 +345,8 @@ export async function GET(request: Request) {
     if (modelParam.includes("track-and-field-top-crop-top.glb") || modelParam.includes("track-and-field-top-crop-top_FIXED.glb")) {
       if (originalName === "Body_10697153") return "Front of Crop Top Color";
       if (originalName === "Body_10792617") return "Back of Crop Top Color";
+      if (originalName === "Body_14258582") return "Front of Crop Top Color";
+      if (originalName === "Body_14258583") return "Back of Crop Top Color";
     }
 
     // Track and Field Short Sleeve renaming

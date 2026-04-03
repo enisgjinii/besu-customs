@@ -130,6 +130,14 @@ function parseMaterialName(name: string, modelUrl?: string): string {
       if (lowerName.includes("waist")) return "Waistband"; // Keep existing waistband mapping
     }
 
+    // Track and Field Crop Top specific
+    if (lowerModelUrl.includes("track-and-field-top-crop-top")) {
+      if (name === "Body_14258582") return "Front of Crop Top Color";
+      if (name === "Body_14258583") return "Back of Crop Top Color";
+      if (name === "Body_10697153") return "Front of Crop Top Color";
+      if (name === "Body_10792617") return "Back of Crop Top Color";
+    }
+
     // Volleyball specific
     if (lowerModelUrl.includes("volleyball")) {
       if (lowerName.includes("body")) return "Body";

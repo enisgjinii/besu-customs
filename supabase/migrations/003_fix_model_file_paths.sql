@@ -14,7 +14,7 @@ UPDATE models SET file_path = '/models/polo-shirts-long-sleeve.glb' WHERE name =
 UPDATE models SET file_path = '/models/polo-shirts-short-sleeve.glb' WHERE name = 'Polo shirts short sleeve';
 UPDATE models SET file_path = '/models/soccer-jersey-crew-neck.glb' WHERE name = 'Soccer jersey crew neck';
 UPDATE models SET file_path = '/models/soccer-jersey-v-neck.glb' WHERE name = 'Soccer jersey v-neck';
-UPDATE models SET file_path = '/models/standard-bottom-cut-cuffed.glb' WHERE name = 'Standard bottom cut, cuffed';
+UPDATE models SET file_path = '/models/standard-bottom-cut-cuffed.glb' WHERE name = 'Baseball Standard Bottom Cut, Cuffed';
 UPDATE models SET file_path = '/models/track-and-field-compression-shorts.glb' WHERE name = 'Track and field compression shorts';
 UPDATE models SET file_path = '/models/track-and-field-mid-len-gth-shorts.glb' WHERE name = 'Track and field mid-len gth shorts';
 UPDATE models SET file_path = '/models/track-and-field-split-shorts.glb' WHERE name = 'Track and field split shorts';

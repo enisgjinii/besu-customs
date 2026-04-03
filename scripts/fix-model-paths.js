@@ -46,7 +46,7 @@ const filePathUpdates = {
   "Polo Shirts Short Sleeve": "/models/polo-shirts-short-sleeve.glb",
   "Soccer Jersey Crew Neck": "/models/soccer-jersey-crew-neck.glb",
   "Soccer Jersey V-Neck": "/models/soccer-jersey-v-neck.glb",
-  "Standard Bottom Cut, Cuffed": "/models/standard-bottom-cut-cuffed.glb",
+  "Baseball Standard Bottom Cut, Cuffed": "/models/standard-bottom-cut-cuffed.glb",
   "Track and Field Compression Shorts":
     "/models/track-and-field-compression-shorts.glb",
   "Track and Field Mid-Length Shorts":

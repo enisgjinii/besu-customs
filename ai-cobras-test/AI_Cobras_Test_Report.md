@@ -125,10 +125,10 @@ All 28 models were tested successfully. The AI generated and applied textures to
 
 ---
 
-### 13. Standard Bottom Cut, Cuffed
+### 13. Baseball Standard Bottom Cut, Cuffed
 **Status:** ✅ Generated Successfully  
 **Category:** Bottoms  
-![Standard Bottom Cut, Cuffed — Cobras AI Design](13-standard-bottom-cuffed.png)
+![Baseball Standard Bottom Cut, Cuffed — Cobras AI Design](13-standard-bottom-cuffed.png)
 
 ---
 
