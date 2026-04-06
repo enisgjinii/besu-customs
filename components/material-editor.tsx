@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ChevronRight,
   List,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -392,132 +391,7 @@ export function MaterialEditor() {
               )}
             </div>
 
-            {/* Trim Design Options - for jerseys and trim sections */}
-            {!isVolleyballModel &&
-              (selectedSection.category === "Trim Options DEMO" ||
-                selectedSection.category === "Jersey" ||
-                selectedSection.category === "Piping/Trim") && (
-                <div className="border-t border-border/50 pt-4">
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium mb-3">
-                      Trim / Piping Design
-                    </label>
-                    <div className="space-y-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-start text-xs h-9"
-                        onClick={() => {
-                          // Generate a simple white stripe for tinting (or just a colored stripe)
-                          // For now, let's just make a solid color stripe based on current trim color
-                          const canvas = document.createElement("canvas");
-                          canvas.width = 512;
-                          canvas.height = 32; // Thin stripe
-                          const ctx = canvas.getContext("2d");
-                          if (ctx) {
-                            ctx.fillStyle =
-                              selectedSection.trimColor || "#000000";
-                            ctx.fillRect(0, 0, 512, 32);
-                            const dataUrl = canvas.toDataURL();
 
-                            useConfiguratorStore.getState().addTextureLayer({
-                              id: crypto.randomUUID(),
-                              name: `Trim Line`,
-                              type: "image",
-                              visible: true,
-                              locked: false,
-                              opacity: 1,
-                              blendMode: "normal",
-                              imageUrl: dataUrl,
-                              position: [0.5, 0.5, 0],
-                              scale: [1, 0.05, 1], // Full width, thin height default
-                              rotation: [0, 0, 0],
-                              order:
-                                useConfiguratorStore.getState().textureLayers
-                                  .length,
-                            });
-                          }
-                        }}
-                      >
-                        <Plus className="w-3 h-3 mr-2" />
-                        Add Movable Trim Line
-                      </Button>
-                      <p className="text-[10px] text-muted-foreground">
-                        Adds a stripe layer you can drag and resize freely on
-                        the model.
-                      </p>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t border-muted" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">
-                            Or use preset
-                          </span>
-                        </div>
-                      </div>
-
-                      <select
-                        value={selectedSection.trimDesign || "none"}
-                        onChange={(e) =>
-                          updateSection(selectedSection.id, {
-                            trimDesign:
-                              e.target.value === "none"
-                                ? undefined
-                                : e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background"
-                      >
-                        <option value="none">No Preset Trim</option>
-                        <option value="single-line">Single Line (Auto)</option>
-                        <option value="double-line">Double Line (Auto)</option>
-                        <option value="triple-line">Triple Line (Auto)</option>
-                        <option value="dashed-line">Dashed Line</option>
-                        <option value="dotted-line">Dotted Line</option>
-                        <option value="zigzag">Zigzag Pattern</option>
-                        <option value="wave">Wave Pattern</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Trim Color - only show if a trim design is selected */}
-                  {selectedSection.trimDesign &&
-                    selectedSection.trimDesign !== "none" && (
-                      <div className="mt-4">
-                        <label className="block text-xs font-medium mb-3">
-                          Preset Trim Color
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="color"
-                            value={selectedSection.trimColor || "#000000"}
-                            onChange={(e) =>
-                              updateSection(selectedSection.id, {
-                                trimColor: e.target.value,
-                              })
-                            }
-                            className="w-12 h-12 rounded-lg cursor-pointer border-2 border-border"
-                          />
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              value={selectedSection.trimColor || "#000000"}
-                              onChange={(e) =>
-                                updateSection(selectedSection.id, {
-                                  trimColor: e.target.value,
-                                })
-                              }
-                              className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background font-mono"
-                              placeholder="#000000"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                </div>
-              )}
 
             {/* Gradient section - only for non-volleyball models */}
             {!isVolleyballModel && (

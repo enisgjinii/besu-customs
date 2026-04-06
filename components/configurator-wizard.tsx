@@ -30,7 +30,6 @@ import { TextureLayerSelector } from "@/components/texture-layer-selector";
 import { Step01Apparel } from "./wizard-steps/step-01-apparel";
 import { Step02Colors } from "./wizard-steps/step-02-colors";
 import { Step03Style } from "./wizard-steps/step-03-style";
-import { Step03bTrimLines } from "./wizard-steps/step-03b-trim-lines";
 import { Step04SchoolLogo } from "./wizard-steps/step-04-school-logo";
 import { Step05Patterns } from "./wizard-steps/step-05-patterns";
 import { Step06Text } from "./wizard-steps/step-06-text";
@@ -43,12 +42,11 @@ const STEPS = [
   { id: 2, title: "AI DESIGN", component: Step08AIImages }, // Moved early for base design generation
   { id: 3, title: "COLORS", component: Step02Colors },
   { id: 4, title: "STYLE", component: Step03Style },
-  { id: 5, title: "TRIM", component: Step03bTrimLines },
-  { id: 6, title: "LOGO", component: Step04SchoolLogo },
-  { id: 7, title: "PATTERNS", component: Step05Patterns },
-  { id: 8, title: "TEXT", component: Step06Text },
-  { id: 9, title: "IMAGES", component: Step07Images },
-  { id: 10, title: "REVIEW", component: Step09View },
+  { id: 5, title: "LOGO", component: Step04SchoolLogo },
+  { id: 6, title: "PATTERNS", component: Step05Patterns },
+  { id: 7, title: "TEXT", component: Step06Text },
+  { id: 8, title: "IMAGES", component: Step07Images },
+  { id: 9, title: "REVIEW", component: Step09View },
 ];
 
 export function ConfiguratorWizard() {
