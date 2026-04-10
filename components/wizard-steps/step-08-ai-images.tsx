@@ -1,6 +1,5 @@
 "use client";
 import { useConfiguratorStore } from "@/lib/store";
-import { AIImageGenerator } from "@/components/ai-image-generator";
 import { AITextureGenerator } from "@/components/ai-texture-generator";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
@@ -15,7 +14,6 @@ import {
 } from "@/lib/mobile-performance-utils";
 import * as THREE from "three";
 import {
-  Sparkles,
   Download,
   Wand2,
 } from "lucide-react";
@@ -692,63 +690,6 @@ export function Step08AIImages() {
     }
   };
 
-  // Listen for generated images from the AIImageGenerator component
-  // Background is already removed by the advanced AI in the generator
-  useEffect(() => {
-    const handleGeneratedImage = async (e: Event) => {
-      const customEvent = e as CustomEvent;
-      console.log("AI Image Event captured in wizard", customEvent.detail);
-
-      const data = customEvent.detail;
-      if (!data || !data.url) return;
-
-      try {
-        let processedUrl = data.url;
-
-        // Compress images on mobile for better performance
-        if (isMobile()) {
-          toast.info("Optimizing for mobile...");
-          processedUrl = await compressImageForMobile(processedUrl, 1024, 0.85);
-        }
-
-        // Use scale and rotation from the preview if provided
-        const scale = data.scale || 0.5;
-        const rotation = data.rotation || 0;
-
-        const newId = uuidv4();
-        addTextureLayer({
-          id: newId,
-          name: `AI Design`,
-          type: "image",
-          visible: true,
-          locked: false,
-          opacity: 1,
-          blendMode: "normal",
-          order: textureLayers.length,
-          imageUrl: processedUrl,
-          position: [0.5, 0.35, 0], // Center chest position
-          rotation: [0, 0, rotation * (Math.PI / 180)],
-          scale: [scale, scale, 1],
-          flipX: false,
-        });
-
-        setSelectedTextureLayerId(newId);
-        toast.success("AI Image added! Adjust size and position as needed.");
-      } catch (err) {
-        console.error("Failed to process image", err);
-        toast.error("Failed to process image");
-      }
-    };
-
-    window.addEventListener("generated-image-available", handleGeneratedImage);
-    return () => {
-      window.removeEventListener(
-        "generated-image-available",
-        handleGeneratedImage,
-      );
-    };
-  }, [addTextureLayer, textureLayers.length, setSelectedTextureLayerId]);
-
   // Get AI-generated layers
   const aiLayers = textureLayers.filter((l) => l.name.startsWith("AI"));
 
@@ -770,180 +711,6 @@ export function Step08AIImages() {
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border bg-card p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h2 className="text-sm font-semibold tracking-tight">AI Design</h2>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Choose one way to create your design, then fine-tune it from the
-              saved layers below.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <div className="rounded-full border px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
-              {completeUVMap ? "UV guide ready" : "Preparing UV guide"}
-            </div>
-            <div className="rounded-full border px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
-              {aiLayers.length} saved
-            </div>
-          </div>
-        </div>
-
-        <details className="group mt-4 rounded-xl border bg-muted/20">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-medium text-foreground">
-            <span>Optional tools</span>
-            <span className="text-muted-foreground transition-transform group-open:rotate-180">
-              ▼
-            </span>
-          </summary>
-
-          <div className="space-y-4 border-t px-3 py-3">
-            {completeUVMap ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-medium">UV reference</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Use this if you want to inspect placement before generating.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-[10px]"
-                      onClick={() => setShowUVMap((prev) => !prev)}
-                    >
-                      {showUVMap ? "Hide" : "Preview"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-[10px]"
-                      onClick={handleDownloadUVMap}
-                    >
-                      <Download className="mr-1 h-3 w-3" />
-                      Download
-                    </Button>
-                  </div>
-                </div>
-
-                {showUVMap && (
-                  <div className="overflow-hidden rounded-xl border bg-background">
-                    <img
-                      src={completeUVMap}
-                      alt="UV Map"
-                      className="max-h-[160px] w-full object-contain"
-                    />
-                  </div>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-[10px]"
-                  onClick={handleGenerateTestPattern}
-                  disabled={isGeneratingDebug}
-                >
-                  <Sparkles className="mr-1 h-3 w-3" />
-                  {isGeneratingDebug ? "Creating test grid..." : "Generate test grid"}
-                </Button>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed px-3 py-3 text-[10px] text-muted-foreground">
-                UV tools will appear after the current product finishes loading.
-              </div>
-            )}
-
-            <div className="space-y-3 rounded-xl border bg-background px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <Label htmlFor="back-texture" className="text-xs font-medium">
-                    Apply generated texture to the back
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground">
-                    Turn this on only when you want the AI texture mirrored onto
-                    the rear panel.
-                  </p>
-                </div>
-                <Switch
-                  id="back-texture"
-                  checked={applyTextureToBack}
-                  onCheckedChange={setApplyTextureToBack}
-                  className="scale-75 origin-right"
-                />
-              </div>
-
-              {applyTextureToBack && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] text-muted-foreground">
-                      Back transform
-                    </Label>
-                    <Select
-                      value={backTextureTransform}
-                      onValueChange={(value) =>
-                        setBackTextureTransform(
-                          value as "mirrorX" | "mirrorY" | "rotate180" | "none",
-                        )
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mirrorX">Mirror left/right</SelectItem>
-                        <SelectItem value="mirrorY">Flip up/down</SelectItem>
-                        <SelectItem value="rotate180">Rotate 180</SelectItem>
-                        <SelectItem value="none">No transform</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] text-muted-foreground">
-                      Back UV side
-                    </Label>
-                    <Select
-                      value={backUvSide}
-                      onValueChange={(value) => setBackUvSide(value as "left" | "right")}
-                      disabled={!bakeBackFlipIntoTexture}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="left">Left</SelectItem>
-                        <SelectItem value="right">Right</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-                <div>
-                  <Label htmlFor="bake-back-fix" className="text-xs font-medium">
-                    Bake UV correction into texture
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground">
-                    Helps when the back panel is flipped on certain models.
-                  </p>
-                </div>
-                <Switch
-                  id="bake-back-fix"
-                  checked={bakeBackFlipIntoTexture}
-                  onCheckedChange={setBakeBackFlipIntoTexture}
-                  disabled={!applyTextureToBack}
-                  className="scale-75 origin-right"
-                />
-              </div>
-            </div>
-          </div>
-        </details>
-      </section>
-
-      <section className="rounded-2xl border bg-card p-4">
         <div className="mb-3 flex items-start gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Wand2 className="h-4 w-4" />
@@ -956,21 +723,6 @@ export function Step08AIImages() {
           </div>
         </div>
         <AITextureGenerator onTextureGenerated={handleGeneratedTexture} />
-      </section>
-
-      <section className="rounded-2xl border bg-card p-4">
-        <div className="mb-3 flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold">Placed graphic</h3>
-            <p className="text-xs text-muted-foreground">
-              Generate a single image, review it, then place it on the design.
-            </p>
-          </div>
-        </div>
-        <AIImageGenerator />
       </section>
 
       <section className="rounded-2xl border bg-card p-4">
@@ -1023,7 +775,7 @@ export function Step08AIImages() {
           <div className="rounded-xl border border-dashed px-4 py-6 text-center">
             <p className="text-xs font-medium">No AI layers yet</p>
             <p className="mt-1 text-[10px] text-muted-foreground">
-              Generate a texture or graphic above and it will show up here.
+              Generate a texture above and it will show up here.
             </p>
           </div>
         )}
