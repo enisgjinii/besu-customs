@@ -646,6 +646,9 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     const hasRenderableTexture =
       !!globalCustomTexture || debouncedLayers.some((l) => l.visible);
+    const hasFullCoverageTexture =
+      !!globalCustomTexture ||
+      debouncedLayers.some((l) => l.visible && l.type === "pattern");
     const soccerDebug = useConfiguratorStore.getState().soccerJerseyDebug;
     const isBackToggleModel =
       /(jersey|shirt|hoodie|polo|track-and-field-top|volleyball|football|spandex|tank-top|crop-top|short|pants)/.test(
@@ -797,8 +800,13 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           materialAny.alphaTest = 0;
 
           // Ensure the texture colors are displayed accurately (not multiplied by material color)
-          // Reset material color to white so texture shows at full vibrancy
-          materialAny.color?.setHex(0xffffff);
+          // Only force white when a full-garment texture is present.
+          // For overlay-only layers (image/text), keep original section color.
+          if (hasFullCoverageTexture) {
+            materialAny.color?.setHex(0xffffff);
+          } else if (matchedSection?.color) {
+            materialAny.color?.set(matchedSection.color);
+          }
 
           // Ensure proper material settings for AI texture display
           if ("metalness" in materialAny) {
@@ -836,6 +844,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
           }
         } else {
           materialAny.map = null;
+          // Restore section color when no texture is applied.
+          if (matchedSection?.color) {
+            materialAny.color?.set(matchedSection.color);
+          }
           // Clear PBR if no layers or is back material
           if ("normalMap" in materialAny) materialAny.normalMap = null;
           if ("roughnessMap" in materialAny) materialAny.roughnessMap = null;
