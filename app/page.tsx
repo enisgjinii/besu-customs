@@ -14,18 +14,7 @@ const Scene = dynamic(
     })),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-          </div>
-          <p className="text-xs font-medium text-muted-foreground">
-            Loading 3D viewer...
-          </p>
-        </div>
-      </div>
-    ),
+    loading: () => <div className="h-full w-full" />,
   },
 );
 
@@ -82,11 +71,7 @@ export default function Home() {
 
   // Prevent flash during hydration
   if (!mounted) {
-    return (
-      <div className="h-screen w-screen bg-white dark:bg-black flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-      </div>
-    );
+    return <div className="h-screen w-screen bg-white dark:bg-black" />;
   }
 
   // Mobile Layout: 3D viewer on top (40%), controls below (60%)
