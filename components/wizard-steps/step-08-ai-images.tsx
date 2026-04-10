@@ -54,6 +54,7 @@ export function Step08AIImages() {
 
   const [showUVMap, setShowUVMap] = useState(false);
   const [isGeneratingDebug, setIsGeneratingDebug] = useState(false);
+  const [expandedLayerId, setExpandedLayerId] = useState<string | null>(null);
   const applyGenerationRef = useRef(0);
   const applyContextRef = useRef<{
     modelUrl: string | null;
@@ -743,31 +744,51 @@ export function Step08AIImages() {
             {aiLayers.map((layer) => (
               <div
                 key={layer.id}
-                className="flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors hover:border-primary/40"
+                className="rounded-xl border px-3 py-3 transition-colors hover:border-primary/40"
               >
-                <button
-                  type="button"
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                  onClick={() => setSelectedTextureLayerId(layer.id)}
-                >
-                  <div className="h-10 w-10 overflow-hidden rounded-lg border bg-muted">
-                    {layer.imageUrl && (
-                      <img
-                        src={layer.imageUrl}
-                        alt={layer.name}
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium">{layer.name}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Click to edit this layer
-                    </p>
-                  </div>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    onClick={() => setSelectedTextureLayerId(layer.id)}
+                  >
+                    <div className="h-10 w-10 overflow-hidden rounded-lg border bg-muted">
+                      {layer.imageUrl && (
+                        <img
+                          src={layer.imageUrl}
+                          alt={layer.name}
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium">{layer.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Click to edit this layer
+                      </p>
+                    </div>
+                  </button>
 
-                <LayerControls layerId={layer.id} compact />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-[10px]"
+                    onClick={() =>
+                      setExpandedLayerId((prev) =>
+                        prev === layer.id ? null : layer.id,
+                      )
+                    }
+                  >
+                    {expandedLayerId === layer.id ? "Hide controls" : "Edit controls"}
+                  </Button>
+                </div>
+
+                {expandedLayerId === layer.id && (
+                  <div className="mt-3 border-t pt-3">
+                    <LayerControls layerId={layer.id} compact />
+                  </div>
+                )}
               </div>
             ))}
           </div>

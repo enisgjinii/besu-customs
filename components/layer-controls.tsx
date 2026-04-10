@@ -42,6 +42,12 @@ export function LayerControls({
   const scale = layer.scale?.[0] || 1;
   const rotation = layer.rotation?.[2] || 0;
   const flipX = layer.flipX || false;
+  const iconBtnClass = compact
+    ? "h-7 w-7 touch-manipulation"
+    : "h-8 w-8 touch-manipulation";
+  const arrangeBtnClass = compact
+    ? "h-7 w-full touch-manipulation"
+    : "h-8 w-full touch-manipulation";
 
   // Quick size adjustment functions
   const increaseSize = () => {
@@ -72,8 +78,8 @@ export function LayerControls({
   return (
     <div
       className={cn(
-        "bg-muted/30 rounded-md",
-        compact ? "p-1.5 space-y-1.5" : "p-2 space-y-2",
+        "rounded-lg border bg-background/80",
+        compact ? "p-2 space-y-2" : "p-2.5 space-y-2.5",
       )}
     >
       {/* Size controls with +/- buttons for easier mobile adjustment */}
@@ -84,7 +90,7 @@ export function LayerControls({
             variant="outline"
             size="icon"
             onClick={decreaseSize}
-            className="h-8 w-8 touch-manipulation"
+            className={iconBtnClass}
           >
             <Minus className="w-4 h-4" />
           </Button>
@@ -106,12 +112,12 @@ export function LayerControls({
             variant="outline"
             size="icon"
             onClick={increaseSize}
-            className="h-8 w-8 touch-manipulation"
+            className={iconBtnClass}
           >
             <Plus className="w-4 h-4" />
           </Button>
         )}
-        <span className="text-[9px] text-muted-foreground w-10 text-right">
+        <span className="text-[10px] text-muted-foreground w-10 text-right">
           {Math.round(scale * 100)}%
         </span>
       </div>
@@ -131,7 +137,7 @@ export function LayerControls({
           }
           className="flex-1"
         />
-        <span className="text-[9px] text-muted-foreground w-8 text-right">
+        <span className="text-[10px] text-muted-foreground w-8 text-right">
           {Math.round(rotation * (180 / Math.PI))}°
         </span>
       </div>
@@ -142,7 +148,7 @@ export function LayerControls({
           variant="outline"
           size="icon"
           onClick={() => moveLayer(layerId, "front")}
-          className="h-8 w-full touch-manipulation"
+          className={arrangeBtnClass}
           title="Bring to Front"
         >
           <ChevronsUp className="w-4 h-4" />
@@ -151,7 +157,7 @@ export function LayerControls({
           variant="outline"
           size="icon"
           onClick={() => moveLayer(layerId, "forward")}
-          className="h-8 w-full touch-manipulation"
+          className={arrangeBtnClass}
           title="Bring Forward"
         >
           <ArrowUp className="w-4 h-4" />
@@ -160,7 +166,7 @@ export function LayerControls({
           variant="outline"
           size="icon"
           onClick={() => moveLayer(layerId, "backward")}
-          className="h-8 w-full touch-manipulation"
+          className={arrangeBtnClass}
           title="Send Backward"
         >
           <ArrowDown className="w-4 h-4" />
@@ -169,7 +175,7 @@ export function LayerControls({
           variant="outline"
           size="icon"
           onClick={() => moveLayer(layerId, "back")}
-          className="h-8 w-full touch-manipulation"
+          className={arrangeBtnClass}
           title="Send to Back"
         >
           <ChevronsDown className="w-4 h-4" />
@@ -182,7 +188,7 @@ export function LayerControls({
           variant={flipX ? "default" : "outline"}
           size="icon"
           onClick={() => updateTextureLayer(layerId, { flipX: !flipX })}
-          className="h-8 w-8 touch-manipulation"
+          className={iconBtnClass}
           title="Flip Horizontal"
         >
           <FlipHorizontal className="w-4 h-4" />
@@ -191,7 +197,7 @@ export function LayerControls({
           variant="outline"
           size="icon"
           onClick={handleDuplicate}
-          className="h-8 w-8 touch-manipulation"
+          className={iconBtnClass}
           title="Duplicate"
         >
           <Copy className="w-4 h-4" />
@@ -217,10 +223,10 @@ export function LayerControls({
               toast.error("Failed to delete design");
             }
           }}
-          className="h-8 w-8 ml-auto touch-manipulation mobile-delete-btn md:h-6 md:w-6"
+          className={cn(iconBtnClass, "ml-auto mobile-delete-btn")}
           title="Delete"
         >
-          <Trash2 className="w-4 h-4 md:w-3 md:h-3" />
+          <Trash2 className="w-4 h-4" />
         </Button>
       </div>
     </div>
