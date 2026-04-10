@@ -7,20 +7,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start",
-    "extract-materials": "node scripts/extract-materials.js",
-    "optimize-backpack": "node scripts/optimize-backpack.js",
-    "compress-models": "node scripts/compress-models.js",
-    "replace-with-compressed": "node scripts/replace-with-compressed.js",
-    "generate-lod": "node scripts/generate-lod-models.js",
-    "optimize-mobile": "npm run generate-lod",
-    "verify-optimization": "node scripts/verify-optimization.js",
-    "rename-models": "node scripts/rename-models-with-spaces.js",
-    "update-models-json": "node scripts/update-models-json.js",
-    "fix-filenames": "node scripts/fix-model-filenames.js",
-    "generate-models-json": "node scripts/generate-models-json.js",
-    "clear-cache": "node scripts/clear-all-cache.js",
-    "verify-setup": "node scripts/verify-setup.js"
+    "start": "next start"
   },
   "dependencies": {
     "@imgly/background-removal": "^1.7.0",
