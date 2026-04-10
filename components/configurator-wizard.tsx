@@ -332,25 +332,28 @@ export function ConfiguratorWizard() {
 
       {/* Reset Dialog */}
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-        <AlertDialogContent className="max-w-sm mx-4">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-base">
-              <RotateCcw className="w-4 h-4 text-destructive" />
+        <AlertDialogContent className="mx-4 max-w-md rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+          <div className="h-1 w-full rounded-t-2xl bg-gradient-to-r from-red-500 to-orange-500" />
+          <AlertDialogHeader className="space-y-3 px-6 pb-2 pt-5 text-left">
+            <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+              <RotateCcw className="h-4 w-4 text-destructive" />
               Reset All?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
+            <AlertDialogDescription className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               This will clear all colors, patterns, logos, and text. Cannot be
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 px-6 pb-5 pt-3 sm:justify-end">
+            <AlertDialogCancel className="h-10 min-w-[96px] rounded-xl border-slate-300 bg-white font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 resetAllCustomizations();
                 setShowResetDialog(false);
               }}
-              className="bg-destructive hover:bg-destructive/90 h-9"
+              className="h-10 min-w-[96px] rounded-xl bg-destructive font-semibold text-white hover:bg-destructive/90"
             >
               Reset
             </AlertDialogAction>

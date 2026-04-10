@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Copy,
   RotateCcw,
@@ -14,8 +15,23 @@ import {
   ChevronsDown,
   Video,
   Loader2,
+  Pin,
+  PinOff,
+  Film,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 /**
@@ -44,21 +60,20 @@ export function LayerControlsOverlay() {
   const autoRotate = useConfiguratorStore((s) => s.autoRotate);
   const setAutoRotate = useConfiguratorStore((s) => s.setAutoRotate);
   const [isGeneratingGif, setIsGeneratingGif] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState<null | "webm" | "mp4">(null);
+  const [isPinnedOpen, setIsPinnedOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Find the selected layer
   const selectedLayer = textureLayers.find(
     (l) => l.id === selectedTextureLayerId,
   );
 
-  // Debug logging
-  console.log(" LayerControlsOverlay:", {
-    selectedTextureLayerId,
-    selectedLayer: selectedLayer?.name,
-    layerCount: textureLayers.length,
-  });
-
   // Don't render if no layer is selected
   if (!selectedLayer) return null;
+
+  const isExpanded = isPinnedOpen || isHovered;
+  const isExporting = isGeneratingGif || !!isGeneratingVideo;
 
   const handleDuplicate = () => {
     if (selectedTextureLayerId) {
@@ -105,7 +120,7 @@ export function LayerControlsOverlay() {
     );
 
   const handleExport360Gif = async () => {
-    if (isGeneratingGif) return;
+    if (isGeneratingGif || isGeneratingVideo) return;
 
     const canvas = document.querySelector("canvas") as HTMLCanvasElement | null;
     if (!canvas) {
@@ -204,9 +219,180 @@ export function LayerControlsOverlay() {
     }
   };
 
+  const handleExport360Video = async (format: "webm" | "mp4") => {
+    if (isGeneratingGif || isGeneratingVideo) return;
+
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement | null;
+    if (!canvas) {
+      toast.error("Canvas not found");
+      return;
+    }
+
+    if (!canvas.captureStream) {
+      toast.error("Video export is not supported in this browser");
+      return;
+    }
+
+    const modelApi = (window as any).__besuModelExportApi as
+      | { getRotationY: () => number; setRotationY: (value: number) => void }
+      | undefined;
+
+    if (!modelApi?.getRotationY || !modelApi?.setRotationY) {
+      toast.error("Model is not ready for video export");
+      return;
+    }
+
+    const pickMimeType = (target: "webm" | "mp4") => {
+      const candidates =
+        target === "webm"
+          ? [
+              "video/webm;codecs=vp9",
+              "video/webm;codecs=vp8",
+              "video/webm",
+            ]
+          : [
+              "video/mp4;codecs=h264",
+              "video/mp4;codecs=avc1.42E01E",
+              "video/mp4",
+            ];
+
+      return candidates.find((mime) => MediaRecorder.isTypeSupported(mime)) || null;
+    };
+
+    const mimeType = pickMimeType(format);
+    if (!mimeType) {
+      toast.error(
+        format === "mp4"
+          ? "MP4 export is not supported in this browser. Try WebM."
+          : "WebM export is not supported in this browser.",
+      );
+      return;
+    }
+
+    const originalAutoRotate = autoRotate;
+    const originalRotation = modelApi.getRotationY();
+
+    setIsGeneratingVideo(format);
+    toast.info(`Exporting 360° ${format.toUpperCase()}...`);
+
+    try {
+      setAutoRotate(false);
+      await waitForRender();
+
+      const fps = 30;
+      const durationMs = 5000;
+      const stream = canvas.captureStream(fps);
+      const chunks: BlobPart[] = [];
+
+      const recorder = new MediaRecorder(stream, {
+        mimeType,
+        videoBitsPerSecond: 8_000_000,
+      });
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      const recorderStopped = new Promise<void>((resolve, reject) => {
+        recorder.onstop = () => resolve();
+        recorder.onerror = (event) => {
+          reject((event as any)?.error || new Error("Recorder failed"));
+        };
+      });
+
+      recorder.start(100);
+
+      await new Promise<void>((resolve) => {
+        const start = performance.now();
+
+        const step = (now: number) => {
+          const t = Math.min((now - start) / durationMs, 1);
+          modelApi.setRotationY(originalRotation + t * Math.PI * 2);
+
+          if (t < 1) {
+            requestAnimationFrame(step);
+          } else {
+            resolve();
+          }
+        };
+
+        requestAnimationFrame(step);
+      });
+
+      recorder.stop();
+      await recorderStopped;
+      stream.getTracks().forEach((track) => track.stop());
+
+      const blob = new Blob(chunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `model-360-${Date.now()}.${format}`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`360° ${format.toUpperCase()} exported`);
+    } catch (error) {
+      console.error(`${format.toUpperCase()} export failed:`, error);
+      toast.error(
+        `${format.toUpperCase()} export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    } finally {
+      modelApi.setRotationY(originalRotation);
+      setAutoRotate(originalAutoRotate);
+      setIsGeneratingVideo(null);
+    }
+  };
+
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-      <div className="bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center gap-1.5">
+    <div
+      className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <TooltipProvider delayDuration={120}>
+      <AnimatePresence mode="wait" initial={false}>
+        {!isExpanded ? (
+          <motion.div
+            key="collapsed-toolbar"
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+            className="bg-white/95 dark:bg-gray-900/95 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center gap-2 backdrop-blur-sm"
+          >
+            <span className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[140px] truncate">
+              {selectedLayer.type === "text" ? "Text" : "Layer"}: {selectedLayer.name || selectedLayer.type}
+            </span>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => setIsPinnedOpen(true)}
+                  title="Pin controls open"
+                >
+                  <Pin className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={8}>Pin controls open</TooltipContent>
+            </Tooltip>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="expanded-toolbar"
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center gap-1.5"
+          >
         {/* Layer name indicator */}
         <span className="px-2 text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
           {selectedLayer.name || selectedLayer.type}
@@ -216,119 +402,218 @@ export function LayerControlsOverlay() {
 
         {/* Arrange Controls */}
         <div className="flex gap-0.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-l-md rounded-r-none"
-            onClick={() => handleMove("front")}
-            title="Bring to Front"
-          >
-            <ChevronsUp className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-l border-r border-gray-100 dark:border-gray-800"
-            onClick={() => handleMove("forward")}
-            title="Bring Forward"
-          >
-            <ArrowUp className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-r border-gray-100 dark:border-gray-800"
-            onClick={() => handleMove("backward")}
-            title="Send Backward"
-          >
-            <ArrowDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md rounded-l-none"
-            onClick={() => handleMove("back")}
-            title="Send to Back"
-          >
-            <ChevronsDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-l-md rounded-r-none"
+                onClick={() => handleMove("front")}
+                title="Bring to Front"
+              >
+                <ChevronsUp className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8}>Bring to Front</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-l border-r border-gray-100 dark:border-gray-800"
+                onClick={() => handleMove("forward")}
+                title="Bring Forward"
+              >
+                <ArrowUp className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8}>Bring Forward</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-r border-gray-100 dark:border-gray-800"
+                onClick={() => handleMove("backward")}
+                title="Send Backward"
+              >
+                <ArrowDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8}>Send Backward</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md rounded-l-none"
+                onClick={() => handleMove("back")}
+                title="Send to Back"
+              >
+                <ChevronsDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8}>Send to Back</TooltipContent>
+          </Tooltip>
         </div>
 
         <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
         {/* Duplicate */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 w-10 p-0 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 active:scale-95 transition-transform"
-          onClick={handleDuplicate}
-          title="Duplicate"
-        >
-          <Copy className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 active:scale-95 transition-transform"
+              onClick={handleDuplicate}
+              title="Duplicate"
+            >
+              <Copy className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>Duplicate</TooltipContent>
+        </Tooltip>
 
         {/* Rotate Left */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
-          onClick={handleRotateLeft}
-          title="Rotate"
-        >
-          <RotateCcw className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
+              onClick={handleRotateLeft}
+              title="Rotate"
+            >
+              <RotateCcw className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>Rotate -15°</TooltipContent>
+        </Tooltip>
 
         {/* Flip/Resize */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
-          onClick={handleFlipX}
-          title="Flip Horizontal"
-        >
-          <Maximize2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
+              onClick={handleFlipX}
+              title="Flip Horizontal"
+            >
+              <Maximize2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>Flip Horizontal</TooltipContent>
+        </Tooltip>
 
-        {/* Export 360 GIF */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 w-10 p-0 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 active:scale-95 transition-transform"
-          onClick={handleExport360Gif}
-          title={isGeneratingGif ? "Exporting GIF..." : "Export 360° GIF"}
-          disabled={isGeneratingGif}
-        >
-          {isGeneratingGif ? (
-            <Loader2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
-          ) : (
-            <Video className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          )}
-        </Button>
+        {/* Export Dropdown (GIF/WebM/MP4) */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 w-10 p-0 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 active:scale-95 transition-transform"
+                  title="Export 360"
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
+                  ) : (
+                    <Film className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8}>
+              {isExporting ? "Exporting..." : "Export 360"}
+            </TooltipContent>
+          </Tooltip>
+
+          <DropdownMenuContent align="center" sideOffset={8} className="min-w-[170px]">
+            <DropdownMenuItem onClick={handleExport360Gif} disabled={isExporting}>
+              <Video className="mr-2 h-4 w-4 text-emerald-600" />
+              Export GIF
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleExport360Video("webm")}
+              disabled={isExporting}
+            >
+              <Film className="mr-2 h-4 w-4 text-cyan-600" />
+              Export WebM
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleExport360Video("mp4")}
+              disabled={isExporting}
+            >
+              <Video className="mr-2 h-4 w-4 text-indigo-600" />
+              Export MP4
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Delete */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 w-10 p-0 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 active:scale-95 transition-transform"
-          onClick={handleDelete}
-          title="Delete"
-        >
-          <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 active:scale-95 transition-transform"
+              onClick={handleDelete}
+              title="Delete"
+            >
+              <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>Delete Layer</TooltipContent>
+        </Tooltip>
 
         <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
+        {/* Pin / Unpin */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-transform"
+              onClick={() => setIsPinnedOpen((prev) => !prev)}
+              title={isPinnedOpen ? "Unpin" : "Pin open"}
+            >
+              {isPinnedOpen ? (
+                <PinOff className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              ) : (
+                <Pin className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>{isPinnedOpen ? "Unpin" : "Pin Open"}</TooltipContent>
+        </Tooltip>
+
         {/* Close/Deselect */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-transform"
-          onClick={handleDeselect}
-          title="Deselect"
-        >
-          <X className="h-5 w-5 text-gray-500" />
-        </Button>
-      </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-transform"
+              onClick={handleDeselect}
+              title="Deselect"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>Deselect</TooltipContent>
+        </Tooltip>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </TooltipProvider>
     </div>
   );
 }

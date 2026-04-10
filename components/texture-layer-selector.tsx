@@ -1,7 +1,7 @@
 "use client";
 
 import { useConfiguratorStore } from "@/lib/store";
-import { X, Image as ImageIcon, Type } from "lucide-react";
+import { X, Image as ImageIcon, Type, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function TextureLayerSelector() {
@@ -15,6 +15,9 @@ export function TextureLayerSelector() {
   const removeTextureLayer = useConfiguratorStore(
     (state) => state.removeTextureLayer,
   );
+  const clearTextureLayers = useConfiguratorStore(
+    (state) => state.clearTextureLayers,
+  );
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -26,6 +29,11 @@ export function TextureLayerSelector() {
   }, []);
 
   if (textureLayers.length === 0) return null;
+
+  const handleClearAll = () => {
+    clearTextureLayers();
+    setSelectedTextureLayerId(null);
+  };
 
   const renderChip = (layer: (typeof textureLayers)[number], mobile = false) => (
     <div
@@ -77,6 +85,14 @@ export function TextureLayerSelector() {
         <div className="shrink-0 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
           Layers {textureLayers.length}
         </div>
+        <button
+          onClick={handleClearAll}
+          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-destructive/90 transition-colors hover:bg-red-500 hover:text-white"
+          title="Clear all layers"
+          aria-label="Clear all layers"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
         <div className="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
           {textureLayers.map((layer) => renderChip(layer, true))}
         </div>
@@ -93,6 +109,16 @@ export function TextureLayerSelector() {
           {textureLayers.length}
         </span>
       </div>
+
+      <button
+        onClick={handleClearAll}
+        className="inline-flex h-6 items-center gap-1 rounded-full border border-red-200 px-2 text-[10px] font-medium text-destructive/90 transition-colors hover:bg-red-500 hover:text-white dark:border-red-900/40"
+        title="Clear all layers"
+        aria-label="Clear all layers"
+      >
+        <Trash2 className="h-3 w-3" />
+        Clear
+      </button>
 
       <div className="flex flex-1 gap-1.5 overflow-x-auto no-scrollbar">
         {textureLayers.map((layer) => renderChip(layer))}
