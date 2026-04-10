@@ -72,7 +72,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans ${macan.variable}`}>
+      <body suppressHydrationWarning className={`font-sans ${macan.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
