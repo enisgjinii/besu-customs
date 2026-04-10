@@ -1,6 +1,0 @@
-Material Names for Half short
-========================
-
-FABRIC_1_2587
-FABRIC_1_2590
-Material.001

@@ -1,8 +1,0 @@
-Material Names for Polo shirts short sleeve
-========================
-
-Body_Front_Placket
-Body_B_17912114
-Body_F_17850235
-Button_1_17850263
-Collar_18104863

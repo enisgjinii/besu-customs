@@ -1,7 +1,0 @@
-Body_B_3794820
-Body_F_3732324
-Button_1_3732346
-Collar_Stand_4150782
-Default_Button_3683977
-Default_Button_3683978
-Sleeves_4023608

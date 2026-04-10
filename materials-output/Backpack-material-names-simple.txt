@@ -1,7 +1,0 @@
-Material Names for Backpack
-========================
-
-FABRIC_3_79203
-FABRIC_4_79209
-Zipper_Teeth_01_79381
-Material5104_78706
