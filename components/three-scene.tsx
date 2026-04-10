@@ -18,7 +18,6 @@ import {
   extractUVMapFromThreeModel,
   extractUVMaskFromThreeModel,
 } from "@/lib/three-material-utils";
-import { analyzeModel, printModelAnalysis } from "@/lib/model-analyzer";
 import { useCachedGLTF } from "@/hooks/use-cached-gltf";
 import { getModelCache } from "@/lib/model-cache";
 import * as THREE from "three";
@@ -1064,13 +1063,6 @@ function Model({
       onSectionsExtractedRef.current?.(extracted);
       onLoadRef.current?.();
 
-      // Analyze model structure only in development (skip in production for performance)
-      if (process.env.NODE_ENV === "development") {
-        const analysis = analyzeModel(cloned);
-        printModelAnalysis(analysis);
-        (window as any).__modelAnalysis = analysis;
-      }
-
       // Extract UV map and store it for AI design section
       const uvMapModelUrl = (url || "").toLowerCase();
       const isFlagFootballUvMapV2 = uvMapModelUrl.includes(
@@ -1674,14 +1666,10 @@ export function ThreeScene({
 
       // If API is still loading, wait a bit and retry
       if (sectionsLoading) {
-        console.log("⏳ Waiting for API sections to load...");
         setTimeout(() => {
           const newState = useConfiguratorStore.getState();
           if (newState.sectionsFromApi && newState.sections.length > 0) {
             // API sections loaded - merge colors
-            console.log(
-              "🔄 Merging extracted colors into API sections (after wait)",
-            );
             const mergedSections = newState.sections.map((apiSection) => {
               const extracted = extractedSections.find(
                 (e) =>
@@ -1701,7 +1689,6 @@ export function ThreeScene({
             setSections(mergedSections, true);
           } else {
             // API didn't return sections, use extracted
-            console.log("📋 Using extracted sections (API returned nothing)");
             setSections(extractedSections, false);
           }
         }, 500); // Wait 500ms for API
@@ -1711,7 +1698,6 @@ export function ThreeScene({
       if (sectionsFromApi && currentSections.length > 0) {
         // API sections exist - merge colors from extracted sections into API sections
         // This preserves API names while getting actual colors from the model
-        console.log("🔄 Merging extracted colors into API sections");
         const mergedSections = currentSections.map((apiSection) => {
           const extracted = extractedSections.find(
             (e) =>
@@ -1727,7 +1713,6 @@ export function ThreeScene({
         setSections(mergedSections, true); // Keep the fromApi flag
       } else {
         // No API sections yet, use extracted ones
-        console.log("📋 Using extracted sections (no API sections available)");
         setSections(extractedSections, false);
       }
     },
@@ -1784,9 +1769,6 @@ export function ThreeScene({
         <PerformanceMonitor
           onDecline={() => {
             // Performance is degrading — R3F will automatically lower DPR
-            if (process.env.NODE_ENV === 'development') {
-              console.log('⚡ Performance declining — lowering render quality');
-            }
           }}
         />
 

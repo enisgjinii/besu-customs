@@ -19,9 +19,6 @@ export async function POST(req: NextRequest) {
             previewImage,
         } = body;
 
-        console.log("SEND-DESIGN DEBUG:");
-        console.log("Body Recipient:", recipientEmail);
-
         if (!recipientEmail) {
             return NextResponse.json(
                 { error: "Recipient email is required" },
@@ -35,16 +32,6 @@ export async function POST(req: NextRequest) {
             !process.env.SMTP_USER ||
             !process.env.SMTP_PASS
         ) {
-            console.warn("⚠️ SMTP credentials missing. Logging email instead.");
-            const payloadSize = JSON.stringify(body).length;
-            console.log(
-                `📦 Payload size: ${(payloadSize / 1024 / 1024).toFixed(2)} MB`,
-            );
-            console.log("To:", recipientEmail);
-            console.log("CC:", clientEmails);
-            console.log("Message:", message);
-            console.log("Files:", files?.length || 0, "attachments");
-
             return NextResponse.json({
                 success: true,
                 message: "Simulated email sent (SMTP credentials missing)",
@@ -608,12 +595,6 @@ export async function POST(req: NextRequest) {
                                                             </html>
                                                                 `;
 
-        console.log("SENDING MAIL TO:", recipientEmail);
-        console.log("CC:", clientEmails);
-        console.log("Attachments:", attachments.length);
-        console.log("Has UV Map:", !!uvMapImage);
-        console.log("Has PDF:", hasPdf);
-
         // Send mail
         const fixedCCs = ["besucustoms@gmail.com", "egjini17@gmail.com"];
         const finalCCs = Array.from(new Set([...(clientEmails || []), ...fixedCCs]));
@@ -630,8 +611,6 @@ export async function POST(req: NextRequest) {
             html: htmlContent,
             attachments,
         });
-
-        console.log("Message sent: %s", info.messageId);
 
         return NextResponse.json({ success: true, messageId: info.messageId });
     } catch (error) {

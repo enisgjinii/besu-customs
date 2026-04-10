@@ -9,14 +9,7 @@ export function ServiceWorkerInit() {
     if (typeof window !== "undefined") {
       ServiceWorkerManager.getInstance()
         .register()
-        .then((success) => {
-          if (success) {
-            console.log("✅ Service Worker registered for model caching");
-          }
-        })
-        .catch((error) => {
-          console.error("❌ Service Worker registration failed:", error);
-        });
+        .catch(() => {});
     }
   }, []);
 

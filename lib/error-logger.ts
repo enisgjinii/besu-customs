@@ -51,6 +51,10 @@ export interface ErrorLog {
 
 // Vercel-optimized console logging with structured data
 function vercelLog(level: LogLevel, data: any) {
+  if (typeof window !== "undefined") {
+    return;
+  }
+
   const logData = {
     ...data,
     vercel: true,
@@ -254,46 +258,7 @@ class ErrorLogger {
     // Send to Vercel logs (structured JSON for better indexing)
     vercelLog(log.level, structuredLog);
 
-    // Pretty console output for local development
-    if (process.env.NODE_ENV === "development") {
-      const colors = {
-        info: "\x1b[36m",
-        warn: "\x1b[33m",
-        error: "\x1b[31m",
-        debug: "\x1b[35m",
-        critical: "\x1b[41m",
-      };
-      const reset = "\x1b[0m";
-      const color = colors[log.level] || reset;
-
-      console.group(
-        `${color}[${log.level.toUpperCase()}] ${log.category}${reset} - ${log.message}`,
-      );
-      console.log(
-        "📍 Location:",
-        log.geoLocation?.city,
-        log.geoLocation?.country,
-      );
-      console.log("🌐 IP:", log.clientInfo.ip);
-      console.log(
-        "💻 Client:",
-        log.clientInfo.browser,
-        log.clientInfo.os,
-        log.clientInfo.device,
-      );
-      console.log("🔗 URL:", log.url);
-      console.log("👤 User ID:", log.userId || "Anonymous");
-      console.log("🆔 Session:", log.sessionId);
-
-      if (log.method) console.log("📡 Method:", log.method);
-      if (log.statusCode) console.log("📊 Status:", log.statusCode);
-      if (log.stack) console.log("📚 Stack:", log.stack);
-      if (log.additionalData) console.log("📦 Data:", log.additionalData);
-      if (log.isClientVisible)
-        console.log("👁️ Client Visible:", log.clientMessage);
-
-      console.groupEnd();
-    }
+    // Intentionally silent on local/browser console.
   }
 
   private async fetchGeoLocation(): Promise<{

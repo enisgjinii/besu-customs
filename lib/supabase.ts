@@ -74,15 +74,6 @@ const createMockClient = (): SupabaseClient => {
   } as unknown as SupabaseClient;
 };
 
-// Log warning in development if credentials are missing
-if (!hasValidCredentials && typeof window !== "undefined") {
-  console.warn(
-    "⚠️ Supabase credentials are missing or invalid. " +
-      "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables. " +
-      "The app will run in limited mode without database/auth functionality.",
-  );
-}
-
 export const supabase: SupabaseClient = hasValidCredentials
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {

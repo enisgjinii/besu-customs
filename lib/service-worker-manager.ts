@@ -20,7 +20,6 @@ export class ServiceWorkerManager {
 
   async register(): Promise<boolean> {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
-      console.log("Service Worker not supported");
       return false;
     }
 
@@ -28,8 +27,6 @@ export class ServiceWorkerManager {
       this.registration = await navigator.serviceWorker.register("/sw.js", {
         scope: "/",
       });
-
-      console.log("✅ Service Worker registered:", this.registration.scope);
 
       // Handle updates
       this.registration.addEventListener("updatefound", () => {
@@ -40,17 +37,14 @@ export class ServiceWorkerManager {
               newWorker.state === "installed" &&
               navigator.serviceWorker.controller
             ) {
-              console.log(
-                "🔄 New Service Worker available, will activate on next page load",
-              );
+              // Update is available; activates on next reload.
             }
           });
         }
       });
 
       return true;
-    } catch (error) {
-      console.error("❌ Service Worker registration failed:", error);
+    } catch {
       return false;
     }
   }
@@ -62,17 +56,14 @@ export class ServiceWorkerManager {
 
     try {
       const success = await this.registration.unregister();
-      console.log("Service Worker unregistered:", success);
       return success;
-    } catch (error) {
-      console.error("Failed to unregister Service Worker:", error);
+    } catch {
       return false;
     }
   }
 
   async clearCache(): Promise<boolean> {
     if (!this.registration || !this.registration.active) {
-      console.warn("No active Service Worker to clear cache");
       return false;
     }
 
@@ -115,8 +106,7 @@ export class ServiceWorkerManager {
       }
 
       return totalSize;
-    } catch (error) {
-      console.error("Failed to calculate cache size:", error);
+    } catch {
       return 0;
     }
   }
@@ -153,8 +143,7 @@ export class ServiceWorkerManager {
       }
 
       return info;
-    } catch (error) {
-      console.error("Failed to get cache info:", error);
+    } catch {
       return [];
     }
   }
@@ -170,5 +159,5 @@ export class ServiceWorkerManager {
 
 // Auto-register on import (client-side only)
 if (typeof window !== "undefined") {
-  ServiceWorkerManager.getInstance().register().catch(console.error);
+  ServiceWorkerManager.getInstance().register().catch(() => {});
 }

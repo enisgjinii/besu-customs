@@ -9,12 +9,10 @@ const PRECACHE_URLS = ["/", "/models.json"];
 
 // Install event - precache essential files
 self.addEventListener("install", (event) => {
-  console.log("[SW] Installing service worker...");
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        console.log("[SW] Precaching app shell");
         return cache.addAll(PRECACHE_URLS);
       })
       .then(() => self.skipWaiting()),
@@ -23,7 +21,6 @@ self.addEventListener("install", (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener("activate", (event) => {
-  console.log("[SW] Activating service worker...");
   event.waitUntil(
     caches
       .keys()
@@ -32,7 +29,6 @@ self.addEventListener("activate", (event) => {
           cacheNames
             .filter((name) => name !== CACHE_NAME && name !== MODEL_CACHE_NAME)
             .map((name) => {
-              console.log("[SW] Deleting old cache:", name);
               return caches.delete(name);
             }),
         );
@@ -90,8 +86,6 @@ async function cacheFirstWithNetworkFallback(request, cacheName) {
     const cachedResponse = await cache.match(request);
 
     if (cachedResponse) {
-      console.log("[SW] Cache hit:", request.url);
-
       // Update cache in background (stale-while-revalidate)
       fetch(request)
         .then((response) => {
@@ -113,20 +107,17 @@ async function cacheFirstWithNetworkFallback(request, cacheName) {
     }
 
     // Not in cache, fetch from network
-    console.log("[SW] Cache miss, fetching:", request.url);
     const response = await fetch(request);
 
     // Cache successful GET responses (not opaque responses)
     if (response && response.status === 200 && response.type !== "opaque") {
-      cache.put(request, response.clone()).catch((error) => {
-        console.warn("[SW] Failed to cache:", request.url, error.message);
+      cache.put(request, response.clone()).catch(() => {
+        // Ignore cache write errors
       });
     }
 
     return response;
   } catch (error) {
-    console.error("[SW] Fetch failed:", error);
-
     // Try to return cached version as last resort
     const cache = await caches.open(cacheName);
     const cachedResponse = await cache.match(request);
@@ -162,8 +153,6 @@ async function networkFirstWithCacheFallback(request, cacheName) {
 
     return response;
   } catch (error) {
-    console.log("[SW] Network failed, trying cache:", request.url);
-
     // Network failed, try cache
     const cache = await caches.open(cacheName);
     const cachedResponse = await cache.match(request);
@@ -190,7 +179,6 @@ self.addEventListener("message", (event) => {
           return Promise.all(cacheNames.map((name) => caches.delete(name)));
         })
         .then(() => {
-          console.log("[SW] All caches cleared");
           event.ports[0].postMessage({ success: true });
         }),
     );

@@ -90,6 +90,11 @@ const modelUrlAliases = [
 
 const nextConfig = {
   reactStrictMode: false,
+  compiler: {
+    removeConsole: {
+      exclude: ["error", "warn"],
+    },
+  },
   output: "standalone",
   images: {
     unoptimized: true,

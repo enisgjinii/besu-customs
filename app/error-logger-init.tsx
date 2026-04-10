@@ -6,6 +6,11 @@ import { checkAndClearCache, getAppVersion } from "@/lib/auto-cache-clear";
 
 export function ErrorLoggerInit() {
   useEffect(() => {
+    // Silence non-critical console output in client runtime
+    console.log = () => {};
+    console.debug = () => {};
+    console.info = () => {};
+
     // Check and clear cache if needed (silent - no notification)
     checkAndClearCache().then((wasCleared) => {
       if (wasCleared) {
