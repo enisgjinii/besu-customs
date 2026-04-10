@@ -1,0 +1,54 @@
+[
+  {
+    "from": "/models/Backpack.glb",
+    "to": "/models/backpack.glb"
+  },
+  {
+    "from": "/models/Baseball-Jersey.glb",
+    "to": "/models/baseball-jersey.glb"
+  },
+  {
+    "from": "/models/Hoodie.glb",
+    "to": "/models/hoodie.glb"
+  },
+  {
+    "from": "/models/baseball-caps_UV_FIX.glb",
+    "to": "/models/baseball-caps.glb"
+  },
+  {
+    "from": "/models/flag-football-top-with-hoodie_UV_MAP_v2.glb",
+    "to": "/models/flag-football-top-with-hoodie-v2.glb"
+  },
+  {
+    "from": "/models/polo-shirts-long-sleeve_FIXED.glb",
+    "to": "/models/polo-shirts-long-sleeve.glb"
+  },
+  {
+    "from": "/models/polo-shirts-short-sleeve_FIXED.glb",
+    "to": "/models/polo-shirts-short-sleeve.glb"
+  },
+  {
+    "from": "/models/soccer-jersey-crew-neck_FIXED.glb",
+    "to": "/models/soccer-jersey-crew-neck.glb"
+  },
+  {
+    "from": "/models/soccer_jersey_v_neck_COMBINED_FIXED.glb",
+    "to": "/models/soccer-jersey-v-neck.glb"
+  },
+  {
+    "from": "/models/track-and-field-top-crop-top_FIXED.glb",
+    "to": "/models/track-and-field-top-crop-top.glb"
+  },
+  {
+    "from": "/models/track-and-field-top-tank-top_FIXED.glb",
+    "to": "/models/track-and-field-top-tank-top.glb"
+  },
+  {
+    "from": "/models/volleyball-shorts-spandex_FIXED.glb",
+    "to": "/models/volleyball-shorts-spandex.glb"
+  },
+  {
+    "from": "/models/volleyball-shorts-spandex_v2_FIXED.glb",
+    "to": "/models/volleyball-shorts-spandex-v2.glb"
+  }
+]

@@ -1,19 +1,19 @@
 [
   {
     "name": "Backpack",
-    "url": "/models/Backpack.glb"
+    "url": "/models/backpack.glb"
   },
   {
     "name": "Baseball Jersey",
-    "url": "/models/Baseball-Jersey.glb"
+    "url": "/models/baseball-jersey.glb"
   },
   {
     "name": "Hoodie",
-    "url": "/models/Hoodie.glb"
+    "url": "/models/hoodie.glb"
   },
   {
     "name": "Baseball Caps",
-    "url": "/models/baseball-caps_UV_FIX.glb"
+    "url": "/models/baseball-caps.glb"
   },
   {
     "name": "Basketball Jersey And Shorts",
@@ -53,19 +53,19 @@
   },
   {
     "name": "Polo Shirts Long Sleeve",
-    "url": "/models/polo-shirts-long-sleeve_FIXED.glb"
+    "url": "/models/polo-shirts-long-sleeve.glb"
   },
   {
     "name": "Polo Shirts Short Sleeve",
-    "url": "/models/polo-shirts-short-sleeve_FIXED.glb"
+    "url": "/models/polo-shirts-short-sleeve.glb"
   },
   {
     "name": "Soccer Jersey Crew Neck",
-    "url": "/models/soccer-jersey-crew-neck_FIXED.glb"
+    "url": "/models/soccer-jersey-crew-neck.glb"
   },
   {
     "name": "Soccer Jersey V Neck",
-    "url": "/models/soccer_jersey_v_neck_COMBINED_FIXED.glb"
+    "url": "/models/soccer-jersey-v-neck.glb"
   },
   {
     "name": "Standard Bottom Cut Cuffed",
@@ -85,7 +85,7 @@
   },
   {
     "name": "Track And Field Top Crop Top",
-    "url": "/models/track-and-field-top-crop-top_FIXED.glb"
+    "url": "/models/track-and-field-top-crop-top.glb"
   },
   {
     "name": "Track And Field Top Short Sleeve",
@@ -93,7 +93,7 @@
   },
   {
     "name": "Track And Field Top Tank Top",
-    "url": "/models/track-and-field-top-tank-top_FIXED.glb"
+    "url": "/models/track-and-field-top-tank-top.glb"
   },
   {
     "name": "Volleyball Long Sleeve Tops",
@@ -109,11 +109,11 @@
   },
   {
     "name": "Volleyball Shorts Spandex",
-    "url": "/models/volleyball-shorts-spandex_FIXED.glb"
+    "url": "/models/volleyball-shorts-spandex.glb"
   },
   {
     "name": "Volleyball Shorts Spandex V2",
-    "url": "/models/volleyball-shorts-spandex_v2_FIXED.glb"
+    "url": "/models/volleyball-shorts-spandex-v2.glb"
   },
   {
     "name": "Volleyball Spandex",

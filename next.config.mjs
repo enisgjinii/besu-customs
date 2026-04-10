@@ -1,4 +1,93 @@
 /** @type {import('next').NextConfig} */
+const modelUrlAliases = [
+  { source: "/models/Backpack.glb", destination: "/models/backpack.glb" },
+  {
+    source: "/models/Baseball-Jersey.glb",
+    destination: "/models/baseball-jersey.glb",
+  },
+  { source: "/models/Hoodie.glb", destination: "/models/hoodie.glb" },
+  {
+    source: "/models/baseball-caps_UV_FIX.glb",
+    destination: "/models/baseball-caps.glb",
+  },
+  {
+    source: "/models/baseball-caps-uv-fix.glb",
+    destination: "/models/baseball-caps.glb",
+  },
+  {
+    source: "/models/flag-football-top-with-hoodie_UV_MAP_v2.glb",
+    destination: "/models/flag-football-top-with-hoodie-v2.glb",
+  },
+  {
+    source: "/models/flag-football-top-with-hoodie-uv-map-v2.glb",
+    destination: "/models/flag-football-top-with-hoodie-v2.glb",
+  },
+  {
+    source: "/models/polo-shirts-long-sleeve_FIXED.glb",
+    destination: "/models/polo-shirts-long-sleeve.glb",
+  },
+  {
+    source: "/models/polo-shirts-long-sleeve-fixed.glb",
+    destination: "/models/polo-shirts-long-sleeve.glb",
+  },
+  {
+    source: "/models/polo-shirts-short-sleeve_FIXED.glb",
+    destination: "/models/polo-shirts-short-sleeve.glb",
+  },
+  {
+    source: "/models/polo-shirts-short-sleeve-fixed.glb",
+    destination: "/models/polo-shirts-short-sleeve.glb",
+  },
+  {
+    source: "/models/soccer-jersey-crew-neck_FIXED.glb",
+    destination: "/models/soccer-jersey-crew-neck.glb",
+  },
+  {
+    source: "/models/soccer-jersey-crew-neck-fixed.glb",
+    destination: "/models/soccer-jersey-crew-neck.glb",
+  },
+  {
+    source: "/models/soccer_jersey_v_neck_COMBINED_FIXED.glb",
+    destination: "/models/soccer-jersey-v-neck.glb",
+  },
+  {
+    source: "/models/soccer-jersey-v-neck-combined-fixed.glb",
+    destination: "/models/soccer-jersey-v-neck.glb",
+  },
+  {
+    source: "/models/track-and-field-top-crop-top_FIXED.glb",
+    destination: "/models/track-and-field-top-crop-top.glb",
+  },
+  {
+    source: "/models/track-and-field-top-crop-top-fixed.glb",
+    destination: "/models/track-and-field-top-crop-top.glb",
+  },
+  {
+    source: "/models/track-and-field-top-tank-top_FIXED.glb",
+    destination: "/models/track-and-field-top-tank-top.glb",
+  },
+  {
+    source: "/models/track-and-field-top-tank-top-fixed.glb",
+    destination: "/models/track-and-field-top-tank-top.glb",
+  },
+  {
+    source: "/models/volleyball-shorts-spandex_FIXED.glb",
+    destination: "/models/volleyball-shorts-spandex.glb",
+  },
+  {
+    source: "/models/volleyball-shorts-spandex-fixed.glb",
+    destination: "/models/volleyball-shorts-spandex.glb",
+  },
+  {
+    source: "/models/volleyball-shorts-spandex_v2_FIXED.glb",
+    destination: "/models/volleyball-shorts-spandex-v2.glb",
+  },
+  {
+    source: "/models/volleyball-shorts-spandex-v2-fixed.glb",
+    destination: "/models/volleyball-shorts-spandex-v2.glb",
+  },
+];
+
 const nextConfig = {
   reactStrictMode: false,
   output: "standalone",
@@ -107,6 +196,10 @@ const nextConfig = {
   compress: true,
 
   // Add headers for better caching and compression
+  async rewrites() {
+    return modelUrlAliases;
+  },
+
   async headers() {
     return [
       {

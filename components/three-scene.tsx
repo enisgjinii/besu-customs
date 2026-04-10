@@ -118,7 +118,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
   const modelUrl = (currentModelUrl || "").toLowerCase();
   const isFlagFootballUvV2 = modelUrl.includes(
     "flag-football-top-with-hoodie_uv_map_v2.glb",
-  );
+  ) || modelUrl.includes("flag-football-top-with-hoodie-uv-map-v2.glb") || modelUrl.includes("flag-football-top-with-hoodie-v2.glb");
 
   // Debounce texture layers to prevent rapid re-renders
   const debouncedLayers = useDebounce(textureLayers, perfConfig.debounceMs);
@@ -497,7 +497,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
       });
       const effectiveBackTransform = isFlagFootballUvV2
         ? "none"
-        : (modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_FIXED.glb"))
+        : (modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_fixed.glb") || modelUrl.includes("soccer-jersey-crew-neck-fixed.glb"))
         ? useConfiguratorStore.getState().soccerJerseyDebug.backTransform // Use debug setting for soccer jersey
         : backTextureTransform;
       if (backCtx) {
@@ -631,7 +631,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     
     // Get debug options for soccer jersey crew neck
     const soccerJerseyDebug = useConfiguratorStore.getState().soccerJerseyDebug;
-    const isSoccerJerseyCrewNeck = modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_FIXED.glb");
+    const isSoccerJerseyCrewNeck = modelUrl.includes("soccer-jersey-crew-neck.glb") || modelUrl.includes("soccer-jersey-crew-neck_fixed.glb") || modelUrl.includes("soccer-jersey-crew-neck-fixed.glb");
     const isSoccerJerseyVNeck = modelUrl.includes("soccer-jersey-v-neck.glb") || modelUrl.includes("soccer_jersey_v_neck_combined_fixed.glb") || modelUrl.includes("soccer_jersey_v_neck_separated_fixed.glb") || modelUrl.includes("soccer_jersey_v_neck_COMBINED_FIXED.glb".toLowerCase());
     const isSoccerJersey = isSoccerJerseyCrewNeck || isSoccerJerseyVNeck;
     
