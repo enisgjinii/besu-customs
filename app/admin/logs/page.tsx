@@ -170,20 +170,20 @@ export default function AdminLogsPage() {
                       <div className="font-medium">{log.message}</div>
                       <div className="text-sm text-muted-foreground space-x-4">
                         <span>
-                          📅 {new Date(log.timestamp).toLocaleString()}
+                           {new Date(log.timestamp).toLocaleString()}
                         </span>
-                        {log.ip && <span>🌐 {log.ip}</span>}
+                        {log.ip && <span> {log.ip}</span>}
                         {log.city && log.country && (
                           <span>
-                            📍 {log.city}, {log.country}
+                             {log.city}, {log.country}
                           </span>
                         )}
-                        {log.browser && <span>💻 {log.browser}</span>}
-                        {log.user_id && <span>👤 {log.user_id}</span>}
+                        {log.browser && <span> {log.browser}</span>}
+                        {log.user_id && <span> {log.user_id}</span>}
                       </div>
                       {log.url && (
                         <div className="text-xs text-muted-foreground">
-                          🔗 {log.url}
+                           {log.url}
                         </div>
                       )}
                     </div>
@@ -197,7 +197,7 @@ export default function AdminLogsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>💡 Pro Tip: Use Vercel Toolbar</CardTitle>
+          <CardTitle> Pro Tip: Use Vercel Toolbar</CardTitle>
           <CardDescription>
             For real-time logs with full details, add{" "}
             <code className="bg-muted px-2 py-1 rounded">?vercelToolbar=1</code>{" "}

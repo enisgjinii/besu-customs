@@ -113,7 +113,7 @@ export async function loadThreeModelProgressive(
     // Only encode if not already encoded
     const finalUrl = isUrlEncoded(urlToLoad) ? urlToLoad : encodeURI(urlToLoad);
 
-    console.log(`📦 Loading ${quality} quality model: ${urlToLoad}`);
+    console.log(` Loading ${quality} quality model: ${urlToLoad}`);
 
     onProgress?.({
       stage: quality === "low" ? "loading-low" : "loading-high",
@@ -175,7 +175,7 @@ export async function loadThreeModelProgressive(
 
       // If this is not the last quality, continue to next
       if (!isLastQuality) {
-        console.log(`✓ ${quality} quality loaded, upgrading...`);
+        console.log(` ${quality} quality loaded, upgrading...`);
         continue;
       }
     } catch (error) {
@@ -216,7 +216,7 @@ export function preloadThreeModel(modelUrl: string): void {
 
   // Only preload on fast connections
   if (speed === "slow") {
-    console.log("⏭️ Skipping preload on slow connection");
+    console.log("⏭ Skipping preload on slow connection");
     return;
   }
 
@@ -230,7 +230,7 @@ export function preloadThreeModel(modelUrl: string): void {
   link.crossOrigin = "anonymous";
   document.head.appendChild(link);
 
-  console.log(`🔄 Preloading model: ${targetUrl}`);
+  console.log(` Preloading model: ${targetUrl}`);
 }
 
 /**

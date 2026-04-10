@@ -85,7 +85,7 @@ export function getProductPrice(productId: string | null, method: PrintingMethod
   if (PRICING_RULES[productId]) {
     const config = PRICING_RULES[productId];
     const price = method === "embroidered" ? (config.embroidered ?? config.sublimated) : config.sublimated;
-    console.log("[PRICING] ✓ Exact match:", productId, "-> $" + price);
+    console.log("[PRICING]  Exact match:", productId, "-> $" + price);
     return price;
   }
 
@@ -96,7 +96,7 @@ export function getProductPrice(productId: string | null, method: PrintingMethod
   if (PRICING_RULES[idKey]) {
     const config = PRICING_RULES[idKey];
     const price = method === "embroidered" ? (config.embroidered ?? config.sublimated) : config.sublimated;
-    console.log("[PRICING] ✓ Normalized match:", idKey, "-> $" + price);
+    console.log("[PRICING]  Normalized match:", idKey, "-> $" + price);
     return price;
   }
 
@@ -109,13 +109,13 @@ export function getProductPrice(productId: string | null, method: PrintingMethod
     if (idKey.includes(key)) {
       const config = PRICING_RULES[key];
       const price = method === "embroidered" ? (config.embroidered ?? config.sublimated) : config.sublimated;
-      console.log("[PRICING] ✓ Partial match:", key, "in", idKey, "-> $" + price);
+      console.log("[PRICING]  Partial match:", key, "in", idKey, "-> $" + price);
       return price;
     }
   }
 
   // 4. Default fallback
-  console.log("[PRICING] ⚠ No match, using default");
+  console.log("[PRICING]  No match, using default");
   const defaultConfig = PRICING_RULES["default"];
   const price = method === "embroidered"
     ? defaultConfig.embroidered ?? defaultConfig.sublimated

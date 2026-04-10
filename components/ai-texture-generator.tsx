@@ -205,7 +205,7 @@ export function AITextureGenerator({
       .filter(Boolean)
       .join(" ");
 
-    console.log("🎨 Calling Google Gemini Pro with advanced settings:", {
+    console.log(" Calling Google Gemini Pro with advanced settings:", {
       prompt: googlePrompt,
       model: "pro",
       resolution: "4K",

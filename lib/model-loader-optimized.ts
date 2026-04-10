@@ -131,7 +131,7 @@ export function preloadModel(modelUrl: string): void {
 
   // Only preload on fast connections
   if (speed === "slow") {
-    console.log("⏭️ Skipping preload on slow connection");
+    console.log("⏭ Skipping preload on slow connection");
     return;
   }
 
@@ -145,7 +145,7 @@ export function preloadModel(modelUrl: string): void {
   link.crossOrigin = "anonymous";
   document.head.appendChild(link);
 
-  console.log(`🔄 Preloading model: ${targetUrl}`);
+  console.log(` Preloading model: ${targetUrl}`);
 }
 
 // Estimate model size before loading

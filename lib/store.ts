@@ -622,7 +622,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
                 get().sections,
               );
 
-              console.log("📋 Loaded sections from API:", json.sections.length);
+              console.log(" Loaded sections from API:", json.sections.length);
               set({
                 sections: mergedSections,
                 sectionsFromApi: true,
@@ -632,7 +632,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
             }
           }
         } catch (err) {
-          console.warn("⚠️ Failed to fetch sections from API:", err);
+          console.warn(" Failed to fetch sections from API:", err);
         }
 
         // No precomputed sections — leave sections empty so ModelLoader will extract.
@@ -1138,7 +1138,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           deliveryNotes: "",
         });
 
-        console.log("🔄 Reset all customizations");
+        console.log(" Reset all customizations");
       },
 
       // Delivery notes

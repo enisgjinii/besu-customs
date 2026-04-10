@@ -668,7 +668,7 @@ export function Step08AIImages() {
       const newId = uuidv4();
       addTextureLayer({
         id: newId,
-        name: "🔧 Debug Test Pattern",
+        name: " Debug Test Pattern",
         type: "pattern",
         visible: true,
         locked: false,

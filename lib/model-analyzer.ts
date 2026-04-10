@@ -286,10 +286,10 @@ function analyzeUVs(meshName: string, uvAttr: THREE.BufferAttribute, channel: nu
  * Print model analysis to console in a readable format
  */
 export function printModelAnalysis(analysis: ModelAnalysis): void {
-  console.group("🔍 MODEL ANALYSIS");
+  console.group(" MODEL ANALYSIS");
 
   // Summary
-  console.group("📊 Summary");
+  console.group(" Summary");
   console.log(`Total Nodes: ${analysis.summary.totalNodes}`);
   console.log(`Total Meshes: ${analysis.summary.totalMeshes}`);
   console.log(`Total Materials: ${analysis.summary.totalMaterials}`);
@@ -299,42 +299,42 @@ export function printModelAnalysis(analysis: ModelAnalysis): void {
   console.groupEnd();
 
   // Hierarchy
-  console.group("🌳 Node Hierarchy");
+  console.group(" Node Hierarchy");
   analysis.hierarchy.forEach((node) => {
     const indent = "  ".repeat(node.depth);
-    const icon = node.type === "Mesh" ? "📦" : node.type === "Group" ? "📁" : "⚪";
+    const icon = node.type === "Mesh" ? "" : node.type === "Group" ? "" : "";
     console.log(`${indent}${icon} ${node.name} (${node.type})${node.childCount > 0 ? ` [${node.childCount} children]` : ""}`);
   });
   console.groupEnd();
 
   // Meshes
-  console.group("📦 Meshes");
+  console.group(" Meshes");
   analysis.meshes.forEach((mesh) => {
     console.group(`${mesh.name}`);
     console.log(`Vertices: ${mesh.vertexCount.toLocaleString()}, Faces: ${mesh.faceCount.toLocaleString()}`);
-    console.log(`UV: ${mesh.hasUV ? "✅" : "❌"}, UV2: ${mesh.hasUV2 ? "✅" : "❌"}, Normals: ${mesh.hasNormals ? "✅" : "❌"}`);
+    console.log(`UV: ${mesh.hasUV ? "" : ""}, UV2: ${mesh.hasUV2 ? "" : ""}, Normals: ${mesh.hasNormals ? "" : ""}`);
     console.log(`Materials: ${mesh.materials.map((m) => m.name).join(", ")}`);
     console.groupEnd();
   });
   console.groupEnd();
 
   // Materials
-  console.group("🎨 Materials");
+  console.group(" Materials");
   analysis.materials.forEach((mat) => {
     console.log(`${mat.name}: ${mat.type}, Color: ${mat.color}, Roughness: ${mat.roughness}, Metalness: ${mat.metalness}`);
   });
   console.groupEnd();
 
   // UV Maps
-  console.group("🗺️ UV Maps");
+  console.group(" UV Maps");
   analysis.uvMaps.forEach((uv) => {
-    console.log(`${uv.meshName} (UV${uv.uvChannel}): Range [${uv.minU.toFixed(3)}-${uv.maxU.toFixed(3)}, ${uv.minV.toFixed(3)}-${uv.maxV.toFixed(3)}], Coverage: ${uv.coverage.toFixed(1)}%, Normalized: ${uv.isNormalized ? "✅" : "⚠️"}`);
+    console.log(`${uv.meshName} (UV${uv.uvChannel}): Range [${uv.minU.toFixed(3)}-${uv.maxU.toFixed(3)}, ${uv.minV.toFixed(3)}-${uv.maxV.toFixed(3)}], Coverage: ${uv.coverage.toFixed(1)}%, Normalized: ${uv.isNormalized ? "" : ""}`);
   });
   console.groupEnd();
 
   // Warnings
   if (analysis.warnings.length > 0) {
-    console.group("⚠️ Warnings");
+    console.group(" Warnings");
     analysis.warnings.forEach((w) => console.warn(w));
     console.groupEnd();
   }

@@ -210,10 +210,10 @@ export function LayerControls({
             }
             try {
               removeTextureLayer(layerId);
-              console.log("✅ Layer deleted successfully:", layerId);
+              console.log(" Layer deleted successfully:", layerId);
               toast.success("Design deleted");
             } catch (error) {
-              console.error("❌ Failed to delete layer:", error);
+              console.error(" Failed to delete layer:", error);
               toast.error("Failed to delete design");
             }
           }}

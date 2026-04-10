@@ -331,7 +331,7 @@ export function OnboardingInfoButton() {
             {/* Compact Footer */}
             <div className="p-1.5 bg-secondary/10 border-t text-center">
               <div className="text-[10px] text-muted-foreground">
-                💡 Use{" "}
+                 Use{" "}
                 <Badge variant="outline" className="text-[10px] mx-0.5">
                   ?
                 </Badge>{" "}

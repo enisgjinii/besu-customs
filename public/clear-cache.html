@@ -63,7 +63,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>🧹 Clear All Caches</h1>
+    <h1> Clear All Caches</h1>
     
     <div class="info">
       <strong>This will clear:</strong>
@@ -103,7 +103,7 @@
           const cacheNames = await caches.keys();
           for (const name of cacheNames) {
             await caches.delete(name);
-            results.push(`✅ Deleted cache: ${name}`);
+            results.push(` Deleted cache: ${name}`);
           }
         }
 
@@ -112,33 +112,33 @@
           const dbs = await indexedDB.databases();
           for (const db of dbs) {
             indexedDB.deleteDatabase(db.name);
-            results.push(`✅ Deleted IndexedDB: ${db.name}`);
+            results.push(` Deleted IndexedDB: ${db.name}`);
           }
         }
 
         // 3. Clear Local Storage
         localStorage.clear();
-        results.push('✅ Cleared localStorage');
+        results.push(' Cleared localStorage');
 
         // 4. Clear Session Storage
         sessionStorage.clear();
-        results.push('✅ Cleared sessionStorage');
+        results.push(' Cleared sessionStorage');
 
         // 5. Unregister Service Workers
         if ('serviceWorker' in navigator) {
           const registrations = await navigator.serviceWorker.getRegistrations();
           for (const registration of registrations) {
             await registration.unregister();
-            results.push('✅ Unregistered Service Worker');
+            results.push(' Unregistered Service Worker');
           }
         }
 
         status.className = 'status success';
-        status.innerHTML = results.join('<br>') + '<br><br><strong>✅ All caches cleared!</strong><br>Reload the page to see changes.';
+        status.innerHTML = results.join('<br>') + '<br><br><strong> All caches cleared!</strong><br>Reload the page to see changes.';
 
       } catch (error) {
         status.className = 'status error';
-        status.textContent = '❌ Error: ' + error.message;
+        status.textContent = ' Error: ' + error.message;
       }
     }
 
@@ -155,14 +155,14 @@
             await registration.unregister();
           }
           status.className = 'status success';
-          status.textContent = '✅ All service workers unregistered!';
+          status.textContent = ' All service workers unregistered!';
         } else {
           status.className = 'status error';
-          status.textContent = '⚠️ Service Workers not supported';
+          status.textContent = ' Service Workers not supported';
         }
       } catch (error) {
         status.className = 'status error';
-        status.textContent = '❌ Error: ' + error.message;
+        status.textContent = ' Error: ' + error.message;
       }
     }
 

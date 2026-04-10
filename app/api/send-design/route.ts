@@ -169,20 +169,20 @@ export async function POST(req: NextRequest) {
                                         <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                                             <tr>
                                                 <td style="width: 32px; height: 32px; background-color: #18181b; border-radius: 8px; text-align: center; vertical-align: middle;">
-                                                    <span style="color: white; font-size: 16px;">⚽</span>
+                                                    <span style="color: white; font-size: 16px;"></span>
                                                 </td>
                                                 <td style="padding-left: 10px; font-size: 18px; font-weight: 600; color: #09090b;">Besu Customs</td>
                                             </tr>
                                         </table>
                                     </td>
                                     <td align="right">
-                                        <span style="display: inline-block; padding: 6px 12px; font-size: 12px; font-weight: 500; background-color: #dcfce7; color: #166534; border-radius: 9999px;">✓ Order Confirmed</span>
+                                        <span style="display: inline-block; padding: 6px 12px; font-size: 12px; font-weight: 500; background-color: #dcfce7; color: #166534; border-radius: 9999px;"> Order Confirmed</span>
                                     </td>
                                 </tr>
                             </table>
                             <h1 style="margin: 24px 0 4px 0; font-size: 26px; font-weight: 600; color: #09090b; letter-spacing: -0.5px;">${designName || "Custom Uniform Design"}</h1>
                             <p style="margin: 0; font-size: 14px; color: #71717a;">${formattedDate} at ${formattedTime}</p>
-                            <div style="display: inline-block; margin-top: 16px; padding: 8px 14px; background-color: #f4f4f5; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, monospace; font-size: 13px; font-weight: 500; color: #09090b;">📋 ${orderId}</div>
+                            <div style="display: inline-block; margin-top: 16px; padding: 8px 14px; background-color: #f4f4f5; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, monospace; font-size: 13px; font-weight: 500; color: #09090b;"> ${orderId}</div>
                         </td>
                     </tr>
                     
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td style="padding: 16px 20px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
-                                        <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">💬 Order Notes</p>
+                                        <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;"> Order Notes</p>
                                         <p style="margin: 0; font-size: 14px; color: #09090b; line-height: 1.7;">${message}</p>
                                     </td>
                                 </tr>
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
                                     <td>
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                                             <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">🎨</td>
+                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
                                                 <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Design Preview</td>
                                                 <td style="border-bottom: 1px solid #e4e4e7;"></td>
                                             </tr>
@@ -275,7 +275,7 @@ export async function POST(req: NextRequest) {
                                     <td>
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                                             <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📐</td>
+                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
                                                 <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">2D Pattern Layout (Tech Pack)</td>
                                                 <td style="border-bottom: 1px solid #e4e4e7;"></td>
                                             </tr>
@@ -299,7 +299,7 @@ export async function POST(req: NextRequest) {
                                             <tr>
                                                 <td style="width: 48px; height: 48px; background-color: #ef4444; border-radius: 8px; text-align: center; vertical-align: middle; color: white; font-size: 16px; font-weight: 700;">PDF</td>
                                                 <td style="padding-left: 16px;">
-                                                    <p style="margin: 0 0 2px 0; font-size: 14px; font-weight: 600; color: #92400e;">📄 ${pdfFilename || "Order-Specs.pdf"}</p>
+                                                    <p style="margin: 0 0 2px 0; font-size: 14px; font-weight: 600; color: #92400e;"> ${pdfFilename || "Order-Specs.pdf"}</p>
                                                     <p style="margin: 0; font-size: 12px; color: #a16207;">Complete order specification document</p>
                                                 </td>
                                                 <td align="right">
@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
             <td>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                 <tr>
-                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📦</td>
+                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
                     <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Order Details</td>
                         <td style="border-bottom: 1px solid #e4e4e7;"></td>
                             </tr>
@@ -373,7 +373,7 @@ export async function POST(req: NextRequest) {
                         <td>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                                 <tr>
-                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">👥</td>
+                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
                                     <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Team Roster</td>
                                     <td style="border-bottom: 1px solid #e4e4e7;"></td>
                                 </tr>
@@ -401,7 +401,7 @@ export async function POST(req: NextRequest) {
                                     <td style="padding: 16px 20px;">
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                             <tr>
-                                                <td style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9);">📊 Total Uniform Sets</td>
+                                                <td style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9);"> Total Uniform Sets</td>
                                                 <td align="right" style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -1px;">${totalItems} <span style="font-size: 14px; opacity: 0.7;">sets</span></td>
                                             </tr>
                                         </table>
@@ -420,7 +420,7 @@ export async function POST(req: NextRequest) {
                         <td>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                                 <tr>
-                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">💰</td>
+                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
                                     <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Pricing Breakdown</td>
                                     <td style="border-bottom: 1px solid #e4e4e7;"></td>
                                 </tr>
@@ -455,7 +455,7 @@ export async function POST(req: NextRequest) {
                                     <td>
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                                             <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">🎨</td>
+                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
                                                 <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Color Specifications</td>
                                                 <td style="border-bottom: 1px solid #e4e4e7;"></td>
                                             </tr>
@@ -493,7 +493,7 @@ export async function POST(req: NextRequest) {
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td style="padding: 16px 20px; background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px;">
-                                        <p style="margin: 0 0 10px 0; font-size: 12px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">📝 Production Notes</p>
+                                        <p style="margin: 0 0 10px 0; font-size: 12px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;"> Production Notes</p>
                                         <p style="margin: 0; font-size: 14px; color: #78350f; line-height: 1.7;">${orderDetails.notes}</p>
                                     </td>
                                 </tr>
@@ -507,7 +507,7 @@ export async function POST(req: NextRequest) {
             <td>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
                 <tr>
-                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;">📎</td>
+                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
                     <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Attachments Included</td>
                         <td style="border-bottom: 1px solid #e4e4e7;"></td>
                             </tr>
@@ -518,7 +518,7 @@ export async function POST(req: NextRequest) {
                                                 <td style="padding: 6px; vertical-align: top;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
                                                         <tr>
-                                                            <td style="width: 32px; height: 32px; background-color: #fee2e2; border-radius: 6px; text-align: center; vertical-align: middle; color: #dc2626; font-size: 14px;">📄</td>
+                                                            <td style="width: 32px; height: 32px; background-color: #fee2e2; border-radius: 6px; text-align: center; vertical-align: middle; color: #dc2626; font-size: 14px;"></td>
                                                             <td style="padding-left: 10px;">
                                                                 <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">PDF Spec Sheet</p>
                                                                 <p style="margin: 0; font-size: 11px; color: #71717a;">1 file</p>
@@ -532,7 +532,7 @@ export async function POST(req: NextRequest) {
                                                 <td style="padding: 6px; vertical-align: top;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
                                                         <tr>
-                                                            <td style="width: 32px; height: 32px; background-color: #dbeafe; border-radius: 6px; text-align: center; vertical-align: middle; color: #2563eb; font-size: 14px;">🖼️</td>
+                                                            <td style="width: 32px; height: 32px; background-color: #dbeafe; border-radius: 6px; text-align: center; vertical-align: middle; color: #2563eb; font-size: 14px;"></td>
                                                             <td style="padding-left: 10px;">
                                                                 <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">Design Views</p>
                                                                 <p style="margin: 0; font-size: 11px; color: #71717a;">${[viewImages.front, viewImages.back, viewImages.left, viewImages.right].filter(Boolean).length} images</p>
@@ -546,7 +546,7 @@ export async function POST(req: NextRequest) {
                                                 <td style="padding: 6px; vertical-align: top;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
                                                         <tr>
-                                                            <td style="width: 32px; height: 32px; background-color: #d1fae5; border-radius: 6px; text-align: center; vertical-align: middle; color: #059669; font-size: 14px;">🗺️</td>
+                                                            <td style="width: 32px; height: 32px; background-color: #d1fae5; border-radius: 6px; text-align: center; vertical-align: middle; color: #059669; font-size: 14px;"></td>
                                                             <td style="padding-left: 10px;">
                                                                 <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">UV Map</p>
                                                                 <p style="margin: 0; font-size: 11px; color: #71717a;">1 file</p>
@@ -604,7 +604,7 @@ export async function POST(req: NextRequest) {
             to: recipientEmail,
             cc: finalCCs,
             bcc: process.env.SMTP_USER,
-            subject: `✅ Order Confirmed: ${designName || "Custom Design"} — ${orderId} `,
+            subject: ` Order Confirmed: ${designName || "Custom Design"} — ${orderId} `,
             text:
                 message ||
                 `Here is the order form and design assets for ${designName || "your custom order"}.`,

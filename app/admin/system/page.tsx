@@ -157,7 +157,7 @@ export default function SystemUtilitiesPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Online:</span>
                   <span className="font-medium">
-                    {navigator.onLine ? "✅ Yes" : "❌ No"}
+                    {navigator.onLine ? " Yes" : " No"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -176,9 +176,9 @@ export default function SystemUtilitiesPage() {
                           canvas.getContext("webgl2") ||
                           canvas.getContext("webgl");
                         canvas.remove();
-                        return gl ? "✅ Supported" : "❌ Not Supported";
+                        return gl ? " Supported" : " Not Supported";
                       } catch {
-                        return "❌ Error";
+                        return " Error";
                       }
                     })()}
                   </span>

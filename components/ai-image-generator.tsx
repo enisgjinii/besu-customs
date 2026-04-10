@@ -217,7 +217,7 @@ export function AIImageGenerator() {
       });
       processedUrl = result.dataUrl;
       console.log(
-        `✅ Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`,
+        ` Background removed from AI image in ${(result.processingTime / 1000).toFixed(1)}s`,
       );
     } catch (error) {
       console.warn("Background removal failed, using original image:", error);
@@ -235,7 +235,7 @@ export function AIImageGenerator() {
     toast.loading("Upscaling for 3D quality... 85%", { id: toastId });
     try {
       processedUrl = await upscaleImage(processedUrl, 2048);
-      console.log("✅ Image upscaled to 2048px for 3D model");
+      console.log(" Image upscaled to 2048px for 3D model");
     } catch (err) {
       console.warn("Upscale failed, using current resolution:", err);
     }
@@ -254,7 +254,7 @@ export function AIImageGenerator() {
     );
 
     console.log(
-      "🎨 AI Image Generator: Dispatching generated-image-available event",
+      " AI Image Generator: Dispatching generated-image-available event",
       storageData,
     );
     window.dispatchEvent(

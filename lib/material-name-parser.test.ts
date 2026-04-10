@@ -39,7 +39,7 @@ const testMaterials = [
   "FABRIC 2_612766",
 ];
 
-console.log("🧪 Material Name Parser Test\n");
+console.log(" Material Name Parser Test\n");
 console.log("=".repeat(80));
 
 testMaterials.forEach((materialName) => {
@@ -52,7 +52,7 @@ testMaterials.forEach((materialName) => {
 });
 
 console.log("\n" + "=".repeat(80));
-console.log("\n📊 Sorted by Priority:\n");
+console.log("\n Sorted by Priority:\n");
 
 const sorted = parseMaterialNames(testMaterials);
 sorted.forEach((material, index) => {

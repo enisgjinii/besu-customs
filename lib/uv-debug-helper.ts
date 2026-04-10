@@ -393,7 +393,7 @@ export function logTransformation(
   afterUrl: string,
   transform: string,
 ) {
-  console.group(`%c🔄 UV Transformation: ${step}`, "color: #0066cc; font-weight: bold");
+  console.group(`%c UV Transformation: ${step}`, "color: #0066cc; font-weight: bold");
   console.log(`Transform: ${transform}`);
   console.log("%cBefore:", "color: #cc0000", beforeUrl.substring(0, 100) + "...");
   console.log("%cAfter:", "color: #00cc00", afterUrl.substring(0, 100) + "...");

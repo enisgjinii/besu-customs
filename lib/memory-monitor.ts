@@ -54,11 +54,11 @@ export function useMemoryMonitor(
     useEffect(() => {
         const info = getMemoryInfo();
         if (!info) {
-            console.log("📊 Memory monitoring not available (non-Chrome browser)");
+            console.log(" Memory monitoring not available (non-Chrome browser)");
             return;
         }
 
-        console.log("📊 Memory monitor started (threshold:", (threshold * 100).toFixed(0) + "%)");
+        console.log(" Memory monitor started (threshold:", (threshold * 100).toFixed(0) + "%)");
 
         const checkMemory = () => {
             const memInfo = getMemoryInfo();
@@ -70,7 +70,7 @@ export function useMemoryMonitor(
 
             if (usedRatio > threshold) {
                 console.warn(
-                    `⚠️ High memory pressure: ${usedMB.toFixed(0)}MB / ${limitMB.toFixed(0)}MB (${(usedRatio * 100).toFixed(1)}%)`
+                    ` High memory pressure: ${usedMB.toFixed(0)}MB / ${limitMB.toFixed(0)}MB (${(usedRatio * 100).toFixed(1)}%)`
                 );
                 onHighPressureRef.current();
             }
@@ -89,7 +89,7 @@ export function useMemoryMonitor(
  * Default high-pressure handler that cleans up caches
  */
 export function performMemoryCleanup() {
-    console.log("🧹 Performing memory cleanup...");
+    console.log(" Performing memory cleanup...");
 
     // Clear model cache (evict non-referenced models)
     const modelCache = getModelCache();
@@ -100,7 +100,7 @@ export function performMemoryCleanup() {
     // but we can also clear older models more aggressively
 
     console.log(
-        `🧹 Model cache: ${statsBefore.cachedModels} models, ${statsBefore.totalMemoryMB.toFixed(1)}MB`
+        ` Model cache: ${statsBefore.cachedModels} models, ${statsBefore.totalMemoryMB.toFixed(1)}MB`
     );
 
     // Clear any global caches
@@ -114,7 +114,7 @@ export function performMemoryCleanup() {
     if (typeof window !== "undefined" && (window as any).gc) {
         try {
             (window as any).gc();
-            console.log("🧹 Garbage collection triggered");
+            console.log(" Garbage collection triggered");
         } catch {
             // GC not available
         }

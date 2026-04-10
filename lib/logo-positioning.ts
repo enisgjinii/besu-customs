@@ -235,13 +235,13 @@ export function detectModelType(modelUrl: string | null): string {
   for (const [modelType, preset] of Object.entries(MODEL_PRESETS)) {
     for (const keyword of preset.keywords) {
       if (urlLower.includes(keyword)) {
-        console.log(`🔍 Model detected: ${modelType} (matched: "${keyword}")`);
+        console.log(` Model detected: ${modelType} (matched: "${keyword}")`);
         return modelType;
       }
     }
   }
 
-  console.log("🔍 Model type: unknown (using default preset)");
+  console.log(" Model type: unknown (using default preset)");
   return "unknown";
 }
 
@@ -262,7 +262,7 @@ export function getLogoPreset(
 
   const logoPreset = preset[placement] || preset.leftChest;
 
-  console.log(`📍 Logo preset for ${modelType} (${placement}):`, logoPreset);
+  console.log(` Logo preset for ${modelType} (${placement}):`, logoPreset);
 
   return logoPreset;
 }
@@ -294,7 +294,7 @@ export function saveCustomPreset(
   customPresets.set(key, preset);
 
   // Also log it so you can add it to MODEL_PRESETS
-  console.log("💾 CUSTOM PRESET SAVED - Add this to MODEL_PRESETS:");
+  console.log(" CUSTOM PRESET SAVED - Add this to MODEL_PRESETS:");
   console.log(`  modelUrl: "${modelUrl}"`);
   console.log(`  placement: "${placement}"`);
   console.log(`  preset: {`);
@@ -321,7 +321,7 @@ export function getCustomOrDefaultPreset(
     const key = `${modelUrl}:${placement}`;
     const custom = customPresets.get(key);
     if (custom) {
-      console.log("✅ Using custom preset for:", key);
+      console.log(" Using custom preset for:", key);
       return custom;
     }
   }
@@ -335,7 +335,7 @@ export function getCustomOrDefaultPreset(
  */
 export function addModelPreset(modelType: string, preset: ModelPreset): void {
   MODEL_PRESETS[modelType] = preset;
-  console.log(`➕ Added model preset: ${modelType}`);
+  console.log(` Added model preset: ${modelType}`);
 }
 
 /**

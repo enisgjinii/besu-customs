@@ -245,7 +245,7 @@ export function Step01Apparel() {
 
       {!selectedProductId && (
         <div className="text-center py-6 text-muted-foreground">
-          <p className="text-sm">👆 Select an apparel to start customizing</p>
+          <p className="text-sm"> Select an apparel to start customizing</p>
         </div>
       )}
 

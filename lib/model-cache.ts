@@ -161,7 +161,7 @@ class ModelCache {
         break;
       }
 
-      console.log(`🗑️ Evicting cached model: ${key}`);
+      console.log(` Evicting cached model: ${key}`);
       this.disposeModel(cached.gltf);
       this.totalMemory -= cached.size;
       this.cache.delete(key);
@@ -211,7 +211,7 @@ class ModelCache {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      console.log(`✅ Cache hit: ${url}`);
+      console.log(` Cache hit: ${url}`);
       cached.lastAccessed = Date.now();
       cached.refCount++;
       return cached.gltf;
@@ -225,7 +225,7 @@ class ModelCache {
     }
 
     // Load from network
-    console.log(`📥 Loading model: ${url}`);
+    console.log(` Loading model: ${url}`);
     const loader = this.initializeLoaders();
 
     // Encode URL if needed
@@ -259,7 +259,7 @@ class ModelCache {
           this.totalMemory += size;
 
           console.log(
-            `✅ Cached model: ${url} (${(size / 1024 / 1024).toFixed(2)} MB)`,
+            ` Cached model: ${url} (${(size / 1024 / 1024).toFixed(2)} MB)`,
           );
 
           // Evict old models if needed
@@ -317,9 +317,9 @@ class ModelCache {
       return; // Already cached or loading
     }
 
-    console.log(`🔄 Preloading: ${url}`);
+    console.log(` Preloading: ${url}`);
     this.load(url).catch((err) => {
-      console.warn(`⚠️ Preload failed for ${url}:`, err);
+      console.warn(` Preload failed for ${url}:`, err);
     });
   }
 
@@ -361,7 +361,7 @@ class ModelCache {
     }
     this.cache.clear();
     this.totalMemory = 0;
-    console.log("🧹 Model cache cleared");
+    console.log(" Model cache cleared");
   }
 
   /**

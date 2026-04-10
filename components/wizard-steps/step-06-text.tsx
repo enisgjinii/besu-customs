@@ -123,10 +123,10 @@ export function Step06Text() {
       if (selectedTextId === id) {
         setSelectedTextId(null);
       }
-      console.log("✅ Text layer deleted successfully:", id);
+      console.log(" Text layer deleted successfully:", id);
       toast.success("Text removed");
     } catch (error) {
-      console.error("❌ Failed to delete text layer:", error);
+      console.error(" Failed to delete text layer:", error);
       toast.error("Failed to delete text");
     }
   };

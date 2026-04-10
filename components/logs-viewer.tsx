@@ -142,20 +142,20 @@ export function LogsViewer() {
                   <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                     <div className="flex gap-4 flex-wrap">
                       <span>
-                        📍 {log.geoLocation?.city || "Unknown"},{" "}
+                         {log.geoLocation?.city || "Unknown"},{" "}
                         {log.geoLocation?.country || "Unknown"}
                       </span>
-                      <span>🌐 {log.clientInfo.ip || "Unknown IP"}</span>
+                      <span> {log.clientInfo.ip || "Unknown IP"}</span>
                       <span>
-                        💻 {log.clientInfo.browser} on {log.clientInfo.os}
+                         {log.clientInfo.browser} on {log.clientInfo.os}
                       </span>
-                      <span>📱 {log.clientInfo.device}</span>
+                      <span> {log.clientInfo.device}</span>
                     </div>
 
-                    {log.url && <div className="text-xs">🔗 {log.url}</div>}
+                    {log.url && <div className="text-xs"> {log.url}</div>}
 
                     {log.userId && (
-                      <div className="text-xs">👤 User: {log.userId}</div>
+                      <div className="text-xs"> User: {log.userId}</div>
                     )}
 
                     {log.stack && (

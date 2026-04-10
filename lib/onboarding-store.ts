@@ -173,7 +173,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       steps: [
         {
           id: "welcome",
-          title: "🎉 Welcome to Besu Customs!",
+          title: " Welcome to Besu Customs!",
           description:
             "Let's take a personalized tour to help you master our 3D customization platform. This will take about 5-10 minutes.",
           position: "center",
@@ -194,7 +194,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "sidebar",
-          title: "🧭 Navigation Sidebar",
+          title: " Navigation Sidebar",
           description:
             "Your command center! This sidebar contains all the essential tools and sections. Pro tip: You can collapse it for more workspace.",
           target: '[data-tour="sidebar"]',
@@ -209,7 +209,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "model-loader",
-          title: "🎽 3D Model Gallery",
+          title: " 3D Model Gallery",
           description:
             "Start your creativity here! Browse our extensive collection of 3D models including apparel, accessories, and sports equipment.",
           target: '[data-tour="model-loader"]',
@@ -236,7 +236,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "material-editor",
-          title: "🎨 Material Studio",
+          title: " Material Studio",
           description:
             "Transform your model with materials! Customize colors, textures, and finishes for each part of your 3D model.",
           target: '[data-tour="material-editor"]',
@@ -355,7 +355,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "ai-generator",
-          title: "🤖 AI Texture Creator",
+          title: " AI Texture Creator",
           description:
             "Unleash AI creativity! Generate unlimited unique textures by describing what you envision. Perfect for one-of-a-kind designs.",
           target: '[data-tour="ai-generator"]',
@@ -380,7 +380,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "link-materials",
-          title: "🔗 Link Materials",
+          title: " Link Materials",
           description:
             "Link multiple material sections to apply the same changes to all of them simultaneously.",
           target: '[data-tour="material-editor"] .absolute.right-2.top-1\\/2',
@@ -400,7 +400,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "save-preset",
-          title: "💾 Save Your Work",
+          title: " Save Your Work",
           description:
             "Save your current configuration as a preset for future use or sharing.",
           target: '[data-tour="export-options"] .save-preset-button',
@@ -419,7 +419,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "export-model",
-          title: "📤 Export Your Creation",
+          title: " Export Your Creation",
           description:
             "Export your customized model in various formats for 3D printing or further editing.",
           target: '[data-tour="export-options"] .export-button',
@@ -563,7 +563,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         },
         {
           id: "final-tips",
-          title: "🚀 You're Ready to Create!",
+          title: " You're Ready to Create!",
           description:
             "Congratulations! You've mastered the essentials of Besu Customs. Time to bring your creative visions to life. Remember: save early, save often!",
           position: "center",

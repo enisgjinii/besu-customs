@@ -262,7 +262,7 @@ export function Step03bTrimLines() {
 
       // Apply the trim color to side panel sections
       sideSections.forEach((section) => {
-        console.log(`🎨 Applying side stripe color to: "${section.name}"`);
+        console.log(` Applying side stripe color to: "${section.name}"`);
         updateSection(section.id, {
           color: trimColor,
           trimDesign: trimPattern,
@@ -305,7 +305,7 @@ export function Step03bTrimLines() {
     try {
       sectionsToUpdate.forEach((section) => {
         console.log(
-          `🎨 Applying trim to section: "${section.name}" (${section.id})`,
+          ` Applying trim to section: "${section.name}" (${section.id})`,
         );
         updateSection(section.id, {
           trimDesign: trimPattern,
@@ -314,14 +314,14 @@ export function Step03bTrimLines() {
       });
 
       console.log(
-        `✅ Trim applied to ${sectionsToUpdate.length} sections:`,
+        ` Trim applied to ${sectionsToUpdate.length} sections:`,
         sectionsToUpdate.map((s) => s.name),
       );
       toast.success(
         `Trim applied to ${sectionsToUpdate.length} section(s): ${sectionsToUpdate.map((s) => s.name).join(", ")}`,
       );
     } catch (error) {
-      console.error("❌ Failed to apply trim:", error);
+      console.error(" Failed to apply trim:", error);
       toast.error("Failed to apply trim. Please try again.");
     }
   };
@@ -530,7 +530,7 @@ export function Step03bTrimLines() {
           </Button>
 
           <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded text-xs text-blue-900 dark:text-blue-200 mt-2">
-            <strong>💡 Tip:</strong> Use "Side Stripes" options to add vertical
+            <strong> Tip:</strong> Use "Side Stripes" options to add vertical
             stripes on the sides of jerseys and pants.
           </div>
         </div>

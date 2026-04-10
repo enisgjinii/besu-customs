@@ -51,7 +51,7 @@ export function LayerControlsOverlay() {
   );
 
   // Debug logging
-  console.log("🎛️ LayerControlsOverlay:", {
+  console.log(" LayerControlsOverlay:", {
     selectedTextureLayerId,
     selectedLayer: selectedLayer?.name,
     layerCount: textureLayers.length,

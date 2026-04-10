@@ -1005,7 +1005,7 @@ function Model({
     if (gltf && !gltfLoading && process.env.NODE_ENV === 'development') {
       const stats = getModelCache().getStats();
       console.log(
-        `📊 Model cache: ${stats.cachedModels} models, ${stats.totalMemoryMB.toFixed(1)} MB`,
+        ` Model cache: ${stats.cachedModels} models, ${stats.totalMemoryMB.toFixed(1)} MB`,
       );
     }
   }, [gltf, gltfLoading]);
@@ -1013,7 +1013,7 @@ function Model({
   // Handle loading errors
   useEffect(() => {
     if (gltfError) {
-      console.error("❌ Model loading error:", gltfError);
+      console.error(" Model loading error:", gltfError);
     }
   }, [gltfError]);
 

@@ -17,11 +17,11 @@ export async function checkAndClearCache(): Promise<boolean> {
 
     // If version matches, no need to clear
     if (storedVersion === APP_VERSION) {
-      console.log("✅ Cache version matches:", APP_VERSION);
+      console.log(" Cache version matches:", APP_VERSION);
       return false;
     }
 
-    console.log("🔄 Version mismatch. Clearing cache...", {
+    console.log(" Version mismatch. Clearing cache...", {
       stored: storedVersion,
       current: APP_VERSION,
     });
@@ -35,7 +35,7 @@ export async function checkAndClearCache(): Promise<boolean> {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map((name) => caches.delete(name)));
         clearedCount += cacheNames.length;
-        console.log(`✅ Cleared ${cacheNames.length} cache(s)`);
+        console.log(` Cleared ${cacheNames.length} cache(s)`);
       } catch (e) {
         console.warn("Failed to clear Cache API:", e);
       }
@@ -50,7 +50,7 @@ export async function checkAndClearCache(): Promise<boolean> {
           localStorage.removeItem(key);
         }
       });
-      console.log("✅ Cleared localStorage");
+      console.log(" Cleared localStorage");
     } catch (e) {
       console.warn("Failed to clear localStorage:", e);
     }
@@ -58,7 +58,7 @@ export async function checkAndClearCache(): Promise<boolean> {
     // 3. Clear sessionStorage
     try {
       sessionStorage.clear();
-      console.log("✅ Cleared sessionStorage");
+      console.log(" Cleared sessionStorage");
     } catch (e) {
       console.warn("Failed to clear sessionStorage:", e);
     }
@@ -79,7 +79,7 @@ export async function checkAndClearCache(): Promise<boolean> {
             return Promise.resolve();
           }),
         );
-        console.log("✅ Cleared IndexedDB");
+        console.log(" Cleared IndexedDB");
       } catch (e) {
         console.warn("Failed to clear IndexedDB:", e);
       }
@@ -88,13 +88,13 @@ export async function checkAndClearCache(): Promise<boolean> {
     // Update version
     localStorage.setItem(VERSION_KEY, APP_VERSION);
     console.log(
-      "✅ Cache cleared successfully. Updated to version:",
+      " Cache cleared successfully. Updated to version:",
       APP_VERSION,
     );
 
     return true;
   } catch (error) {
-    console.error("❌ Failed to check/clear cache:", error);
+    console.error(" Failed to check/clear cache:", error);
     return false;
   }
 }
@@ -110,9 +110,9 @@ export async function forceClearCache(): Promise<void> {
     // Clear everything
     await checkAndClearCache();
 
-    console.log("✅ Force cache clear completed");
+    console.log(" Force cache clear completed");
   } catch (error) {
-    console.error("❌ Force cache clear failed:", error);
+    console.error(" Force cache clear failed:", error);
     throw error;
   }
 }

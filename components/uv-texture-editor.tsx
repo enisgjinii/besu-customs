@@ -251,7 +251,7 @@ export function UVTextureEditor() {
       isInternalUpdateRef.current = false;
 
       setGlobalCustomTexture(dataUrl);
-      console.log("🔄 UV texture updated and flipped for 3D (controls HIDDEN)");
+      console.log(" UV texture updated and flipped for 3D (controls HIDDEN)");
     }, debounceTime);
   }, [
     setGlobalCustomTexture,
@@ -300,7 +300,7 @@ export function UVTextureEditor() {
             });
           }
 
-          console.log(`✏️ Updated text layer: ${textLayer.text}`);
+          console.log(` Updated text layer: ${textLayer.text}`);
         } else if (!targetObj && textLayer.visible !== false) {
           // CREATE new text object if it doesn't exist and is visible
           const textOptions: any = {
@@ -329,7 +329,7 @@ export function UVTextureEditor() {
           }
 
           canvas.add(text);
-          console.log(`✨ Created new text layer: ${textLayer.text}`);
+          console.log(` Created new text layer: ${textLayer.text}`);
         }
       });
 
@@ -338,7 +338,7 @@ export function UVTextureEditor() {
       canvas.getObjects("i-text").forEach((obj: any) => {
         if (!storeLayerIds.has(obj._uuid)) {
           canvas.remove(obj);
-          console.log("🗑️ Removed text layer no longer in store");
+          console.log(" Removed text layer no longer in store");
         }
       });
 
@@ -347,7 +347,7 @@ export function UVTextureEditor() {
     };
 
     updateCanvasFromStore();
-    console.log("🔄 Canvas synced with store texture layers");
+    console.log(" Canvas synced with store texture layers");
   }, [textureLayers, isLoaded, updateTexture]);
 
   // Initialize Fabric.js canvas
@@ -356,7 +356,7 @@ export function UVTextureEditor() {
 
     // Prevent double initialization (React Strict Mode issue)
     if (isInitializingRef.current || fabricCanvasRef.current) {
-      console.log("⚠️ Skipping duplicate initialization");
+      console.log(" Skipping duplicate initialization");
       return;
     }
 
@@ -364,7 +364,7 @@ export function UVTextureEditor() {
     const container = canvasContainerRef.current;
     const existingCanvas = container.querySelector("#fabric-canvas");
     if (existingCanvas) {
-      console.log("🧹 Removing existing canvas element");
+      console.log(" Removing existing canvas element");
       existingCanvas.remove();
     }
 
@@ -374,7 +374,7 @@ export function UVTextureEditor() {
     const loadFabric = async () => {
       if (!mounted || fabricCanvasRef.current) return;
       console.log(
-        "🎨 Initializing Fabric.js canvas with UV map:",
+        " Initializing Fabric.js canvas with UV map:",
         completeUVMap,
       );
 
@@ -417,7 +417,7 @@ export function UVTextureEditor() {
       fabricCanvasRef.current = canvas;
       setFabricCanvas(canvas);
       console.log(
-        `✅ Fabric canvas initialized at ${canvasSize}x${canvasSize}, displayed at`,
+        ` Fabric canvas initialized at ${canvasSize}x${canvasSize}, displayed at`,
         displaySize,
         "px",
       );
@@ -433,7 +433,7 @@ export function UVTextureEditor() {
       const iconLineWidth = Math.max(2, Math.round(2 * scaleFactor));
 
       console.log(
-        `📐 Control scale factor: ${scaleFactor.toFixed(2)}, corner size: ${scaledCornerSize}px`,
+        ` Control scale factor: ${scaleFactor.toFixed(2)}, corner size: ${scaledCornerSize}px`,
       );
 
       // Create SVG strings for Lucide icons (using actual Lucide SVG markup)
@@ -536,7 +536,7 @@ export function UVTextureEditor() {
         // Remove from store if it has a UUID (texture layer)
         if (target._uuid) {
           removeTextureLayer(target._uuid);
-          console.log("🗑️ Removed texture layer from store:", target._uuid);
+          console.log(" Removed texture layer from store:", target._uuid);
           toast.success("Design deleted");
         }
 
@@ -658,7 +658,7 @@ export function UVTextureEditor() {
       // Load UV map as background
       try {
         const img = await FabricImage.fromURL(completeUVMap);
-        console.log("✅ UV map image loaded:", img.width, "x", img.height);
+        console.log(" UV map image loaded:", img.width, "x", img.height);
 
         const scale = Math.min(
           canvas.width! / img.width!,
@@ -675,10 +675,10 @@ export function UVTextureEditor() {
         canvas.backgroundImage = img;
         canvas.renderAll();
         setIsLoaded(true);
-        console.log("✅ UV map set as background");
+        console.log(" UV map set as background");
         updateTexture();
       } catch (error) {
-        console.error("❌ Failed to load UV map:", error);
+        console.error(" Failed to load UV map:", error);
       }
 
       // Handle selection changes
@@ -738,7 +738,7 @@ export function UVTextureEditor() {
     // Cleanup
     return () => {
       mounted = false;
-      console.log("🧹 Cleaning up Fabric canvas");
+      console.log(" Cleaning up Fabric canvas");
       if (fabricCanvasRef.current) {
         try {
           fabricCanvasRef.current.dispose();
@@ -773,19 +773,19 @@ export function UVTextureEditor() {
       timestamp: number;
     }) => {
       console.log(
-        "🎨 UV Editor: Received generated-image-available event",
+        " UV Editor: Received generated-image-available event",
         data,
       );
 
       // Check if image is fresh (within last 30 mins)
       const THIRTY_MINS = 30 * 60 * 1000;
       if (Date.now() - data.timestamp > THIRTY_MINS) {
-        console.log("⚠️ UV Editor: Image too old, skipping");
+        console.log(" UV Editor: Image too old, skipping");
         return;
       }
 
       if (!fabricCanvasRef.current) {
-        console.log("⚠️ UV Editor: Canvas not ready, storing for later", data);
+        console.log(" UV Editor: Canvas not ready, storing for later", data);
         setPendingAIImage(data);
         return;
       }
@@ -797,7 +797,7 @@ export function UVTextureEditor() {
       url: string;
       timestamp: number;
     }) => {
-      console.log("🤖 Applying AI generated image to canvas:", data.url);
+      console.log(" Applying AI generated image to canvas:", data.url);
 
       const { FabricImage } = await import("fabric");
       const canvas = fabricCanvasRef.current;
@@ -818,7 +818,7 @@ export function UVTextureEditor() {
 
       FabricImage.fromURL(blobUrl || data.url)
         .then((img) => {
-          console.log("✅ AI Image loaded, adding to canvas");
+          console.log(" AI Image loaded, adding to canvas");
           // Hide UV wireframe temporarily so the generated image is clearly visible
           try {
             originalBgRef.current = canvas.backgroundImage;
@@ -906,7 +906,7 @@ export function UVTextureEditor() {
           }
         })
         .catch((err) => {
-          console.error("❌ Failed to load AI image:", err);
+          console.error(" Failed to load AI image:", err);
           toast.error("Failed to add AI image to canvas");
           try {
             if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -943,7 +943,7 @@ export function UVTextureEditor() {
   // Apply pending AI images when canvas becomes ready
   useEffect(() => {
     if (fabricCanvasRef.current && pendingAIImage) {
-      console.log("🎨 Canvas ready, applying pending AI image");
+      console.log(" Canvas ready, applying pending AI image");
       const applyPendingImage = async () => {
         const { FabricImage } = await import("fabric");
         const canvas = fabricCanvasRef.current;
@@ -1304,7 +1304,7 @@ export function UVTextureEditor() {
         // Remove from store if it has a UUID (texture layer)
         if (obj._uuid) {
           removeTextureLayer(obj._uuid);
-          console.log("🗑️ Removed texture layer from store:", obj._uuid);
+          console.log(" Removed texture layer from store:", obj._uuid);
         }
       });
       canvas.discardActiveObject();
@@ -1790,7 +1790,7 @@ export function UVTextureEditor() {
                 {hasSelection && activeLayerId && (
                   <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <p className="text-xs text-blue-700 dark:text-blue-300">
-                      ✨ <strong>Real-time editing:</strong> All changes above
+                       <strong>Real-time editing:</strong> All changes above
                       are applied instantly to your selected text!
                     </p>
                   </div>
@@ -2010,7 +2010,7 @@ export function UVTextureEditor() {
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          🎨 Drag, resize, rotate objects • Double-click text to edit •
+           Drag, resize, rotate objects • Double-click text to edit •
           Real-time 3D preview
         </p>
       </Card>

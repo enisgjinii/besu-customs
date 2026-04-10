@@ -473,7 +473,7 @@ export function DesignTextureCompositor({
         </div>
 
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          🎨 Drag to move • Corner controls to rotate, resize, delete •
+           Drag to move • Corner controls to rotate, resize, delete •
           Real-time 3D preview
         </p>
       </Card>

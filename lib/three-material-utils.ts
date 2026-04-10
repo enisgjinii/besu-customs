@@ -402,7 +402,7 @@ export function applyMaterialsToThreeModel(
             targetMaterial.map = trimTexture;
             targetMaterial.color = new THREE.Color(0xffffff);
             console.log(
-              `🎨 Applied trim "${section.trimDesign}" to section "${section.name}"`,
+              ` Applied trim "${section.trimDesign}" to section "${section.name}"`,
             );
           }
 
@@ -758,7 +758,7 @@ export function extractUVMapFromThreeModel(
   });
 
   if (!hasUVs) {
-    console.warn("⚠️ No UV data found in model");
+    console.warn(" No UV data found in model");
     return null;
   }
 
@@ -853,7 +853,7 @@ export function extractUVMaskFromThreeModel(
   });
 
   if (!hasUVs) {
-    console.warn("⚠️ No UV data found in model for mask extraction");
+    console.warn(" No UV data found in model for mask extraction");
     return null;
   }
 

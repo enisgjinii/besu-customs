@@ -282,7 +282,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
       const modelName = GEMINI_MODELS[model];
       setProgress(`Generating with ${model === "pro" ? "Gemini 3 Pro" : "Gemini 2.5 Flash"} (${resolution})...`);
 
-      console.log("🎨 Gemini Advanced Request:", {
+      console.log(" Gemini Advanced Request:", {
         url: apiUrl,
         model: modelName,
         resolution,
@@ -301,7 +301,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Gemini API Error:", errorData);
+        console.error(" Gemini API Error:", errorData);
         
         // Parse specific error types
         const errorMessage = errorData?.error?.message || "";
@@ -316,7 +316,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
       const data = await response.json();
       
-      console.log("📦 Gemini API Response:", {
+      console.log(" Gemini API Response:", {
         hasCandidates: !!data?.candidates,
         candidateCount: data?.candidates?.length,
         finishReason: data?.candidates?.[0]?.finishReason,
@@ -340,7 +340,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
         // Skip thought/intermediate images - we want the final output
         if (part.thought === true) {
-          console.log("🧠 Skipping thought image...");
+          console.log(" Skipping thought image...");
           continue;
         }
 
@@ -349,7 +349,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         if (inline?.data) {
           generatedImageBase64 = inline.data;
           generatedImageMimeType = inline.mime_type || inline.mimeType || "image/png";
-          console.log("✅ Found generated image:", {
+          console.log(" Found generated image:", {
             mimeType: generatedImageMimeType,
             dataLength: generatedImageBase64?.length,
             hasThoughtSignature: !!part.thought_signature,
@@ -363,13 +363,13 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           if (dataUrlMatch) {
             generatedImageMimeType = dataUrlMatch[1] || "image/png";
             generatedImageBase64 = dataUrlMatch[2];
-            console.log("✅ Found image in text as data URL");
+            console.log(" Found image in text as data URL");
           }
         }
       }
 
       if (thoughtText) {
-        console.log("💭 Model reasoning:", thoughtText.substring(0, 200) + "...");
+        console.log(" Model reasoning:", thoughtText.substring(0, 200) + "...");
       }
 
       if (!generatedImageBase64) {
@@ -378,7 +378,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         const blockReason = data?.promptFeedback?.blockReason;
         const safetyRatings = candidate?.safetyRatings || data?.promptFeedback?.safetyRatings;
         
-        console.error("❌ No image in response:", {
+        console.error(" No image in response:", {
           finishReason,
           blockReason,
           safetyRatings,
@@ -453,14 +453,14 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           });
           setRoughnessMapUrl(roughnessDataUrl);
           
-          console.log("✅ PBR maps generated successfully");
+          console.log(" PBR maps generated successfully");
         } catch (pbrErr) {
-          console.warn("⚠️ PBR generation failed:", pbrErr);
+          console.warn(" PBR generation failed:", pbrErr);
         }
       }
 
       setProgress(null);
-      console.log("✅ Gemini texture generation complete!", {
+      console.log(" Gemini texture generation complete!", {
         model: GEMINI_MODELS[model],
         resolution,
         hasPbr: !!normMap,
@@ -479,7 +479,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Gemini Generation failed";
-      console.error("❌ Gemini texture generation failed:", msg);
+      console.error(" Gemini texture generation failed:", msg);
       setError(msg);
       setProgress(null);
       return null;
