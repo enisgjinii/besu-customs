@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { VercelToolbar } from "@vercel/toolbar/next";
 import { Toaster } from "@/components/ui/sonner";
@@ -14,9 +14,31 @@ import { ServiceWorkerInit } from "@/components/service-worker-init";
 import { ConnectionIndicator } from "@/components/connection-indicator";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+const macan = localFont({
+  src: [
+    {
+      path: "../public/font/Macan Font/MacanPanWeb-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Macan Font/MacanPanWeb-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Macan Font/MacanPanWeb-Semibold.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Macan Font/MacanPanWeb-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-macan",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -50,7 +72,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans ${inter.variable}`}>
+      <body className={`font-sans ${macan.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
