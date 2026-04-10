@@ -1,2 +1,0 @@
-[     224ms] [WARNING] ⚠️ Supabase credentials are missing or invalid. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables. The app will run in limited mode without database/auth functionality. @ http://localhost:3000/_next/static/chunks/1629d_next_dist_9e7c62d6._.js:2297
-[     463ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
