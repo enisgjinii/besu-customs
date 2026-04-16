@@ -12,6 +12,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { ErrorLoggerInit } from "@/app/error-logger-init";
 import { ServiceWorkerInit } from "@/components/service-worker-init";
 import { ConnectionIndicator } from "@/components/connection-indicator";
+import { PaymentPauseOverlay } from "@/components/payment-pause-overlay";
 import "./globals.css";
 
 const macan = localFont({
@@ -72,7 +73,10 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning className={`font-sans ${macan.variable}`}>
+      <body
+        suppressHydrationWarning
+        className={`font-sans ${macan.variable} overflow-hidden`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -86,6 +90,7 @@ export default function RootLayout({
               <Toaster />
               <OnboardingTour />
               <OnboardingKeyboardHandler />
+              <PaymentPauseOverlay />
             </AuthProvider>
           </ErrorBoundary>
         </ThemeProvider>
