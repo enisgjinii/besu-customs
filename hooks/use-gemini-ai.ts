@@ -140,9 +140,6 @@ export function useGeminiAI(): UseGeminiAIReturn {
           { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
         ],
-        metadata: {
-          requestedResolution: resolution,
-        },
       };
     },
     [],
@@ -151,23 +148,65 @@ export function useGeminiAI(): UseGeminiAIReturn {
   const parseGeminiErrorMessage = useCallback(
     (errorData: unknown, status: number): string => {
       if (!errorData || typeof errorData !== "object") {
-        return `Gemini API error: ${status}`;
+        return `API Error ${status}: Unable to connect to Gemini service`;
       }
 
       const record = errorData as Record<string, unknown>;
+      
+      // Try nested error object first
       const nestedError =
         typeof record.error === "object" && record.error !== null
           ? (record.error as Record<string, unknown>)
           : null;
 
-      const message =
+      // Try to get message from various paths
+      let message =
         typeof nestedError?.message === "string"
           ? nestedError.message
           : typeof record.message === "string"
             ? record.message
             : "";
 
-      return message || `Gemini API error: ${status}`;
+      // Check for error details in nested structures
+      if (!message && nestedError?.details) {
+        const details = Array.isArray(nestedError.details)
+          ? nestedError.details[0]
+          : nestedError.details;
+        if (typeof details === "object" && details !== null) {
+          const detail = details as Record<string, unknown>;
+          message =
+            typeof detail.description === "string"
+              ? detail.description
+              : typeof detail.message === "string"
+                ? detail.message
+                : "";
+        }
+      }
+
+      // Fallback messages based on HTTP status
+      if (!message) {
+        switch (status) {
+          case 400:
+            message = "Invalid request to Gemini API. Check your prompt or settings.";
+            break;
+          case 401:
+          case 403:
+            message = "Authentication failed. Check your API key configuration.";
+            break;
+          case 429:
+            message = "API quota exceeded. Please try again later or use Gemini Flash (lower cost).";
+            break;
+          case 500:
+          case 502:
+          case 503:
+            message = "Gemini service is temporarily unavailable. Please try again later.";
+            break;
+          default:
+            message = `Gemini API error: ${status}`;
+        }
+      }
+
+      return message;
     },
     [],
   );
@@ -229,22 +268,21 @@ export function useGeminiAI(): UseGeminiAIReturn {
     setNormalMapUrl(null);
     setRoughnessMapUrl(null);
 
-    try {
-      const { 
-        prompt, 
-        uvMap, 
-        generatePbr = false, 
-        model = "pro", // Default to Pro for best quality
-        aspectRatio = "1:1",
-        resolution = "2K",
-        textureStyle = "realistic",
-        productType,
-      } = options;
+    const requestModel: "flash" | "pro" = options.model === "flash" ? "flash" : "pro";
+    const normalizedResolution: GeminiTextureOptions["resolution"] =
+      requestModel === "flash"
+        ? "1K"
+        : (options.resolution ?? "2K");
+    const {
+      prompt,
+      uvMap,
+      generatePbr = false,
+      aspectRatio = "1:1",
+      textureStyle = "realistic",
+      productType,
+    } = options;
 
-      const normalizedResolution =
-        model === "flash" && resolution !== "1K" ? "1K" : resolution;
-      const requestModel: "flash" | "pro" = model === "flash" ? "flash" : "pro";
-      
+    try {
       // Build professional texture generation prompt
       const styleModifier = TEXTURE_STYLE_PROMPTS[textureStyle] || TEXTURE_STYLE_PROMPTS.realistic;
       
@@ -334,18 +372,31 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        let errorData: unknown = null;
+        let rawText = "";
+
+        try {
+          rawText = await response.text();
+          errorData = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          // If JSON parsing fails, try to extract useful info from text
+          console.warn("Failed to parse error response as JSON:", rawText);
+        }
+
         const errorMessage = parseGeminiErrorMessage(errorData, response.status);
         const fallbackRecommended =
           !!errorData &&
           typeof errorData === "object" &&
           Boolean((errorData as Record<string, unknown>).fallbackRecommended);
 
-        console.warn("Gemini API request failed", {
+        console.warn("❌ Gemini API request failed", {
           status: response.status,
+          statusText: response.statusText,
           model: modelName,
           message: errorMessage,
           fallbackRecommended,
+          rawErrorData: errorData,
+          rawText: rawText.substring(0, 500), // First 500 chars of raw response
         });
 
         if (fallbackRecommended && requestModel === "pro") {
@@ -360,12 +411,15 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
         const normalizedError = errorMessage.toLowerCase();
         if (normalizedError.includes("quota") || response.status === 429) {
-          throw new Error("Gemini quota exceeded. Please try again later or switch to a lower-cost model.");
+          throw new Error("API quota exceeded. Please try again later or switch to Gemini Flash model (lower cost).");
         }
-        if (normalizedError.includes("not found") || normalizedError.includes("404")) {
-          throw new Error(`Model ${modelName} not available. Try switching models.`);
+        if (normalizedError.includes("not found") || response.status === 404) {
+          throw new Error(`Model ${modelName} not available. Try switching to Gemini Flash.`);
         }
-        throw new Error(errorMessage || `Gemini API error: ${response.status}`);
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("Authentication failed. Please check your API key in the .env file.");
+        }
+        throw new Error(errorMessage || `Gemini API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -515,7 +569,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
       setProgress(null);
       console.log(" Gemini texture generation complete!", {
-        model: GEMINI_MODELS[model],
+        model: GEMINI_MODELS[requestModel],
         resolution: normalizedResolution,
         hasPbr: !!normMap,
       });
@@ -527,13 +581,28 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         roughnessMap: roughMap,
         normalMapUrl: normUrl,
         roughnessMapUrl: roughUrl,
-        modelUsed: GEMINI_MODELS[requestModel],
+        modelUsed: modelName,
         resolution: normalizedResolution,
       };
 
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Gemini Generation failed";
-      console.error(" Gemini texture generation failed:", msg);
+      let msg = "Failed to generate texture";
+      let errorDetails = "";
+
+      if (err instanceof Error) {
+        msg = err.message;
+        errorDetails = err.stack || "";
+      } else if (typeof err === "object" && err !== null) {
+        msg = JSON.stringify(err);
+      }
+
+      console.error(" Gemini texture generation failed:", {
+        message: msg,
+        details: errorDetails,
+        model: requestModel,
+        resolution: normalizedResolution,
+      });
+
       setError(msg);
       setProgress(null);
       return null;

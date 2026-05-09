@@ -500,10 +500,38 @@ export function AITextureGenerator({
 
       {error && (
         <div className="space-y-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-destructive">
-          <p className="text-[10px] leading-tight">
-            AI is not okay right now. Please try again.
-          </p>
-          <p className="text-[10px] leading-tight opacity-90">{error}</p>
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 min-w-max text-xs font-semibold">⚠ Error:</div>
+            <div className="flex-1">
+              <p className="text-xs leading-snug">{error}</p>
+              <div className="mt-1.5 space-y-1 text-[10px] opacity-75">
+                {error.includes("quota") && (
+                  <>
+                    <p>💡 Try using Gemini Flash instead (lower cost)</p>
+                    <p>💡 Wait a few minutes and try again</p>
+                  </>
+                )}
+                {error.includes("Authentication") && (
+                  <>
+                    <p>💡 Check your API key in .env file</p>
+                    <p>💡 Restart the dev server after updating keys</p>
+                  </>
+                )}
+                {error.includes("temporarily unavailable") && (
+                  <p>💡 Gemini service is down. Please try again in a moment.</p>
+                )}
+                {error.includes("Invalid request") && (
+                  <p>💡 Try simplifying your prompt or using a preset pattern</p>
+                )}
+                {!error.includes("quota") &&
+                  !error.includes("Authentication") &&
+                  !error.includes("unavailable") &&
+                  !error.includes("Invalid") && (
+                    <p>💡 Check browser console (F12) for detailed error logs</p>
+                  )}
+              </div>
+            </div>
+          </div>
           <Button
             type="button"
             variant="outline"
