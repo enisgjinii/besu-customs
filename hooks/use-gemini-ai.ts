@@ -81,9 +81,6 @@ const GEMINI_MODELS = {
   pro: "gemini-3-pro-image-preview",
 } as const;
 
-const getGeminiApiUrl = (model: "flash" | "pro") =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[model]}:generateContent`;
-
 // Professional texture generation prompt templates
 const TEXTURE_STYLE_PROMPTS: Record<string, string> = {
   realistic: "photorealistic, high-fidelity, accurate material representation",
@@ -108,6 +105,72 @@ export function useGeminiAI(): UseGeminiAIReturn {
   const [progress, setProgress] = useState<string | null>(null);
 
   const loaderRef = useRef(new THREE.TextureLoader());
+
+  const buildGeminiRequestBody = useCallback(
+    (
+      enhancedPrompt: string,
+      uvMap: string,
+      resolution: GeminiTextureOptions["resolution"],
+    ): Record<string, unknown> => {
+      const mimeType = getMimeType(uvMap);
+      const base64Image = toBase64(uvMap);
+
+      return {
+        contents: [
+          {
+            parts: [
+              { text: enhancedPrompt },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64Image,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          response_modalities: ["TEXT", "IMAGE"],
+          temperature: 0.6,
+          maxOutputTokens: 16384,
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+        ],
+        metadata: {
+          requestedResolution: resolution,
+        },
+      };
+    },
+    [],
+  );
+
+  const parseGeminiErrorMessage = useCallback(
+    (errorData: unknown, status: number): string => {
+      if (!errorData || typeof errorData !== "object") {
+        return `Gemini API error: ${status}`;
+      }
+
+      const record = errorData as Record<string, unknown>;
+      const nestedError =
+        typeof record.error === "object" && record.error !== null
+          ? (record.error as Record<string, unknown>)
+          : null;
+
+      const message =
+        typeof nestedError?.message === "string"
+          ? nestedError.message
+          : typeof record.message === "string"
+            ? record.message
+            : "";
+
+      return message || `Gemini API error: ${status}`;
+    },
+    [],
+  );
 
   // Convert data URL to base64 (strip prefix)
   const toBase64 = (dataUrl: string): string => {
@@ -150,13 +213,6 @@ export function useGeminiAI(): UseGeminiAIReturn {
   const generateTexture = useCallback(async (
     options: GeminiTextureOptions
   ): Promise<GeminiGenerationResult | null> => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-
-    if (!apiKey) {
-      setError("Google API Key not configured. Set NEXT_PUBLIC_GOOGLE_API_KEY in .env");
-      return null;
-    }
-
     setIsGenerating(true);
     setError(null);
     setProgress("Initializing Gemini AI...");
@@ -185,6 +241,10 @@ export function useGeminiAI(): UseGeminiAIReturn {
         productType,
       } = options;
 
+      const normalizedResolution =
+        model === "flash" && resolution !== "1K" ? "1K" : resolution;
+      const requestModel: "flash" | "pro" = model === "flash" ? "flash" : "pro";
+      
       // Build professional texture generation prompt
       const styleModifier = TEXTURE_STYLE_PROMPTS[textureStyle] || TEXTURE_STYLE_PROMPTS.realistic;
       
@@ -209,7 +269,7 @@ TEXTURE DESCRIPTION: ${prompt}
 
 STYLE: ${styleModifier}
 
-RESOLUTION: ${resolution} (${resolution === "4K" ? "4096x4096" : resolution === "2K" ? "2048x2048" : "1024x1024"})
+RESOLUTION: ${normalizedResolution} (${normalizedResolution === "4K" ? "4096x4096" : normalizedResolution === "2K" ? "2048x2048" : "1024x1024"})
 ASPECT RATIO: ${aspectRatio}
 
 ABSOLUTE REQUIREMENTS (follow ALL precisely):
@@ -242,73 +302,67 @@ ${productType === "duffle-bag" ? `- Barrel body: Main design surface, bold motif
 OUTPUT: First think carefully about the UV layout analysis (Step 1), then generate the texture image (Step 2). The final image must be pixel-perfect in matching the reference UV map's shape positions and proportions.
       `.trim();
 
-      const mimeType = getMimeType(uvMap);
-      const base64Image = toBase64(uvMap);
+      const requestBody = buildGeminiRequestBody(
+        enhancedPrompt,
+        uvMap,
+        normalizedResolution,
+      );
 
-      // Build advanced request body with latest Gemini API specs
-      // https://ai.google.dev/gemini-api/docs/image-generation
-      const requestBody: Record<string, unknown> = {
-        contents: [
-          {
-            parts: [
-              { text: enhancedPrompt },
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Image,
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          // Request both text and image for better reasoning
-          response_modalities: ["TEXT", "IMAGE"],
-          // Lower temperature for more precise UV shape adherence
-          temperature: 0.6,
-          // High token limit to allow deep UV analysis reasoning before generation
-          maxOutputTokens: 16384,
-        },
-        // Safety settings - allow artistic content
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
-        ],
-      };
-
-      const apiUrl = getGeminiApiUrl(model);
-      const modelName = GEMINI_MODELS[model];
-      setProgress(`Generating with ${model === "pro" ? "Gemini 3 Pro" : "Gemini 2.5 Flash"} (${resolution})...`);
+      const modelName = GEMINI_MODELS[requestModel];
+      setProgress(
+        `Generating with ${requestModel === "pro" ? "Gemini 3 Pro" : "Gemini 2.5 Flash"} (${normalizedResolution})...`,
+      );
 
       console.log(" Gemini Advanced Request:", {
-        url: apiUrl,
+        endpoint: "/api/gemini/generate-texture",
         model: modelName,
-        resolution,
+        resolution: normalizedResolution,
         aspectRatio,
         textureStyle,
         promptLength: enhancedPrompt.length,
       });
 
-      const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+      const response = await fetch("/api/gemini/generate-texture", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          model: requestModel,
+          requestBody,
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(" Gemini API Error:", errorData);
-        
-        // Parse specific error types
-        const errorMessage = errorData?.error?.message || "";
-        if (errorMessage.includes("quota")) {
-          throw new Error("API quota exceeded. Please try again later or check your billing.");
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = parseGeminiErrorMessage(errorData, response.status);
+        const fallbackRecommended =
+          !!errorData &&
+          typeof errorData === "object" &&
+          Boolean((errorData as Record<string, unknown>).fallbackRecommended);
+
+        console.warn("Gemini API request failed", {
+          status: response.status,
+          model: modelName,
+          message: errorMessage,
+          fallbackRecommended,
+        });
+
+        if (fallbackRecommended && requestModel === "pro") {
+          setProgress("Gemini Pro quota exceeded. Retrying with Gemini Flash (1K)...");
+
+          return await generateTexture({
+            ...options,
+            model: "flash",
+            resolution: "1K",
+          });
         }
-        if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+
+        const normalizedError = errorMessage.toLowerCase();
+        if (normalizedError.includes("quota") || response.status === 429) {
+          throw new Error("Gemini quota exceeded. Please try again later or switch to a lower-cost model.");
+        }
+        if (normalizedError.includes("not found") || normalizedError.includes("404")) {
           throw new Error(`Model ${modelName} not available. Try switching models.`);
         }
         throw new Error(errorMessage || `Gemini API error: ${response.status}`);
@@ -462,7 +516,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
       setProgress(null);
       console.log(" Gemini texture generation complete!", {
         model: GEMINI_MODELS[model],
-        resolution,
+        resolution: normalizedResolution,
         hasPbr: !!normMap,
       });
 
@@ -473,8 +527,8 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         roughnessMap: roughMap,
         normalMapUrl: normUrl,
         roughnessMapUrl: roughUrl,
-        modelUsed: GEMINI_MODELS[model],
-        resolution,
+        modelUsed: GEMINI_MODELS[requestModel],
+        resolution: normalizedResolution,
       };
 
     } catch (err) {
@@ -486,7 +540,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
     } finally {
       setIsGenerating(false);
     }
-  }, [loadTexture]);
+  }, [buildGeminiRequestBody, loadTexture, parseGeminiErrorMessage]);
 
   const applyToScene = useCallback((
     scene: THREE.Object3D,
