@@ -124,8 +124,8 @@ export function useGeminiAI(): UseGeminiAIReturn {
             parts: [
               { text: enhancedPrompt },
               {
-                inline_data: {
-                  mime_type: mimeType,
+                inlineData: {
+                  mimeType: mimeType,
                   data: base64Image,
                 },
               },
@@ -133,12 +133,10 @@ export function useGeminiAI(): UseGeminiAIReturn {
           },
         ],
         generationConfig: {
-          response_modalities: ["IMAGE"],
-          response_format: {
-            image: {
-              aspect_ratio: aspectRatio,
-              image_size: resolution,
-            },
+          responseModalities: ["IMAGE"],
+          imageConfig: {
+            aspectRatio,
+            imageSize: resolution,
           },
           temperature: 0.6,
           maxOutputTokens: 2048,

@@ -12,6 +12,114 @@ type GeminiModel = keyof typeof GEMINI_MODELS;
 const getGeminiApiUrl = (model: GeminiModel) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[model]}:generateContent`;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeInlineData(part: Record<string, unknown>): Record<string, unknown> {
+  const inlineData =
+    (isRecord(part.inlineData) && part.inlineData) ||
+    (isRecord(part.inline_data) && part.inline_data) ||
+    null;
+
+  if (!inlineData) {
+    return part;
+  }
+
+  const normalizedInlineData: Record<string, unknown> = { ...inlineData };
+
+  if (typeof inlineData.mime_type === "string" && typeof inlineData.mimeType !== "string") {
+    normalizedInlineData.mimeType = inlineData.mime_type;
+  }
+
+  const normalizedPart = { ...part };
+  normalizedPart.inlineData = normalizedInlineData;
+  delete normalizedPart.inline_data;
+
+  return normalizedPart;
+}
+
+function normalizeImageConfig(config: Record<string, unknown>): Record<string, unknown> {
+  const normalizedConfig: Record<string, unknown> = { ...config };
+
+  const legacyImageConfig =
+    (isRecord(config.imageConfig) && config.imageConfig) ||
+    (isRecord(config.image_config) && config.image_config) ||
+    (isRecord(config.responseFormat) && isRecord(config.responseFormat.image)
+      ? (config.responseFormat.image as Record<string, unknown>)
+      : null) ||
+    (isRecord(config.response_format) && isRecord(config.response_format.image)
+      ? (config.response_format.image as Record<string, unknown>)
+      : null);
+
+  if (legacyImageConfig) {
+    const normalizedImageConfig: Record<string, unknown> = { ...legacyImageConfig };
+
+    if (
+      typeof legacyImageConfig.aspect_ratio === "string" &&
+      typeof legacyImageConfig.aspectRatio !== "string"
+    ) {
+      normalizedImageConfig.aspectRatio = legacyImageConfig.aspect_ratio;
+    }
+
+    if (
+      typeof legacyImageConfig.image_size === "string" &&
+      typeof legacyImageConfig.imageSize !== "string"
+    ) {
+      normalizedImageConfig.imageSize = legacyImageConfig.image_size;
+    }
+
+    normalizedConfig.imageConfig = normalizedImageConfig;
+  }
+
+  if (Array.isArray(config.response_modalities) && !Array.isArray(config.responseModalities)) {
+    normalizedConfig.responseModalities = config.response_modalities;
+  }
+
+  if (
+    typeof config.max_output_tokens === "number" &&
+    typeof config.maxOutputTokens !== "number"
+  ) {
+    normalizedConfig.maxOutputTokens = config.max_output_tokens;
+  }
+
+  if (isRecord(config.thinking_config) && !isRecord(config.thinkingConfig)) {
+    normalizedConfig.thinkingConfig = config.thinking_config;
+  }
+
+  delete normalizedConfig.response_format;
+  delete normalizedConfig.responseFormat;
+  delete normalizedConfig.response_modalities;
+  delete normalizedConfig.image_config;
+  delete normalizedConfig.max_output_tokens;
+  delete normalizedConfig.thinking_config;
+
+  return normalizedConfig;
+}
+
+function normalizeGeminiRequestBody(requestBody: Record<string, unknown>): Record<string, unknown> {
+  const normalizedRequestBody: Record<string, unknown> = { ...requestBody };
+
+  if (Array.isArray(requestBody.contents)) {
+    normalizedRequestBody.contents = requestBody.contents.map((content) => {
+      if (!isRecord(content) || !Array.isArray(content.parts)) {
+        return content;
+      }
+
+      return {
+        ...content,
+        parts: content.parts.map((part) => (isRecord(part) ? normalizeInlineData(part) : part)),
+      };
+    });
+  }
+
+  if (isRecord(requestBody.generationConfig)) {
+    normalizedRequestBody.generationConfig = normalizeImageConfig(requestBody.generationConfig);
+  }
+
+  return normalizedRequestBody;
+}
+
 async function parseErrorResponse(response: Response): Promise<Record<string, unknown>> {
   const contentType = response.headers.get("content-type") || "";
 
@@ -90,12 +198,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedRequestBody = normalizeGeminiRequestBody(requestBody);
+
     const upstream = await fetch(`${getGeminiApiUrl(model)}?key=${apiKey}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(normalizedRequestBody),
       cache: "no-store",
     });
 
