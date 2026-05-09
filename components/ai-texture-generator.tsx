@@ -208,7 +208,7 @@ export function AITextureGenerator({
     console.log(" Calling Google Gemini Pro with advanced settings:", {
       prompt: googlePrompt,
       model: "pro",
-      resolution: "4K",
+      resolution: "2K",
     });
 
     const result = await generateGoogle({
@@ -217,7 +217,7 @@ export function AITextureGenerator({
       generatePbr: false,
       model: "pro",
       aspectRatio: "1:1",
-      resolution: "4K",
+      resolution: "2K",
       textureStyle: "realistic",
       productType: modelType,
     });

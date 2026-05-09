@@ -112,6 +112,7 @@ export function useGeminiAI(): UseGeminiAIReturn {
     (
       enhancedPrompt: string,
       uvMap: string,
+      aspectRatio: NonNullable<GeminiTextureOptions["aspectRatio"]>,
       resolution: GeminiTextureOptions["resolution"],
     ): Record<string, unknown> => {
       const mimeType = getMimeType(uvMap);
@@ -132,9 +133,15 @@ export function useGeminiAI(): UseGeminiAIReturn {
           },
         ],
         generationConfig: {
-          response_modalities: ["TEXT", "IMAGE"],
+          response_modalities: ["IMAGE"],
+          response_format: {
+            image: {
+              aspect_ratio: aspectRatio,
+              image_size: resolution,
+            },
+          },
           temperature: 0.6,
-          maxOutputTokens: 16384,
+          maxOutputTokens: 2048,
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
@@ -345,6 +352,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
       const requestBody = buildGeminiRequestBody(
         enhancedPrompt,
         uvMap,
+        aspectRatio,
         normalizedResolution,
       );
 
@@ -386,6 +394,10 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         }
 
         const errorMessage = parseGeminiErrorMessage(errorData, response.status);
+        const isInvocationTimeout =
+          response.status === 504 ||
+          rawText.includes("FUNCTION_INVOCATION_TIMEOUT") ||
+          errorMessage.toLowerCase().includes("timeout");
         const fallbackRecommended =
           !!errorData &&
           typeof errorData === "object" &&
@@ -397,12 +409,17 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           model: modelName,
           message: errorMessage,
           fallbackRecommended,
+          isInvocationTimeout,
           rawErrorData: errorData,
           rawText: rawText.substring(0, 500), // First 500 chars of raw response
         });
 
-        if (fallbackRecommended && selectedModel === "pro") {
-          setProgress("Gemini Pro quota exceeded. Retrying with Gemini Flash (1K)...");
+        if ((fallbackRecommended || isInvocationTimeout) && selectedModel === "pro") {
+          setProgress(
+            isInvocationTimeout
+              ? "Gemini Pro timed out on deployment. Retrying with Gemini Flash (1K)..."
+              : "Gemini Pro quota exceeded. Retrying with Gemini Flash (1K)...",
+          );
 
           return await generateTexture({
             ...options,
@@ -420,6 +437,9 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         }
         if (response.status === 401 || response.status === 403) {
           throw new Error("Authentication failed. Please check your API key in the .env file.");
+        }
+        if (isInvocationTimeout) {
+          throw new Error("Generation timed out on the deployment. Try again or use a faster model / lower resolution.");
         }
         throw new Error(errorMessage || `Gemini API error: ${response.status} ${response.statusText}`);
       }

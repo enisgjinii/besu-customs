@@ -1,7 +1,10 @@
 {
   "regions": ["iad1"],
   "functions": {
-    "app/api/**": {
+    "app/api/gemini/**/*.ts": {
+      "maxDuration": 60
+    },
+    "app/api/**/*.ts": {
       "maxDuration": 10,
       "excludeFiles": "{public/**,node_modules/@babylonjs/**,node_modules/@imgly/**,node_modules/onnxruntime-web/**,node_modules/sharp/**}"
     }
