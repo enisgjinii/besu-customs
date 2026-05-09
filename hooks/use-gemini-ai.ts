@@ -588,6 +588,11 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
     } catch (err) {
       let msg = "Failed to generate texture";
       let errorDetails = "";
+      const fallbackModel: "flash" | "pro" = options.model === "flash" ? "flash" : "pro";
+      const fallbackResolution: GeminiTextureOptions["resolution"] =
+        fallbackModel === "flash"
+          ? "1K"
+          : (options.resolution ?? "2K");
 
       if (err instanceof Error) {
         msg = err.message;
@@ -599,8 +604,8 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
       console.error(" Gemini texture generation failed:", {
         message: msg,
         details: errorDetails,
-        model: requestModel,
-        resolution: normalizedResolution,
+        model: fallbackModel,
+        resolution: fallbackResolution,
       });
 
       setError(msg);
