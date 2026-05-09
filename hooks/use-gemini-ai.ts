@@ -270,9 +270,9 @@ export function useGeminiAI(): UseGeminiAIReturn {
     setNormalMapUrl(null);
     setRoughnessMapUrl(null);
 
-    const requestModel: "flash" | "pro" = options.model === "flash" ? "flash" : "pro";
+    const selectedModel: "flash" | "pro" = options.model === "flash" ? "flash" : "pro";
     const normalizedResolution: GeminiTextureOptions["resolution"] =
-      requestModel === "flash"
+      selectedModel === "flash"
         ? "1K"
         : (options.resolution ?? "2K");
     const {
@@ -348,9 +348,9 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         normalizedResolution,
       );
 
-      const modelName = GEMINI_MODELS[requestModel];
+      const modelName = GEMINI_MODELS[selectedModel];
       setProgress(
-        `Generating with ${requestModel === "pro" ? "Gemini 3 Pro" : "Gemini 3.1 Flash Image"} (${normalizedResolution})...`,
+        `Generating with ${selectedModel === "pro" ? "Gemini 3 Pro" : "Gemini 3.1 Flash Image"} (${normalizedResolution})...`,
       );
 
       console.log(" Gemini Advanced Request:", {
@@ -368,7 +368,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: requestModel,
+          model: selectedModel,
           requestBody,
         }),
       });
@@ -401,7 +401,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           rawText: rawText.substring(0, 500), // First 500 chars of raw response
         });
 
-        if (fallbackRecommended && requestModel === "pro") {
+        if (fallbackRecommended && selectedModel === "pro") {
           setProgress("Gemini Pro quota exceeded. Retrying with Gemini Flash (1K)...");
 
           return await generateTexture({
@@ -571,7 +571,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
       setProgress(null);
       console.log(" Gemini texture generation complete!", {
-        model: GEMINI_MODELS[requestModel],
+        model: GEMINI_MODELS[selectedModel],
         resolution: normalizedResolution,
         hasPbr: !!normMap,
       });
