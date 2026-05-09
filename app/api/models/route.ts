@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ModelsService } from "@/lib/models-service";
+import { getFallbackModels } from "@/lib/fallback-models";
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const activeOnly = searchParams.get("active") === "true";
-    const category = searchParams.get("category");
+  const { searchParams } = new URL(request.url);
+  const activeOnly = searchParams.get("active") === "true";
+  const category = searchParams.get("category");
 
+  try {
     let models;
     if (activeOnly) {
       models = await ModelsService.getActiveModels();
@@ -19,10 +20,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ models, count: models.length });
   } catch (error) {
     console.error("Error fetching models:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch models" },
-      { status: 500 },
-    );
+
+    const fallbackModels = getFallbackModels(category);
+
+    return NextResponse.json({
+      models: fallbackModels,
+      count: fallbackModels.length,
+      degraded: true,
+      source: "fallback",
+      error: "Failed to fetch models from database; using fallback catalog",
+    });
   }
 }
 

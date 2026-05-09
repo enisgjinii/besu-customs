@@ -69,6 +69,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const shouldInjectToolbar = process.env.NODE_ENV === "development";
+  const shouldInjectAnalytics =
+    process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true";
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -92,7 +94,7 @@ export default function RootLayout({
             </AuthProvider>
           </ErrorBoundary>
         </ThemeProvider>
-        <Analytics />
+        {shouldInjectAnalytics && <Analytics />}
         {shouldInjectToolbar && <VercelToolbar />}
         <ErrorLoggerInit />
         <ServiceWorkerInit />
