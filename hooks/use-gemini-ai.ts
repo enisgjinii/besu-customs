@@ -5,6 +5,8 @@ import * as THREE from "three";
 import { generateNormalMap, generateRoughnessMap, loadImage } from "@/lib/texture-utils";
 
 /**
+ * 
+ * s
  * Advanced Gemini AI Texture Generation Hook
  *
  * Uses Google's Nano Banana image generation models:
