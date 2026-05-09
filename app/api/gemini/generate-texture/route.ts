@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GEMINI_MODELS = {
-  flash: "gemini-2.5-flash-image",
+  flash: "gemini-3.1-flash-image-preview",
   pro: "gemini-3-pro-image-preview",
 } as const;
 

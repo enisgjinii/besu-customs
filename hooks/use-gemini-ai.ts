@@ -8,7 +8,7 @@ import { generateNormalMap, generateRoughnessMap, loadImage } from "@/lib/textur
  * Advanced Gemini AI Texture Generation Hook
  *
  * Uses Google's Nano Banana image generation models:
- * - gemini-2.5-flash-image: Fast, high-volume generation (1K)
+ * - gemini-3.1-flash-image-preview: Latest high-efficiency image model with improved quality and 4K support
  * - gemini-3-pro-image-preview: Nano Banana Pro with "Thinking" for professional 4K textures
  * 
  * Features:
@@ -75,8 +75,8 @@ export interface UseGeminiAIReturn {
 
 // Latest Gemini models for image generation (Nano Banana family)
 const GEMINI_MODELS = {
-  // Nano Banana - Fast model optimized for high-volume, low-latency (1K resolution)
-  flash: "gemini-2.5-flash-image",
+  // Nano Banana 2 - Latest all-around image model optimized for speed and high-volume use cases
+  flash: "gemini-3.1-flash-image-preview",
   // Nano Banana Pro - Gemini 3 Pro Image Preview with advanced reasoning, up to 4K
   pro: "gemini-3-pro-image-preview",
 } as const;
@@ -348,7 +348,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
       const modelName = GEMINI_MODELS[requestModel];
       setProgress(
-        `Generating with ${requestModel === "pro" ? "Gemini 3 Pro" : "Gemini 2.5 Flash"} (${normalizedResolution})...`,
+        `Generating with ${requestModel === "pro" ? "Gemini 3 Pro" : "Gemini 3.1 Flash Image"} (${normalizedResolution})...`,
       );
 
       console.log(" Gemini Advanced Request:", {
