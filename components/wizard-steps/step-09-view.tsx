@@ -52,6 +52,10 @@ export function Step09View(): React.JSX.Element {
   // State for logic
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState<{
+    status: "success" | "error";
+    message: string;
+  } | null>(null);
   const [designPreviews, setDesignPreviews] = useState<{
     front: string | null;
     back: string | null;
@@ -197,6 +201,7 @@ export function Step09View(): React.JSX.Element {
 
   // Main Submit Handler
   const handleSubmitOrder = async () => {
+    setSubmissionResult(null);
     // 1. Validation
     if (!firstName || !lastName) {
       toast.error("Please enter your full name");
@@ -213,7 +218,11 @@ export function Step09View(): React.JSX.Element {
 
     setIsSendingEmail(true);
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
-    if (!canvas) return;
+    if (!canvas) {
+      setIsSendingEmail(false);
+      toast.error("Design preview is still loading. Please wait a moment and try again.");
+      return;
+    }
 
     try {
       toast.info("Preparing your order...");
@@ -530,18 +539,39 @@ export function Step09View(): React.JSX.Element {
         }),
       });
 
-      const data = await response.json();
+      const data = await response
+        .json()
+        .catch(() => ({ error: "The server returned an invalid response." }));
 
       if (response.ok) {
-        toast.success("Order submitted successfully!");
+        const successMessage =
+          data?.message || "Order submitted successfully. A confirmation has been generated.";
+        setSubmissionResult({
+          status: "success",
+          message: successMessage,
+        });
+        toast.success(successMessage);
       } else {
         console.error("Email send failed:", data);
-        toast.error(`Failed to submit order: ${data.error || "Unknown error"}`);
+        const errorMessage = data.error || "Unknown error";
+        setSubmissionResult({
+          status: "error",
+          message: `We could not submit the order: ${errorMessage}`,
+        });
+        toast.error(`Failed to submit order: ${errorMessage}`);
       }
 
     } catch (e) {
       console.error(e);
-      toast.error("Error submitting order");
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Unexpected network or browser error.";
+      setSubmissionResult({
+        status: "error",
+        message: `Order submission failed before confirmation: ${message}`,
+      });
+      toast.error("Order submission failed. Please try again.");
     } finally {
       setIsSendingEmail(false);
     }
@@ -787,6 +817,28 @@ export function Step09View(): React.JSX.Element {
               ) : "Submit Order"}
             </Button>
           </div>
+
+          {submissionResult && (
+            <div
+              className={cn(
+                "rounded-lg border p-4 text-sm",
+                submissionResult.status === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-red-200 bg-red-50 text-red-900",
+              )}
+              role="status"
+              aria-live="polite"
+            >
+              <p className="font-semibold">
+                {submissionResult.status === "success"
+                  ? "Order received"
+                  : "Submission issue"}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed">
+                {submissionResult.message}
+              </p>
+            </div>
+          )}
 
         </div>
       </div>

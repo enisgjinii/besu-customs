@@ -1,11 +1,11 @@
 // Service Worker for aggressive 3D model caching
 // Optimized for mobile and slow connections
 
-const CACHE_NAME = "3d-models-v1";
-const MODEL_CACHE_NAME = "3d-models-assets-v1";
+const CACHE_NAME = "besu-runtime-v2";
+const MODEL_CACHE_NAME = "besu-model-assets-v2";
 
 // Files to cache immediately
-const PRECACHE_URLS = ["/", "/models.json"];
+const PRECACHE_URLS = ["/models.json"];
 
 // Install event - precache essential files
 self.addEventListener("install", (event) => {
@@ -65,12 +65,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Default strategy - network first for HTML, cache first for others
+  // Never serve the application shell or Next.js chunks cache-first. A stale
+  // chunk keeps old configurator UI on customer phones after deployment.
   if (request.mode === "navigate") {
     event.respondWith(networkFirstWithCacheFallback(request, CACHE_NAME));
-  } else {
-    event.respondWith(cacheFirstWithNetworkFallback(request, CACHE_NAME));
+    return;
   }
+
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  event.respondWith(networkFirstWithCacheFallback(request, CACHE_NAME));
 });
 
 // Cache-first strategy (best for static assets like models)

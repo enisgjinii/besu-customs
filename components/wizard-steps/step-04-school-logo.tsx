@@ -2,7 +2,7 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Check, Search } from "lucide-react";
+import { Upload, Check, Search, ArrowLeft, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
@@ -30,6 +30,9 @@ export function Step04SchoolLogo() {
   );
   const setSelectedTextureLayerId = useConfiguratorStore(
     (state) => state.setSelectedTextureLayerId,
+  );
+  const updateTextureLayer = useConfiguratorStore(
+    (state) => state.updateTextureLayer,
   );
 
   // Track if upload is in progress
@@ -68,17 +71,27 @@ export function Step04SchoolLogo() {
           result = await compressImageForMobile(result, 512, 0.85);
         }
 
-        // Store as pending and enable placement mode
-        setPendingLayer({
-          type: "image",
-          imageUrl: result,
+        const newId = uuidv4();
+        addTextureLayer({
+          id: newId,
           name: file.name,
-          scale: [0.35, 0.35, 1],
+          type: "image",
+          visible: true,
+          locked: false,
+          opacity: 1,
+          blendMode: "normal",
+          order: textureLayers.length,
+          imageUrl: result,
+          position: [0.5, 0.35, 0],
           rotation: [0, 0, 0],
+          scale: [0.3, 0.3, 1],
+          flipX: false,
         });
-        setPlacementMode(true);
+        setSelectedTextureLayerId(newId);
+        setPlacementMode(false);
+        setPendingLayer(null);
         uploadLockRef.current = false;
-        toast.info("Click anywhere on the model to place the logo");
+        toast.success("Logo added to the front. Use the controls below to move or resize it.");
       };
       reader.readAsDataURL(file);
     }
@@ -111,6 +124,19 @@ export function Step04SchoolLogo() {
     toast.success(`Added "${logo.name}" to model`);
   };
 
+  const moveLogo = (layerId: string, deltaX: number, deltaY: number) => {
+    const layer = textureLayers.find((item) => item.id === layerId);
+    const [x, y, z] = layer?.position ?? [0.5, 0.35, 0];
+
+    updateTextureLayer(layerId, {
+      position: [
+        Math.min(0.95, Math.max(0.05, x + deltaX)),
+        Math.min(0.95, Math.max(0.05, y + deltaY)),
+        z,
+      ],
+    });
+  };
+
   const logos = textureLayers.filter((l) => l.type === "image");
 
   return (
@@ -118,7 +144,7 @@ export function Step04SchoolLogo() {
       <div className="space-y-0.5">
         <h2 className="text-sm font-semibold">Add Logo</h2>
         <p className="text-xs text-muted-foreground">
-          Choose a school logo or upload your own
+          Choose or upload a logo. It will be added to the front automatically.
         </p>
       </div>
 
@@ -272,8 +298,82 @@ export function Step04SchoolLogo() {
                       {layer.name}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      Tap to edit position
+                      Use arrows to move. Use sliders for size and rotation.
                     </span>
+                  </div>
+                </div>
+                <div className="mb-2 rounded-lg border bg-muted/20 p-2">
+                  <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">
+                    Move logo
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <div />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-full"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        moveLogo(layer.id, 0, -0.03);
+                      }}
+                      aria-label="Move logo up"
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <div />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-full"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        moveLogo(layer.id, -0.03, 0);
+                      }}
+                      aria-label="Move logo left"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 px-2 text-[10px]"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        updateTextureLayer(layer.id, { position: [0.5, 0.35, 0] });
+                      }}
+                    >
+                      Center
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-full"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        moveLogo(layer.id, 0.03, 0);
+                      }}
+                      aria-label="Move logo right"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                    <div />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-full"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        moveLogo(layer.id, 0, 0.03);
+                      }}
+                      aria-label="Move logo down"
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <div />
                   </div>
                 </div>
                 <LayerControls layerId={layer.id} compact sliderOnly />

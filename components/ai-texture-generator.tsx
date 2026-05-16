@@ -7,6 +7,7 @@ import {
   Loader2,
   Sparkles,
   User,
+  Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,11 +47,16 @@ const PATTERN_PRESETS = [
   "carbon fiber",
 ];
 
+const CORRECTION_PREFIX =
+  "Revise the current uniform design using these corrections:";
+
 export function AITextureGenerator({
   onTextureGenerated,
   className,
 }: AITextureGeneratorProps) {
   const [prompt, setPrompt] = useState("");
+  const [correctionPrompt, setCorrectionPrompt] = useState("");
+  const [showCorrectionForm, setShowCorrectionForm] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   // Player info for back of jersey
@@ -109,7 +115,7 @@ export function AITextureGenerator({
   const progress = googleProgress;
   const error = googleError;
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (mode: "new" | "correction" = "new") => {
     // Prefer the filled UV mask to avoid wireframe lines leaking into generated textures.
     const uvGuide = uvMask || uvMap;
     if (!uvGuide) {
@@ -189,10 +195,18 @@ export function AITextureGenerator({
         ? "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the bag; keep all panels free of typography"
         : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography";
 
+    const trimmedPrompt = prompt.trim();
+    const trimmedCorrection = correctionPrompt.trim();
     const basePrompt =
-      prompt.trim().length > 0
-        ? prompt.trim()
-        : "Create a premium sports design with balanced composition.";
+      mode === "correction" && trimmedCorrection.length > 0
+        ? [
+            trimmedPrompt || "Use the current generated uniform as the design direction.",
+            `${CORRECTION_PREFIX} ${trimmedCorrection}`,
+            "Preserve the same team identity unless the correction explicitly changes it.",
+          ].join(" ")
+        : trimmedPrompt.length > 0
+          ? trimmedPrompt
+          : "Create a premium sports design with balanced composition.";
     const googlePrompt = [
       basePrompt,
       modelGuard,
@@ -235,8 +249,14 @@ export function AITextureGenerator({
         roughnessMapUrl: result.roughnessMapUrl,
       });
     }
+
+    if (mode === "correction") {
+      setShowCorrectionForm(false);
+      setCorrectionPrompt("");
+    }
   }, [
     prompt,
+    correctionPrompt,
     uvMap,
     uvMask,
     includePlayerInfo,
@@ -481,7 +501,7 @@ export function AITextureGenerator({
       )}
 
       <Button
-        onClick={handleGenerate}
+        onClick={() => handleGenerate("new")}
         disabled={!canGenerate}
         className="h-10 w-full text-sm"
       >
@@ -497,6 +517,61 @@ export function AITextureGenerator({
           </>
         )}
       </Button>
+
+      {currentTextureUrl && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold">Need changes?</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
+                Describe what to fix and generate a corrected AI version.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 px-3 text-[10px]"
+              onClick={() => setShowCorrectionForm((value) => !value)}
+              disabled={isGenerating}
+            >
+              <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+              Make corrections
+            </Button>
+          </div>
+
+          {showCorrectionForm && (
+            <div className="mt-3 space-y-2">
+              <Label htmlFor="ai-correction-prompt" className="text-[10px] font-medium">
+                What should change?
+              </Label>
+              <Textarea
+                id="ai-correction-prompt"
+                value={correctionPrompt}
+                onChange={(event) => setCorrectionPrompt(event.target.value)}
+                disabled={isGenerating}
+                placeholder="Example: make the eagle larger, reduce the red, and put more blue on the shorts."
+                className="min-h-[76px] resize-none text-xs"
+              />
+              <Button
+                type="button"
+                className="h-9 w-full text-xs"
+                disabled={!canGenerate || correctionPrompt.trim().length < 3}
+                onClick={() => handleGenerate("correction")}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    Correcting...
+                  </>
+                ) : (
+                  "Generate corrected version"
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="space-y-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-destructive">
@@ -537,7 +612,7 @@ export function AITextureGenerator({
             variant="outline"
             size="sm"
             className="h-8 w-full text-xs"
-            onClick={handleGenerate}
+            onClick={() => handleGenerate("new")}
             disabled={isGenerating || !canGenerate}
           >
             Try Again
