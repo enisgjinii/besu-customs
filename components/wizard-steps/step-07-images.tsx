@@ -3,7 +3,7 @@ import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { PillToggle } from "@/components/ui/pill-toggle";
 import { Upload, Wand2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -17,6 +17,8 @@ import {
   removeBackgroundFast,
 } from "@/lib/background-removal";
 import { useRef, useState } from "react";
+import { resolveCenterFrontLogoPlacementFromImage } from "@/lib/logo-positioning";
+import { trimImageContent } from "@/lib/texture-utils";
 
 export function Step07Images() {
   const addTextureLayer = useConfiguratorStore(
@@ -107,17 +109,38 @@ export function Step07Images() {
           result = await compressImageForMobile(result, 1024, 0.85);
         }
 
-        // Store as pending and enable placement mode
-        setPendingLayer({
+        const trimmed = await trimImageContent(result);
+        result = trimmed.dataUrl;
+
+        const newId = uuidv4();
+        const preset = await resolveCenterFrontLogoPlacementFromImage({
+          modelUrl: currentModelUrl,
+          imageUrl: result,
+          uvMapUrl: completeUVMask || completeUVMap,
+          centerFrontUvAnchor,
+        });
+        addTextureLayer({
+          id: newId,
           type: "image",
+          visible: true,
+          locked: false,
+          opacity: 1,
+          blendMode: "normal",
+          order: textureLayers.length,
           imageUrl: result,
           name: file.name,
-          scale: [0.35, 0.35, 1],
-          rotation: [0, 0, 0],
+          position: preset.position,
+          scale: preset.scale,
+          rotation: preset.rotation,
+          flipX: false,
         });
-        setPlacementMode(true);
+        setSelectedTextureLayerId(newId);
+        setPlacementMode(false);
+        setPendingLayer(null);
         isUploadingRef.current = false;
-        toast.info("Click anywhere on the model to place the image");
+        toast.success(
+          "Image added to the center front. Use the controls below to adjust it.",
+        );
       };
       reader.readAsDataURL(file);
     }
@@ -127,6 +150,11 @@ export function Step07Images() {
 
   const currentModelUrl = useConfiguratorStore(
     (state) => state.currentModelUrl,
+  );
+  const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
+  const completeUVMask = useConfiguratorStore((state) => state.completeUVMask);
+  const centerFrontUvAnchor = useConfiguratorStore(
+    (state) => state.centerFrontUvAnchor,
   );
 
   // Function to manually remove background from existing layer using AI
@@ -244,11 +272,10 @@ export function Step07Images() {
                 </span>
               </div>
             </div>
-            <Switch
-              id="auto-bg-switch"
-              checked={autoRemoveBg}
-              onCheckedChange={setAutoRemoveBg}
-            />
+          <PillToggle
+            checked={autoRemoveBg}
+            onCheckedChange={setAutoRemoveBg}
+          />
           </div>
         </div>
       )}

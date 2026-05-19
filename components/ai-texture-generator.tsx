@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { PillToggle } from "@/components/ui/pill-toggle";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -219,19 +219,19 @@ export function AITextureGenerator({
       .filter(Boolean)
       .join(" ");
 
-    console.log(" Calling Google Gemini Pro with advanced settings:", {
+    console.log(" Calling Google Gemini Flash with fast texture settings:", {
       prompt: googlePrompt,
-      model: "pro",
-      resolution: "2K",
+      model: "flash",
+      resolution: "1K",
     });
 
     const result = await generateGoogle({
       prompt: googlePrompt,
       uvMap: uvGuide,
       generatePbr: false,
-      model: "pro",
+      model: "flash",
       aspectRatio: "1:1",
-      resolution: "2K",
+      resolution: "1K",
       textureStyle: "realistic",
       productType: modelType,
     });
@@ -354,12 +354,10 @@ export function AITextureGenerator({
               Optional. The AI will place them on the back area only.
             </p>
           </div>
-          <Switch
-            id="player-info-toggle"
+          <PillToggle
             checked={includePlayerInfo}
             onCheckedChange={setIncludePlayerInfo}
             disabled={isGenerating}
-            className="scale-75 origin-right"
           />
         </div>
 
@@ -401,22 +399,20 @@ export function AITextureGenerator({
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px]">Flip Y</span>
-                <Switch
+                <PillToggle
                   checked={soccerJerseyDebug.flipY}
                   onCheckedChange={(checked) =>
                     setSoccerJerseyDebug({ flipY: checked })
                   }
-                  className="scale-75 origin-right"
                 />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[10px]">Back texture</span>
-                <Switch
+                <PillToggle
                   checked={soccerJerseyDebug.useBackTexture}
                   onCheckedChange={(checked) =>
                     setSoccerJerseyDebug({ useBackTexture: checked })
                   }
-                  className="scale-75 origin-right"
                 />
               </div>
             </div>

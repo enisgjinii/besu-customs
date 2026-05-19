@@ -580,20 +580,20 @@ export function Step09View(): React.JSX.Element {
   return (
     <div className="max-w-4xl mx-auto pb-10">
       <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden mb-6">
-        <div className="p-8 pb-6 border-b border-border/10">
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+        <div className="p-4 md:p-8 pb-4 md:pb-6 border-b border-border/10">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">
             Review & Submit Order Form
           </h1>
-          <p className="text-slate-500 mt-1">
+          <p className="text-sm md:text-base text-slate-500 mt-1">
             Complete your team details and review your design.
           </p>
         </div>
 
-        <div className="p-8 space-y-10">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-10">
 
           {/* Contact */}
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-2">
                 <Label className="text-slate-700 font-semibold">Name <span className="text-red-500">*</span></Label>
                 <div className="grid grid-cols-2 gap-3">
@@ -625,7 +625,7 @@ export function Step09View(): React.JSX.Element {
               </div>
             </div>
 
-            <div className="space-y-2 max-w-md">
+            <div className="space-y-2">
               <Label className="text-slate-700 font-semibold">Email: <span className="text-red-500">*</span></Label>
               <Input
                 placeholder="example@example.com"
@@ -635,7 +635,7 @@ export function Step09View(): React.JSX.Element {
               />
             </div>
 
-            <div className="space-y-2 max-w-md">
+            <div className="space-y-2">
               <Label className="text-slate-700 font-semibold">Phone Number: <span className="text-red-500">*</span></Label>
               <Input
                 placeholder=""
@@ -649,7 +649,7 @@ export function Step09View(): React.JSX.Element {
           {/* Design Selection */}
           <div className="space-y-3">
             <Label className="text-slate-700 font-semibold">Preview Your Custom Design <span className="text-red-500">*</span></Label>
-            <div className="grid grid-cols-3 gap-4 max-w-2xl">
+            <div className="grid grid-cols-3 gap-3 md:gap-4">
               <div className="aspect-square rounded-lg border-2 border-blue-500 ring-2 ring-blue-500/20 overflow-hidden bg-slate-50 relative">
                 {previewsLoading ? (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -670,7 +670,7 @@ export function Step09View(): React.JSX.Element {
 
           {/* Roster */}
           <div className="space-y-2 pt-4 border-t border-slate-100">
-            <Label className="text-lg font-semibold text-slate-800">Uniform Size & Amount</Label>
+            <Label className="text-base md:text-lg font-semibold text-slate-800">Uniform Size & Amount</Label>
             <div className="bg-slate-50 rounded-lg p-1">
               <RosterInput value={roster} onChange={setRoster} className="border-none shadow-none bg-transparent" />
             </div>
@@ -678,7 +678,7 @@ export function Step09View(): React.JSX.Element {
 
           {/* Address */}
           <div className="space-y-4 pt-4 border-t border-slate-100">
-            <Label className="text-slate-700 font-semibold text-lg">Shipping Address <span className="text-red-500">*</span></Label>
+            <Label className="text-slate-700 font-semibold text-base md:text-lg">Shipping Address <span className="text-red-500">*</span></Label>
             <div className="space-y-2">
               <Input
                 placeholder="Street Address"
@@ -695,7 +695,7 @@ export function Step09View(): React.JSX.Element {
                 className="bg-white h-11"
               />
             </div>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-2">
                 <Input
                   placeholder="City"
@@ -718,7 +718,7 @@ export function Step09View(): React.JSX.Element {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2 max-w-[50%]">
+            <div className="space-y-2">
               <Input
                 placeholder="Zip Code"
                 value={shippingAddress.zip}
@@ -728,9 +728,9 @@ export function Step09View(): React.JSX.Element {
             </div>
           </div>
 
-          {/* Notes (Total Amount Removed) */}
+          {/* Notes */}
           <div className="space-y-2 pt-6 border-t border-slate-200">
-            <Label className="text-slate-700 font-semibold text-lg">Additional Notes</Label>
+            <Label className="text-slate-700 font-semibold text-base md:text-lg">Additional Notes</Label>
             <Textarea
               placeholder="Special instructions for production (colors, sizing, etc.)"
               value={deliveryNotes}
@@ -742,8 +742,8 @@ export function Step09View(): React.JSX.Element {
 
           {/* Pricing Summary */}
           <div className="space-y-4 pt-6 border-t border-slate-200">
-            <Label className="text-slate-700 font-semibold text-lg">Order Summary</Label>
-            <div className="bg-slate-50 rounded-lg p-6 border border-slate-200 space-y-3">
+            <Label className="text-slate-700 font-semibold text-base md:text-lg">Order Summary</Label>
+            <div className="bg-slate-50 rounded-lg p-4 md:p-6 border border-slate-200 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Product:</span>
                 <span className="font-medium text-slate-900 capitalize">{selectedProductId?.replace(/-/g, " ")}</span>
@@ -767,8 +767,8 @@ export function Step09View(): React.JSX.Element {
                 </span>
               </div>
               <div className="border-t border-slate-200 pt-3 flex justify-between items-center mt-2">
-                <span className="text-base font-bold text-slate-800">Total Estimated Cost:</span>
-                <span className="text-xl font-bold text-primary">
+                <span className="text-sm md:text-base font-bold text-slate-800">Total Estimated Cost:</span>
+                <span className="text-lg md:text-xl font-bold text-primary">
                   ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
                 </span>
               </div>
@@ -802,11 +802,11 @@ export function Step09View(): React.JSX.Element {
           </div>
 
           {/* Submit */}
-          <div className="pt-8 flex justify-center pb-8">
+          <div className="pt-6 md:pt-8 flex justify-center pb-8">
             <Button
               onClick={handleSubmitOrder}
               size="lg"
-              className="w-full md:w-auto min-w-[200px]"
+              className="w-full md:w-auto min-w-[200px] h-12"
               disabled={isSendingEmail || !isConfirmed}
             >
               {isSendingEmail ? (
