@@ -92,6 +92,27 @@ const TEXTURE_STYLE_PROMPTS: Record<string, string> = {
   organic: "natural organic texture, subtle variations, living material feel",
 };
 
+function buildFastTexturePrompt({
+  prompt,
+  productType,
+  styleModifier,
+}: {
+  prompt: string;
+  productType?: string;
+  styleModifier: string;
+}): string {
+  return `
+Create a clean, production-ready flat 2D texture map for ${productType || "sportswear"}.
+
+Use the attached UV guide as the exact placement reference. Paint only inside the UV islands, preserve the white gaps, do not move or add islands, and do not draw wireframes or guide lines.
+
+Texture direction: ${prompt}
+Style: ${styleModifier}
+
+Output one finished albedo texture image only. No lighting, shadows, mockups, watermarks, or extra typography.
+  `.trim();
+}
+
 export function useGeminiAI(): UseGeminiAIReturn {
   const [textureUrl, setTextureUrl] = useState<string | null>(null);
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
@@ -218,6 +239,19 @@ export function useGeminiAI(): UseGeminiAIReturn {
     [],
   );
 
+  const isTransientGeminiCapacityError = useCallback((status: number, message: string): boolean => {
+    const normalized = message.toLowerCase();
+
+    return (
+      status === 503 ||
+      normalized.includes("high demand") ||
+      normalized.includes("temporarily unavailable") ||
+      normalized.includes("try again later") ||
+      normalized.includes("resource exhausted") ||
+      normalized.includes("rate limit")
+    );
+  }, []);
+
   // Convert data URL to base64 (strip prefix)
   const toBase64 = (dataUrl: string): string => {
     if (dataUrl.startsWith("data:")) {
@@ -293,7 +327,7 @@ export function useGeminiAI(): UseGeminiAIReturn {
       // Build professional texture generation prompt
       const styleModifier = TEXTURE_STYLE_PROMPTS[textureStyle] || TEXTURE_STYLE_PROMPTS.realistic;
       
-      const enhancedPrompt = `
+      const detailedPrompt = `
 You are a world-class professional texture artist. Generate a PERFECT, production-ready texture map.
 
 STEP 1 — DEEP UV MAP ANALYSIS (do this FIRST, before generating anything):
@@ -346,6 +380,14 @@ ${productType === "duffle-bag" ? `- Barrel body: Main design surface, bold motif
 
 OUTPUT: First think carefully about the UV layout analysis (Step 1), then generate the texture image (Step 2). The final image must be pixel-perfect in matching the reference UV map's shape positions and proportions.
       `.trim();
+      const enhancedPrompt =
+        selectedModel === "flash"
+          ? buildFastTexturePrompt({
+              prompt,
+              productType,
+              styleModifier,
+            })
+          : detailedPrompt;
 
       const requestBody = buildGeminiRequestBody(
         enhancedPrompt,
@@ -396,6 +438,10 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           response.status === 504 ||
           rawText.includes("FUNCTION_INVOCATION_TIMEOUT") ||
           errorMessage.toLowerCase().includes("timeout");
+        const isTransientCapacityError = isTransientGeminiCapacityError(
+          response.status,
+          errorMessage,
+        );
         const fallbackRecommended =
           !!errorData &&
           typeof errorData === "object" &&
@@ -408,15 +454,21 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           message: errorMessage,
           fallbackRecommended,
           isInvocationTimeout,
+          isTransientCapacityError,
           rawErrorData: errorData,
           rawText: rawText.substring(0, 500), // First 500 chars of raw response
         });
 
-        if ((fallbackRecommended || isInvocationTimeout) && selectedModel === "pro") {
+        if (
+          (fallbackRecommended || isInvocationTimeout || isTransientCapacityError) &&
+          selectedModel === "pro"
+        ) {
           setProgress(
             isInvocationTimeout
               ? "Gemini Pro timed out on deployment. Retrying with Gemini Flash (1K)..."
-              : "Gemini Pro quota exceeded. Retrying with Gemini Flash (1K)...",
+              : isTransientCapacityError
+                ? "Gemini Pro is temporarily busy. Retrying with Gemini Flash (1K)..."
+                : "Gemini Pro quota exceeded. Retrying with Gemini Flash (1K)...",
           );
 
           return await generateTexture({
@@ -429,6 +481,9 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
         const normalizedError = errorMessage.toLowerCase();
         if (normalizedError.includes("quota") || response.status === 429) {
           throw new Error("API quota exceeded. Please try again later or switch to Gemini Flash model (lower cost).");
+        }
+        if (isTransientCapacityError) {
+          throw new Error("Gemini is temporarily busy. Please try again shortly or switch to Gemini Flash.");
         }
         if (normalizedError.includes("not found") || response.status === 404) {
           throw new Error(`Model ${modelName} not available. Try switching to Gemini Flash.`);
@@ -634,7 +689,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
     } finally {
       setIsGenerating(false);
     }
-  }, [buildGeminiRequestBody, loadTexture, parseGeminiErrorMessage]);
+  }, [buildGeminiRequestBody, isTransientGeminiCapacityError, loadTexture, parseGeminiErrorMessage]);
 
   const applyToScene = useCallback((
     scene: THREE.Object3D,

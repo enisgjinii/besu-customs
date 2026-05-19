@@ -157,3 +157,142 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
         img.src = url;
     });
 }
+
+export async function trimImageContent(
+    url: string,
+    options?: {
+        alphaThreshold?: number;
+        whiteThreshold?: number;
+        padding?: number;
+    }
+): Promise<{
+    dataUrl: string;
+    width: number;
+    height: number;
+    wasTrimmed: boolean;
+}> {
+    const image = await loadImage(url);
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+
+    if (!sourceWidth || !sourceHeight) {
+        return {
+            dataUrl: url,
+            width: 0,
+            height: 0,
+            wasTrimmed: false,
+        };
+    }
+
+    const alphaThreshold = options?.alphaThreshold ?? 12;
+    const whiteThreshold = options?.whiteThreshold ?? 248;
+    const padding = options?.padding ?? 6;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = sourceWidth;
+    canvas.height = sourceHeight;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    if (!ctx) {
+        return {
+            dataUrl: url,
+            width: sourceWidth,
+            height: sourceHeight,
+            wasTrimmed: false,
+        };
+    }
+
+    ctx.drawImage(image, 0, 0, sourceWidth, sourceHeight);
+    const imageData = ctx.getImageData(0, 0, sourceWidth, sourceHeight);
+    const data = imageData.data;
+
+    let minX = sourceWidth;
+    let minY = sourceHeight;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < sourceHeight; y++) {
+        for (let x = 0; x < sourceWidth; x++) {
+            const index = (y * sourceWidth + x) * 4;
+            const r = data[index];
+            const g = data[index + 1];
+            const b = data[index + 2];
+            const a = data[index + 3];
+
+            const isVisible = a > alphaThreshold;
+            const isNearWhite =
+                r >= whiteThreshold &&
+                g >= whiteThreshold &&
+                b >= whiteThreshold;
+
+            if (isVisible && !isNearWhite) {
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+
+    if (maxX < minX || maxY < minY) {
+        return {
+            dataUrl: url,
+            width: sourceWidth,
+            height: sourceHeight,
+            wasTrimmed: false,
+        };
+    }
+
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(sourceWidth - 1, maxX + padding);
+    maxY = Math.min(sourceHeight - 1, maxY + padding);
+
+    const croppedWidth = maxX - minX + 1;
+    const croppedHeight = maxY - minY + 1;
+
+    if (
+        croppedWidth >= sourceWidth * 0.98 &&
+        croppedHeight >= sourceHeight * 0.98
+    ) {
+        return {
+            dataUrl: url,
+            width: sourceWidth,
+            height: sourceHeight,
+            wasTrimmed: false,
+        };
+    }
+
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = croppedWidth;
+    outCanvas.height = croppedHeight;
+    const outCtx = outCanvas.getContext("2d");
+
+    if (!outCtx) {
+        return {
+            dataUrl: url,
+            width: sourceWidth,
+            height: sourceHeight,
+            wasTrimmed: false,
+        };
+    }
+
+    outCtx.drawImage(
+        canvas,
+        minX,
+        minY,
+        croppedWidth,
+        croppedHeight,
+        0,
+        0,
+        croppedWidth,
+        croppedHeight,
+    );
+
+    return {
+        dataUrl: outCanvas.toDataURL("image/png"),
+        width: croppedWidth,
+        height: croppedHeight,
+        wasTrimmed: true,
+    };
+}

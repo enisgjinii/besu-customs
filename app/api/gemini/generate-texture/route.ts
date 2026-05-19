@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
+const GEMINI_UPSTREAM_TIMEOUT_MS = 45_000;
+
 const GEMINI_MODELS = {
   flash: "gemini-3.1-flash-image-preview",
   pro: "gemini-3-pro-image-preview",
 } as const;
+
+const ALLOW_GEMINI_PRO_TEXTURES = process.env.ALLOW_GEMINI_PRO_TEXTURES === "true";
 
 type GeminiModel = keyof typeof GEMINI_MODELS;
 
@@ -157,7 +161,11 @@ function shouldSuggestFallback(status: number, message: string, model: GeminiMod
 
   const normalized = message.toLowerCase();
   return (
+    status === 503 ||
     status === 429 ||
+    normalized.includes("high demand") ||
+    normalized.includes("temporarily unavailable") ||
+    normalized.includes("try again later") ||
     normalized.includes("quota") ||
     normalized.includes("resource exhausted") ||
     normalized.includes("rate limit")
@@ -188,7 +196,9 @@ export async function POST(request: NextRequest) {
       requestBody?: Record<string, unknown>;
     };
 
-    const model: GeminiModel = body.model === "flash" ? "flash" : "pro";
+    const requestedModel: GeminiModel = body.model === "pro" ? "pro" : "flash";
+    const model: GeminiModel =
+      requestedModel === "pro" && ALLOW_GEMINI_PRO_TEXTURES ? "pro" : "flash";
     const requestBody = body.requestBody;
 
     if (!requestBody) {
@@ -200,6 +210,9 @@ export async function POST(request: NextRequest) {
 
     const normalizedRequestBody = normalizeGeminiRequestBody(requestBody);
 
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), GEMINI_UPSTREAM_TIMEOUT_MS);
+
     const upstream = await fetch(`${getGeminiApiUrl(model)}?key=${apiKey}`, {
       method: "POST",
       headers: {
@@ -207,7 +220,8 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(normalizedRequestBody),
       cache: "no-store",
-    });
+      signal: abortController.signal,
+    }).finally(() => clearTimeout(timeout));
 
     if (!upstream.ok) {
       const errorData = await parseErrorResponse(upstream);
@@ -243,6 +257,20 @@ export async function POST(request: NextRequest) {
     const data = await upstream.json();
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json(
+        {
+          error: {
+            message: "Gemini request timed out before returning an image. Please retry with a simpler prompt.",
+            status: 504,
+            code: "UPSTREAM_TIMEOUT",
+          },
+          fallbackRecommended: true,
+        },
+        { status: 504 },
+      );
+    }
+
     const message =
       error instanceof Error ? error.message : "Unexpected Gemini proxy failure";
 

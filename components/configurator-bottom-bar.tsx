@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { resolveCenterFrontLogoPlacementFromImage } from "@/lib/logo-positioning";
+import { trimImageContent } from "@/lib/texture-utils";
 
 const COLOR_PALETTE = [
   { name: "Black", hex: "#1a1a1a" },
@@ -79,6 +81,10 @@ export function ConfiguratorBottomBar() {
   const setProducts = useConfiguratorStore((s) => s.setProducts);
   const lockedView = useConfiguratorStore((s) => s.lockedView);
   const setLockedView = useConfiguratorStore((s) => s.setLockedView);
+  const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
+  const completeUVMap = useConfiguratorStore((s) => s.completeUVMap);
+  const completeUVMask = useConfiguratorStore((s) => s.completeUVMask);
+  const centerFrontUvAnchor = useConfiguratorStore((s) => s.centerFrontUvAnchor);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [productsLoaded, setProductsLoaded] = useState(false);
@@ -174,12 +180,16 @@ export function ConfiguratorBottomBar() {
   const handleAddImage = useCallback(
     (file: File) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        // Use UV coordinates (0-1)
-        const pos: [number, number, number] = [0.5, 0.5, 0];
-        const rot: [number, number, number] = [0, 0, 0];
+      reader.onload = async (e) => {
+        const trimmed = await trimImageContent(e.target?.result as string);
+        const imageUrl = trimmed.dataUrl;
+        const preset = await resolveCenterFrontLogoPlacementFromImage({
+          modelUrl: currentModelUrl,
+          imageUrl,
+          uvMapUrl: completeUVMask || completeUVMap,
+          centerFrontUvAnchor,
+        });
 
-        // Add as a texture layer
         addTextureLayer({
           id: `layer-${Date.now()}`,
           name: file.name,
@@ -189,15 +199,22 @@ export function ConfiguratorBottomBar() {
           opacity: 1,
           blendMode: "normal",
           order: textureLayers.length,
-          imageUrl: e.target?.result as string,
-          position: pos,
-          rotation: rot,
-          scale: [0.3, 0.3, 1],
+          imageUrl,
+          position: preset.position,
+          rotation: preset.rotation,
+          scale: preset.scale,
         });
       };
       reader.readAsDataURL(file);
     },
-    [addTextureLayer, textureLayers.length],
+    [
+      addTextureLayer,
+      centerFrontUvAnchor,
+      completeUVMap,
+      completeUVMask,
+      currentModelUrl,
+      textureLayers.length,
+    ],
   );
 
   const selectedColorName = currentSection

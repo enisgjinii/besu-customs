@@ -33,6 +33,61 @@ const sharedTextureLoader = typeof window !== 'undefined' ? new THREE.TextureLoa
 // Reusable Vector2 for raycaster - avoids GC pressure from allocations in event handlers
 const _reusableVec2 = typeof window !== 'undefined' ? new THREE.Vector2() : null;
 
+function resolveCenterFrontUvAnchorFromScene(scene: THREE.Object3D): [number, number, number] | null {
+  scene.updateMatrixWorld(true);
+
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+
+  if (size.x <= 0 || size.y <= 0 || size.z <= 0) return null;
+
+  const raycaster = new THREE.Raycaster();
+  const origin = new THREE.Vector3();
+  const direction = new THREE.Vector3(0, 0, -1);
+  const chestCenterY = box.min.y + size.y * 0.62;
+  const startZ = box.max.z + Math.max(size.z * 1.5, 2);
+  const xOffsets = [0, -0.035, 0.035, -0.08, 0.08, -0.14, 0.14];
+  const yOffsets = [0, 0.045, -0.045, 0.09, -0.09];
+
+  let bestScore = Number.POSITIVE_INFINITY;
+  let bestUv: [number, number, number] | null = null;
+  const meshes: THREE.Object3D[] = [];
+  scene.traverse((child) => {
+    if (child instanceof THREE.Mesh) meshes.push(child);
+  });
+
+  for (const yOffset of yOffsets) {
+    for (const xOffset of xOffsets) {
+      origin.set(
+        center.x + size.x * xOffset,
+        chestCenterY + size.y * yOffset,
+        startZ,
+      );
+      raycaster.set(origin, direction);
+      const intersections = raycaster.intersectObjects(meshes, true);
+      const hit = intersections.find(
+        (intersection) =>
+          intersection.uv &&
+          intersection.point.z >= center.z - size.z * 0.1,
+      );
+      if (!hit?.uv) continue;
+
+      const score =
+        Math.abs(xOffset) * 1.2 +
+        Math.abs(yOffset) +
+        Math.max(0, startZ - hit.point.z) * 0.02;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestUv = [hit.uv.x, hit.uv.y, 0];
+      }
+    }
+  }
+
+  return bestUv;
+}
+
 // Cached PBR texture map - prevents reloading the same PBR maps every effect cycle
 const _pbrTextureCache = new Map<string, THREE.Texture>();
 function getCachedPBRTexture(url: string): THREE.Texture {
@@ -1041,6 +1096,7 @@ function Model({
     // Clear old UV map immediately while the new model is preparing.
     useConfiguratorStore.getState().setCompleteUVMap(null);
     useConfiguratorStore.getState().setCompleteUVMask(null);
+    useConfiguratorStore.getState().setCenterFrontUvAnchor(null);
 
     if (!scene) {
       setClonedScene(null);
@@ -1065,6 +1121,11 @@ function Model({
       };
     }
     setClonedScene(cloned);
+
+    const centerFrontUvAnchor = resolveCenterFrontUvAnchorFromScene(cloned);
+    if (!cancelled && loadId === modelLoadIdRef.current) {
+      useConfiguratorStore.getState().setCenterFrontUvAnchor(centerFrontUvAnchor);
+    }
 
     const runPostLoadWork = () => {
       if (postLoadWorkStarted) return;

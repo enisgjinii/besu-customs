@@ -2,7 +2,15 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Check, Search, ArrowLeft, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Upload,
+  Check,
+  Search,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
@@ -10,9 +18,14 @@ import {
   compressImageForMobile,
   isMobile,
 } from "@/lib/mobile-performance-utils";
+import { trimImageContent } from "@/lib/texture-utils";
 import { useRef, useState, useMemo } from "react";
 import { getPatternsByCategory, type Pattern } from "@/lib/patterns";
 import { cn } from "@/lib/utils";
+import {
+  getCenterFrontLogoPosition,
+  resolveCenterFrontLogoPlacementFromImage,
+} from "@/lib/logo-positioning";
 
 export function Step04SchoolLogo() {
   const addTextureLayer = useConfiguratorStore(
@@ -33,6 +46,14 @@ export function Step04SchoolLogo() {
   );
   const updateTextureLayer = useConfiguratorStore(
     (state) => state.updateTextureLayer,
+  );
+  const currentModelUrl = useConfiguratorStore(
+    (state) => state.currentModelUrl,
+  );
+  const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
+  const completeUVMask = useConfiguratorStore((state) => state.completeUVMask);
+  const centerFrontUvAnchor = useConfiguratorStore(
+    (state) => state.centerFrontUvAnchor,
   );
 
   // Track if upload is in progress
@@ -71,7 +92,16 @@ export function Step04SchoolLogo() {
           result = await compressImageForMobile(result, 512, 0.85);
         }
 
+        const trimmed = await trimImageContent(result);
+        result = trimmed.dataUrl;
+
         const newId = uuidv4();
+        const preset = await resolveCenterFrontLogoPlacementFromImage({
+          modelUrl: currentModelUrl,
+          imageUrl: result,
+          uvMapUrl: completeUVMask || completeUVMap,
+          centerFrontUvAnchor,
+        });
         addTextureLayer({
           id: newId,
           name: file.name,
@@ -82,16 +112,18 @@ export function Step04SchoolLogo() {
           blendMode: "normal",
           order: textureLayers.length,
           imageUrl: result,
-          position: [0.5, 0.35, 0],
-          rotation: [0, 0, 0],
-          scale: [0.3, 0.3, 1],
+          position: preset.position,
+          rotation: preset.rotation,
+          scale: preset.scale,
           flipX: false,
         });
         setSelectedTextureLayerId(newId);
         setPlacementMode(false);
         setPendingLayer(null);
         uploadLockRef.current = false;
-        toast.success("Logo added to the front. Use the controls below to move or resize it.");
+        toast.success(
+          "Logo added to the front. Use the controls below to move or resize it.",
+        );
       };
       reader.readAsDataURL(file);
     }
@@ -100,10 +132,18 @@ export function Step04SchoolLogo() {
   };
 
   // Handle selecting a predefined school logo
-  const handleLogoSelect = (logo: Pattern) => {
+  const handleLogoSelect = async (logo: Pattern) => {
     // Immediately add to center chest instead of placement mode
     // This restores the "easier" workflow users preferred
     const newId = uuidv4();
+    const trimmed = await trimImageContent(logo.thumbnail);
+    const imageUrl = trimmed.dataUrl;
+    const preset = await resolveCenterFrontLogoPlacementFromImage({
+      modelUrl: currentModelUrl,
+      imageUrl,
+      uvMapUrl: completeUVMask || completeUVMap,
+      centerFrontUvAnchor,
+    });
     addTextureLayer({
       id: newId,
       name: logo.name,
@@ -113,10 +153,10 @@ export function Step04SchoolLogo() {
       opacity: 1,
       blendMode: "normal",
       order: textureLayers.length,
-      imageUrl: logo.thumbnail,
-      position: [0.5, 0.35, 0], // Center chest
-      rotation: [0, 0, 0],
-      scale: [0.3, 0.3, 1],
+      imageUrl,
+      position: preset.position,
+      rotation: preset.rotation,
+      scale: preset.scale,
       flipX: false,
     });
 
@@ -339,9 +379,21 @@ export function Step04SchoolLogo() {
                       type="button"
                       variant="outline"
                       className="h-9 px-2 text-[10px]"
-                      onClick={(event) => {
+                      onClick={async (event) => {
                         event.stopPropagation();
-                        updateTextureLayer(layer.id, { position: [0.5, 0.35, 0] });
+                        const preset = layer.imageUrl
+                          ? await resolveCenterFrontLogoPlacementFromImage({
+                              modelUrl: currentModelUrl,
+                              imageUrl: layer.imageUrl,
+                              uvMapUrl: completeUVMask || completeUVMap,
+                              centerFrontUvAnchor,
+                            })
+                          : getCenterFrontLogoPosition(currentModelUrl);
+                        updateTextureLayer(layer.id, {
+                          position: preset.position,
+                          rotation: preset.rotation,
+                          scale: preset.scale,
+                        });
                       }}
                     >
                       Center

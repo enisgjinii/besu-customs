@@ -155,6 +155,8 @@ export interface ConfiguratorState {
   setCompleteUVMap: (url: string | null) => void;
   completeUVMask: string | null;
   setCompleteUVMask: (url: string | null) => void;
+  centerFrontUvAnchor: [number, number, number] | null;
+  setCenterFrontUvAnchor: (position: [number, number, number] | null) => void;
 
   // Global texture apply
   globalCustomTexture: string | null;
@@ -670,6 +672,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
             sectionsLoading: true, // Start loading
             completeUVMap: null, // Clear old UV map immediately
             completeUVMask: null, // Clear old UV mask immediately
+            centerFrontUvAnchor: null,
           });
 
           void loadSectionsForModel(product.modelUrl);
@@ -686,6 +689,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
             sectionsLoading: false,
             completeUVMap: null,
             completeUVMask: null,
+            centerFrontUvAnchor: null,
           });
           return;
         }
@@ -702,6 +706,7 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
           sectionsLoading: true,
           completeUVMap: null,
           completeUVMask: null,
+          centerFrontUvAnchor: null,
         });
 
         void loadSectionsForModel(url);
@@ -766,6 +771,9 @@ export const useConfiguratorStore = create<ConfiguratorState>()(
       setCompleteUVMap: (url: string | null) => set({ completeUVMap: url }),
       completeUVMask: null,
       setCompleteUVMask: (url: string | null) => set({ completeUVMask: url }),
+      centerFrontUvAnchor: null,
+      setCenterFrontUvAnchor: (position: [number, number, number] | null) =>
+        set({ centerFrontUvAnchor: position }),
 
       // Global texture apply
       globalCustomTexture: null,
