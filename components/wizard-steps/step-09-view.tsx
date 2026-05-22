@@ -586,9 +586,19 @@ export function Step09View(): React.JSX.Element {
         }),
       });
 
-      const data = await response
-        .json()
-        .catch(() => ({ error: "The server returned an invalid response." }));
+      const responseText = await response.text();
+      let data: { message?: string; error?: string } = {};
+
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        const fallbackMessage = responseText
+          ? responseText.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+          : "The server returned an empty response.";
+        data = {
+          error: `The server returned an invalid response (${response.status}). ${fallbackMessage.slice(0, 240)}`,
+        };
+      }
 
       if (response.ok) {
         const successMessage =

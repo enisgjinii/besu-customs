@@ -5,6 +5,40 @@ import nodemailer from "nodemailer";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // seconds
 
+type IncomingDesignFile = {
+    filename?: string;
+    content?: string;
+};
+
+function parseAttachmentContent(file: IncomingDesignFile) {
+    const rawContent = typeof file.content === "string" ? file.content : "";
+    const dataUrlMatch = rawContent.match(/^data:([^;,]+)?(;base64)?,([\s\S]*)$/);
+
+    if (!dataUrlMatch) {
+        return {
+            content: rawContent,
+            encoding: "base64" as const,
+            contentType: undefined,
+        };
+    }
+
+    const [, contentType, base64Marker, payload] = dataUrlMatch;
+
+    if (base64Marker) {
+        return {
+            content: payload,
+            encoding: "base64" as const,
+            contentType,
+        };
+    }
+
+    return {
+        content: Buffer.from(decodeURIComponent(payload), "utf8"),
+        encoding: undefined,
+        contentType,
+    };
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -58,59 +92,66 @@ export async function POST(req: NextRequest) {
         let pdfFilename = "";
 
         // Process all files
-        files?.forEach((file: any) => {
-            const content = file.content.includes("base64,")
-                ? file.content.split("base64,")[1]
-                : file.content;
+        files?.forEach((file: IncomingDesignFile) => {
+            if (!file.filename || !file.content) return;
 
+            const { content, encoding, contentType } = parseAttachmentContent(file);
             const filename = file.filename.toLowerCase();
+            const inlineImageContent =
+                typeof content === "string" ? content : content.toString("base64");
 
             // Add as regular attachment
             attachments.push({
                 filename: file.filename,
                 content,
-                encoding: "base64",
+                ...(encoding ? { encoding } : {}),
+                ...(contentType ? { contentType } : {}),
             });
 
             // Check for view images
             if (filename.includes("design-front")) {
-                viewImages.front = content;
+                viewImages.front = inlineImageContent;
                 attachments.push({
                     filename: "view-front.jpg",
                     content,
-                    encoding: "base64",
+                    ...(encoding ? { encoding } : {}),
+                    ...(contentType ? { contentType } : {}),
                     cid: "view-front",
                 });
             } else if (filename.includes("design-back")) {
-                viewImages.back = content;
+                viewImages.back = inlineImageContent;
                 attachments.push({
                     filename: "view-back.jpg",
                     content,
-                    encoding: "base64",
+                    ...(encoding ? { encoding } : {}),
+                    ...(contentType ? { contentType } : {}),
                     cid: "view-back",
                 });
             } else if (filename.includes("design-left")) {
-                viewImages.left = content;
+                viewImages.left = inlineImageContent;
                 attachments.push({
                     filename: "view-left.jpg",
                     content,
-                    encoding: "base64",
+                    ...(encoding ? { encoding } : {}),
+                    ...(contentType ? { contentType } : {}),
                     cid: "view-left",
                 });
             } else if (filename.includes("design-right")) {
-                viewImages.right = content;
+                viewImages.right = inlineImageContent;
                 attachments.push({
                     filename: "view-right.jpg",
                     content,
-                    encoding: "base64",
+                    ...(encoding ? { encoding } : {}),
+                    ...(contentType ? { contentType } : {}),
                     cid: "view-right",
                 });
             } else if (filename.includes("tech-pack") || filename.includes("uv-map") || filename.includes("uvmap")) {
-                uvMapImage = content;
+                uvMapImage = inlineImageContent;
                 attachments.push({
                     filename: "tech-pack.png",
                     content,
-                    encoding: "base64",
+                    ...(encoding ? { encoding } : {}),
+                    ...(contentType ? { contentType } : {}),
                     cid: "uv-map",
                 });
             } else if (filename.endsWith(".pdf")) {
