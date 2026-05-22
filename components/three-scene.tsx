@@ -26,6 +26,8 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import { useAutoMemoryCleanup } from "@/lib/memory-monitor";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { cn } from "@/lib/utils";
 
 // Shared TextureLoader instance - reuse instead of creating per render
 const sharedTextureLoader = typeof window !== 'undefined' ? new THREE.TextureLoader() : null;
@@ -1688,7 +1690,7 @@ export function ThreeScene({
 }) {
   const [initError] = useState<string | null>(null);
   const [modelUrl, setModelUrl] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const { isMobile } = useBreakpoint();
 
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const modelLoading = useConfiguratorStore((s) => s.modelLoading);
@@ -1700,16 +1702,6 @@ export function ThreeScene({
 
   // Monitor memory pressure and cleanup automatically
   useAutoMemoryCleanup(0.80);
-
-  // Check if mobile for camera positioning (debounced)
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    let tid: ReturnType<typeof setTimeout>;
-    const debounced = () => { clearTimeout(tid); tid = setTimeout(checkMobile, 300); };
-    window.addEventListener("resize", debounced);
-    return () => { window.removeEventListener("resize", debounced); clearTimeout(tid); };
-  }, []);
 
   useEffect(() => {
     if (!currentModelUrl) {
@@ -1819,8 +1811,10 @@ export function ThreeScene({
 
   return (
     <div
-      className="w-full h-full relative"
-      style={{ cursor: isPlacementMode ? "crosshair" : "auto" }}
+      className={cn(
+        "w-full h-full relative",
+        isPlacementMode ? "cursor-crosshair" : "cursor-auto",
+      )}
     >
       <Canvas
         shadows={!perfConfig.isLowEndDevice && perfConfig.shadowsEnabled}
@@ -1832,7 +1826,7 @@ export function ThreeScene({
           far: 1000,
         }}
         gl={glConfig}
-        style={{ touchAction: "none" }}
+        className="touch-none"
         performance={{ min: 0.5 }}
       >
         <SceneSetup />
@@ -1886,7 +1880,7 @@ export function ThreeScene({
 
       {/* Empty State Overlay - Moved inside ThreeScene to ensure it respects loading */}
       {!modelUrl && !modelLoading && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none pb-[320px]">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none pb-8 md:pb-20">
           <div className="text-center px-8">
             <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
               <svg

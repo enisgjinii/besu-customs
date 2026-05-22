@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ChevronRight,
   ChevronLeft,
@@ -25,44 +24,25 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ColorPickerModal } from "./color-picker-modal";
 import { TextureLayerSelector } from "@/components/texture-layer-selector";
-
-// Import Steps
-import { Step01Apparel } from "./wizard-steps/step-01-apparel";
-import { Step02Colors } from "./wizard-steps/step-02-colors";
-import { Step03Style } from "./wizard-steps/step-03-style";
-import { Step04SchoolLogo } from "./wizard-steps/step-04-school-logo";
-import { Step05Patterns } from "./wizard-steps/step-05-patterns";
-import { Step06Text } from "./wizard-steps/step-06-text";
-import { Step07Images } from "./wizard-steps/step-07-images";
-import { Step08AIImages } from "./wizard-steps/step-08-ai-images";
-import { Step09View } from "./wizard-steps/step-09-view";
-
-const STEPS = [
-  { id: 1, title: "APPAREL", component: Step01Apparel },
-  { id: 2, title: "AI DESIGN", component: Step08AIImages }, // Moved early for base design generation
-  { id: 3, title: "COLORS", component: Step02Colors },
-  { id: 4, title: "STYLE", component: Step03Style },
-  { id: 5, title: "LOGO", component: Step04SchoolLogo },
-  { id: 6, title: "PATTERNS", component: Step05Patterns },
-  { id: 7, title: "TEXT", component: Step06Text },
-  { id: 8, title: "IMAGES", component: Step07Images },
-  { id: 9, title: "REVIEW", component: Step09View },
-];
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { CONFIGURATOR_STEPS } from "@/components/configurator-steps";
 
 export function ConfiguratorWizard() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isMobile, setIsMobile] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const { isMobile } = useBreakpoint();
 
   // Desktop drag-to-resize state
-  const [panelHeight, setPanelHeight] = useState(320); // pixels
+  const [panelHeight, setPanelHeight] = useState(320); // pixels, desktop only
   const isDraggingRef = useRef(false);
-  const dragStartY = useRef(0);
-  const dragStartHeight = useRef(320);
+  const dragStartYRef = useRef(0);
+  const dragStartHeightRef = useRef(320);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const lockedView = useConfiguratorStore((s) => s.lockedView);
   const setLockedView = useConfiguratorStore((s) => s.setLockedView);
+  const currentStep = useConfiguratorStore((s) => s.currentStep);
+  const setStep = useConfiguratorStore((s) => s.setStep);
   const resetAllCustomizations = useConfiguratorStore(
     (s) => s.resetAllCustomizations,
   );
@@ -70,40 +50,58 @@ export function ConfiguratorWizard() {
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const isModelSelected = !!(currentModelUrl || selectedProductId);
+  const currentStepNumber = currentStep + 1;
+
+  const clampPanelHeight = useCallback((rawHeight: number) => {
+    if (typeof window === "undefined") return Math.min(600, Math.max(220, rawHeight));
+    const dynamicMin = Math.max(220, Math.round(window.innerHeight * 0.24));
+    const dynamicPreferred = Math.round(window.innerHeight * 0.32);
+    const dynamicMax = Math.min(600, Math.round(window.innerHeight * 0.72));
+    return Math.min(dynamicMax, Math.max(dynamicMin, rawHeight || dynamicPreferred));
+  }, []);
 
   useEffect(() => {
     setIsMounted(true);
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+    if (typeof window !== "undefined") {
+      setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.32)));
+    }
+  }, [clampPanelHeight]);
 
-  // Desktop drag handlers
+  useEffect(() => {
+    if (currentStep < 0) setStep(0);
+    if (currentStep >= CONFIGURATOR_STEPS.length) {
+      setStep(CONFIGURATOR_STEPS.length - 1);
+    }
+  }, [currentStep, setStep]);
+
+  useEffect(() => {
+    if (isMobile || currentStepNumber !== 9) return;
+    setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.72)));
+  }, [clampPanelHeight, currentStepNumber, isMobile]);
+
+  // Desktop pointer-drag handlers
   const handleDragStart = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (isMobile) return;
       isDraggingRef.current = true;
-      dragStartY.current = e.clientY;
-      dragStartHeight.current = panelHeight;
+      dragStartYRef.current = e.clientY;
+      dragStartHeightRef.current = panelHeight;
+      e.currentTarget.setPointerCapture(e.pointerId);
       document.body.style.cursor = "ns-resize";
       document.body.style.userSelect = "none";
     },
-    [panelHeight],
+    [isMobile, panelHeight],
   );
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (!isDraggingRef.current) return;
 
-      const deltaY = dragStartY.current - e.clientY;
-      const newHeight = Math.min(
-        600,
-        Math.max(200, dragStartHeight.current + deltaY),
-      );
-      setPanelHeight(newHeight);
+      const deltaY = dragStartYRef.current - e.clientY;
+      setPanelHeight(clampPanelHeight(dragStartHeightRef.current + deltaY));
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
         document.body.style.cursor = "";
@@ -111,44 +109,63 @@ export function ConfiguratorWizard() {
       }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, []);
+  }, [clampPanelHeight]);
+
+  useEffect(() => {
+    if (isMobile) return;
+
+    const handleResize = () => setPanelHeight((prev) => clampPanelHeight(prev));
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [clampPanelHeight, isMobile]);
+
+  useEffect(() => {
+    if (!panelRef.current) return;
+
+    if (isMobile) {
+      panelRef.current.style.removeProperty("height");
+      return;
+    }
+
+    panelRef.current.style.height = `${panelHeight}px`;
+  }, [isMobile, panelHeight]);
 
   const handleNext = () => {
-    if (currentStep === 1 && !isModelSelected) return;
-    if (currentStep < STEPS.length) setCurrentStep((c) => c + 1);
+    if (currentStep === 0 && !isModelSelected) return;
+    if (currentStep < CONFIGURATOR_STEPS.length - 1) setStep(currentStep + 1);
   };
 
   const handlePrev = () => {
-    if (currentStep > 1) setCurrentStep((c) => c - 1);
+    if (currentStep > 0) setStep(currentStep - 1);
   };
 
-  const CurrentComponent = STEPS[currentStep - 1].component;
+  const CurrentComponent = CONFIGURATOR_STEPS[currentStep]?.component;
   if (!isMounted) return null;
 
-  const showViewLock = [6, 8, 9].includes(currentStep); // LOGO, TEXT, IMAGES steps
+  const showViewLock = [6, 8, 9].includes(currentStepNumber);
 
   return (
     <div
+      ref={panelRef}
       className={cn(
-        "bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col",
-        // Mobile: relative positioning within flex container, Desktop: absolute with dynamic height
-        isMobile
-          ? "relative flex-1 min-h-0"
-          : "absolute bottom-0 left-0 right-0",
+        "bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col w-full overflow-x-hidden",
+        isMobile ? "relative flex-1 min-h-0" : "relative",
       )}
-      style={!isMobile ? { height: `${panelHeight}px` } : undefined}
     >
       {/* Desktop Drag Handle */}
       {!isMobile && (
         <div
-          className="w-full h-3 cursor-ns-resize flex items-center justify-center bg-gray-100 dark:bg-gray-900 hover:bg-primary/10 transition-colors group flex-shrink-0 select-none"
-          onMouseDown={handleDragStart}
+          className="w-full h-4 cursor-ns-resize touch-none flex items-center justify-center bg-gray-100 dark:bg-gray-900 hover:bg-primary/10 transition-colors group flex-shrink-0 select-none"
+          onPointerDown={handleDragStart}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize configurator panel"
         >
           <div className="flex items-center gap-1">
             <GripHorizontal className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/70" />
@@ -179,17 +196,17 @@ export function ConfiguratorWizard() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold truncate">
-                {STEPS[currentStep - 1].title}
+                {CONFIGURATOR_STEPS[currentStep]?.title}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-300"
-                    style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
-                  />
-                </div>
+                <progress
+                  className="flex-1 h-1.5 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-primary [&::-webkit-progress-value]:to-primary/70 [&::-moz-progress-bar]:bg-primary"
+                  max={CONFIGURATOR_STEPS.length}
+                  value={currentStep + 1}
+                  aria-label="Step progress"
+                />
                 <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                  {currentStep}/{STEPS.length}
+                  {currentStep + 1}/{CONFIGURATOR_STEPS.length}
                 </span>
               </div>
             </div>
@@ -198,25 +215,28 @@ export function ConfiguratorWizard() {
 
         {/* Step pills - Desktop only */}
         {!isMobile && (
-          <div className="flex-1 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-1.5">
-              {STEPS.map((s) => {
+          <div className="relative flex-1 min-w-0">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-5 bg-gradient-to-r from-gray-50/95 to-transparent dark:from-gray-900/95" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-gray-50/95 to-transparent dark:from-gray-900/95" />
+            <div className="flex-1 overflow-x-auto no-scrollbar px-2">
+              <div className="flex items-center gap-1.5 w-max min-w-full">
+                {CONFIGURATOR_STEPS.map((s, idx) => {
                 const isDisabled = !isModelSelected && s.id !== 1;
-                const isActive = currentStep === s.id;
+                const isActive = currentStep === idx;
                 return (
                   <button
                     key={s.id}
-                    onClick={() => !isDisabled && setCurrentStep(s.id)}
+                    onClick={() => !isDisabled && setStep(idx)}
                     disabled={isDisabled}
+                    title={isDisabled ? "Select apparel first to unlock this step" : s.title}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0",
+                      "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 min-h-11",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : isDisabled
                           ? "text-gray-300 dark:text-gray-700 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
                           : "text-gray-600 bg-gray-200 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600",
                     )}
-                    style={{ WebkitTapHighlightColor: "transparent" }}
                   >
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/20">
                       {s.id}
@@ -225,32 +245,35 @@ export function ConfiguratorWizard() {
                   </button>
                 );
               })}
+              </div>
             </div>
           </div>
         )}
 
-          {/* Nav buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Nav buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
             {/* Mobile Reset Button - In Header */}
             {isMobile && isModelSelected && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowResetDialog(true)}
-                className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                className="h-11 w-11 text-muted-foreground hover:text-destructive"
                 title="Reset"
+                aria-label="Reset all customization"
               >
                 <RotateCcw className="w-4 h-4" />
               </Button>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className={cn("items-center gap-2", isMobile ? "hidden" : "flex") }>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={handlePrev}
-                disabled={currentStep === 1}
-                className="h-10 w-10 rounded-full"
+                disabled={currentStep === 0}
+                className="h-11 w-11 rounded-full"
+                aria-label="Previous step"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -258,12 +281,12 @@ export function ConfiguratorWizard() {
                 size="sm"
                 onClick={handleNext}
                 disabled={
-                  currentStep === STEPS.length ||
-                  (currentStep === 1 && !isModelSelected)
+                  currentStep === CONFIGURATOR_STEPS.length - 1 ||
+                  (currentStep === 0 && !isModelSelected)
                 }
-                className="h-10 px-5 rounded-full text-sm font-semibold shadow-lg"
+                className="h-11 px-5 rounded-full text-sm font-semibold shadow-lg"
               >
-                {currentStep === STEPS.length ? (
+                {currentStep === CONFIGURATOR_STEPS.length - 1 ? (
                   "Done"
                 ) : (
                   <>
@@ -272,8 +295,14 @@ export function ConfiguratorWizard() {
                 )}
               </Button>
             </div>
-          </div>
+        </div>
       </div>
+
+      {!isModelSelected && currentStep > 0 && (
+        <div className="px-3 py-2 border-b border-border/40 bg-amber-50/80 dark:bg-amber-900/20 text-[11px] text-amber-700 dark:text-amber-300">
+          Select an apparel model in step 1 to unlock all customization steps.
+        </div>
+      )}
 
       {/* View Lock Bar - only on specific steps */}
       {showViewLock && (
@@ -314,11 +343,13 @@ export function ConfiguratorWizard() {
 
       {/* Content Area */}
       <div className="flex-1 overflow-hidden min-h-0">
-        <div
-          className="h-full overflow-y-auto overscroll-y-auto"
-          style={{ WebkitOverflowScrolling: "touch" }}
-        >
-          <div className="p-4 max-w-3xl mx-auto pb-32">
+        <div className="h-full overflow-y-auto overscroll-y-auto wizard-content-scroll">
+          <div
+            className={cn(
+              "p-3 sm:p-4 mx-auto pb-6 md:pb-8",
+              currentStepNumber === 9 ? "max-w-7xl" : "max-w-4xl",
+            )}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
@@ -334,6 +365,36 @@ export function ConfiguratorWizard() {
         </div>
       </div>
 
+      {isMobile && (
+        <div className="sticky bottom-0 z-20 border-t border-border bg-white/95 dark:bg-black/95 backdrop-blur px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+              className="h-11 w-11 rounded-full"
+              aria-label="Previous step"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={handleNext}
+              disabled={
+                currentStep === CONFIGURATOR_STEPS.length - 1 ||
+                (currentStep === 0 && !isModelSelected)
+              }
+              className="h-11 flex-1 rounded-full text-sm font-semibold"
+            >
+              {currentStep === CONFIGURATOR_STEPS.length - 1 ? "Done" : "Next Step"}
+              {currentStep < CONFIGURATOR_STEPS.length - 1 && (
+                <ChevronRight className="w-4 h-4 ml-1" />
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Reset button - fixed bottom right (Desktop Only) */}
       {!isMobile && isModelSelected && (
         <Button
@@ -342,6 +403,7 @@ export function ConfiguratorWizard() {
           size="icon"
           className="absolute bottom-4 right-4 h-10 w-10 rounded-full shadow-lg z-10 bg-white dark:bg-gray-800 border overflow-hidden"
           title="Reset"
+          aria-label="Reset all customization"
         >
           <RotateCcw className="w-4 h-4 text-muted-foreground hover:text-destructive transition-colors" />
         </Button>

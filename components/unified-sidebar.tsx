@@ -6,18 +6,8 @@ import NextImage from "next/image";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { PanelLeftClose, ChevronLeft, ChevronRight } from "lucide-react";
-
-// Import Wizard Steps
-import { Step01Apparel } from "./wizard-steps/step-01-apparel";
-import { Step02Colors } from "./wizard-steps/step-02-colors";
-import { Step03Style } from "./wizard-steps/step-03-style";
-import { Step04SchoolLogo } from "./wizard-steps/step-04-school-logo";
-import { Step05Patterns } from "./wizard-steps/step-05-patterns";
-import { Step06Text } from "./wizard-steps/step-06-text";
-import { Step07Images } from "./wizard-steps/step-07-images";
-import { Step08AIImages } from "./wizard-steps/step-08-ai-images";
-import { Step09View } from "./wizard-steps/step-09-view";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CONFIGURATOR_STEPS } from "@/components/configurator-steps";
 
 interface UnifiedSidebarProps {
   sidebarOpen?: boolean;
@@ -27,17 +17,11 @@ interface UnifiedSidebarProps {
   onColorPickerClose?: () => void;
 }
 
-const STEPS = [
-  { id: 0, title: "1. Apparel", component: Step01Apparel },
-  { id: 1, title: "2. Colors", component: Step02Colors },
-  { id: 2, title: "3. Style", component: Step03Style },
-  { id: 3, title: "4. Logo", component: Step04SchoolLogo },
-  { id: 4, title: "5. Patterns", component: Step05Patterns },
-  { id: 5, title: "6. Text", component: Step06Text },
-  { id: 6, title: "7. Images", component: Step07Images },
-  { id: 7, title: "8. AI Images", component: Step08AIImages },
-  { id: 8, title: "9. Review", component: Step09View },
-];
+const STEPS = CONFIGURATOR_STEPS.map((step, index) => ({
+  id: index,
+  title: `${index + 1}. ${step.title}`,
+  component: step.component,
+}));
 
 export function UnifiedSidebar({
   sidebarOpen,
@@ -101,6 +85,8 @@ export function UnifiedSidebar({
           <button
             onClick={() => onToggleSidebar?.(!sidebarOpen)}
             className="h-8 w-8 rounded-md bg-background/80 hover:bg-accent border border-border/50 flex items-center justify-center transition-colors"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <PanelLeftClose
               className={`w-4 h-4 transition-transform ${isCollapsed ? "rotate-180" : ""}`}

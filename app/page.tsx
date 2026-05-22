@@ -5,6 +5,8 @@ import { ConfiguratorWizard } from "@/components/configurator-wizard";
 import { LayerControlsOverlay } from "@/components/layer-controls-overlay";
 import { useEffect, useRef, useState } from "react";
 import { useConfiguratorStore } from "@/lib/store";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { cn } from "@/lib/utils";
 
 // Dynamic import for Three.js Scene component
 const Scene = dynamic(
@@ -19,8 +21,8 @@ const Scene = dynamic(
 );
 
 export default function Home() {
-  const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { isMobile } = useBreakpoint();
   const sections = useConfiguratorStore((state) => state.sections);
   const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
   const setCurrentModelUrl = useConfiguratorStore(
@@ -31,21 +33,8 @@ export default function Home() {
   );
   const didRefreshPersistedModelRef = useRef(false);
 
-  // Detect mobile viewport (debounced to avoid thrashing)
   useEffect(() => {
     setMounted(true);
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const debouncedCheck = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(checkMobile, 200);
-    };
-    window.addEventListener("resize", debouncedCheck);
-    return () => {
-      window.removeEventListener("resize", debouncedCheck);
-      clearTimeout(timeoutId);
-    };
   }, []);
 
   // Auto-select first section when sections are loaded
@@ -74,35 +63,29 @@ export default function Home() {
     return <div className="h-screen w-screen bg-white dark:bg-black" />;
   }
 
-  // Mobile Layout: 3D viewer on top (40%), controls below (60%)
-  if (isMobile) {
-    return (
-      <div className="h-[100dvh] w-screen bg-white dark:bg-black flex flex-col overflow-hidden">
-        {/* 3D Viewer - 45% of viewport height (increased from 40%) */}
-        <div className="h-[45vh] min-h-[250px] flex-shrink-0 relative bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
-          <Scene />
-          <LayerControlsOverlay />
-        </div>
-
-        {/* Controls Area - 55% of viewport, scrollable */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <ConfiguratorWizard />
-        </div>
-      </div>
-    );
-  }
-
-  // Desktop Layout: Full height with fixed bottom wizard
   return (
-    <div className="h-screen w-screen bg-white dark:bg-black overflow-hidden flex flex-col">
-      {/* 3D Viewer - Takes remaining space above wizard */}
-      <main className="flex-1 relative w-full pb-[280px]">
+    <div className="h-[100dvh] w-screen bg-white dark:bg-black overflow-x-hidden overflow-y-hidden flex flex-col">
+      <main
+        className={cn(
+          "relative w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black",
+          isMobile
+            ? "h-[clamp(210px,42dvh,480px)] min-h-[190px] max-h-[58svh] flex-none"
+            : "flex-1 min-h-0",
+        )}
+      >
         <Scene />
         <LayerControlsOverlay />
       </main>
 
-      {/* Wizard - Fixed at bottom */}
-      <ConfiguratorWizard />
+      <div
+        className={cn(
+          isMobile
+            ? "flex-1 min-h-0"
+            : "flex-none",
+        )}
+      >
+        <ConfiguratorWizard />
+      </div>
     </div>
   );
 }

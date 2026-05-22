@@ -2,7 +2,7 @@
 
 import { useConfiguratorStore } from "@/lib/store";
 import { X, Image as ImageIcon, Type, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 
 export function TextureLayerSelector() {
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
@@ -19,14 +19,7 @@ export function TextureLayerSelector() {
     (state) => state.clearTextureLayers,
   );
 
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const { isMobile } = useBreakpoint();
 
   if (textureLayers.length === 0) return null;
 
@@ -46,7 +39,7 @@ export function TextureLayerSelector() {
     >
       <button
         onClick={() => setSelectedTextureLayerId(layer.id)}
-        className={`flex items-center ${mobile ? "h-6 gap-1 px-2 text-[9px]" : "h-7 gap-1.5 px-2.5 text-[10px]"} ${
+        className={`flex items-center ${mobile ? "h-10 gap-1.5 px-2.5 text-[10px]" : "h-9 gap-1.5 px-2.5 text-[11px]"} ${
           selectedTextureLayerId === layer.id
             ? "text-foreground"
             : "text-muted-foreground hover:text-foreground"
@@ -57,7 +50,7 @@ export function TextureLayerSelector() {
         ) : (
           <ImageIcon className={mobile ? "h-2.5 w-2.5" : "h-3 w-3"} />
         )}
-        <span className={mobile ? "max-w-[54px] truncate" : "max-w-[100px] truncate"}>
+        <span className={mobile ? "max-w-[80px] truncate" : "max-w-[120px] truncate"}>
           {layer.name || layer.type}
         </span>
       </button>
@@ -68,12 +61,12 @@ export function TextureLayerSelector() {
           removeTextureLayer(layer.id);
         }}
         className={`inline-flex items-center justify-center rounded-full text-destructive/90 transition-colors hover:bg-red-500 hover:text-white ${
-          mobile ? "h-4 w-4" : "h-5 w-5"
+          mobile ? "h-8 w-8" : "h-7 w-7"
         }`}
         title="Remove"
         aria-label={`Remove ${layer.name || layer.type}`}
       >
-        <X className={mobile ? "h-2.5 w-2.5" : "h-3 w-3"} />
+        <X className={mobile ? "h-3 w-3" : "h-3.5 w-3.5"} />
       </button>
     </div>
   );
@@ -81,19 +74,19 @@ export function TextureLayerSelector() {
   // Mobile: very compact bar
   if (isMobile) {
     return (
-      <div className="flex items-center gap-1.5 border-b border-border/40 bg-background/90 px-2 py-1 backdrop-blur">
-        <div className="shrink-0 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
+      <div className="flex items-center gap-2 border-b border-border/40 bg-background/90 px-2 py-1.5 backdrop-blur">
+        <div className="shrink-0 rounded-full border border-border/60 bg-muted/40 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
           Layers {textureLayers.length}
         </div>
         <button
           onClick={handleClearAll}
-          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-destructive/90 transition-colors hover:bg-red-500 hover:text-white"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-destructive/90 transition-colors hover:bg-red-500 hover:text-white"
           title="Clear all layers"
           aria-label="Clear all layers"
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 className="h-4 w-4" />
         </button>
-        <div className="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
+        <div className="flex flex-1 gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
           {textureLayers.map((layer) => renderChip(layer, true))}
         </div>
       </div>

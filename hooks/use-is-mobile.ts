@@ -1,22 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useMediaQuery } from "@/hooks/use-breakpoint";
 
 export function useIsMobile(breakpoint: number = 768) {
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMediaQuery(`(max-width: ${breakpoint - 1}px)`);
   const [screenWidth, setScreenWidth] = useState(0);
 
   useEffect(() => {
-    const checkMobile = () => {
-      const width = window.innerWidth;
-      setScreenWidth(width);
-      setIsMobile(width < breakpoint);
-    };
+    const checkMobile = () => setScreenWidth(window.innerWidth);
 
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, [breakpoint]);
+  }, []);
 
   return { isMobile, screenWidth };
 }

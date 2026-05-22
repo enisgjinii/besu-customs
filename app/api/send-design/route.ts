@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
         const viewImages: { [key: string]: string } = {};
         let uvMapImage: string | null = null;
         let hasPdf = false;
+        let hasSvg = false;
         let pdfFilename = "";
 
         // Process all files
@@ -115,6 +116,8 @@ export async function POST(req: NextRequest) {
             } else if (filename.endsWith(".pdf")) {
                 hasPdf = true;
                 pdfFilename = file.filename;
+            } else if (filename.endsWith(".svg")) {
+                hasSvg = true;
             }
         });
 
@@ -549,6 +552,20 @@ export async function POST(req: NextRequest) {
                                                             <td style="width: 32px; height: 32px; background-color: #d1fae5; border-radius: 6px; text-align: center; vertical-align: middle; color: #059669; font-size: 14px;"></td>
                                                             <td style="padding-left: 10px;">
                                                                 <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">UV Map</p>
+                                                                <p style="margin: 0; font-size: 11px; color: #71717a;">1 file</p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                ` : ""
+            }
+                                                ${hasSvg ? `
+                                                <td style="padding: 6px; vertical-align: top;">
+                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
+                                                        <tr>
+                                                            <td style="width: 32px; height: 32px; background-color: #ede9fe; border-radius: 6px; text-align: center; vertical-align: middle; color: #7c3aed; font-size: 14px;"></td>
+                                                            <td style="padding-left: 10px;">
+                                                                <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">SVG Pattern File</p>
                                                                 <p style="margin: 0; font-size: 11px; color: #71717a;">1 file</p>
                                                             </td>
                                                         </tr>

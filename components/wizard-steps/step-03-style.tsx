@@ -96,13 +96,13 @@ export function Step03Style() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {STYLE_PRESETS.map((preset) => (
           <button
             key={preset.id}
             onClick={() => handleApplyStyle(preset)}
             className={cn(
-              "relative flex flex-col items-center p-3 rounded-xl border-2 transition-all active:scale-95",
+              "relative flex flex-col items-center p-3 rounded-xl border-2 transition-all active:scale-95 min-h-24",
               selectedStyle === preset.id
                 ? "border-primary ring-2 ring-primary bg-primary/10"
                 : "border-border hover:border-primary/50",

@@ -33,6 +33,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { cn } from "@/lib/utils";
 
 /**
  * LayerControlsOverlay - Floating control buttons that appear on the 3D viewer
@@ -44,6 +46,7 @@ import { toast } from "sonner";
  * - Resize: Toggle resize mode (future)
  */
 export function LayerControlsOverlay() {
+  const { isMobile } = useBreakpoint();
   const selectedTextureLayerId = useConfiguratorStore(
     (s) => s.selectedTextureLayerId,
   );
@@ -350,7 +353,7 @@ export function LayerControlsOverlay() {
 
   return (
     <div
-      className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
+      className="absolute left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] -translate-x-1/2 z-50 pointer-events-auto max-w-[calc(100%-1rem)]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -391,7 +394,7 @@ export function LayerControlsOverlay() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center gap-1.5"
+            className="bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 flex items-center gap-1 max-w-full overflow-x-auto no-scrollbar"
           >
         {/* Layer name indicator */}
         <span className="px-2 text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
@@ -407,9 +410,13 @@ export function LayerControlsOverlay() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-l-md rounded-r-none"
+                className={cn(
+                  "p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-l-md rounded-r-none",
+                  isMobile ? "h-9 w-9" : "h-10 w-8",
+                )}
                 onClick={() => handleMove("front")}
                 title="Bring to Front"
+                aria-label="Bring selected layer to front"
               >
                 <ChevronsUp className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
@@ -421,9 +428,13 @@ export function LayerControlsOverlay() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-l border-r border-gray-100 dark:border-gray-800"
+                className={cn(
+                  "p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-l border-r border-gray-100 dark:border-gray-800",
+                  isMobile ? "h-9 w-9" : "h-10 w-8",
+                )}
                 onClick={() => handleMove("forward")}
                 title="Bring Forward"
+                aria-label="Bring selected layer forward"
               >
                 <ArrowUp className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
@@ -435,9 +446,13 @@ export function LayerControlsOverlay() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-r border-gray-100 dark:border-gray-800"
+                className={cn(
+                  "p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none border-r border-gray-100 dark:border-gray-800",
+                  isMobile ? "h-9 w-9" : "h-10 w-8",
+                )}
                 onClick={() => handleMove("backward")}
                 title="Send Backward"
+                aria-label="Send selected layer backward"
               >
                 <ArrowDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
@@ -449,9 +464,13 @@ export function LayerControlsOverlay() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-10 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md rounded-l-none"
+                className={cn(
+                  "p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md rounded-l-none",
+                  isMobile ? "h-9 w-9" : "h-10 w-8",
+                )}
                 onClick={() => handleMove("back")}
                 title="Send to Back"
+                aria-label="Send selected layer to back"
               >
                 <ChevronsDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
@@ -471,6 +490,7 @@ export function LayerControlsOverlay() {
               className="h-10 w-10 p-0 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 active:scale-95 transition-transform"
               onClick={handleDuplicate}
               title="Duplicate"
+              aria-label="Duplicate selected layer"
             >
               <Copy className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </Button>
@@ -487,6 +507,7 @@ export function LayerControlsOverlay() {
               className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
               onClick={handleRotateLeft}
               title="Rotate"
+              aria-label="Rotate selected layer left"
             >
               <RotateCcw className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </Button>
@@ -503,6 +524,7 @@ export function LayerControlsOverlay() {
               className="h-10 w-10 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
               onClick={handleFlipX}
               title="Flip Horizontal"
+              aria-label="Flip selected layer horizontally"
             >
               <Maximize2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </Button>
@@ -521,6 +543,7 @@ export function LayerControlsOverlay() {
                   className="h-10 w-10 p-0 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 active:scale-95 transition-transform"
                   title="Export 360"
                   disabled={isExporting}
+                  aria-label="Open 360 export options"
                 >
                   {isExporting ? (
                     <Loader2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
@@ -566,6 +589,7 @@ export function LayerControlsOverlay() {
               className="h-10 w-10 p-0 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 active:scale-95 transition-transform"
               onClick={handleDelete}
               title="Delete"
+              aria-label="Delete selected layer"
             >
               <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
             </Button>
@@ -584,6 +608,7 @@ export function LayerControlsOverlay() {
               className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-transform"
               onClick={() => setIsPinnedOpen((prev) => !prev)}
               title={isPinnedOpen ? "Unpin" : "Pin open"}
+              aria-label={isPinnedOpen ? "Unpin overlay controls" : "Pin overlay controls"}
             >
               {isPinnedOpen ? (
                 <PinOff className="h-5 w-5 text-gray-600 dark:text-gray-300" />
@@ -604,6 +629,7 @@ export function LayerControlsOverlay() {
               className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-transform"
               onClick={handleDeselect}
               title="Deselect"
+              aria-label="Deselect active layer"
             >
               <X className="h-5 w-5 text-gray-500" />
             </Button>

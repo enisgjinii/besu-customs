@@ -221,7 +221,7 @@ export function Step04SchoolLogo() {
             <Button
               variant="secondary"
               size="sm"
-              className="w-full h-10 border border-transparent hover:border-primary/20 transition-all font-medium text-xs shadow-sm bg-muted/50 hover:bg-muted"
+              className="w-full h-11 border border-transparent hover:border-primary/20 transition-all font-medium text-xs shadow-sm bg-muted/50 hover:bg-muted"
               asChild
             >
               <label className="cursor-pointer flex items-center justify-center gap-2">
@@ -265,14 +265,14 @@ export function Step04SchoolLogo() {
               </div>
 
               {/* Logo grid - Taller for better browsing */}
-              <div className="max-h-[40vh] min-h-[150px] overflow-y-auto pr-1 -mr-1">
-                <div className="grid grid-cols-4 xs:grid-cols-5 gap-2">
+              <div className="max-h-[44dvh] min-h-[160px] overflow-y-auto pr-1 -mr-1">
+                <div className="grid grid-cols-3 min-[360px]:grid-cols-4 sm:grid-cols-5 gap-2">
                   {filteredLogos.map((logo) => (
                     <button
                       key={logo.id}
                       onClick={() => handleLogoSelect(logo)}
                       className={cn(
-                        "group relative aspect-square rounded-lg overflow-hidden border transition-all active:scale-95 bg-white shadow-sm",
+                        "group relative aspect-square rounded-lg overflow-hidden border transition-all active:scale-95 bg-white shadow-sm min-h-11 min-w-11",
                         selectedLogoId === logo.id
                           ? "border-primary ring-2 ring-primary ring-offset-1"
                           : "border-border/40 hover:border-primary/50 hover:shadow-md",
@@ -352,7 +352,7 @@ export function Step04SchoolLogo() {
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-9 w-full"
+                      className="h-11 w-full"
                       onClick={(event) => {
                         event.stopPropagation();
                         moveLogo(layer.id, 0, -0.03);
@@ -366,7 +366,7 @@ export function Step04SchoolLogo() {
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-9 w-full"
+                      className="h-11 w-full"
                       onClick={(event) => {
                         event.stopPropagation();
                         moveLogo(layer.id, -0.03, 0);
@@ -378,7 +378,7 @@ export function Step04SchoolLogo() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-9 px-2 text-[10px]"
+                      className="h-11 px-2 text-[10px]"
                       onClick={async (event) => {
                         event.stopPropagation();
                         const preset = layer.imageUrl
@@ -402,7 +402,7 @@ export function Step04SchoolLogo() {
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-9 w-full"
+                      className="h-11 w-full"
                       onClick={(event) => {
                         event.stopPropagation();
                         moveLogo(layer.id, 0.03, 0);
@@ -416,7 +416,7 @@ export function Step04SchoolLogo() {
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-9 w-full"
+                      className="h-11 w-full"
                       onClick={(event) => {
                         event.stopPropagation();
                         moveLogo(layer.id, 0, 0.03);

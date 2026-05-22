@@ -17,6 +17,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 
 interface LayerControlsProps {
   layerId: string;
@@ -29,6 +30,7 @@ export function LayerControls({
   compact = false,
   sliderOnly = false,
 }: LayerControlsProps) {
+  const { isMobile } = useBreakpoint();
   const layer = useConfiguratorStore((s) =>
     s.textureLayers.find((l) => l.id === layerId),
   );
@@ -207,7 +209,7 @@ export function LayerControls({
           size="icon"
           onClick={() => {
             // Add confirmation on mobile for better UX
-            if (window.innerWidth < 768) {
+            if (isMobile) {
               if (
                 !confirm("Delete this design? This action cannot be undone.")
               ) {

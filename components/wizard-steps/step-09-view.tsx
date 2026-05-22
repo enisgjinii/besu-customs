@@ -188,6 +188,38 @@ export function Step09View(): React.JSX.Element {
     return null;
   };
 
+  const generateProductionSvgDataUrl = ({
+    imageDataUrl,
+    teamName,
+    contactName,
+    generatedAt,
+  }: {
+    imageDataUrl: string;
+    teamName: string;
+    contactName: string;
+    generatedAt: string;
+  }): string => {
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="2048" viewBox="0 0 2048 2048" role="img" aria-label="Besu Customs production pattern">
+  <title>Besu Customs Production Pattern</title>
+  <metadata>
+    <besu-customs-order team="${escapeXml(teamName)}" contact="${escapeXml(contactName)}" generatedAt="${escapeXml(generatedAt)}" />
+  </metadata>
+  <rect width="2048" height="2048" fill="#ffffff" />
+  <image href="${imageDataUrl}" x="0" y="0" width="2048" height="2048" preserveAspectRatio="xMidYMid meet" />
+</svg>`;
+
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  };
+
   const findTextLayers = useCallback(() => {
     const allTextLayers = textureLayers
       .filter((l) => l.type === "text" && l.text)
@@ -232,8 +264,20 @@ export function Step09View(): React.JSX.Element {
 
       const frontCapture = viewCaptures.find(v => v.view === "Front");
       const previewImage = frontCapture ? frontCapture.dataUrl : designPreviews.front;
+      const contactName = `${firstName} ${lastName}`;
 
       const files: { filename: string; content: string }[] = [];
+      const addProductionSvgFile = (imageDataUrl: string) => {
+        files.push({
+          filename: "Design-Production-Pattern.svg",
+          content: generateProductionSvgDataUrl({
+            imageDataUrl,
+            teamName: roster.teamName || "Custom Team",
+            contactName,
+            generatedAt: new Date().toISOString(),
+          }),
+        });
+      };
 
       // Add regular 3D views
       viewCaptures.forEach((capture) => {
@@ -282,12 +326,14 @@ export function Step09View(): React.JSX.Element {
               filename: "Design-2D-Tech-Pack.png",
               content: compositeDataUrl,
             });
+            addProductionSvgFile(compositeDataUrl);
           } else {
             // Fallback if context fails
             files.push({
               filename: "Design-Texture-Only.png",
               content: uvMapUrl,
             });
+            addProductionSvgFile(uvMapUrl);
           }
         } catch (e) {
           console.error("Failed to composite Tech Pack", e);
@@ -296,12 +342,14 @@ export function Step09View(): React.JSX.Element {
             filename: "Design-Texture-Only.png",
             content: uvMapUrl,
           });
+          addProductionSvgFile(uvMapUrl);
         }
       } else if (uvMapUrl) {
         files.push({
           filename: "Design-Texture-Only.png",
           content: uvMapUrl,
         });
+        addProductionSvgFile(uvMapUrl);
       }
 
       // Generate PDF Spec Sheet (Enhanced)
@@ -496,7 +544,6 @@ export function Step09View(): React.JSX.Element {
 
 
       // Send to API
-      const contactName = `${firstName} ${lastName}`;
       const response = await fetch("/api/send-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -578,135 +625,154 @@ export function Step09View(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-10">
-      <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden mb-6">
-        <div className="p-4 md:p-8 pb-4 md:pb-6 border-b border-border/10">
-          <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">
-            Review & Submit Order Form
-          </h1>
-          <p className="text-sm md:text-base text-slate-500 mt-1">
-            Complete your team details and review your design.
-          </p>
+    <div className="mx-auto w-full max-w-7xl pb-24 md:pb-12">
+      <div className="mb-5 rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-6 md:py-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Final Step
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
+              Review and Submit Order
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              Confirm the production details, roster, delivery address, and design assets before the order is sent.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-center">
+            <div className="px-4 py-3">
+              <p className="text-lg font-semibold text-slate-950">{roster.players.length}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Sets</p>
+            </div>
+            <div className="border-x border-slate-200 px-4 py-3">
+              <p className="text-lg font-semibold text-slate-950">
+                ${selectedProductId ? getProductPrice(selectedProductId, printingMethod) : 0}
+              </p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Unit</p>
+            </div>
+            <div className="px-4 py-3">
+              <p className="text-lg font-semibold text-slate-950">
+                ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
+              </p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Estimate</p>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div className="p-4 md:p-8 space-y-6 md:space-y-10">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <main className="space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Contact
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                  Customer Information
+                </h2>
+              </div>
+              {(!firstName || !lastName || !email) && (
+                <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                  Required
+                </span>
+              )}
+            </div>
 
-          {/* Contact */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              <div className="space-y-2">
-                <Label className="text-slate-700 font-semibold">Name <span className="text-red-500">*</span></Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Input
-                      placeholder="First Name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="bg-white h-11"
-                    />
-                    <span className="text-xs text-slate-500 pl-1">First Name</span>
-                  </div>
-                  <div className="space-y-1">
-                    <Input
-                      placeholder="Last Name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="bg-white h-11"
-                    />
-                    <span className="text-xs text-slate-500 pl-1">Last Name</span>
-                  </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-sm font-semibold text-slate-800">
+                  Name <span className="text-red-500">*</span>
+                </Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="h-11 bg-white"
+                  />
+                  <Input
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="h-11 bg-white"
+                  />
                 </div>
-                {(!firstName || !lastName) && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="bg-red-600 text-[10px] font-bold text-white px-1.5 py-0.5 rounded">!</span>
-                    <span className="text-xs text-red-600 font-medium bg-red-50 px-2 py-0.5 rounded-r">This field is required.</span>
-                  </div>
-                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-slate-800">
+                  Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="example@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 bg-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-slate-800">
+                  Phone Number <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="Phone number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="h-11 bg-white"
+                />
               </div>
             </div>
+          </section>
 
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-semibold">Email: <span className="text-red-500">*</span></Label>
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Team
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                Uniform Size and Quantity
+              </h2>
+            </div>
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-2">
+              <RosterInput value={roster} onChange={setRoster} className="border-none bg-transparent shadow-none" />
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Delivery
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                Shipping Address
+              </h2>
+            </div>
+
+            <div className="grid gap-4">
               <Input
-                placeholder="example@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-white h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-semibold">Phone Number: <span className="text-red-500">*</span></Label>
-              <Input
-                placeholder=""
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="bg-white h-11"
-              />
-            </div>
-          </div>
-
-          {/* Design Selection */}
-          <div className="space-y-3">
-            <Label className="text-slate-700 font-semibold">Preview Your Custom Design <span className="text-red-500">*</span></Label>
-            <div className="grid grid-cols-3 gap-3 md:gap-4">
-              <div className="aspect-square rounded-lg border-2 border-blue-500 ring-2 ring-blue-500/20 overflow-hidden bg-slate-50 relative">
-                {previewsLoading ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
-                  </div>
-                ) : designPreviews.front ? (
-                  <img src={designPreviews.front} className="w-full h-full object-contain p-2" alt="Front" />
-                ) : null}
-              </div>
-              <div className="aspect-square rounded-lg border border-slate-200 overflow-hidden bg-slate-50 relative opacity-70">
-                {designPreviews.back && <img src={designPreviews.back} className="w-full h-full object-contain p-2" alt="Back" />}
-              </div>
-              <div className="aspect-square rounded-lg border border-slate-200 overflow-hidden bg-slate-50 relative opacity-70">
-                {designPreviews.side && <img src={designPreviews.side} className="w-full h-full object-contain p-2" alt="Side" />}
-              </div>
-            </div>
-          </div>
-
-          {/* Roster */}
-          <div className="space-y-2 pt-4 border-t border-slate-100">
-            <Label className="text-base md:text-lg font-semibold text-slate-800">Uniform Size & Amount</Label>
-            <div className="bg-slate-50 rounded-lg p-1">
-              <RosterInput value={roster} onChange={setRoster} className="border-none shadow-none bg-transparent" />
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="space-y-4 pt-4 border-t border-slate-100">
-            <Label className="text-slate-700 font-semibold text-base md:text-lg">Shipping Address <span className="text-red-500">*</span></Label>
-            <div className="space-y-2">
-              <Input
-                placeholder="Street Address"
+                placeholder="Street address"
                 value={shippingAddress.street}
                 onChange={(e) => setShippingAddress({ ...shippingAddress, street: e.target.value })}
-                className="bg-white h-11"
+                className="h-11 bg-white"
               />
-            </div>
-            <div className="space-y-2">
               <Input
-                placeholder="Apartment, suite, etc."
+                placeholder="Apartment, suite, unit, building"
                 value={shippingAddress.street2}
                 onChange={(e) => setShippingAddress({ ...shippingAddress, street2: e.target.value })}
-                className="bg-white h-11"
+                className="h-11 bg-white"
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4 md:gap-6">
-              <div className="space-y-2">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px_140px]">
                 <Input
                   placeholder="City"
                   value={shippingAddress.city}
                   onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
-                  className="bg-white h-11"
+                  className="h-11 bg-white"
                 />
-              </div>
-              <div className="space-y-2">
                 <Select value={shippingAddress.state} onValueChange={(v) => setShippingAddress({ ...shippingAddress, state: v })}>
-                  <SelectTrigger className="bg-white h-11 text-slate-500">
+                  <SelectTrigger className="h-11 bg-white text-slate-600">
                     <SelectValue placeholder="State" />
                   </SelectTrigger>
                   <SelectContent>
@@ -716,112 +782,166 @@ export function Step09View(): React.JSX.Element {
                     <SelectItem value="FL">Florida</SelectItem>
                   </SelectContent>
                 </Select>
+                <Input
+                  placeholder="Zip code"
+                  value={shippingAddress.zip}
+                  onChange={(e) => setShippingAddress({ ...shippingAddress, zip: e.target.value })}
+                  className="h-11 bg-white"
+                />
               </div>
             </div>
-            <div className="space-y-2">
-              <Input
-                placeholder="Zip Code"
-                value={shippingAddress.zip}
-                onChange={(e) => setShippingAddress({ ...shippingAddress, zip: e.target.value })}
-                className="bg-white h-11"
-              />
-            </div>
-          </div>
+          </section>
 
-          {/* Notes */}
-          <div className="space-y-2 pt-6 border-t border-slate-200">
-            <Label className="text-slate-700 font-semibold text-base md:text-lg">Additional Notes</Label>
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Production
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                Additional Notes
+              </h2>
+            </div>
             <Textarea
-              placeholder="Special instructions for production (colors, sizing, etc.)"
+              placeholder="Special instructions for production, colors, sizing, packaging, or delivery."
               value={deliveryNotes}
               onChange={(e) => setDeliveryNotes(e.target.value)}
-              className="min-h-[100px] resize-none bg-white"
+              className="min-h-32 resize-none bg-white"
             />
-            <span className="text-xs text-slate-500">Any specific requests for the team?</span>
-          </div>
+          </section>
+        </main>
 
-          {/* Pricing Summary */}
-          <div className="space-y-4 pt-6 border-t border-slate-200">
-            <Label className="text-slate-700 font-semibold text-base md:text-lg">Order Summary</Label>
-            <div className="bg-slate-50 rounded-lg p-4 md:p-6 border border-slate-200 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Product:</span>
-                <span className="font-medium text-slate-900 capitalize">{selectedProductId?.replace(/-/g, " ")}</span>
+        <aside className="space-y-5 lg:sticky lg:top-6">
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Design
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                  Preview
+                </h2>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Printing Method:</span>
-                <span className="font-medium text-slate-900 capitalize">{printingMethod}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Unit Price:</span>
-                <span className="font-medium text-slate-900">${selectedProductId ? getProductPrice(selectedProductId, printingMethod) : 0}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Quantity:</span>
-                <span className="font-medium text-slate-900">
-                  {roster.players.length > 0 ? (
-                    `${roster.players.length} units`
-                  ) : (
-                    <span className="text-amber-600 font-bold">0 units (Add players above)</span>
-                  )}
-                </span>
-              </div>
-              <div className="border-t border-slate-200 pt-3 flex justify-between items-center mt-2">
-                <span className="text-sm md:text-base font-bold text-slate-800">Total Estimated Cost:</span>
-                <span className="text-lg md:text-xl font-bold text-primary">
-                  ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 pt-2 italic">
-                * Final invoice may adjust for tax and shipping.
-              </p>
+              {previewsLoading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
             </div>
-          </div>
 
-          {/* Confirmation Checkbox */}
-          <div className="pt-6 space-y-4 border-t border-slate-200">
-            <div className="flex items-start space-x-3">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Front", src: designPreviews.front, active: true },
+                { label: "Back", src: designPreviews.back, active: false },
+                { label: "Side", src: designPreviews.side, active: false },
+              ].map((preview) => (
+                <div key={preview.label} className="space-y-2">
+                  <div
+                    className={cn(
+                      "relative aspect-square overflow-hidden rounded-lg border bg-slate-50",
+                      preview.active ? "border-slate-950 ring-2 ring-slate-950/10" : "border-slate-200",
+                    )}
+                  >
+                    {previewsLoading && !preview.src ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                      </div>
+                    ) : preview.src ? (
+                      <img src={preview.src} className="h-full w-full object-contain p-2" alt={`${preview.label} design preview`} />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-2 text-center text-[11px] text-slate-400">
+                        Pending
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-center text-xs font-medium text-slate-600">{preview.label}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Summary
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                Order Total
+              </h2>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-slate-600">Product</span>
+                <span className="max-w-48 text-right font-medium capitalize text-slate-950">
+                  {selectedProductId?.replace(/-/g, " ") || "Not selected"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-600">Printing</span>
+                <span className="font-medium capitalize text-slate-950">{printingMethod}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-600">Unit Price</span>
+                <span className="font-medium text-slate-950">
+                  ${selectedProductId ? getProductPrice(selectedProductId, printingMethod) : 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-600">Quantity</span>
+                <span className={cn("font-medium", roster.players.length ? "text-slate-950" : "text-amber-700")}>
+                  {roster.players.length ? `${roster.players.length} sets` : "Add players"}
+                </span>
+              </div>
+              <div className="border-t border-slate-200 pt-4">
+                <div className="flex items-end justify-between gap-4">
+                  <span className="font-semibold text-slate-950">Estimated Total</span>
+                  <span className="text-2xl font-semibold tracking-tight text-slate-950">
+                    ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Final invoice may adjust for tax and shipping.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <div className="flex items-start gap-3">
               <Checkbox
                 id="confirmation"
                 checked={isConfirmed}
                 onCheckedChange={(checked) => setIsConfirmed(checked as boolean)}
                 className="mt-1"
               />
-              <div className="grid gap-1.5 leading-none">
+              <div className="space-y-1">
                 <label
                   htmlFor="confirmation"
-                  className="text-sm font-medium leading-normal text-slate-700 cursor-pointer"
+                  className="cursor-pointer text-sm font-semibold leading-5 text-slate-900"
                 >
                   Confirm your order and design
                 </label>
-                <p className="text-xs text-slate-500 leading-snug">
-                  I confirm that my order details and designs are correct. I give my full consent to move forward with printing the order and I accept that any errors with my order names or misspelling.
+                <p className="text-xs leading-5 text-slate-500">
+                  I confirm that my order details and designs are correct. I give my full consent to move forward with printing the order and I accept responsibility for order names or spelling errors.
                 </p>
               </div>
             </div>
-          </div>
 
-          {/* Submit */}
-          <div className="pt-6 md:pt-8 flex justify-center pb-8">
             <Button
               onClick={handleSubmitOrder}
               size="lg"
-              className="w-full md:w-auto min-w-[200px] h-12"
+              className="mt-5 h-12 w-full"
               disabled={isSendingEmail || !isConfirmed}
             >
               {isSendingEmail ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
                 </>
               ) : "Submit Order"}
             </Button>
-          </div>
+          </section>
 
           {submissionResult && (
             <div
               className={cn(
-                "rounded-lg border p-4 text-sm",
+                "rounded-lg border p-4 text-sm shadow-sm",
                 submissionResult.status === "success"
                   ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                   : "border-red-200 bg-red-50 text-red-900",
@@ -839,8 +959,7 @@ export function Step09View(): React.JSX.Element {
               </p>
             </div>
           )}
-
-        </div>
+        </aside>
       </div>
     </div>
   );
