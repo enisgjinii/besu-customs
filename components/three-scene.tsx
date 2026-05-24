@@ -32,6 +32,9 @@ import { cn } from "@/lib/utils";
 // Shared TextureLoader instance - reuse instead of creating per render
 const sharedTextureLoader = typeof window !== 'undefined' ? new THREE.TextureLoader() : null;
 
+// Filled at runtime from renderer capabilities in SceneSetup.
+let rendererMaxAnisotropy = 8;
+
 // Reusable Vector2 for raycaster - avoids GC pressure from allocations in event handlers
 const _reusableVec2 = typeof window !== 'undefined' ? new THREE.Vector2() : null;
 
@@ -118,6 +121,10 @@ function getCachedPBRTexture(url: string): THREE.Texture {
   const loader = sharedTextureLoader || new THREE.TextureLoader();
   const tex = loader.load(url);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  tex.anisotropy = Math.min(rendererMaxAnisotropy, 16);
   _pbrTextureCache.set(url, tex);
   return tex;
 }
@@ -224,7 +231,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
-    tex.anisotropy = perfConfig.isLowEndDevice ? 4 : 16;
+    tex.anisotropy = Math.min(
+      rendererMaxAnisotropy,
+      perfConfig.isLowEndDevice ? 4 : 16,
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   });
@@ -236,7 +246,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
-    tex.anisotropy = perfConfig.isLowEndDevice ? 4 : 16;
+    tex.anisotropy = Math.min(
+      rendererMaxAnisotropy,
+      perfConfig.isLowEndDevice ? 4 : 16,
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   });
@@ -719,8 +732,16 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
     texture.flipY = shouldFlipY;
     texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = Math.min(
+      rendererMaxAnisotropy,
+      perfConfig.isLowEndDevice ? 4 : 16,
+    );
     backTexture.flipY = shouldFlipY;
     backTexture.colorSpace = THREE.SRGBColorSpace;
+    backTexture.anisotropy = Math.min(
+      rendererMaxAnisotropy,
+      perfConfig.isLowEndDevice ? 4 : 16,
+    );
 
     const hasRenderableTexture =
       !!globalCustomTexture || debouncedLayers.some((l) => l.visible);
@@ -891,14 +912,18 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
             materialAny.metalness = 0.0; // No metallic effect that could darken the texture
           }
           if ("roughness" in materialAny) {
-            materialAny.roughness = 0.85; // Slight roughness for fabric-like appearance
+            materialAny.roughness = 0.78; // Slightly tighter highlights for richer fabric detail
+          }
+          if ("envMapIntensity" in materialAny) {
+            (materialAny as THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial).envMapIntensity =
+              perfConfig.isLowEndDevice ? 0.5 : 0.72;
           }
 
           // Apply PBR maps
           if ("normalMap" in materialAny) {
             if (normalTex) {
               materialAny.normalMap = normalTex;
-              materialAny.normalScale?.set?.(1, 1);
+              materialAny.normalScale?.set?.(1.1, 1.1);
             } else {
               materialAny.normalMap = null;
             }
@@ -957,6 +982,7 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
     backTextureDebugOffsetY,
     currentModelUrl,
     sections,
+    perfConfig.isLowEndDevice,
   ]);
 
   // Expose canvas to global for UV map capture (email export)
@@ -1694,11 +1720,15 @@ function SceneSetup() {
   const perfConfig = useMobilePerformance();
 
   useEffect(() => {
+    rendererMaxAnisotropy = gl.capabilities.getMaxAnisotropy();
     scene.background = new THREE.Color("#ffffff");
     gl.setPixelRatio(Math.min(window.devicePixelRatio, perfConfig.pixelRatio));
     gl.toneMapping = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.0;
+    gl.toneMappingExposure = perfConfig.isLowEndDevice ? 1.0 : 1.06;
     gl.outputColorSpace = THREE.SRGBColorSpace;
+    // Prefer physically correct lighting model on modern Three.js versions.
+    // useLegacyLights=false is the compatible toggle for typed renderer APIs.
+    (gl as THREE.WebGLRenderer & { useLegacyLights?: boolean }).useLegacyLights = false;
 
     // Optimize rendering: disable auto-clear and manually manage when needed
     gl.autoClear = true;
@@ -1711,7 +1741,7 @@ function SceneSetup() {
     } else {
       gl.shadowMap.enabled = false;
     }
-  }, [gl, scene, perfConfig]);
+  }, [gl, scene, perfConfig.pixelRatio, perfConfig.isLowEndDevice, perfConfig.shadowsEnabled]);
 
   return null;
 }
@@ -1899,11 +1929,21 @@ export function ThreeScene({
         <hemisphereLight args={["#ffffff", "#d8dde6", 0.28]} />
         <directionalLight
           position={[5, 7, 6]}
-          intensity={1.45}
+          intensity={2.4}
           castShadow={!perfConfig.isLowEndDevice && perfConfig.shadowsEnabled}
+          shadow-mapSize-width={perfConfig.isLowEndDevice ? 1024 : 2048}
+          shadow-mapSize-height={perfConfig.isLowEndDevice ? 1024 : 2048}
+          shadow-camera-near={0.5}
+          shadow-camera-far={40}
+          shadow-camera-left={-9}
+          shadow-camera-right={9}
+          shadow-camera-top={9}
+          shadow-camera-bottom={-9}
+          shadow-bias={-0.0002}
+          shadow-normalBias={0.02}
         />
-        <directionalLight position={[-4, 4, 5]} intensity={0.45} />
-        <directionalLight position={[0, 5, -6]} intensity={0.85} />
+        <directionalLight position={[-4, 4, 5]} intensity={0.7} />
+        <directionalLight position={[0, 5, -6]} intensity={1.15} />
 
         <OrbitControls
           makeDefault
@@ -1927,7 +1967,9 @@ export function ThreeScene({
           </Suspense>
         )}
 
-        {!perfConfig.isLowEndDevice && <Environment preset="studio" environmentIntensity={0.35} />}
+        {!perfConfig.isLowEndDevice && (
+          <Environment preset="studio" environmentIntensity={0.52} />
+        )}
       </Canvas>
 
       {/* Loading Transition Overlay */}
