@@ -205,7 +205,6 @@ export function ConfiguratorWizard() {
               <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/30">
                 {currentStep + 1}
               </span>
-              <div className="w-0.5 h-1 bg-primary/30 rounded-full mt-1" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold truncate">
@@ -218,9 +217,6 @@ export function ConfiguratorWizard() {
                   value={currentStep + 1}
                   aria-label="Step progress"
                 />
-                <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                  {currentStep + 1}/{CONFIGURATOR_STEPS.length}
-                </span>
               </div>
             </div>
           </div>
@@ -428,20 +424,19 @@ export function ConfiguratorWizard() {
 
       {/* Reset Dialog */}
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-        <AlertDialogContent className="mx-4 max-w-md rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-          <div className="h-1 w-full rounded-t-2xl bg-gradient-to-r from-red-500 to-orange-500" />
-          <AlertDialogHeader className="space-y-3 px-6 pb-2 pt-5 text-left">
-            <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+        <AlertDialogContent className="mx-2 max-w-md rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:mx-4">
+          <AlertDialogHeader className="space-y-2 px-4 pb-2 pt-4 text-left sm:px-6 sm:pt-5">
+            <AlertDialogTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-lg">
               <RotateCcw className="h-4 w-4 text-destructive" />
               Reset All?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            <AlertDialogDescription className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:text-sm">
               This will clear all colors, patterns, logos, and text. Cannot be
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 px-6 pb-5 pt-3 sm:justify-end">
-            <AlertDialogCancel className="h-10 min-w-[96px] rounded-xl border-slate-300 bg-white font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
+          <AlertDialogFooter className="gap-2 px-4 pb-4 pt-3 sm:px-6 sm:pb-5 sm:justify-end">
+            <AlertDialogCancel className="h-10 w-full rounded-xl border-slate-300 bg-white font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 sm:w-auto sm:min-w-[96px]">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -449,7 +444,7 @@ export function ConfiguratorWizard() {
                 resetAllCustomizations();
                 setShowResetDialog(false);
               }}
-              className="h-10 min-w-[96px] rounded-xl bg-destructive font-semibold text-white hover:bg-destructive/90"
+              className="h-10 w-full rounded-xl bg-destructive font-semibold text-white hover:bg-destructive/90 sm:w-auto sm:min-w-[96px]"
             >
               Reset
             </AlertDialogAction>
