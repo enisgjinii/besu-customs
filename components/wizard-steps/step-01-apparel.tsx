@@ -16,6 +16,12 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { getModelCache } from "@/lib/model-cache";
 import { supportsEmbroidery, getProductPrice, PrintingMethod } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { formatProductCategoryTitle } from "@/components/configurator-steps";
+import {
+  WizardEmptyState,
+  WizardSection,
+  WizardStepShell,
+} from "@/components/wizard-step-layout";
 
 export function Step01Apparel() {
   const products = useConfiguratorStore((state) => state.products);
@@ -45,6 +51,14 @@ export function Step01Apparel() {
   const previousModelRef = useRef<string | null>(null);
   const previousSectionsRef = useRef<MaterialSection[] | null>(null);
   const previousSectionsFromApiRef = useRef(false);
+  const selectedProduct = products.find(
+    (product) =>
+      product.id === selectedProductId ||
+      (!!currentModelUrl && product.modelUrl === currentModelUrl),
+  );
+  const selectedCategoryTitle = formatProductCategoryTitle(
+    selectedProduct?.category,
+  );
 
   // Preview model on hover (with debounce to prevent flicker)
   const handleProductHover = useCallback(
@@ -170,22 +184,17 @@ export function Step01Apparel() {
   }, [productsLoaded, products.length, setProducts]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold">Choose Apparel</h2>
-          <p className="text-sm text-muted-foreground">
-            Select a product to customize
-          </p>
-        </div>
-      </div>
+    <WizardStepShell
+      title={`Choose ${selectedCategoryTitle.toLocaleLowerCase()}`}
+      description="Select a product to customize."
+    >
 
       <Select
         value={selectedProductId || ""}
         onValueChange={setSelectedProduct}
         onOpenChange={handleDropdownOpen}
       >
-        <SelectTrigger className="w-full h-12 text-base">
+        <SelectTrigger className="w-full h-10 text-sm">
           <SelectValue placeholder="Select a product..." />
         </SelectTrigger>
         <SelectContent
@@ -220,24 +229,20 @@ export function Step01Apparel() {
       </Select>
 
       {!selectedProductId && (
-        <div className="text-center py-6 text-muted-foreground">
-          <p className="text-sm"> Select an apparel to start customizing</p>
-        </div>
+        <WizardEmptyState title="Select a product to start customizing." />
       )}
 
       {selectedProductId && (
-        <div className="pt-4 border-t border-border/50">
-          <div className="mb-3">
-            <h3 className="text-sm font-semibold mb-1">Printing Method</h3>
-            <p className="text-xs text-muted-foreground">Select how your design should be applied</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <WizardSection
+          title="Printing Method"
+          description="Select how your design should be applied."
+        >
+          <div className="grid grid-cols-2 gap-2 md:gap-4">
             {/* Sublimated Option */}
             <button
               onClick={() => setPrintingMethod("sublimated")}
               className={cn(
-                "flex flex-col items-center justify-between rounded-md border-2 p-4 transition-all h-full text-left",
+                "flex flex-col items-center justify-between rounded-md border-2 p-3 md:p-4 transition-all h-full text-left",
                 printingMethod === "sublimated"
                   ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
                   : "border-muted bg-popover hover:bg-accent hover:text-accent-foreground"
@@ -257,7 +262,7 @@ export function Step01Apparel() {
               <button
                 onClick={() => setPrintingMethod("embroidered")}
                 className={cn(
-                  "flex flex-col items-center justify-between rounded-md border-2 p-4 transition-all h-full text-left",
+                  "flex flex-col items-center justify-between rounded-md border-2 p-3 md:p-4 transition-all h-full text-left",
                   printingMethod === "embroidered"
                     ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
                     : "border-muted bg-popover hover:bg-accent hover:text-accent-foreground"
@@ -272,7 +277,7 @@ export function Step01Apparel() {
                 </div>
               </button>
             ) : (
-              <div className="opacity-50 pointer-events-none grayscale flex flex-col items-center justify-between rounded-md border-2 border-muted bg-muted/50 p-4 h-full">
+              <div className="opacity-50 pointer-events-none grayscale flex flex-col items-center justify-between rounded-md border-2 border-muted bg-muted/50 p-3 md:p-4 h-full">
                 <div className="mb-2 text-center w-full">
                   <div className="font-semibold text-muted-foreground">Embroidered</div>
                   <div className="text-xs text-muted-foreground mt-1">Not available</div>
@@ -280,8 +285,8 @@ export function Step01Apparel() {
               </div>
             )}
           </div>
-        </div>
+        </WizardSection>
       )}
-    </div>
+    </WizardStepShell>
   );
 }

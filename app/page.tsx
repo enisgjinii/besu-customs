@@ -80,7 +80,7 @@ export default function Home() {
       <div
         className={cn(
           isMobile
-            ? "flex-1 min-h-0"
+            ? "flex flex-1 min-h-0 flex-col overflow-hidden"
             : "flex-none",
         )}
       >

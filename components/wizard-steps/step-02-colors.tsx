@@ -9,6 +9,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { WizardEmptyState, WizardStepShell } from "@/components/wizard-step-layout";
 
 export function Step02Colors() {
   const sections = useConfiguratorStore((state) => state.sections);
@@ -148,29 +149,33 @@ export function Step02Colors() {
   // Show loading state
   if (modelLoading) {
     return (
-      <div className="flex items-center justify-center py-4 text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-        <span className="text-xs">Loading model...</span>
-      </div>
+      <WizardStepShell title="Colors" description="Choose colors for each product part.">
+        <div className="flex items-center justify-center py-4 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          <span className="text-xs">Loading model...</span>
+        </div>
+      </WizardStepShell>
     );
   }
 
   // Show empty state if no model selected
   if (!currentModelUrl) {
     return (
-      <div className="text-center py-4 text-muted-foreground text-xs">
-        Select a model first to customize colors
-      </div>
+      <WizardStepShell title="Colors" description="Choose colors for each product part.">
+        <WizardEmptyState title="Select a model first to customize colors." />
+      </WizardStepShell>
     );
   }
 
   // Show loading state if sections are being fetched
   if (sectionsLoading || sections.length === 0) {
     return (
-      <div className="flex items-center justify-center py-4 text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-        <span className="text-xs">Loading color sections...</span>
-      </div>
+      <WizardStepShell title="Colors" description="Choose colors for each product part.">
+        <div className="flex items-center justify-center py-4 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          <span className="text-xs">Loading color sections...</span>
+        </div>
+      </WizardStepShell>
     );
   }
 
@@ -192,6 +197,7 @@ export function Step02Colors() {
   // Mobile layout - horizontal parts pills, then color grid below
   if (isMobile) {
     return (
+      <WizardStepShell title="Colors" description="Choose colors for each product part.">
       <div className="flex flex-col gap-2 w-full">
         {/* TOP: Horizontal parts selector */}
         <div className="overflow-x-auto scrollbar-hide -mx-3 px-3">
@@ -258,11 +264,13 @@ export function Step02Colors() {
           />
         </div>
       </div>
+      </WizardStepShell>
     );
   }
 
   // Desktop layout
   return (
+    <WizardStepShell title="Colors" description="Choose colors for each product part." className="h-full flex flex-col">
     <div className="space-y-3 w-full h-full flex flex-col">
       {/* Section pills with navigation - Clean & Visible */}
       <div className="relative group shrink-0">
@@ -368,5 +376,6 @@ export function Step02Colors() {
         </div>
       </div>
     </div>
+    </WizardStepShell>
   );
 }

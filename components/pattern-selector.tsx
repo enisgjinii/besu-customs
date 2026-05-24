@@ -11,7 +11,7 @@ import {
   type PatternCategory,
 } from "@/lib/patterns";
 import { getSchoolLogoPosition } from "@/lib/logo-positioning";
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PatternSelectorProps {
@@ -93,15 +93,15 @@ export function PatternSelector({
         <Tabs
           value={activeCategory}
           onValueChange={(v) => setActiveCategory(v as PatternCategory)}
-          className="w-full space-y-3"
+          className="w-full space-y-2 md:space-y-3"
         >
-          <div className="w-full overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
-            <TabsList className="flex h-9 w-max bg-transparent p-0 gap-2">
+          <div className="w-full overflow-x-auto pb-1 no-scrollbar -mx-3 px-3 md:-mx-4 md:px-4">
+            <TabsList className="flex h-8 md:h-9 w-max bg-transparent p-0 gap-1.5 md:gap-2">
               {categoriesToShow.map((category) => (
                 <TabsTrigger
                   key={category.id}
                   value={category.id}
-                  className="rounded-full border border-border bg-background px-4 py-1.5 text-xs font-medium text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                  className="rounded-full border border-border bg-background px-3 md:px-4 py-1.5 text-[11px] md:text-xs font-medium text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
                 >
                   {category.name}
                 </TabsTrigger>
@@ -137,7 +137,7 @@ export function PatternSelector({
         </div>
       )}
       {/* Remove Pattern Action */}
-      <div className="mt-4 flex justify-center">
+      <div className="mt-3 md:mt-4 flex justify-center">
         <button
           onClick={() => {
             const removeTextureLayer =
@@ -169,16 +169,16 @@ function CategoryGrid({
 }) {
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
-    <div className="max-h-[60vh] overflow-y-auto pr-1">
-      <div className="grid grid-cols-3 gap-3 pb-1">
+    <div className="overflow-visible md:max-h-[60vh] md:overflow-y-auto md:pr-1">
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-3 gap-2 md:gap-3 pb-1">
         {patterns.map((pattern) => (
           <button
             key={pattern.id}
             onClick={() => onSelect(pattern)}
             className={cn(
-              "group relative aspect-square rounded-xl overflow-hidden border-2 transition-all active:scale-95",
+              "group relative aspect-square rounded-md md:rounded-xl overflow-hidden border transition-all active:scale-95",
               selectedPattern === pattern.id
-                ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+                ? "border-primary ring-2 ring-primary ring-offset-1 md:ring-offset-2 ring-offset-background"
                 : "border-border/50 hover:border-primary/50",
             )}
             style={{ WebkitTapHighlightColor: "transparent" }}
@@ -194,15 +194,15 @@ function CategoryGrid({
                 loading="lazy"
               />
               {/* Overlay with Name on Hover (Desktop) or Selected (Mobile) */}
-              <div className="absolute inset-x-0 bottom-0 py-1.5 bg-black/60 backdrop-blur-[1px] translate-y-full group-hover:translate-y-0 transition-transform">
-                <p className="text-[9px] text-white text-center font-medium truncate px-1">
+              <div className="absolute inset-x-0 bottom-0 py-1 bg-black/60 backdrop-blur-[1px] translate-y-0 md:translate-y-full md:group-hover:translate-y-0 transition-transform">
+                <p className="text-[8px] md:text-[9px] text-white text-center font-medium truncate px-1">
                   {pattern.name}
                 </p>
               </div>
 
               {selectedPattern === pattern.id && (
-                <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-sm z-10">
-                  <Check className="w-3 h-3" />
+                <div className="absolute top-1 right-1 md:top-1.5 md:right-1.5 w-4 h-4 md:w-5 md:h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-sm z-10">
+                  <Check className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 </div>
               )}
             </div>

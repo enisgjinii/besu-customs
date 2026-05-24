@@ -4,6 +4,7 @@ import { useConfiguratorStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { useState } from "react";
+import { WizardStepShell } from "@/components/wizard-step-layout";
 
 const STYLE_PRESETS = [
   {
@@ -76,14 +77,10 @@ export function Step03Style() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold">Quick Styles</h2>
-          <p className="text-sm text-muted-foreground">
-            Apply preset color schemes
-          </p>
-        </div>
+    <WizardStepShell
+      title="Quick Styles"
+      description="Apply preset color schemes."
+      action={
         <button
           onClick={() => {
             // Reset sections to white
@@ -94,15 +91,16 @@ export function Step03Style() {
         >
           Clear Style
         </button>
-      </div>
+      }
+    >
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
         {STYLE_PRESETS.map((preset) => (
           <button
             key={preset.id}
             onClick={() => handleApplyStyle(preset)}
             className={cn(
-              "relative flex flex-col items-center p-3 rounded-xl border-2 transition-all active:scale-95 min-h-24",
+              "relative flex flex-col items-center p-3 rounded-lg border transition-all active:scale-95 min-h-20 md:min-h-24",
               selectedStyle === preset.id
                 ? "border-primary ring-2 ring-primary bg-primary/10"
                 : "border-border hover:border-primary/50",
@@ -127,6 +125,6 @@ export function Step03Style() {
           </button>
         ))}
       </div>
-    </div>
+    </WizardStepShell>
   );
 }

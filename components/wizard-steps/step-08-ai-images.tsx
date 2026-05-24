@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { WizardEmptyState, WizardSection, WizardStepShell } from "@/components/wizard-step-layout";
 
 // AI Provider types
 // Removed as we strictly use Runware now
@@ -710,41 +711,26 @@ export function Step08AIImages() {
   };
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border bg-card p-4">
-        <div className="mb-3 flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Wand2 className="h-4 w-4" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold">Full garment texture</h3>
-            <p className="text-xs text-muted-foreground">
-              Generate a complete texture that follows the current UV layout.
-            </p>
-          </div>
-        </div>
+    <WizardStepShell
+      title="AI Design"
+      description="Generate a full texture that follows the current UV layout."
+    >
+      <WizardSection title="Full Garment Texture">
         <AITextureGenerator onTextureGenerated={handleGeneratedTexture} />
-      </section>
+      </WizardSection>
 
-      <section className="rounded-2xl border bg-card p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold">Saved AI layers</h3>
-            <p className="text-xs text-muted-foreground">
-              Select a layer to adjust it or reorder it with the layer controls.
-            </p>
-          </div>
-          <div className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
-            {aiLayers.length}
-          </div>
-        </div>
+      <WizardSection
+        title="Saved AI Layers"
+        description="Select a layer to adjust it or reorder it."
+        count={aiLayers.length}
+      >
 
         {aiLayers.length > 0 ? (
           <div className="space-y-2">
             {aiLayers.map((layer) => (
               <div
                 key={layer.id}
-                className="rounded-xl border px-3 py-3 transition-colors hover:border-primary/40"
+                className="rounded-lg border px-3 py-3 transition-colors hover:border-primary/40"
               >
                 <div className="flex items-center gap-3">
                   <button
@@ -793,14 +779,12 @@ export function Step08AIImages() {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed px-4 py-6 text-center">
-            <p className="text-xs font-medium">No AI layers yet</p>
-            <p className="mt-1 text-[10px] text-muted-foreground">
-              Generate a texture above and it will show up here.
-            </p>
-          </div>
+          <WizardEmptyState
+            title="No AI layers yet"
+            description="Generate a texture above and it will show up here."
+          />
         )}
-      </section>
-    </div>
+      </WizardSection>
+    </WizardStepShell>
   );
 }

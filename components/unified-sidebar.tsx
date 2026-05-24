@@ -7,7 +7,10 @@ import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { PanelLeftClose, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CONFIGURATOR_STEPS } from "@/components/configurator-steps";
+import {
+  CONFIGURATOR_STEPS,
+  formatProductCategoryTitle,
+} from "@/components/configurator-steps";
 
 interface UnifiedSidebarProps {
   sidebarOpen?: boolean;
@@ -34,7 +37,17 @@ export function UnifiedSidebar({
   // Check if model is selected
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
+  const products = useConfiguratorStore((s) => s.products);
   const isModelSelected = !!(currentModelUrl || selectedProductId);
+  const selectedProduct = products.find(
+    (product) =>
+      product.id === selectedProductId ||
+      (!!currentModelUrl && product.modelUrl === currentModelUrl),
+  );
+  const getStepTitle = (idx: number, title: string) =>
+    idx === 0
+      ? `1. ${formatProductCategoryTitle(selectedProduct?.category)}`
+      : title;
 
   // Ensure step is within bounds
   useEffect(() => {
@@ -175,7 +188,7 @@ export function UnifiedSidebar({
                         ? "w-1.5 bg-muted-foreground/10 cursor-not-allowed"
                         : "w-1.5 bg-muted-foreground/30 hover:bg-primary/50 cursor-pointer"
                   }`}
-                  title={step.title}
+                  title={getStepTitle(idx, step.title)}
                 />
               ))}
             </div>

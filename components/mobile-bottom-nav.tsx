@@ -147,20 +147,19 @@ export function MobileBottomNav() {
 
   // Handle drag to resize panel
   const handleDragStart = useCallback(
-    (e: React.TouchEvent | React.MouseEvent) => {
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-      dragStartY.current = clientY;
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      dragStartY.current = e.clientY;
       dragStartHeight.current = panelHeight;
+      e.currentTarget.setPointerCapture(e.pointerId);
     },
     [panelHeight],
   );
 
   const handleDrag = useCallback(
-    (e: React.TouchEvent | React.MouseEvent) => {
+    (e: React.PointerEvent<HTMLDivElement>) => {
       if (dragStartY.current === 0) return;
 
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-      const deltaY = dragStartY.current - clientY;
+      const deltaY = dragStartY.current - e.clientY;
       const deltaPercent = (deltaY / window.innerHeight) * 100;
       const newHeight = Math.min(
         75,
@@ -173,8 +172,11 @@ export function MobileBottomNav() {
     [setMobilePanelHeight],
   );
 
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     dragStartY.current = 0;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
 
     // Snap to close if dragged down enough
     if (panelHeight < 30) {
@@ -255,12 +257,10 @@ export function MobileBottomNav() {
         {/* Drag Handle - Enhanced */}
         <div
           className="w-full py-3 cursor-grab active:cursor-grabbing touch-none select-none"
-          onTouchStart={handleDragStart}
-          onTouchMove={handleDrag}
-          onTouchEnd={handleDragEnd}
-          onMouseDown={handleDragStart}
-          onMouseMove={handleDrag}
-          onMouseUp={handleDragEnd}
+          onPointerDown={handleDragStart}
+          onPointerMove={handleDrag}
+          onPointerUp={handleDragEnd}
+          onPointerCancel={handleDragEnd}
         >
           <div className="flex flex-col items-center gap-1">
             <div className="w-12 h-1.5 bg-muted-foreground/40 rounded-full" />

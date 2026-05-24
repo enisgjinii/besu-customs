@@ -25,7 +25,10 @@ import {
 import { ColorPickerModal } from "./color-picker-modal";
 import { TextureLayerSelector } from "@/components/texture-layer-selector";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
-import { CONFIGURATOR_STEPS } from "@/components/configurator-steps";
+import {
+  CONFIGURATOR_STEPS,
+  formatProductCategoryTitle,
+} from "@/components/configurator-steps";
 
 export function ConfiguratorWizard() {
   const [isMounted, setIsMounted] = useState(false);
@@ -48,9 +51,19 @@ export function ConfiguratorWizard() {
   );
   const currentModelUrl = useConfiguratorStore((s) => s.currentModelUrl);
   const selectedProductId = useConfiguratorStore((s) => s.selectedProductId);
+  const products = useConfiguratorStore((s) => s.products);
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const isModelSelected = !!(currentModelUrl || selectedProductId);
   const currentStepNumber = currentStep + 1;
+  const selectedProduct = products.find(
+    (product) =>
+      product.id === selectedProductId ||
+      (!!currentModelUrl && product.modelUrl === currentModelUrl),
+  );
+  const currentStepTitle =
+    currentStep === 0
+      ? formatProductCategoryTitle(selectedProduct?.category)
+      : CONFIGURATOR_STEPS[currentStep]?.title;
 
   const clampPanelHeight = useCallback((rawHeight: number) => {
     if (typeof window === "undefined") return Math.min(600, Math.max(220, rawHeight));
@@ -155,7 +168,7 @@ export function ConfiguratorWizard() {
       ref={panelRef}
       className={cn(
         "bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 flex flex-col w-full overflow-x-hidden",
-        isMobile ? "relative flex-1 min-h-0" : "relative",
+        isMobile ? "relative h-full min-h-0" : "relative",
       )}
     >
       {/* Desktop Drag Handle */}
@@ -190,13 +203,13 @@ export function ConfiguratorWizard() {
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex flex-col items-center">
               <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/30">
-                {currentStep}
+                {currentStep + 1}
               </span>
               <div className="w-0.5 h-1 bg-primary/30 rounded-full mt-1" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold truncate">
-                {CONFIGURATOR_STEPS[currentStep]?.title}
+                {currentStepTitle}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
                 <progress
@@ -223,12 +236,16 @@ export function ConfiguratorWizard() {
                 {CONFIGURATOR_STEPS.map((s, idx) => {
                 const isDisabled = !isModelSelected && s.id !== 1;
                 const isActive = currentStep === idx;
+                const stepTitle =
+                  idx === 0
+                    ? formatProductCategoryTitle(selectedProduct?.category)
+                    : s.title;
                 return (
                   <button
                     key={s.id}
                     onClick={() => !isDisabled && setStep(idx)}
                     disabled={isDisabled}
-                    title={isDisabled ? "Select apparel first to unlock this step" : s.title}
+                    title={isDisabled ? "Select a product first to unlock this step" : stepTitle}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 min-h-11",
                       isActive
@@ -241,7 +258,7 @@ export function ConfiguratorWizard() {
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/20">
                       {s.id}
                     </span>
-                    <span>{s.title}</span>
+                    <span>{stepTitle}</span>
                   </button>
                 );
               })}

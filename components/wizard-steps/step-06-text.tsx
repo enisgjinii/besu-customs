@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { cn } from "@/lib/utils";
+import { WizardStepShell } from "@/components/wizard-step-layout";
 
 // Popular Google Fonts
 const FONT_FAMILIES = [
@@ -149,20 +150,18 @@ export function Step06Text() {
   };
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
-      <div className="space-y-1 shrink-0">
-        <h2 className="text-sm font-semibold">Add Text</h2>
-        <p className="text-xs text-muted-foreground">
-          Personalize with names and numbers
-        </p>
-      </div>
+    <WizardStepShell
+      title="Add Text"
+      description="Personalize with names and numbers."
+      className="md:h-full md:flex md:flex-col"
+    >
 
-      <div className="flex-1 min-h-0 md:grid md:grid-cols-2 md:gap-6 overflow-hidden">
+      <div className="md:flex-1 md:min-h-0 md:grid md:grid-cols-2 md:gap-6 md:overflow-hidden">
         {/* LEFT PANE: Input & List */}
-        <div className="flex flex-col gap-6 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-3 md:gap-6 md:overflow-y-auto md:pr-1">
           {/* Input Area */}
           {isPlacementMode ? (
-            <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl text-center space-y-3 animate-pulse shrink-0">
+            <div className="p-3 md:p-4 bg-primary/5 border border-primary/20 rounded-xl text-center space-y-3 animate-pulse shrink-0">
               <div className="flex justify-center">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Plus className="w-5 h-5 text-primary" />
@@ -187,14 +186,14 @@ export function Step06Text() {
               </Button>
             </div>
           ) : (
-            <div className="flex gap-2 p-1.5 bg-card border rounded-xl shadow-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 shrink-0">
+            <div className="flex gap-2 p-1.5 bg-card border rounded-lg md:rounded-xl shadow-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 shrink-0">
               <div className="relative flex-1">
                 <Input
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder="Enter text..."
                   onKeyDown={(e) => e.key === "Enter" && handleAddText()}
-                  className="h-10 text-base border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent"
+                  className="h-9 md:h-10 text-sm md:text-base border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent"
                 />
               </div>
 
@@ -223,7 +222,7 @@ export function Step06Text() {
 
           {/* Text Layers List */}
           {textLayers.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-medium text-muted-foreground">
                   Active Text Layers
@@ -242,15 +241,15 @@ export function Step06Text() {
                       setSelectedTextureLayerId(layer.id);
                     }}
                     className={cn(
-                      "group relative rounded-xl border transition-all duration-200 cursor-pointer",
+                      "group relative rounded-lg md:rounded-xl border transition-all duration-200 cursor-pointer",
                       selectedTextId === layer.id
                         ? "bg-primary/5 border-primary shadow-sm"
                         : "bg-card border-border hover:bg-muted/50 hover:border-primary/30",
                     )}
                   >
-                    <div className="flex items-center gap-3 p-3">
+                    <div className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3">
                       <div
-                        className="w-10 h-10 rounded-lg border bg-current flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0"
+                        className="w-9 h-9 md:w-10 md:h-10 rounded-lg border bg-current flex items-center justify-center text-white font-bold text-base md:text-lg shadow-sm shrink-0"
                         style={{
                           color: layer.textColor,
                           backgroundColor:
@@ -281,7 +280,7 @@ export function Step06Text() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive shrink-0"
+                        className="h-8 w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteText(layer.id);
@@ -293,10 +292,10 @@ export function Step06Text() {
                     {/* Mobile Edit Controls */}
                     {selectedTextId === layer.id && (
                       <div
-                        className="md:hidden p-3 pt-0 border-t mt-2 animate-in slide-in-from-top-2 fade-in duration-200"
+                        className="md:hidden p-2.5 pt-0 border-t mt-1 animate-in slide-in-from-top-2 fade-in duration-200"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="space-y-4 pt-2">
+                        <div className="space-y-3 pt-2">
                           {/* Font Family */}
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -329,8 +328,8 @@ export function Step06Text() {
                           </div>
 
                           {/* Size & Color Row */}
-                          <div className="flex gap-3">
-                            <div className="flex-1 space-y-1">
+                          <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                            <div className="min-w-0 space-y-1">
                               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                                 Size ({layer.fontSize}px)
                               </label>
@@ -347,7 +346,7 @@ export function Step06Text() {
                                 className="py-2"
                               />
                             </div>
-                            <div className="flex-1 space-y-1">
+                            <div className="min-w-0 space-y-1">
                               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                                 Scale ({(layer.scale?.[0] || 1).toFixed(1)}x)
                               </label>
@@ -366,7 +365,7 @@ export function Step06Text() {
                               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                                 Color
                               </label>
-                              <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden border">
+                              <div className="relative w-9 h-9 shadow-sm rounded-lg overflow-hidden border">
                                 <div
                                   className="w-full h-full cursor-pointer"
                                   style={{ backgroundColor: layer.textColor }}
@@ -390,7 +389,7 @@ export function Step06Text() {
               </div>
             </div>
           ) : (
-            <div className="py-8 text-center bg-muted/10 rounded-xl border border-dashed border-muted-foreground/20 mt-4">
+            <div className="py-6 md:py-8 text-center bg-muted/10 rounded-lg md:rounded-xl border border-dashed border-muted-foreground/20 mt-2 md:mt-4">
               <div className="w-10 h-10 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-2 text-muted-foreground">
                 <span className="font-serif italic text-lg">Aa</span>
               </div>
@@ -597,6 +596,6 @@ export function Step06Text() {
         }}
         title="Text Color"
       />
-    </div>
+    </WizardStepShell>
   );
 }

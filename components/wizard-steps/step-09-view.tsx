@@ -635,34 +635,34 @@ export function Step09View(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl pb-24 md:pb-12">
-      <div className="mb-5 rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-6 md:py-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="mx-auto w-full max-w-7xl pb-2">
+      <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm md:px-6 md:py-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Final Step
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
+            <h1 className="mt-1 text-sm font-semibold tracking-tight text-slate-950 md:text-3xl">
               Review and Submit Order
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            <p className="mt-1 max-w-2xl text-xs leading-snug text-slate-600 md:text-sm md:leading-6">
               Confirm the production details, roster, delivery address, and design assets before the order is sent.
             </p>
           </div>
 
           <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-center">
-            <div className="px-4 py-3">
-              <p className="text-lg font-semibold text-slate-950">{roster.players.length}</p>
+            <div className="px-2 py-2 md:px-4 md:py-3">
+              <p className="text-xs font-semibold text-slate-950 md:text-lg">{roster.players.length}</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Sets</p>
             </div>
-            <div className="border-x border-slate-200 px-4 py-3">
-              <p className="text-lg font-semibold text-slate-950">
+            <div className="border-x border-slate-200 px-2 py-2 md:px-4 md:py-3">
+              <p className="text-xs font-semibold text-slate-950 md:text-lg">
                 ${selectedProductId ? getProductPrice(selectedProductId, printingMethod) : 0}
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Unit</p>
             </div>
-            <div className="px-4 py-3">
-              <p className="text-lg font-semibold text-slate-950">
+            <div className="px-2 py-2 md:px-4 md:py-3">
+              <p className="text-xs font-semibold text-slate-950 md:text-lg">
                 ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Estimate</p>
@@ -671,15 +671,15 @@ export function Step09View(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-        <main className="space-y-5">
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="grid gap-3 md:gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <main className="space-y-3 md:space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+            <div className="mb-3 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Contact
                 </p>
-                <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
                   Customer Information
                 </h2>
               </div>
@@ -690,7 +690,7 @@ export function Step09View(): React.JSX.Element {
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 md:gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <Label className="text-sm font-semibold text-slate-800">
                   Name <span className="text-red-500">*</span>
@@ -700,13 +700,13 @@ export function Step09View(): React.JSX.Element {
                     placeholder="First name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="h-11 bg-white"
+                    className="h-10 bg-white"
                   />
                   <Input
                     placeholder="Last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="h-11 bg-white"
+                    className="h-10 bg-white"
                   />
                 </div>
               </div>
@@ -719,7 +719,7 @@ export function Step09View(): React.JSX.Element {
                   placeholder="example@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 bg-white"
+                  className="h-10 bg-white"
                 />
               </div>
 
@@ -731,18 +731,18 @@ export function Step09View(): React.JSX.Element {
                   placeholder="Phone number"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="h-11 bg-white"
+                  className="h-10 bg-white"
                 />
               </div>
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-            <div className="mb-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+            <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Team
               </p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
                 Uniform Size and Quantity
               </h2>
             </div>
@@ -751,38 +751,38 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-            <div className="mb-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+            <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Delivery
               </p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
                 Shipping Address
               </h2>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid gap-3 md:gap-4">
               <Input
                 placeholder="Street address"
                 value={shippingAddress.street}
                 onChange={(e) => setShippingAddress({ ...shippingAddress, street: e.target.value })}
-                className="h-11 bg-white"
+                className="h-10 bg-white"
               />
               <Input
                 placeholder="Apartment, suite, unit, building"
                 value={shippingAddress.street2}
                 onChange={(e) => setShippingAddress({ ...shippingAddress, street2: e.target.value })}
-                className="h-11 bg-white"
+                className="h-10 bg-white"
               />
-              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px_140px]">
+              <div className="grid gap-3 md:gap-4 sm:grid-cols-[minmax(0,1fr)_180px_140px]">
                 <Input
                   placeholder="City"
                   value={shippingAddress.city}
                   onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
-                  className="h-11 bg-white"
+                  className="h-10 bg-white"
                 />
                 <Select value={shippingAddress.state} onValueChange={(v) => setShippingAddress({ ...shippingAddress, state: v })}>
-                  <SelectTrigger className="h-11 bg-white text-slate-600">
+                  <SelectTrigger className="h-10 bg-white text-slate-600">
                     <SelectValue placeholder="State" />
                   </SelectTrigger>
                   <SelectContent>
@@ -796,18 +796,18 @@ export function Step09View(): React.JSX.Element {
                   placeholder="Zip code"
                   value={shippingAddress.zip}
                   onChange={(e) => setShippingAddress({ ...shippingAddress, zip: e.target.value })}
-                  className="h-11 bg-white"
+                  className="h-10 bg-white"
                 />
               </div>
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-            <div className="mb-4">
+          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+            <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Production
               </p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
                 Additional Notes
               </h2>
             </div>
@@ -815,19 +815,19 @@ export function Step09View(): React.JSX.Element {
               placeholder="Special instructions for production, colors, sizing, packaging, or delivery."
               value={deliveryNotes}
               onChange={(e) => setDeliveryNotes(e.target.value)}
-              className="min-h-32 resize-none bg-white"
+              className="min-h-24 resize-none bg-white md:min-h-32"
             />
           </section>
         </main>
 
-        <aside className="space-y-5 lg:sticky lg:top-6">
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-            <div className="mb-4 flex items-center justify-between">
+        <aside className="space-y-3 md:space-y-5 lg:sticky lg:top-6">
+          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-5">
+            <div className="mb-3 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Design
                 </p>
-                <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
                   Preview
                 </h2>
               </div>
@@ -865,12 +865,12 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-            <div className="mb-4">
+          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-5">
+            <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Summary
               </p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">
+              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
                 Order Total
               </h2>
             </div>
@@ -901,7 +901,7 @@ export function Step09View(): React.JSX.Element {
               <div className="border-t border-slate-200 pt-4">
                 <div className="flex items-end justify-between gap-4">
                   <span className="font-semibold text-slate-950">Estimated Total</span>
-                  <span className="text-2xl font-semibold tracking-tight text-slate-950">
+                  <span className="text-lg font-semibold tracking-tight text-slate-950 md:text-2xl">
                     ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
                   </span>
                 </div>
@@ -912,7 +912,7 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-5">
             <div className="flex items-start gap-3">
               <Checkbox
                 id="confirmation"
@@ -936,7 +936,7 @@ export function Step09View(): React.JSX.Element {
             <Button
               onClick={handleSubmitOrder}
               size="lg"
-              className="mt-5 h-12 w-full"
+              className="mt-3 h-10 w-full md:mt-5 md:h-12"
               disabled={isSendingEmail || !isConfirmed}
             >
               {isSendingEmail ? (

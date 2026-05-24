@@ -19,6 +19,7 @@ import {
 import { useRef, useState } from "react";
 import { resolveCenterFrontLogoPlacementFromImage } from "@/lib/logo-positioning";
 import { trimImageContent } from "@/lib/texture-utils";
+import { WizardStepShell, WizardSection } from "@/components/wizard-step-layout";
 
 export function Step07Images() {
   const addTextureLayer = useConfiguratorStore(
@@ -205,17 +206,14 @@ export function Step07Images() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight">Upload Images</h2>
-        <p className="text-sm text-muted-foreground">
-          Personalize with your own logos and graphics
-        </p>
-      </div>
+    <WizardStepShell
+      title="Upload Images"
+      description="Personalize with your own logos and graphics."
+    >
 
       {/* Upload Zone */}
       {isPlacementMode ? (
-        <div className="p-6 bg-primary/5 border-2 border-primary/20 border-dashed rounded-xl text-center animate-pulse">
+        <div className="p-3 md:p-6 bg-primary/5 border border-primary/20 border-dashed rounded-lg text-center animate-pulse">
           <Wand2 className="w-8 h-8 text-primary mx-auto mb-3" />
           <p className="text-base font-medium text-primary mb-1">
             Placement Mode Active
@@ -235,17 +233,15 @@ export function Step07Images() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
-          <label className="group relative flex flex-col items-center justify-center p-8 border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/5 hover:bg-muted/10 rounded-xl transition-all cursor-pointer">
-            <div className="bg-background p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform duration-300">
-              <Upload className="w-6 h-6 text-primary" />
+        <div className="space-y-3">
+          <label className="group relative flex items-center gap-3 p-3 border border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/5 hover:bg-muted/10 rounded-lg transition-all cursor-pointer">
+            <div className="bg-background p-2 rounded-lg shadow-sm group-hover:scale-105 transition-transform duration-300">
+              <Upload className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm font-medium text-foreground">
-              Click to Upload
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              PNG, JPG recommended
-            </p>
+            <div className="min-w-0 text-left">
+              <p className="text-sm font-medium text-foreground">Upload file</p>
+              <p className="text-xs text-muted-foreground">PNG, JPG recommended</p>
+            </div>
             <Input
               type="file"
               accept="image/*"
@@ -255,7 +251,7 @@ export function Step07Images() {
           </label>
 
           {/* Smart Feature Card */}
-          <div className="flex items-center justify-between p-4 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/10 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+          <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border">
             <div className="flex items-start gap-3">
               <div className="bg-white dark:bg-indigo-950 p-2 rounded-lg shadow-sm mt-0.5">
                 <Wand2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -282,18 +278,15 @@ export function Step07Images() {
 
       {/* Layers List */}
       {layers.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">
-            Your Uploads ({layers.length})
-          </h3>
+        <WizardSection title="Your Uploads" count={layers.length}>
           <div className="grid gap-2 md:grid-cols-2">
             {layers.map((layer) => (
               <div
                 key={layer.id}
-                className="group relative flex items-center gap-3 p-3 rounded-xl border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer"
+                className="group relative flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer"
                 onClick={() => setSelectedTextureLayerId(layer.id)}
               >
-                <div className="relative w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
+                <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
                   {layer.imageUrl ? (
                     <img
                       src={layer.imageUrl}
@@ -331,8 +324,8 @@ export function Step07Images() {
               </div>
             ))}
           </div>
-        </div>
+        </WizardSection>
       )}
-    </div>
+    </WizardStepShell>
   );
 }

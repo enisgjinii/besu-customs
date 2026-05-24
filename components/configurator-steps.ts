@@ -21,3 +21,10 @@ export const CONFIGURATOR_STEPS = [
 ] as const;
 
 export const CONFIGURATOR_STEP_TITLES = CONFIGURATOR_STEPS.map((step) => step.title);
+
+export function formatProductCategoryTitle(category?: string | null): string {
+  const normalized = category?.trim();
+  if (!normalized) return CONFIGURATOR_STEPS[0].title;
+
+  return normalized.toLocaleUpperCase();
+}

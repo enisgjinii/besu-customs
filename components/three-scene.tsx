@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense, useCallback, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment, Center, Preload, AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
+import { OrbitControls, Environment, Preload, AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 import { useConfiguratorStore, MaterialSection, TextureLayer } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import { Spinner } from "@/components/ui/spinner";
@@ -34,6 +34,27 @@ const sharedTextureLoader = typeof window !== 'undefined' ? new THREE.TextureLoa
 
 // Reusable Vector2 for raycaster - avoids GC pressure from allocations in event handlers
 const _reusableVec2 = typeof window !== 'undefined' ? new THREE.Vector2() : null;
+
+function tuneLoadedModelMaterials(model: THREE.Object3D): void {
+  model.traverse((node) => {
+    if (!(node as THREE.Mesh).isMesh) return;
+
+    const mesh = node as THREE.Mesh;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+
+    materials.forEach((material) => {
+      if (
+        material instanceof THREE.MeshStandardMaterial ||
+        material instanceof THREE.MeshPhysicalMaterial
+      ) {
+        material.roughness = Math.max(material.roughness ?? 0, 0.68);
+        material.metalness = Math.min(material.metalness ?? 0, 0.05);
+        material.envMapIntensity = Math.min(material.envMapIntensity ?? 1, 0.55);
+        material.needsUpdate = true;
+      }
+    });
+  });
+}
 
 function resolveCenterFrontUvAnchorFromScene(scene: THREE.Object3D): [number, number, number] | null {
   scene.updateMatrixWorld(true);
@@ -1029,6 +1050,7 @@ function Model({
   // Use cached GLTF loader for faster loading and memory management
   const { gltf, loading: gltfLoading, error: gltfError } = useCachedGLTF(url);
   const scene = gltf?.scene ?? null;
+  const { camera, controls } = useThree();
 
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
   const modelRef = useRef<THREE.Group>(null);
@@ -1108,13 +1130,51 @@ function Model({
     }
 
     const cloned = scene.clone(true);
-    const box = new THREE.Box3().setFromObject(cloned);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 5 / maxDim;
-    cloned.position.sub(center.multiplyScalar(scale));
+    const sourceBox = new THREE.Box3().setFromObject(cloned);
+    const sourceCenter = sourceBox.getCenter(new THREE.Vector3());
+    const sourceSize = sourceBox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(sourceSize.x, sourceSize.y, sourceSize.z);
+    const scale = maxDim > 0 ? 5 / maxDim : 1;
     cloned.scale.setScalar(scale);
+    cloned.position.set(
+      -sourceCenter.x * scale,
+      -sourceBox.min.y * scale,
+      -sourceCenter.z * scale,
+    );
+    cloned.updateMatrixWorld(true);
+    tuneLoadedModelMaterials(cloned);
+
+    const fittedBox = new THREE.Box3().setFromObject(cloned);
+    const fittedCenter = fittedBox.getCenter(new THREE.Vector3());
+    const fittedSize = fittedBox.getSize(new THREE.Vector3());
+    const fitRadius = Math.max(fittedSize.x, fittedSize.y, fittedSize.z) * 0.65;
+    const cameraDirection = camera.position
+      .clone()
+      .sub(fittedCenter)
+      .normalize();
+
+    if (Number.isFinite(fitRadius) && fitRadius > 0) {
+      const perspectiveCamera = camera as THREE.PerspectiveCamera;
+      const fov = THREE.MathUtils.degToRad(perspectiveCamera.fov || 50);
+      const fitDistance = fitRadius / Math.sin(fov / 2);
+      camera.position.copy(
+        fittedCenter.clone().add(cameraDirection.multiplyScalar(fitDistance * 1.2)),
+      );
+      perspectiveCamera.near = Math.max(0.01, fitDistance / 100);
+      perspectiveCamera.far = Math.max(1000, fitDistance * 100);
+      perspectiveCamera.updateProjectionMatrix();
+    }
+
+    if (controls) {
+      const orbitControls = controls as {
+        target?: THREE.Vector3;
+        update?: () => void;
+        saveState?: () => void;
+      };
+      orbitControls.target?.copy(fittedCenter);
+      orbitControls.update?.();
+      orbitControls.saveState?.();
+    }
 
     // Ignore stale clones created for an older load cycle.
     if (cancelled || loadId !== modelLoadIdRef.current) {
@@ -1211,7 +1271,7 @@ function Model({
         clearTimeout(fallbackTimeoutId);
       }
     };
-  }, [scene, url]);
+  }, [camera, controls, scene, url]);
 
   // Sync Colors - Base Layer
   useEffect(() => {
@@ -1222,8 +1282,7 @@ function Model({
 
   // Simplified interaction - drag to reposition textures on model surface
   // Also handles clicks on control icons using UV-space proximity
-  const { raycaster, gl, controls } = useThree();
-  const { camera } = useThree();
+  const { raycaster, gl } = useThree();
   const selectedLayerRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
   const isResizingRef = useRef(false);
@@ -1619,12 +1678,10 @@ function Model({
         <BoundingBoxHelper object={modelRef.current} />
       )}
 
-      <Center>
-        {clonedScene && <primitive object={clonedScene} />}
+      {clonedScene && <primitive object={clonedScene} />}
 
-        {/* All texture layers (patterns, images, text) rendered directly on UV map */}
-        {clonedScene && <TextureCompositor scene={clonedScene} />}
-      </Center>
+      {/* All texture layers (patterns, images, text) rendered directly on UV map */}
+      {clonedScene && <TextureCompositor scene={clonedScene} />}
     </group>
   );
 }
@@ -1640,7 +1697,7 @@ function SceneSetup() {
     scene.background = new THREE.Color("#ffffff");
     gl.setPixelRatio(Math.min(window.devicePixelRatio, perfConfig.pixelRatio));
     gl.toneMapping = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.2;
+    gl.toneMappingExposure = 1.0;
     gl.outputColorSpace = THREE.SRGBColorSpace;
 
     // Optimize rendering: disable auto-clear and manually manage when needed
@@ -1839,8 +1896,14 @@ export function ThreeScene({
           }}
         />
 
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[10, 10, 5]} intensity={1.2} />
+        <hemisphereLight args={["#ffffff", "#d8dde6", 0.28]} />
+        <directionalLight
+          position={[5, 7, 6]}
+          intensity={1.45}
+          castShadow={!perfConfig.isLowEndDevice && perfConfig.shadowsEnabled}
+        />
+        <directionalLight position={[-4, 4, 5]} intensity={0.45} />
+        <directionalLight position={[0, 5, -6]} intensity={0.85} />
 
         <OrbitControls
           makeDefault
@@ -1864,7 +1927,7 @@ export function ThreeScene({
           </Suspense>
         )}
 
-        {!perfConfig.isLowEndDevice && <Environment preset="studio" />}
+        {!perfConfig.isLowEndDevice && <Environment preset="studio" environmentIntensity={0.35} />}
       </Canvas>
 
       {/* Loading Transition Overlay */}
