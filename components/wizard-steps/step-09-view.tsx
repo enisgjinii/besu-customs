@@ -418,8 +418,25 @@ export function Step09View(): React.JSX.Element {
         triggerCheckout(checkoutUrl);
       } catch (error) {
         console.error("Independent draft checkout creation failed:", error);
-        toast.info("Draft checkout was unavailable, using cart checkout fallback.");
-        triggerCheckout();
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Independent checkout is unavailable. Please contact support.";
+
+        setSubmissionResult({
+          status: "error",
+          message: `Independent checkout failed: ${message}`,
+        });
+
+        if (/Missing Shopify Admin credentials/i.test(message)) {
+          toast.error(
+            "Independent checkout is not configured yet. Add SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in Vercel.",
+          );
+        } else {
+          toast.error(`Independent checkout failed: ${message}`);
+        }
+
+        // Do not fallback to product-mapped checkout in independent mode.
       }
     };
 
@@ -806,7 +823,6 @@ export function Step09View(): React.JSX.Element {
           message: `We could not submit the order: ${errorMessage}`,
         });
         toast.error(`Failed to submit order: ${errorMessage}`);
-        toast.info("Continuing to Shopify checkout with your configuration.");
         await triggerIndependentCheckout();
       }
 
@@ -821,7 +837,6 @@ export function Step09View(): React.JSX.Element {
         message: `Order submission failed before confirmation: ${message}`,
       });
       toast.error("Order submission failed. Please try again.");
-      toast.info("Continuing to Shopify checkout with your configuration.");
       await triggerIndependentCheckout();
     } finally {
       setIsSendingEmail(false);
