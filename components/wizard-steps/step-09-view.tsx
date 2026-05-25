@@ -22,6 +22,7 @@ import jsPDF from "jspdf";
 
 export function Step09View(): React.JSX.Element {
   // Store Data
+  const products = useConfiguratorStore((state) => state.products);
   const sections = useConfiguratorStore((state) => state.sections);
   const deliveryNotes = useConfiguratorStore((state) => state.deliveryNotes);
   const setDeliveryNotes = useConfiguratorStore(
@@ -33,6 +34,7 @@ export function Step09View(): React.JSX.Element {
   const setLockedView = useConfiguratorStore((state) => state.setLockedView);
   const selectedProductId = useConfiguratorStore((state) => state.selectedProductId);
   const printingMethod = useConfiguratorStore((state) => state.printingMethod);
+  const selectedProduct = products.find((p) => p.id === selectedProductId) ?? null;
 
   // Local UI State
   const [firstName, setFirstName] = useState("");
@@ -62,6 +64,119 @@ export function Step09View(): React.JSX.Element {
     side: string | null;
   }>({ front: null, back: null, side: null });
   const [previewsLoading, setPreviewsLoading] = useState(true);
+  const [shopifyReady, setShopifyReady] = useState(false);
+
+  useEffect(() => {
+    const onParentMessage = (event: MessageEvent) => {
+      let data = event.data;
+
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          return;
+        }
+      }
+
+      if (!data || typeof data !== "object") return;
+
+      const eventType =
+        typeof (data as { type?: string }).type === "string"
+          ? (data as { type: string }).type
+          : "";
+
+      if (eventType === "besu:shopify-ready") {
+        setShopifyReady(true);
+      }
+    };
+
+    window.addEventListener("message", onParentMessage);
+    return () => window.removeEventListener("message", onParentMessage);
+  }, []);
+
+  const sendCheckoutToShopify = useCallback(() => {
+    if (typeof window === "undefined" || window.parent === window) return;
+
+    const quantity = Math.max(1, roster.players.length);
+    const unitPrice = selectedProductId
+      ? getProductPrice(selectedProductId, printingMethod)
+      : 0;
+    const estimatedTotal = calculateTotalPrice(
+      selectedProductId || "",
+      printingMethod,
+      quantity,
+    );
+
+    const lineItem = {
+      variant_id: selectedProduct?.shopifyVariantId,
+      quantity,
+      productId: selectedProductId,
+      productTitle: selectedProduct?.title,
+      productHandle: selectedProduct?.shopifyProductHandle || selectedProductId,
+      productSlug: selectedProductId,
+      productType: selectedProduct?.category,
+      shopifyProductTitle: selectedProduct?.shopifyProductTitle,
+      sku: selectedProduct?.shopifySku,
+      attributes: {
+        Source: "Besu Configurator",
+        "Product ID": selectedProductId || "",
+        "Product Name": selectedProduct?.title || "Custom Product",
+        "Printing Method": printingMethod,
+        Quantity: String(quantity),
+        "Team Name": roster.teamName || "",
+      },
+    };
+
+    const orderNote = [
+      `Team: ${roster.teamName || "N/A"}`,
+      `Contact: ${firstName} ${lastName}`.trim(),
+      `Email: ${email}`,
+      `Phone: ${phoneNumber || "N/A"}`,
+      `Address: ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`,
+      `Printing: ${printingMethod}`,
+      `Estimated total: $${estimatedTotal}`,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    window.parent.postMessage(
+      {
+        type: "besu:checkout",
+        payload: {
+          checkout: true,
+          replaceCart: true,
+          line_items: [lineItem],
+          note: orderNote,
+          context: {
+            selectedProductId,
+            selectedProductTitle: selectedProduct?.title,
+            shopifyReady,
+            pricing: {
+              unitPrice,
+              quantity,
+              estimatedTotal,
+            },
+          },
+        },
+      },
+      "*",
+    );
+  }, [
+    email,
+    firstName,
+    lastName,
+    phoneNumber,
+    printingMethod,
+    roster.players.length,
+    roster.teamName,
+    selectedProduct,
+    selectedProductId,
+    shippingAddress.city,
+    shippingAddress.state,
+    shippingAddress.street,
+    shippingAddress.zip,
+    shopifyReady,
+  ]);
 
   // On Mount: Capture previews
   useEffect(() => {
@@ -608,6 +723,7 @@ export function Step09View(): React.JSX.Element {
           message: successMessage,
         });
         toast.success(successMessage);
+        sendCheckoutToShopify();
       } else {
         console.error("Email send failed:", data);
         const errorMessage = data.error || "Unknown error";

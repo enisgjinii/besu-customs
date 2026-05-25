@@ -36,6 +36,12 @@ export interface Product {
   title: string;
   modelUrl?: string;
   category?: Category | string;
+  shopifyVariantId?: number;
+  shopifyProductId?: number | string;
+  shopifyProductHandle?: string;
+  shopifyProductTitle?: string;
+  shopifySku?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface MaterialSection {
@@ -548,6 +554,15 @@ const initialProducts: Product[] = [];
 
 // Function to load active products from Supabase
 const loadActiveProducts = async (): Promise<Product[]> => {
+  const parseOptionalInt = (value: unknown): number | undefined => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return undefined;
+  };
+
   try {
     const response = await fetch("/api/models?active=true");
     if (response.ok) {
@@ -557,6 +572,33 @@ const loadActiveProducts = async (): Promise<Product[]> => {
         title: model.name,
         modelUrl: model.file_path,
         category: model.category || undefined,
+        shopifyVariantId: parseOptionalInt(
+          model.metadata?.shopifyVariantId ??
+            model.metadata?.shopify_variant_id ??
+            model.metadata?.variantId ??
+            model.metadata?.variant_id,
+        ),
+        shopifyProductId:
+          model.metadata?.shopifyProductId ?? model.metadata?.shopify_product_id,
+        shopifyProductHandle:
+          typeof model.metadata?.shopifyProductHandle === "string"
+            ? model.metadata.shopifyProductHandle
+            : typeof model.metadata?.shopify_product_handle === "string"
+              ? model.metadata.shopify_product_handle
+              : undefined,
+        shopifyProductTitle:
+          typeof model.metadata?.shopifyProductTitle === "string"
+            ? model.metadata.shopifyProductTitle
+            : typeof model.metadata?.shopify_product_title === "string"
+              ? model.metadata.shopify_product_title
+              : undefined,
+        shopifySku:
+          typeof model.metadata?.shopifySku === "string"
+            ? model.metadata.shopifySku
+            : typeof model.metadata?.shopify_sku === "string"
+              ? model.metadata.shopify_sku
+              : undefined,
+        metadata: model.metadata,
       }));
     }
   } catch (error) {
