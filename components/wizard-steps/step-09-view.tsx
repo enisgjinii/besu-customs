@@ -349,6 +349,13 @@ export function Step09View(): React.JSX.Element {
   // Main Submit Handler
   const handleSubmitOrder = async () => {
     setSubmissionResult(null);
+    let checkoutTriggered = false;
+    const triggerCheckout = () => {
+      if (checkoutTriggered) return;
+      checkoutTriggered = true;
+      sendCheckoutToShopify();
+    };
+
     // 1. Validation
     if (!firstName || !lastName) {
       toast.error("Please enter your full name");
@@ -723,7 +730,7 @@ export function Step09View(): React.JSX.Element {
           message: successMessage,
         });
         toast.success(successMessage);
-        sendCheckoutToShopify();
+        triggerCheckout();
       } else {
         console.error("Email send failed:", data);
         const errorMessage = data.error || "Unknown error";
@@ -732,6 +739,8 @@ export function Step09View(): React.JSX.Element {
           message: `We could not submit the order: ${errorMessage}`,
         });
         toast.error(`Failed to submit order: ${errorMessage}`);
+        toast.info("Continuing to Shopify checkout with your configuration.");
+        triggerCheckout();
       }
 
     } catch (e) {
@@ -745,6 +754,8 @@ export function Step09View(): React.JSX.Element {
         message: `Order submission failed before confirmation: ${message}`,
       });
       toast.error("Order submission failed. Please try again.");
+      toast.info("Continuing to Shopify checkout with your configuration.");
+      triggerCheckout();
     } finally {
       setIsSendingEmail(false);
     }
