@@ -94,7 +94,7 @@ export function Step09View(): React.JSX.Element {
     return () => window.removeEventListener("message", onParentMessage);
   }, []);
 
-  const sendCheckoutToShopify = useCallback(() => {
+  const sendCheckoutToShopify = useCallback((options?: { checkoutUrl?: string | null }) => {
     if (typeof window === "undefined" || window.parent === window) return;
 
     const quantity = Math.max(1, roster.players.length);
@@ -144,6 +144,7 @@ export function Step09View(): React.JSX.Element {
         type: "besu:checkout",
         payload: {
           checkout: true,
+          checkoutUrl: options?.checkoutUrl || undefined,
           replaceCart: true,
           line_items: [lineItem],
           note: orderNote,
@@ -176,6 +177,61 @@ export function Step09View(): React.JSX.Element {
     shippingAddress.street,
     shippingAddress.zip,
     shopifyReady,
+  ]);
+
+  const requestIndependentCheckoutUrl = useCallback(async () => {
+    const quantity = Math.max(1, roster.players.length);
+    const unitPrice = selectedProductId
+      ? getProductPrice(selectedProductId, printingMethod)
+      : 0;
+    const totalPrice = calculateTotalPrice(
+      selectedProductId || "",
+      printingMethod,
+      quantity,
+    );
+
+    const response = await fetch("/api/shopify-draft-checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: selectedProductId,
+        productTitle: selectedProduct?.title,
+        printingMethod,
+        quantity,
+        unitPrice,
+        totalPrice,
+        teamName: roster.teamName,
+        deliveryNotes,
+        customer: {
+          firstName,
+          lastName,
+          email,
+          phone: phoneNumber,
+        },
+        shippingAddress,
+      }),
+    });
+
+    const responseText = await response.text();
+    const payload = responseText ? JSON.parse(responseText) : {};
+
+    if (!response.ok || !payload.checkoutUrl) {
+      throw new Error(payload.error || "Failed to create independent Shopify checkout URL.");
+    }
+
+    return payload.checkoutUrl as string;
+  }, [
+    deliveryNotes,
+    email,
+    firstName,
+    lastName,
+    phoneNumber,
+    printingMethod,
+    roster.players.length,
+    roster.teamName,
+    selectedProduct?.title,
+    selectedProductId,
+    shippingAddress,
   ]);
 
   // On Mount: Capture previews
@@ -350,10 +406,21 @@ export function Step09View(): React.JSX.Element {
   const handleSubmitOrder = async () => {
     setSubmissionResult(null);
     let checkoutTriggered = false;
-    const triggerCheckout = () => {
+    const triggerCheckout = (checkoutUrl?: string | null) => {
       if (checkoutTriggered) return;
       checkoutTriggered = true;
-      sendCheckoutToShopify();
+      sendCheckoutToShopify({ checkoutUrl });
+    };
+
+    const triggerIndependentCheckout = async () => {
+      try {
+        const checkoutUrl = await requestIndependentCheckoutUrl();
+        triggerCheckout(checkoutUrl);
+      } catch (error) {
+        console.error("Independent draft checkout creation failed:", error);
+        toast.info("Draft checkout was unavailable, using cart checkout fallback.");
+        triggerCheckout();
+      }
     };
 
     // 1. Validation
@@ -730,7 +797,7 @@ export function Step09View(): React.JSX.Element {
           message: successMessage,
         });
         toast.success(successMessage);
-        triggerCheckout();
+        await triggerIndependentCheckout();
       } else {
         console.error("Email send failed:", data);
         const errorMessage = data.error || "Unknown error";
@@ -740,7 +807,7 @@ export function Step09View(): React.JSX.Element {
         });
         toast.error(`Failed to submit order: ${errorMessage}`);
         toast.info("Continuing to Shopify checkout with your configuration.");
-        triggerCheckout();
+        await triggerIndependentCheckout();
       }
 
     } catch (e) {
@@ -755,7 +822,7 @@ export function Step09View(): React.JSX.Element {
       });
       toast.error("Order submission failed. Please try again.");
       toast.info("Continuing to Shopify checkout with your configuration.");
-      triggerCheckout();
+      await triggerIndependentCheckout();
     } finally {
       setIsSendingEmail(false);
     }
