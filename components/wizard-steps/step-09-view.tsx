@@ -20,6 +20,26 @@ import { RosterInput } from "@/components/roster-input";
 import { calculateTotalPrice, getProductPrice } from "@/lib/pricing";
 import jsPDF from "jspdf";
 
+const toHandleCandidate = (value: string | null | undefined): string | undefined => {
+  if (!value) return undefined;
+
+  const handle = value
+    .toLowerCase()
+    .replace(/\.glb$/i, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return handle || undefined;
+};
+
+const normalizeTitle = (value: string | null | undefined): string | undefined => {
+  if (!value) return undefined;
+  const normalized = value.replace(/\.glb$/i, "").trim();
+  return normalized || undefined;
+};
+
 export function Step09View(): React.JSX.Element {
   // Store Data
   const products = useConfiguratorStore((state) => state.products);
@@ -107,20 +127,33 @@ export function Step09View(): React.JSX.Element {
       quantity,
     );
 
+    const resolvedProductTitle =
+      normalizeTitle(selectedProduct?.shopifyProductTitle) ||
+      normalizeTitle(selectedProduct?.title) ||
+      "Custom Product";
+    const resolvedProductHandle =
+      selectedProduct?.shopifyProductHandle ||
+      toHandleCandidate(selectedProductId) ||
+      toHandleCandidate(selectedProduct?.title);
+    const resolvedVariantId = selectedProduct?.shopifyVariantId;
+
     const lineItem = {
-      variant_id: selectedProduct?.shopifyVariantId,
+      id: resolvedVariantId,
+      variant_id: resolvedVariantId,
+      shopifyVariantId: resolvedVariantId,
       quantity,
       productId: selectedProductId,
-      productTitle: selectedProduct?.title,
-      productHandle: selectedProduct?.shopifyProductHandle || selectedProductId,
+      title: resolvedProductTitle,
+      productTitle: resolvedProductTitle,
+      productHandle: resolvedProductHandle,
       productSlug: selectedProductId,
       productType: selectedProduct?.category,
-      shopifyProductTitle: selectedProduct?.shopifyProductTitle,
+      shopifyProductTitle: resolvedProductTitle,
       sku: selectedProduct?.shopifySku,
       attributes: {
         Source: "Besu Configurator",
         "Product ID": selectedProductId || "",
-        "Product Name": selectedProduct?.title || "Custom Product",
+        "Product Name": resolvedProductTitle,
         "Printing Method": printingMethod,
         Quantity: String(quantity),
         "Team Name": roster.teamName || "",
@@ -146,11 +179,16 @@ export function Step09View(): React.JSX.Element {
           checkout: true,
           checkoutUrl: options?.checkoutUrl || undefined,
           replaceCart: true,
+          productId: selectedProductId,
+          productTitle: resolvedProductTitle,
+          productHandle: resolvedProductHandle,
+          shopifyProductTitle: resolvedProductTitle,
           line_items: [lineItem],
           note: orderNote,
           context: {
             selectedProductId,
-            selectedProductTitle: selectedProduct?.title,
+            selectedProductTitle: resolvedProductTitle,
+            productHandle: resolvedProductHandle,
             shopifyReady,
             pricing: {
               unitPrice,

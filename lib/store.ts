@@ -552,6 +552,42 @@ export function getFallbackProducts(): Product[] {
 // Start with empty products and load active ones from Supabase
 const initialProducts: Product[] = [];
 
+const toKebabCase = (value: string): string => {
+  return value
+    .toLowerCase()
+    .replace(/\.glb$/i, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+};
+
+const normalizeModelTitle = (value: string): string => {
+  return value.replace(/\.glb$/i, "").trim();
+};
+
+const deriveModelProductId = (model: Model): string => {
+  const metadataProductId =
+    typeof model.metadata?.productId === "string"
+      ? model.metadata.productId
+      : typeof model.metadata?.product_id === "string"
+        ? model.metadata.product_id
+        : null;
+
+  if (metadataProductId && metadataProductId.trim()) {
+    return toKebabCase(metadataProductId);
+  }
+
+  const fileName = model.file_path?.split("/").pop() || "";
+  const fromFile = toKebabCase(fileName);
+  if (fromFile) return fromFile;
+
+  const fromName = toKebabCase(model.name || "");
+  if (fromName) return fromName;
+
+  return model.id;
+};
+
 // Function to load active products from Supabase
 const loadActiveProducts = async (): Promise<Product[]> => {
   const parseOptionalInt = (value: unknown): number | undefined => {
@@ -567,39 +603,43 @@ const loadActiveProducts = async (): Promise<Product[]> => {
     const response = await fetch("/api/models?active=true");
     if (response.ok) {
       const { models } = await response.json();
-      return models.map((model: Model) => ({
-        id: model.id,
-        title: model.name,
-        modelUrl: model.file_path,
-        category: model.category || undefined,
-        shopifyVariantId: parseOptionalInt(
-          model.metadata?.shopifyVariantId ??
-            model.metadata?.shopify_variant_id ??
-            model.metadata?.variantId ??
-            model.metadata?.variant_id,
-        ),
-        shopifyProductId:
-          model.metadata?.shopifyProductId ?? model.metadata?.shopify_product_id,
-        shopifyProductHandle:
-          typeof model.metadata?.shopifyProductHandle === "string"
-            ? model.metadata.shopifyProductHandle
-            : typeof model.metadata?.shopify_product_handle === "string"
-              ? model.metadata.shopify_product_handle
-              : undefined,
-        shopifyProductTitle:
-          typeof model.metadata?.shopifyProductTitle === "string"
-            ? model.metadata.shopifyProductTitle
-            : typeof model.metadata?.shopify_product_title === "string"
-              ? model.metadata.shopify_product_title
-              : undefined,
-        shopifySku:
-          typeof model.metadata?.shopifySku === "string"
-            ? model.metadata.shopifySku
-            : typeof model.metadata?.shopify_sku === "string"
-              ? model.metadata.shopify_sku
-              : undefined,
-        metadata: model.metadata,
-      }));
+      return models.map((model: Model) => {
+        const derivedId = deriveModelProductId(model);
+        return {
+          id: derivedId,
+          title: normalizeModelTitle(model.name),
+          modelUrl: model.file_path,
+          category: model.category || undefined,
+          shopifyVariantId: parseOptionalInt(
+            model.metadata?.shopifyVariantId ??
+              model.metadata?.shopify_variant_id ??
+              model.metadata?.variantId ??
+              model.metadata?.variant_id,
+          ),
+          shopifyProductId:
+            model.metadata?.shopifyProductId ??
+            model.metadata?.shopify_product_id,
+          shopifyProductHandle:
+            typeof model.metadata?.shopifyProductHandle === "string"
+              ? model.metadata.shopifyProductHandle
+              : typeof model.metadata?.shopify_product_handle === "string"
+                ? model.metadata.shopify_product_handle
+                : derivedId,
+          shopifyProductTitle:
+            typeof model.metadata?.shopifyProductTitle === "string"
+              ? model.metadata.shopifyProductTitle
+              : typeof model.metadata?.shopify_product_title === "string"
+                ? model.metadata.shopify_product_title
+                : normalizeModelTitle(model.name),
+          shopifySku:
+            typeof model.metadata?.shopifySku === "string"
+              ? model.metadata.shopifySku
+              : typeof model.metadata?.shopify_sku === "string"
+                ? model.metadata.shopify_sku
+                : undefined,
+          metadata: model.metadata,
+        };
+      });
     }
   } catch (error) {
     console.error("Failed to load active products:", error);
