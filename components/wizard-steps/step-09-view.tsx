@@ -315,7 +315,7 @@ export function Step09View(): React.JSX.Element {
           }),
         );
       });
-      const dataUrl = captureAndResize(canvas, 1200, 0.95);
+      const dataUrl = captureAndResize(canvas, 800, 0.82);
       results.push({ view, dataUrl });
     }
     setLockedView(null);
@@ -703,17 +703,20 @@ export function Step09View(): React.JSX.Element {
       }
 
 
-      // Send to API
+      const emailFiles = files.filter((file) => /^Design-(front|back|left|right)\.jpg$/i.test(file.filename));
+
+      // Send a compact payload to stay below Vercel function body limits.
+      // Full production assets should be generated from the saved order metadata or uploaded directly to object storage.
       const response = await fetch("/api/send-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           recipientEmail: email,
           clientEmails: [],
-          files,
+          files: emailFiles,
           message: `Shipping to: ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}. Notes: ${deliveryNotes}`,
           designName: "Custom Order",
-          previewImage,
+          previewImage: null,
           orderMetadata: {
             teamName: roster.teamName,
             contactName,
