@@ -40,7 +40,7 @@ const normalizeTitle = (value: string | null | undefined): string | undefined =>
   return normalized || undefined;
 };
 
-const SHOPIFY_FALLBACK_PRODUCT_HANDLE = "custom-configurator-order";
+const SHOPIFY_FALLBACK_PRODUCT_HANDLE = "sports-bag-bc-0452";
 
 const normalizeShopifySize = (value: string | null | undefined): string => {
   const normalized = String(value || "").trim().toLowerCase();
