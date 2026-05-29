@@ -1,0 +1,30 @@
+Configurator ID,Shopify Handle,Title,Variant Option,Variant Values,Price
+backpack,backpack,Backpack,Title,Default Title,50.00
+baseball-caps,baseball-caps,Baseball Caps,Title,Default Title,20.00
+baseball-jersey,baseball-jersey,Baseball Jersey,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,45.00
+basketball-jersey,basketball-jersey,Basketball Jersey and Shorts,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,49.00
+basketball-top-long,basketball-top-long,Basketball Jersey Top And Long Shorts,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,49.00
+basketball-shirt-long,basketball-shirt-long,Basketball Shooting Shirt Long Sleeve,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+basketball-shirt-hoodie,basketball-shirt-hoodie,Basketball Shooting Shirt with Hoodie,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+basketball-shirt-short,basketball-shirt-short,Basketball Shooting Shirt Short Sleeve,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+duffle-bag,duffle-bag,Duffle Bag,Title,Default Title,65.00
+flag-football-hoodie,flag-football-hoodie,Flag Football Jersey with Hoodie,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+half-short,half-short,Half Size Shorts,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,30.00
+hoodie,hoodie,Hoodie,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,45.00
+long-pants,long-pants,Long Pants,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,45.00
+polo-long,polo-long,Polo Shirts Long Sleeve,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+polo-short,polo-short,Polo Shirts Short Sleeve,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+soccer-crew,soccer-crew,Soccer Jersey Crew Neck,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+soccer-vneck,soccer-vneck,Soccer Jersey V-Neck,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+standard-bottom,standard-bottom,"Baseball Standard Bottom Cut, Cuffed",Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,30.00
+track-compression,track-compression,Track & Field Compression Shorts,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+track-mid-shorts,track-mid-shorts,Track & Field Mid-Length Shorts,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+track-split-shorts,track-split-shorts,Track & Field Split Shorts,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+track-crop,track-crop,Track & Field Crop Top,Size,X-Small; Small; Medium; Large; X-Large; 2XL,35.00
+track-short-sleeve,track-short-sleeve,Track & Field Short Sleeve,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+track-tank,track-tank,Track & Field Tank Top,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+volleyball-long,volleyball-long,Volleyball Long Sleeve Tops,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+volleyball-short,volleyball-short,Volleyball Short Sleeve Tops,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+volleyball-spandex-4,volleyball-spandex-4,Volleyball Shorts Spandex 4,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+volleyball-spandex,volleyball-spandex,Volleyball Shorts Spandex,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00
+volleyball-spandex-alt,volleyball-spandex-alt,Volleyball Spandex,Size,Youth Small; Youth Medium; Youth Large; Adult X-Small; Adult Small; Adult Medium; Adult Large; Adult X-Large; Adult 2XL; Adult 3XL,35.00

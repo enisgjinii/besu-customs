@@ -40,7 +40,7 @@ const normalizeTitle = (value: string | null | undefined): string | undefined =>
   return normalized || undefined;
 };
 
-const SHOPIFY_FALLBACK_PRODUCT_HANDLE = "sports-bag-bc-0452";
+const SHOPIFY_FALLBACK_PRODUCT_HANDLE = "custom-configurator-order";
 
 const normalizeShopifySize = (value: string | null | undefined): string => {
   const normalized = String(value || "").trim().toLowerCase();
@@ -192,6 +192,7 @@ export function Step09View(): React.JSX.Element {
       "Custom Product";
     const resolvedProductHandle =
       selectedProduct?.shopifyProductHandle ||
+      selectedProductId ||
       SHOPIFY_FALLBACK_PRODUCT_HANDLE;
     const resolvedVariantId = selectedProduct?.shopifyVariantId;
     const selectedSize = normalizeShopifySize(
