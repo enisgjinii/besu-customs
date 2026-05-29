@@ -40,8 +40,6 @@ const normalizeTitle = (value: string | null | undefined): string | undefined =>
   return normalized || undefined;
 };
 
-const SHOPIFY_FALLBACK_PRODUCT_HANDLE = "custom-configurator-order";
-
 const toConfiguratorShopifyHandle = (productId: string | null | undefined): string | undefined => {
   if (!productId) return undefined;
   return `configurator-${productId}`;
@@ -196,10 +194,9 @@ export function Step09View(): React.JSX.Element {
       normalizeTitle(selectedProduct?.title) ||
       "Custom Product";
     const resolvedProductHandle =
-      selectedProduct?.shopifyProductHandle ||
       toConfiguratorShopifyHandle(selectedProductId) ||
-      SHOPIFY_FALLBACK_PRODUCT_HANDLE;
-    const resolvedVariantId = selectedProduct?.shopifyVariantId;
+      "custom-configurator-order";
+    const resolvedVariantId: number | undefined = undefined;
     const selectedSize = normalizeShopifySize(
       roster.players[0]?.sizes?.top || roster.players[0]?.sizes?.shorts,
     );
