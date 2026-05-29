@@ -40,6 +40,65 @@ const normalizeTitle = (value: string | null | undefined): string | undefined =>
   return normalized || undefined;
 };
 
+const SHOPIFY_FALLBACK_PRODUCT_HANDLE = "custom-configurator-order";
+
+const normalizeShopifySize = (value: string | null | undefined): string => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  const sizeMap: Record<string, string> = {
+    ys: "Youth Small",
+    "youth-small": "Youth Small",
+    "youth small": "Youth Small",
+    ym: "Youth Medium",
+    "youth-medium": "Youth Medium",
+    "youth medium": "Youth Medium",
+    yl: "Youth Large",
+    "youth-large": "Youth Large",
+    "youth large": "Youth Large",
+    axs: "Adult X-Small",
+    xs: "Adult X-Small",
+    "x-small": "Adult X-Small",
+    "adult-x-small": "Adult X-Small",
+    "adult x-small": "Adult X-Small",
+    "adult x small": "Adult X-Small",
+    as: "Adult Small",
+    s: "Adult Small",
+    small: "Adult Small",
+    "adult-small": "Adult Small",
+    "adult small": "Adult Small",
+    am: "Adult Medium",
+    m: "Adult Medium",
+    medium: "Adult Medium",
+    "adult-medium": "Adult Medium",
+    "adult medium": "Adult Medium",
+    al: "Adult Large",
+    l: "Adult Large",
+    large: "Adult Large",
+    "adult-large": "Adult Large",
+    "adult large": "Adult Large",
+    axl: "Adult X-Large",
+    xl: "Adult X-Large",
+    "x-large": "Adult X-Large",
+    "adult-x-large": "Adult X-Large",
+    "adult x-large": "Adult X-Large",
+    "adult x large": "Adult X-Large",
+    "2xl": "Adult 2XL",
+    "2-xl": "Adult 2XL",
+    "adult-2xl": "Adult 2XL",
+    "adult 2xl": "Adult 2XL",
+    "adult-2-xl": "Adult 2XL",
+    "adult 2 xl": "Adult 2XL",
+    "3xl": "Adult 3XL",
+    "3-xl": "Adult 3XL",
+    "adult-3xl": "Adult 3XL",
+    "adult 3xl": "Adult 3XL",
+    "adult-3-xl": "Adult 3XL",
+    "adult 3 xl": "Adult 3XL",
+  };
+
+  return sizeMap[normalized] || "Adult Medium";
+};
+
 export function Step09View(): React.JSX.Element {
   // Store Data
   const products = useConfiguratorStore((state) => state.products);
@@ -133,9 +192,11 @@ export function Step09View(): React.JSX.Element {
       "Custom Product";
     const resolvedProductHandle =
       selectedProduct?.shopifyProductHandle ||
-      toHandleCandidate(selectedProductId) ||
-      toHandleCandidate(selectedProduct?.title);
+      SHOPIFY_FALLBACK_PRODUCT_HANDLE;
     const resolvedVariantId = selectedProduct?.shopifyVariantId;
+    const selectedSize = normalizeShopifySize(
+      roster.players[0]?.sizes?.top || roster.players[0]?.sizes?.shorts,
+    );
 
     const lineItem = {
       id: resolvedVariantId,
@@ -146,6 +207,10 @@ export function Step09View(): React.JSX.Element {
       title: resolvedProductTitle,
       productTitle: resolvedProductTitle,
       productHandle: resolvedProductHandle,
+      size: selectedSize,
+      selectedOptions: {
+        Size: selectedSize,
+      },
       productSlug: selectedProductId,
       productType: selectedProduct?.category,
       shopifyProductTitle: resolvedProductTitle,
@@ -181,6 +246,10 @@ export function Step09View(): React.JSX.Element {
           productId: selectedProductId,
           productTitle: resolvedProductTitle,
           productHandle: resolvedProductHandle,
+          size: selectedSize,
+          selectedOptions: {
+            Size: selectedSize,
+          },
           shopifyProductTitle: resolvedProductTitle,
           line_items: [lineItem],
           note: orderNote,
@@ -188,6 +257,7 @@ export function Step09View(): React.JSX.Element {
             selectedProductId,
             selectedProductTitle: resolvedProductTitle,
             productHandle: resolvedProductHandle,
+            size: selectedSize,
             shopifyReady,
             pricing: {
               unitPrice,
