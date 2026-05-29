@@ -39,6 +39,259 @@ function parseAttachmentContent(file: IncomingDesignFile) {
     };
 }
 
+function escapeHtml(value: unknown): string {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function sectionHeader(label: string): string {
+    return `
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 14px 0;">
+            <tr>
+                <td style="width: 4px; background: #2563eb; border-radius: 999px;"></td>
+                <td style="padding-left: 10px; font-size: 13px; line-height: 18px; font-weight: 800; color: #111827; text-transform: uppercase; letter-spacing: .08em;">${escapeHtml(label)}</td>
+                <td style="border-bottom: 1px solid #e5e7eb;"></td>
+            </tr>
+        </table>`;
+}
+
+function detailCell(label: string, value: unknown): string {
+    return `
+        <td width="50%" style="padding: 6px; vertical-align: top;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e5e7eb; border-radius: 10px; background: #ffffff;">
+                <tr>
+                    <td style="padding: 14px 16px;">
+                        <div style="font-size: 11px; line-height: 16px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: .07em;">${escapeHtml(label)}</div>
+                        <div style="margin-top: 4px; font-size: 15px; line-height: 22px; font-weight: 700; color: #111827;">${escapeHtml(value || "-")}</div>
+                    </td>
+                </tr>
+            </table>
+        </td>`;
+}
+
+function imageCard(cid: string, label: string): string {
+    return `
+        <td width="50%" style="padding: 7px; vertical-align: top;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #ffffff;">
+                <tr>
+                    <td style="padding: 18px; background: #f8fafc; text-align: center;">
+                        <img src="cid:${cid}" alt="${escapeHtml(label)}" style="display: block; width: 100%; max-width: 250px; height: auto; margin: 0 auto; border: 0;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 11px 12px; text-align: center; font-size: 12px; line-height: 16px; font-weight: 800; color: #374151; text-transform: uppercase; letter-spacing: .06em; border-top: 1px solid #e5e7eb;">${escapeHtml(label)}</td>
+                </tr>
+            </table>
+        </td>`;
+}
+
+function buildOrderEmailHtml({
+    designName,
+    orderId,
+    formattedDate,
+    formattedTime,
+    message,
+    orderDetails,
+    orderMetadata,
+    viewImages,
+    previewImage,
+    uvMapImage,
+    hasPdf,
+    hasSvg,
+    pdfFilename,
+    totalItems,
+}: {
+    designName?: string;
+    orderId: string;
+    formattedDate: string;
+    formattedTime: string;
+    message?: string;
+    orderDetails?: any;
+    orderMetadata?: any;
+    viewImages: Record<string, string>;
+    previewImage?: string;
+    uvMapImage: string | null;
+    hasPdf: boolean;
+    hasSvg: boolean;
+    pdfFilename: string;
+    totalItems: number;
+}): string {
+    const safeDesignName = escapeHtml(designName || "Custom Order");
+    const imageCount = [viewImages.front, viewImages.back, viewImages.left, viewImages.right].filter(Boolean).length;
+    const roster = Array.isArray(orderMetadata?.roster) ? orderMetadata.roster : [];
+    const materials = Array.isArray(orderDetails?.materials) ? orderDetails.materials : [];
+    const pricing = orderDetails?.pricing;
+
+    const designPreviewHtml = (viewImages.front || viewImages.back || viewImages.left || viewImages.right || previewImage)
+        ? `
+            ${sectionHeader("Design Preview")}
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px;">
+                <tr>
+                    ${viewImages.front ? imageCard("view-front", "Front View") : ""}
+                    ${viewImages.back ? imageCard("view-back", "Back View") : ""}
+                </tr>
+                <tr>
+                    ${viewImages.left ? imageCard("view-left", "Left Side") : ""}
+                    ${viewImages.right ? imageCard("view-right", "Right Side") : ""}
+                </tr>
+                ${!viewImages.front && previewImage ? `<tr>${imageCard("preview-image", "Design Preview")}</tr>` : ""}
+            </table>`
+        : "";
+
+    const rosterHtml = roster.length
+        ? `
+            ${sectionHeader("Roster")}
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+                <tr style="background: #111827;">
+                    <th align="left" style="padding: 12px 14px; font-size: 11px; line-height: 14px; color: #ffffff; text-transform: uppercase; letter-spacing: .06em;">Player</th>
+                    <th align="center" style="padding: 12px 10px; font-size: 11px; line-height: 14px; color: #ffffff; text-transform: uppercase; letter-spacing: .06em;">Number</th>
+                    <th align="center" style="padding: 12px 10px; font-size: 11px; line-height: 14px; color: #ffffff; text-transform: uppercase; letter-spacing: .06em;">Top</th>
+                    <th align="center" style="padding: 12px 10px; font-size: 11px; line-height: 14px; color: #ffffff; text-transform: uppercase; letter-spacing: .06em;">Shorts</th>
+                </tr>
+                ${roster.map((player: any, index: number) => `
+                    <tr style="background: ${index % 2 === 0 ? "#ffffff" : "#f9fafb"};">
+                        <td style="padding: 12px 14px; font-size: 13px; line-height: 18px; font-weight: 700; color: #111827; border-top: 1px solid #e5e7eb;">${escapeHtml(player.nameOnJersey || "-")}</td>
+                        <td align="center" style="padding: 12px 10px; border-top: 1px solid #e5e7eb;"><span style="display: inline-block; min-width: 28px; padding: 4px 8px; border-radius: 999px; background: #111827; color: #ffffff; font-size: 12px; font-weight: 800;">${escapeHtml(player.jerseyNumber || "-")}</span></td>
+                        <td align="center" style="padding: 12px 10px; font-size: 12px; font-weight: 700; color: #374151; border-top: 1px solid #e5e7eb;">${escapeHtml(player.sizes?.top || "-")}</td>
+                        <td align="center" style="padding: 12px 10px; font-size: 12px; font-weight: 700; color: #374151; border-top: 1px solid #e5e7eb;">${escapeHtml(player.sizes?.shorts || "-")}</td>
+                    </tr>`).join("")}
+            </table>`
+        : "";
+
+    const pricingHtml = pricing
+        ? `
+            ${sectionHeader("Pricing")}
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #dbeafe; border-radius: 12px; background: #eff6ff;">
+                <tr>
+                    <td style="padding: 18px 20px; font-size: 14px; line-height: 22px; color: #1f2937;">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                            <tr><td style="padding: 4px 0; color: #475569;">Method</td><td align="right" style="padding: 4px 0; font-weight: 800; text-transform: capitalize;">${escapeHtml(pricing.method || "-")}</td></tr>
+                            <tr><td style="padding: 4px 0; color: #475569;">Unit price</td><td align="right" style="padding: 4px 0; font-weight: 800;">$${escapeHtml(pricing.unitPrice ?? "-")}</td></tr>
+                            <tr><td style="padding: 4px 0 12px 0; color: #475569; border-bottom: 1px solid #bfdbfe;">Quantity</td><td align="right" style="padding: 4px 0 12px 0; font-weight: 800; border-bottom: 1px solid #bfdbfe;">${escapeHtml(pricing.quantity ?? totalItems)}</td></tr>
+                            <tr><td style="padding: 14px 0 0 0; font-size: 16px; font-weight: 900; color: #111827;">Estimated total</td><td align="right" style="padding: 14px 0 0 0; font-size: 22px; font-weight: 900; color: #1d4ed8;">$${escapeHtml(pricing.total ?? "-")}</td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>`
+        : "";
+
+    const materialsHtml = materials.length
+        ? `
+            ${sectionHeader("Color Specifications")}
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+                ${materials.map((material: any, index: number) => `
+                    <tr style="background: ${index % 2 === 0 ? "#ffffff" : "#f9fafb"};">
+                        <td style="padding: 12px 14px; font-size: 13px; line-height: 18px; font-weight: 800; color: #111827; border-top: ${index === 0 ? "0" : "1px solid #e5e7eb"};">${escapeHtml(material.name || "-")}</td>
+                        <td style="padding: 12px 14px; border-top: ${index === 0 ? "0" : "1px solid #e5e7eb"};">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td style="width: 28px; height: 28px; border-radius: 999px; background: ${escapeHtml(material.color || "#ffffff")}; border: 1px solid #d1d5db;"></td>
+                                    <td style="padding-left: 10px; font-size: 12px; line-height: 16px; color: #374151;"><strong>${escapeHtml(material.pantone || "-")}</strong><br>${escapeHtml(material.pantoneName || "")}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>`).join("")}
+            </table>`
+        : "";
+
+    const techPackHtml = uvMapImage
+        ? `
+            ${sectionHeader("Production Pattern")}
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #ffffff;">
+                <tr><td style="padding: 14px; text-align: center; background: #f8fafc;"><img src="cid:uv-map" alt="Production pattern" style="display: block; width: 100%; max-width: 580px; height: auto; margin: 0 auto; border: 0;" /></td></tr>
+                <tr><td style="padding: 11px 12px; text-align: center; font-size: 12px; font-weight: 800; color: #374151; text-transform: uppercase; letter-spacing: .06em; border-top: 1px solid #e5e7eb;">Tech pack attached</td></tr>
+            </table>`
+        : "";
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation - ${safeDesignName}</title>
+</head>
+<body style="margin: 0; padding: 0; background: #eef2f7; font-family: Arial, Helvetica, sans-serif; color: #111827;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #eef2f7; padding: 32px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="720" cellspacing="0" cellpadding="0" border="0" style="width: 100%; max-width: 720px; border-collapse: separate; border-spacing: 0;">
+                    <tr>
+                        <td style="padding: 28px 30px; background: #0f172a; border-radius: 18px 18px 0 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td>
+                                        <div style="font-size: 22px; line-height: 28px; font-weight: 900; color: #ffffff;">Besu Customs</div>
+                                        <div style="margin-top: 4px; font-size: 13px; line-height: 18px; color: #cbd5e1;">Custom production order confirmation</div>
+                                    </td>
+                                    <td align="right">
+                                        <span style="display: inline-block; padding: 8px 12px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 12px; line-height: 16px; font-weight: 900;">Order Confirmed</span>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="margin-top: 28px; font-size: 30px; line-height: 36px; font-weight: 900; color: #ffffff;">${safeDesignName}</div>
+                            <div style="margin-top: 8px; font-size: 14px; line-height: 20px; color: #cbd5e1;">${escapeHtml(formattedDate)} at ${escapeHtml(formattedTime)}</div>
+                            <div style="margin-top: 18px; display: inline-block; padding: 9px 13px; border-radius: 10px; background: rgba(255,255,255,.1); color: #ffffff; font-family: Menlo, Consolas, monospace; font-size: 13px; font-weight: 800;">${escapeHtml(orderId)}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 24px 30px 30px 30px; background: #ffffff; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 22px;">
+                                <tr>
+                                    ${detailCell("Team", orderMetadata?.teamName)}
+                                    ${detailCell("Contact", orderMetadata?.contactName)}
+                                </tr>
+                                <tr>
+                                    ${detailCell("Phone", orderMetadata?.phoneNumber)}
+                                    ${detailCell("Sets", totalItems || pricing?.quantity || "-")}
+                                </tr>
+                            </table>
+                            ${message ? `
+                                ${sectionHeader("Order Notes")}
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #fde68a; border-radius: 12px; background: #fffbeb;">
+                                    <tr><td style="padding: 16px 18px; font-size: 14px; line-height: 22px; color: #78350f;">${escapeHtml(message)}</td></tr>
+                                </table>` : ""}
+                            ${designPreviewHtml}
+                            ${techPackHtml}
+                            ${rosterHtml}
+                            ${pricingHtml}
+                            ${materialsHtml}
+                            ${orderDetails?.notes ? `
+                                ${sectionHeader("Production Notes")}
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #fed7aa; border-radius: 12px; background: #fff7ed;">
+                                    <tr><td style="padding: 16px 18px; font-size: 14px; line-height: 22px; color: #7c2d12;">${escapeHtml(orderDetails.notes)}</td></tr>
+                                </table>` : ""}
+                            ${sectionHeader("Attachments")}
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    ${hasPdf ? detailCell("PDF spec", pdfFilename || "Attached") : ""}
+                                    ${imageCount ? detailCell("Design views", `${imageCount} image${imageCount === 1 ? "" : "s"}`) : ""}
+                                </tr>
+                                <tr>
+                                    ${uvMapImage ? detailCell("Tech pack", "Attached") : ""}
+                                    ${hasSvg ? detailCell("SVG pattern", "Attached") : ""}
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 26px 30px; text-align: center; background: #f8fafc; border: 1px solid #e5e7eb; border-top: 0; border-radius: 0 0 18px 18px;">
+                            <div style="font-size: 14px; line-height: 20px; color: #64748b;">Need changes or another design?</div>
+                            <a href="https://besu-customs.vercel.app" style="display: inline-block; margin-top: 14px; padding: 12px 22px; border-radius: 10px; background: #0f172a; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 900;">Open Configurator</a>
+                            <div style="margin-top: 22px; font-size: 12px; line-height: 18px; color: #94a3b8;">Besu Customs | Premium Custom Sportswear | ${new Date().getFullYear()}</div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -189,480 +442,33 @@ export async function POST(req: NextRequest) {
         });
         const totalItems = orderMetadata?.roster?.length || 0;
 
-        // Gmail-compatible HTML Template with INLINE STYLES
-        const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Confirmation - ${designName || "Custom Design"}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #09090b; background-color: #f4f4f5;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f4f4f5; padding: 40px 20px;">
-        <tr>
-            <td align="center">
-                <table role="presentation" width="680" cellspacing="0" cellpadding="0" border="0" style="max-width: 680px; width: 100%; background-color: #ffffff; border-radius: 12px; border: 1px solid #e4e4e7; overflow: hidden;">
-                    
-                    <!-- Header -->
-                    <tr>
-                        <td style="padding: 32px; border-bottom: 1px solid #e4e4e7; background: linear-gradient(to bottom, #fafafa, #ffffff);">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                <tr>
-                                    <td>
-                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                <td style="width: 32px; height: 32px; background-color: #18181b; border-radius: 8px; text-align: center; vertical-align: middle;">
-                                                    <span style="color: white; font-size: 16px;"></span>
-                                                </td>
-                                                <td style="padding-left: 10px; font-size: 18px; font-weight: 600; color: #09090b;">Besu Customs</td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                    <td align="right">
-                                        <span style="display: inline-block; padding: 6px 12px; font-size: 12px; font-weight: 500; background-color: #dcfce7; color: #166534; border-radius: 9999px;"> Order Confirmed</span>
-                                    </td>
-                                </tr>
-                            </table>
-                            <h1 style="margin: 24px 0 4px 0; font-size: 26px; font-weight: 600; color: #09090b; letter-spacing: -0.5px;">${designName || "Custom Uniform Design"}</h1>
-                            <p style="margin: 0; font-size: 14px; color: #71717a;">${formattedDate} at ${formattedTime}</p>
-                            <div style="display: inline-block; margin-top: 16px; padding: 8px 14px; background-color: #f4f4f5; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, monospace; font-size: 13px; font-weight: 500; color: #09090b;"> ${orderId}</div>
-                        </td>
-                    </tr>
-                    
-                    <!-- Content -->
-                    <tr>
-                        <td style="padding: 32px;">
-                            
-                            <!-- Message -->
-                            ${message ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td style="padding: 16px 20px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
-                                        <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;"> Order Notes</p>
-                                        <p style="margin: 0; font-size: 14px; color: #09090b; line-height: 1.7;">${message}</p>
-                                    </td>
-                                </tr>
-                            </table>
-                            ` : ""}
-                            
-                            <!-- Design Views Section -->
-                            ${(viewImages.front || viewImages.back || viewImages.left || viewImages.right || previewImage) ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                            <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Design Preview</td>
-                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                            </tr>
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                ${viewImages.front ? `
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                                        <tr><td style="background-color: #f4f4f5;"><img src="cid:view-front" alt="Front View" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #ffffff;">Front View</td></tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""}
-                                                ${viewImages.back ? `
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                                        <tr><td style="background-color: #f4f4f5;"><img src="cid:view-back" alt="Back View" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #ffffff;">Back View</td></tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""}
-                                            </tr>
-                                            <tr>
-                                                ${viewImages.left ? `
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                                        <tr><td style="background-color: #f4f4f5;"><img src="cid:view-left" alt="Left View" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #ffffff;">Left Side</td></tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""}
-                                                ${viewImages.right ? `
-                                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                                        <tr><td style="background-color: #f4f4f5;"><img src="cid:view-right" alt="Right View" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #ffffff;">Right Side</td></tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""}
-                                            </tr>
-                                            ${!viewImages.front && previewImage ? `
-                                            <tr>
-                                                <td colspan="2" style="padding: 6px;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                                        <tr><td style="background-color: #f4f4f5;"><img src="cid:preview-image" alt="Preview" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                                        <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; border-top: 1px solid #e4e4e7; background-color: #ffffff;">Design Preview</td></tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                            ` : ""}
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                            ` : ""}
-
-
-                            <!-- 2D Tech Pack / Pattern Layout -->
-                            ${uvMapImage ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                            <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">2D Pattern Layout (Tech Pack)</td>
-                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                            </tr>
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                            <tr><td style="background-color: #ffffff; padding: 0;"><img src="cid:uv-map" alt="Pattern Layout" style="width: 100%; height: auto; display: block;" /></td></tr>
-                                            <tr><td style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e4e4e7; background-color: #fafafa;">Production Pattern File</td></tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                            ` : ""}
-
-                            
-                            <!--PDF Attachment-->
-        ${hasPdf ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td style="padding: 16px 20px; background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%); border: 1px solid #fcd34d; border-radius: 8px;">
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                <td style="width: 48px; height: 48px; background-color: #ef4444; border-radius: 8px; text-align: center; vertical-align: middle; color: white; font-size: 16px; font-weight: 700;">PDF</td>
-                                                <td style="padding-left: 16px;">
-                                                    <p style="margin: 0 0 2px 0; font-size: 14px; font-weight: 600; color: #92400e;"> ${pdfFilename || "Order-Specs.pdf"}</p>
-                                                    <p style="margin: 0; font-size: 12px; color: #a16207;">Complete order specification document</p>
-                                                </td>
-                                                <td align="right">
-                                                    <span style="display: inline-block; padding: 6px 12px; background-color: #ffffff; border-radius: 6px; font-size: 11px; font-weight: 600; color: #92400e; border: 1px solid #fcd34d;">Attached</span>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                            ` : ""
-            }
-
-    <!--Order Details-->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-            <tr>
-            <td>
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                <tr>
-                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
-                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Order Details</td>
-                        <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                            </tr>
-                            </table>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                <tr>
-                                <td width="50%" style="padding: 6px; vertical-align: top;">
-                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                        <tr><td style="padding: 16px;">
-                                            <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Team Name</p>
-                                            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.teamName || "—"}</p>
-                                        </td></tr>
-                                    </table>
-                                </td>
-                                                                        <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                                                                <tr><td style="padding: 16px;">
-                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Contact Person</p>
-                                                                                    <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.contactName || "—"}</p>
-                                                                                </td></tr>
-                                                                            </table>
-                                                                        </td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                                                                <tr><td style="padding: 16px;">
-                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Phone Number</p>
-                                                                                    <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${orderMetadata?.phoneNumber || "—"}</p>
-                                                                                </td></tr>
-                                                                            </table>
-                                                                        </td>
-                                                                        <td width="50%" style="padding: 6px; vertical-align: top;">
-                                                                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px;">
-                                                                                <tr><td style="padding: 16px;">
-                                                                                    <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Order Date</p>
-                                                                                    <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${formattedDate}</p>
-                                                                                </td></tr>
-                                                                            </table>
-                                                                        </td>
-                                                                    </tr>
-                                                                </table>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-
-                <!--Team Roster-->
-                ${orderMetadata?.roster && orderMetadata.roster.length > 0 ? `
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                    <tr>
-                        <td>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                <tr>
-                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
-                                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Team Roster</td>
-                                    <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                </tr>
-                            </table>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                <tr style="background-color: #18181b;">
-                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; width: 50px;">#</th>
-                                    <th style="padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Player Name</th>
-                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Jersey #</th>
-                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Top</th>
-                                    <th style="padding: 14px 16px; text-align: center; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Shorts</th>
-                                </tr>
-                                ${orderMetadata.roster.map((p: any, i: number) => `
-                                <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f4f4f5'};">
-                                    <td style="padding: 14px 16px; text-align: center; font-size: 12px; color: #71717a; font-weight: 500; border-bottom: 1px solid #e4e4e7;">${i + 1}</td>
-                                    <td style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: #09090b; border-bottom: 1px solid #e4e4e7;">${p.nameOnJersey || "—"}</td>
-                                    <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; min-width: 36px; padding: 4px 10px; background-color: #18181b; color: #fafafa; font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; border-radius: 6px;">${p.jerseyNumber || "—"}</span></td>
-                                    <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; padding: 4px 10px; background-color: #f4f4f5; color: #18181b; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid #e4e4e7;">${p.sizes?.top || "—"}</span></td>
-                                    <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e4e4e7;"><span style="display: inline-block; padding: 4px 10px; background-color: #f4f4f5; color: #18181b; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid #e4e4e7;">${p.sizes?.shorts || "—"}</span></td>
-                                </tr>
-                                `).join("")}
-                            </table>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 12px; background-color: #18181b; border-radius: 8px;">
-                                <tr>
-                                    <td style="padding: 16px 20px;">
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                <td style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9);"> Total Uniform Sets</td>
-                                                <td align="right" style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -1px;">${totalItems} <span style="font-size: 14px; opacity: 0.7;">sets</span></td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-                ` : ""}
-
-                <!--Pricing Summary-->
-                ${orderDetails?.pricing ? `
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                    <tr>
-                        <td>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                <tr>
-                                    <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
-                                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Pricing Breakdown</td>
-                                    <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                </tr>
-                            </table>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; background-color: #fafafa;">
-                                <tr>
-                                    <td style="padding-bottom: 8px; color: #71717a; font-size: 14px;">Printing Method:</td>
-                                    <td align="right" style="padding-bottom: 8px; font-weight: 600; color: #09090b; text-transform: capitalize;">${orderDetails.pricing.method}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding-bottom: 8px; color: #71717a; font-size: 14px;">Unit Price:</td>
-                                    <td align="right" style="padding-bottom: 8px; font-weight: 600; color: #09090b;">$${orderDetails.pricing.unitPrice}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding-bottom: 12px; color: #71717a; font-size: 14px; border-bottom: 1px solid #e4e4e7;">Quantity:</td>
-                                    <td align="right" style="padding-bottom: 12px; font-weight: 600; color: #09090b; border-bottom: 1px solid #e4e4e7;">${orderDetails.pricing.quantity}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding-top: 12px; font-weight: 600; color: #09090b; font-size: 16px;">Total Estimated:</td>
-                                    <td align="right" style="padding-top: 12px; font-weight: 700; color: #166534; font-size: 18px;">$${orderDetails.pricing.total}</td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-                ` : ""}
-
-    <!--Color Specifications-->
-        ${orderDetails?.materials && orderDetails.materials.length > 0 ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                                            <tr>
-                                                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
-                                                <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Color Specifications</td>
-                                                <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                                            </tr>
-                                        </table>
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-                                            <tr style="background-color: #18181b;">
-                                                <th style="padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Material Zone</th>
-                                                <th style="padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">Pantone Color</th>
-                                            </tr>
-                                            ${orderDetails.materials.map((m: any, i: number) => `
-                                            <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f4f4f5'};">
-                                                <td style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: #09090b; border-bottom: 1px solid #e4e4e7;">${m.name}</td>
-                                                <td style="padding: 14px 16px; border-bottom: 1px solid #e4e4e7;">
-                                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="width: 36px; height: 36px; background-color: ${m.color}; border-radius: 8px; border: 2px solid #e4e4e7;"></td>
-                                                            <td style="padding-left: 12px;">
-                                                                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #09090b;">${m.pantone}</p>
-                                                                <p style="margin: 0; font-size: 11px; color: #71717a;">${m.pantoneName}</p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                            `).join("")}
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                            ` : ""
-            }
-
-    <!--Notes -->
-        ${orderDetails?.notes ? `
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                                <tr>
-                                    <td style="padding: 16px 20px; background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px;">
-                                        <p style="margin: 0 0 10px 0; font-size: 12px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;"> Production Notes</p>
-                                        <p style="margin: 0; font-size: 14px; color: #78350f; line-height: 1.7;">${orderDetails.notes}</p>
-                                    </td>
-                                </tr>
-                            </table>
-                            ` : ""
-            }
-
-    <!--Attachments Summary-->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 0;">
-            <tr>
-            <td>
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
-                <tr>
-                <td style="width: 36px; height: 36px; background-color: #f4f4f5; border-radius: 8px; text-align: center; vertical-align: middle;"></td>
-                    <td style="padding-left: 12px; font-size: 15px; font-weight: 600; color: #09090b;">Attachments Included</td>
-                        <td style="border-bottom: 1px solid #e4e4e7;"></td>
-                            </tr>
-                            </table>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                <tr>
-                                ${hasPdf ? `
-                                                <td style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
-                                                        <tr>
-                                                            <td style="width: 32px; height: 32px; background-color: #fee2e2; border-radius: 6px; text-align: center; vertical-align: middle; color: #dc2626; font-size: 14px;"></td>
-                                                            <td style="padding-left: 10px;">
-                                                                <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">PDF Spec Sheet</p>
-                                                                <p style="margin: 0; font-size: 11px; color: #71717a;">1 file</p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""
-            }
-                                                ${(viewImages.front || viewImages.back) ? `
-                                                <td style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
-                                                        <tr>
-                                                            <td style="width: 32px; height: 32px; background-color: #dbeafe; border-radius: 6px; text-align: center; vertical-align: middle; color: #2563eb; font-size: 14px;"></td>
-                                                            <td style="padding-left: 10px;">
-                                                                <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">Design Views</p>
-                                                                <p style="margin: 0; font-size: 11px; color: #71717a;">${[viewImages.front, viewImages.back, viewImages.left, viewImages.right].filter(Boolean).length} images</p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""
-            }
-                                                ${uvMapImage ? `
-                                                <td style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
-                                                        <tr>
-                                                            <td style="width: 32px; height: 32px; background-color: #d1fae5; border-radius: 6px; text-align: center; vertical-align: middle; color: #059669; font-size: 14px;"></td>
-                                                            <td style="padding-left: 10px;">
-                                                                <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">UV Map</p>
-                                                                <p style="margin: 0; font-size: 11px; color: #71717a;">1 file</p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""
-            }
-                                                ${hasSvg ? `
-                                                <td style="padding: 6px; vertical-align: top;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding: 12px 14px; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px;">
-                                                        <tr>
-                                                            <td style="width: 32px; height: 32px; background-color: #ede9fe; border-radius: 6px; text-align: center; vertical-align: middle; color: #7c3aed; font-size: 14px;"></td>
-                                                            <td style="padding-left: 10px;">
-                                                                <p style="margin: 0; font-size: 12px; font-weight: 500; color: #09090b;">SVG Pattern File</p>
-                                                                <p style="margin: 0; font-size: 11px; color: #71717a;">1 file</p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                                ` : ""
-            }
-    </tr>
-        </table>
-        </td>
-        </tr>
-        </table>
-
-        </td>
-        </tr>
-
-        <!--CTA-->
-            <tr>
-            <td style="padding: 32px; text-align: center; background-color: #f4f4f5; border-top: 1px solid #e4e4e7;" >
-                <p style="margin: 0 0 16px 0; font-size: 14px; color: #71717a;">Need to make changes or create another design?</p>
-                <a href="https://besu-customs.vercel.app" style="display: inline-block; padding: 12px 28px; background-color: #18181b; color: #fafafa; text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px;">Design Another Uniform →</a>
-                        </td>
-                        </tr>
-
-                        <!--Footer-->
-                            <tr>
-            <td style="padding: 24px 32px; text-align: center; border-top: 1px solid #e4e4e7;">
-                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #09090b;">Besu Customs</p>
-                <p style="margin: 0 0 16px 0; font-size: 12px; color: #71717a;">Premium Custom Sportswear</p>
-                <p style="margin: 0 0 16px 0;">
-                    <a href="https://besu-customs.vercel.app" style="font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;">Website</a>
-                    <a href="mailto:besucustoms@gmail.com" style="font-size: 12px; color: #71717a; text-decoration: none; margin: 0 12px;">Contact</a>
-                </p>
-                <div style="height: 1px; background-color: #e4e4e7; margin: 16px 0;"></div>
-                <p style="margin: 0; font-size: 11px; color: #a1a1aa;">© ${new Date().getFullYear()} Besu Customs. All rights reserved.</p>
-                                                            </td>
-                                                            </tr>
-
-                                                            </table>
-                                                            </td>
-                                                            </tr>
-                                                            </table>
-                                                            </body>
-                                                            </html>
-                                                                `;
+        const htmlContent = buildOrderEmailHtml({
+            designName,
+            orderId,
+            formattedDate,
+            formattedTime,
+            message,
+            orderDetails,
+            orderMetadata,
+            viewImages,
+            previewImage,
+            uvMapImage,
+            hasPdf,
+            hasSvg,
+            pdfFilename,
+            totalItems,
+        });
 
         // Send mail
         const fixedCCs = ["besucustoms@gmail.com", "egjini17@gmail.com"];
         const finalCCs = Array.from(new Set([...(clientEmails || []), ...fixedCCs]));
 
         const info = await transporter.sendMail({
-            from: `"Besu Customs" < ${process.env.SMTP_USER}> `,
+            from: `"Besu Customs" <${process.env.SMTP_USER}>`,
             to: recipientEmail,
             cc: finalCCs,
             bcc: process.env.SMTP_USER,
-            subject: ` Order Confirmed: ${designName || "Custom Design"} — ${orderId} `,
+            subject: `Order Confirmed: ${designName || "Custom Design"} - ${orderId}`,
             text:
                 message ||
                 `Here is the order form and design assets for ${designName || "your custom order"}.`,
