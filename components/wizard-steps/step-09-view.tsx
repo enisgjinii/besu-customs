@@ -801,6 +801,17 @@ export function Step09View(): React.JSX.Element {
             contactName,
             phoneNumber,
             roster: roster.players,
+            product: {
+              id: selectedProductId,
+              title: selectedProduct?.title || selectedProductId,
+              category: selectedProduct?.category,
+            },
+            production: {
+              printingMethod,
+              materialZoneCount: sections.length,
+              designElementCount: textureLayers.length,
+            },
+            shippingAddress,
           },
           orderDetails: {
             materials: sections.map((s) => {

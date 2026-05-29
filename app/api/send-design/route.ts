@@ -124,7 +124,16 @@ function buildOrderEmailHtml({
     const imageCount = [viewImages.front, viewImages.back, viewImages.left, viewImages.right].filter(Boolean).length;
     const roster = Array.isArray(orderMetadata?.roster) ? orderMetadata.roster : [];
     const materials = Array.isArray(orderDetails?.materials) ? orderDetails.materials : [];
+    const elements = Array.isArray(orderDetails?.elements) ? orderDetails.elements : [];
     const pricing = orderDetails?.pricing;
+    const shippingAddress = orderMetadata?.shippingAddress;
+    const product = orderMetadata?.product;
+    const production = orderMetadata?.production;
+    const shippingLines = [
+        shippingAddress?.street,
+        shippingAddress?.street2,
+        [shippingAddress?.city, shippingAddress?.state, shippingAddress?.zip].filter(Boolean).join(", "),
+    ].filter(Boolean);
 
     const designPreviewHtml = (viewImages.front || viewImages.back || viewImages.left || viewImages.right || previewImage)
         ? `
@@ -179,6 +188,36 @@ function buildOrderEmailHtml({
             </table>`
         : "";
 
+    const productionSnapshotHtml = `
+        ${sectionHeader("Production Snapshot")}
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px;">
+            <tr>
+                ${detailCell("Product", product?.title || product?.id || designName || "Custom Order")}
+                ${detailCell("Product ID", product?.id || "-")}
+            </tr>
+            <tr>
+                ${detailCell("Printing", production?.printingMethod || pricing?.method || "-")}
+                ${detailCell("Generated", `${formattedDate} ${formattedTime}`)}
+            </tr>
+            <tr>
+                ${detailCell("Material zones", materials.length || "-")}
+                ${detailCell("Design elements", elements.length || "-")}
+            </tr>
+        </table>`;
+
+    const shippingHtml = shippingLines.length
+        ? `
+            ${sectionHeader("Shipping")}
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+                <tr>
+                    <td style="padding: 16px 18px; font-size: 14px; line-height: 22px; color: #111827;">
+                        <strong>${escapeHtml(orderMetadata?.contactName || "Customer")}</strong><br>
+                        ${shippingLines.map((line) => escapeHtml(line)).join("<br>")}
+                    </td>
+                </tr>
+            </table>`
+        : "";
+
     const materialsHtml = materials.length
         ? `
             ${sectionHeader("Color Specifications")}
@@ -195,6 +234,21 @@ function buildOrderEmailHtml({
                             </table>
                         </td>
                     </tr>`).join("")}
+            </table>`
+        : "";
+
+    const elementsHtml = elements.length
+        ? `
+            ${sectionHeader("Design Elements")}
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+                ${elements.slice(0, 10).map((element: any, index: number) => `
+                    <tr style="background: ${index % 2 === 0 ? "#ffffff" : "#f9fafb"};">
+                        <td style="padding: 12px 14px; width: 120px; font-size: 11px; line-height: 16px; font-weight: 900; color: #2563eb; text-transform: uppercase; letter-spacing: .06em; border-top: ${index === 0 ? "0" : "1px solid #e5e7eb"};">${escapeHtml(element.type || "Element")}</td>
+                        <td style="padding: 12px 14px; font-size: 13px; line-height: 18px; font-weight: 700; color: #111827; border-top: ${index === 0 ? "0" : "1px solid #e5e7eb"};">${escapeHtml(element.name || "-")}</td>
+                        <td style="padding: 12px 14px; font-size: 12px; line-height: 18px; color: #4b5563; border-top: ${index === 0 ? "0" : "1px solid #e5e7eb"};">${escapeHtml(element.detail || "-")}</td>
+                    </tr>`).join("")}
+                ${elements.length > 10 ? `
+                    <tr><td colspan="3" style="padding: 12px 14px; text-align: center; font-size: 12px; line-height: 18px; color: #6b7280; border-top: 1px solid #e5e7eb;">${escapeHtml(elements.length - 10)} more elements included in the production files</td></tr>` : ""}
             </table>`
         : "";
 
@@ -254,11 +308,14 @@ function buildOrderEmailHtml({
                                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #fde68a; border-radius: 12px; background: #fffbeb;">
                                     <tr><td style="padding: 16px 18px; font-size: 14px; line-height: 22px; color: #78350f;">${escapeHtml(message)}</td></tr>
                                 </table>` : ""}
+                            ${productionSnapshotHtml}
+                            ${shippingHtml}
                             ${designPreviewHtml}
                             ${techPackHtml}
                             ${rosterHtml}
                             ${pricingHtml}
                             ${materialsHtml}
+                            ${elementsHtml}
                             ${orderDetails?.notes ? `
                                 ${sectionHeader("Production Notes")}
                                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #fed7aa; border-radius: 12px; background: #fff7ed;">
