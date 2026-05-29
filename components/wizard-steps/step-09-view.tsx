@@ -42,6 +42,11 @@ const normalizeTitle = (value: string | null | undefined): string | undefined =>
 
 const SHOPIFY_FALLBACK_PRODUCT_HANDLE = "custom-configurator-order";
 
+const toConfiguratorShopifyHandle = (productId: string | null | undefined): string | undefined => {
+  if (!productId) return undefined;
+  return `configurator-${productId}`;
+};
+
 const normalizeShopifySize = (value: string | null | undefined): string => {
   const normalized = String(value || "").trim().toLowerCase();
 
@@ -192,7 +197,7 @@ export function Step09View(): React.JSX.Element {
       "Custom Product";
     const resolvedProductHandle =
       selectedProduct?.shopifyProductHandle ||
-      selectedProductId ||
+      toConfiguratorShopifyHandle(selectedProductId) ||
       SHOPIFY_FALLBACK_PRODUCT_HANDLE;
     const resolvedVariantId = selectedProduct?.shopifyVariantId;
     const selectedSize = normalizeShopifySize(
@@ -220,9 +225,15 @@ export function Step09View(): React.JSX.Element {
         Source: "Besu Configurator",
         "Product ID": selectedProductId || "",
         "Product Name": resolvedProductTitle,
+        Size: selectedSize,
         "Printing Method": printingMethod,
         Quantity: String(quantity),
         "Team Name": roster.teamName || "",
+        Contact: `${firstName} ${lastName}`.trim(),
+        Email: email,
+        Phone: phoneNumber || "",
+        "Roster Count": String(roster.players.length),
+        "Delivery Notes": deliveryNotes || "",
       },
     };
 

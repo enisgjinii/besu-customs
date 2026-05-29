@@ -1,0 +1,30 @@
+Configurator ID,Shopify Handle,Title,Price,Variant Count
+backpack,configurator-backpack,Backpack,50.00,1
+baseball-caps,configurator-baseball-caps,Baseball Caps,20.00,1
+baseball-jersey,configurator-baseball-jersey,Baseball Jersey,45.00,10
+basketball-jersey,configurator-basketball-jersey,Basketball Jersey and Shorts,49.00,10
+basketball-top-long,configurator-basketball-top-long,Basketball Jersey Top And Long Shorts,49.00,10
+basketball-shirt-long,configurator-basketball-shirt-long,Basketball Shooting Shirt Long Sleeve,35.00,10
+basketball-shirt-hoodie,configurator-basketball-shirt-hoodie,Basketball Shooting Shirt with Hoodie,35.00,10
+basketball-shirt-short,configurator-basketball-shirt-short,Basketball Shooting Shirt Short Sleeve,35.00,10
+duffle-bag,configurator-duffle-bag,Duffle Bag,65.00,1
+flag-football-hoodie,configurator-flag-football-hoodie,Flag Football Jersey with Hoodie,35.00,10
+half-short,configurator-half-short,Half Size Shorts,30.00,10
+hoodie,configurator-hoodie,Hoodie,45.00,10
+long-pants,configurator-long-pants,Long Pants,45.00,10
+polo-long,configurator-polo-long,Polo Shirts Long Sleeve,35.00,10
+polo-short,configurator-polo-short,Polo Shirts Short Sleeve,35.00,10
+soccer-crew,configurator-soccer-crew,Soccer Jersey Crew Neck,35.00,10
+soccer-vneck,configurator-soccer-vneck,Soccer Jersey V-Neck,35.00,10
+standard-bottom,configurator-standard-bottom,"Baseball Standard Bottom Cut, Cuffed",30.00,10
+track-compression,configurator-track-compression,Track & Field Compression Shorts,35.00,10
+track-mid-shorts,configurator-track-mid-shorts,Track & Field Mid-Length Shorts,35.00,10
+track-split-shorts,configurator-track-split-shorts,Track & Field Split Shorts,35.00,10
+track-crop,configurator-track-crop,Track & Field Crop Top,35.00,6
+track-short-sleeve,configurator-track-short-sleeve,Track & Field Short Sleeve,35.00,10
+track-tank,configurator-track-tank,Track & Field Tank Top,35.00,10
+volleyball-long,configurator-volleyball-long,Volleyball Long Sleeve Tops,35.00,10
+volleyball-short,configurator-volleyball-short,Volleyball Short Sleeve Tops,35.00,10
+volleyball-spandex-4,configurator-volleyball-spandex-4,Volleyball Shorts Spandex 4,35.00,10
+volleyball-spandex,configurator-volleyball-spandex,Volleyball Shorts Spandex,35.00,10
+volleyball-spandex-alt,configurator-volleyball-spandex-alt,Volleyball Spandex,35.00,10
