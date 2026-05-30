@@ -1,7 +1,11 @@
 "use client";
+
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Upload,
   Check,
@@ -10,6 +14,11 @@ import {
   ArrowRight,
   ArrowUp,
   ArrowDown,
+  ImagePlus,
+  Crosshair,
+  Trash2,
+  Layers,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -19,28 +28,84 @@ import {
   isMobile,
 } from "@/lib/mobile-performance-utils";
 import { trimImageContent } from "@/lib/texture-utils";
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useCallback } from "react";
 import { getPatternsByCategory, type Pattern } from "@/lib/patterns";
 import { cn } from "@/lib/utils";
 import {
-  getCenterFrontLogoPosition,
+  getLogoPreset,
   resolveCenterFrontLogoPlacementFromImage,
+  type LogoPlacementArea,
 } from "@/lib/logo-positioning";
-import { WizardStepShell } from "@/components/wizard-step-layout";
+import {
+  WizardEmptyState,
+  WizardSection,
+  WizardStepShell,
+} from "@/components/wizard-step-layout";
+
+type LogoTab = "browse" | "adjust";
+
+const PLACEMENT_OPTIONS: {
+  id: LogoPlacementArea;
+  label: string;
+  hint: string;
+}[] = [
+  { id: "centerFront", label: "Center chest", hint: "Main front logo" },
+  { id: "leftChest", label: "Left chest", hint: "Classic school spot" },
+  { id: "rightChest", label: "Right chest", hint: "Opposite side" },
+  { id: "back", label: "Back", hint: "Upper back area" },
+];
+
+function GarmentPlacementPreview({
+  placement,
+  hasLogo,
+}: {
+  placement: LogoPlacementArea;
+  hasLogo: boolean;
+}) {
+  const markerClass =
+    "absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-primary bg-primary/30 shadow-sm";
+
+  const markerPositions: Record<LogoPlacementArea, string> = {
+    centerFront: "left-1/2 top-[38%]",
+    leftChest: "left-[62%] top-[38%]",
+    rightChest: "left-[38%] top-[38%]",
+    back: "left-1/2 top-[42%]",
+    leftSleeve: "left-[78%] top-[52%]",
+    rightSleeve: "left-[22%] top-[52%]",
+  };
+
+  return (
+    <div className="relative mx-auto w-full max-w-[140px]">
+      <div className="relative aspect-[3/4] rounded-t-[38%] rounded-b-xl border-2 border-dashed border-primary/20 bg-gradient-to-b from-muted/50 to-muted/10">
+        <div className="absolute inset-x-3 top-3 h-2 rounded-full bg-foreground/10" />
+        <div className="absolute inset-x-4 bottom-3 h-8 rounded-lg bg-foreground/5" />
+        {hasLogo && (
+          <span
+            className={cn(markerClass, markerPositions[placement])}
+            aria-hidden
+          />
+        )}
+        {!hasLogo && (
+          <div className="absolute inset-0 flex items-center justify-center px-3 text-center text-[8px] text-muted-foreground">
+            Logo preview
+          </div>
+        )}
+      </div>
+      <p className="mt-1.5 text-center text-[9px] text-muted-foreground">
+        Front garment guide
+      </p>
+    </div>
+  );
+}
 
 export function Step04SchoolLogo() {
-  const addTextureLayer = useConfiguratorStore(
-    (state) => state.addTextureLayer,
-  );
+  const addTextureLayer = useConfiguratorStore((state) => state.addTextureLayer);
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
-  const setPlacementMode = useConfiguratorStore(
-    (state) => state.setPlacementMode,
-  );
-  const setPendingLayer = useConfiguratorStore(
-    (state) => state.setPendingLayer,
-  );
-  const isPlacementMode = useConfiguratorStore(
-    (state) => state.isPlacementMode,
+  const setPlacementMode = useConfiguratorStore((state) => state.setPlacementMode);
+  const setPendingLayer = useConfiguratorStore((state) => state.setPendingLayer);
+  const isPlacementMode = useConfiguratorStore((state) => state.isPlacementMode);
+  const selectedTextureLayerId = useConfiguratorStore(
+    (state) => state.selectedTextureLayerId,
   );
   const setSelectedTextureLayerId = useConfiguratorStore(
     (state) => state.setSelectedTextureLayerId,
@@ -48,26 +113,29 @@ export function Step04SchoolLogo() {
   const updateTextureLayer = useConfiguratorStore(
     (state) => state.updateTextureLayer,
   );
-  const currentModelUrl = useConfiguratorStore(
-    (state) => state.currentModelUrl,
+  const removeTextureLayer = useConfiguratorStore(
+    (state) => state.removeTextureLayer,
   );
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
   const completeUVMask = useConfiguratorStore((state) => state.completeUVMask);
   const centerFrontUvAnchor = useConfiguratorStore(
     (state) => state.centerFrontUvAnchor,
   );
 
-  // Track if upload is in progress
   const uploadLockRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<LogoTab>("browse");
+  const [activePlacement, setActivePlacement] =
+    useState<LogoPlacementArea>("centerFront");
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Get school logos from patterns library
   const schoolLogos = useMemo(() => getPatternsByCategory("school-logos"), []);
 
-  // Filter logos by search
   const filteredLogos = useMemo(() => {
-    if (!searchQuery.trim()) return schoolLogos; // Show ALL logos
+    if (!searchQuery.trim()) return schoolLogos;
     const q = searchQuery.toLowerCase();
     return schoolLogos.filter(
       (logo) =>
@@ -76,93 +144,149 @@ export function Step04SchoolLogo() {
     );
   }, [schoolLogos, searchQuery]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Prevent duplicate uploads
-    if (uploadLockRef.current) return;
+  const logos = useMemo(
+    () => textureLayers.filter((layer) => layer.type === "image"),
+    [textureLayers],
+  );
 
-    const file = e.target.files?.[0];
-    if (file) {
+  const selectedLayer = useMemo(
+    () =>
+      logos.find((layer) => layer.id === selectedTextureLayerId) ??
+      logos[logos.length - 1] ??
+      null,
+    [logos, selectedTextureLayerId],
+  );
+
+  const addLogoLayer = useCallback(
+    async (params: {
+      name: string;
+      imageUrl: string;
+      placement?: LogoPlacementArea;
+    }) => {
+      const trimmed = await trimImageContent(params.imageUrl);
+      const imageUrl = trimmed.dataUrl;
+      const placement = params.placement ?? "centerFront";
+
+      let preset =
+        placement === "centerFront"
+          ? await resolveCenterFrontLogoPlacementFromImage({
+              modelUrl: currentModelUrl,
+              imageUrl,
+              uvMapUrl: completeUVMask || completeUVMap,
+              centerFrontUvAnchor,
+            })
+          : getLogoPreset(currentModelUrl, placement);
+
+      const newId = uuidv4();
+      addTextureLayer({
+        id: newId,
+        name: params.name,
+        type: "image",
+        visible: true,
+        locked: false,
+        opacity: 1,
+        blendMode: "normal",
+        order: textureLayers.length,
+        imageUrl,
+        position: preset.position,
+        rotation: preset.rotation,
+        scale: preset.scale,
+        flipX: false,
+      });
+
+      setSelectedTextureLayerId(newId);
+      setActivePlacement(placement);
+      setActiveTab("adjust");
+      setPlacementMode(false);
+      setPendingLayer(null);
+
+      return newId;
+    },
+    [
+      addTextureLayer,
+      centerFrontUvAnchor,
+      completeUVMap,
+      completeUVMask,
+      currentModelUrl,
+      setPendingLayer,
+      setPlacementMode,
+      setSelectedTextureLayerId,
+      textureLayers.length,
+    ],
+  );
+
+  const processUploadedFile = useCallback(
+    async (file: File) => {
+      if (uploadLockRef.current) return;
       uploadLockRef.current = true;
+      setIsUploading(true);
 
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        let result = event.target?.result as string;
+      try {
+        const result = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (typeof event.target?.result === "string") {
+              resolve(event.target.result);
+            } else {
+              reject(new Error("Failed to read file"));
+            }
+          };
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(file);
+        });
 
-        // Compress on mobile for better performance
+        let imageUrl = result;
         if (isMobile()) {
-          result = await compressImageForMobile(result, 512, 0.85);
+          imageUrl = await compressImageForMobile(result, 512, 0.85);
         }
 
-        const trimmed = await trimImageContent(result);
-        result = trimmed.dataUrl;
-
-        const newId = uuidv4();
-        const preset = await resolveCenterFrontLogoPlacementFromImage({
-          modelUrl: currentModelUrl,
-          imageUrl: result,
-          uvMapUrl: completeUVMask || completeUVMap,
-          centerFrontUvAnchor,
-        });
-        addTextureLayer({
-          id: newId,
-          name: file.name,
-          type: "image",
-          visible: true,
-          locked: false,
-          opacity: 1,
-          blendMode: "normal",
-          order: textureLayers.length,
-          imageUrl: result,
-          position: preset.position,
-          rotation: preset.rotation,
-          scale: preset.scale,
-          flipX: false,
-        });
-        setSelectedTextureLayerId(newId);
-        setPlacementMode(false);
-        setPendingLayer(null);
+        await addLogoLayer({ name: file.name, imageUrl });
+        toast.success("Logo added to your design");
+      } catch (error) {
+        console.error("Logo upload failed", error);
+        toast.error("Could not upload logo. Try a PNG or JPG under 5 MB.");
+      } finally {
         uploadLockRef.current = false;
-        toast.success(
-          "Logo added to the front. Use the controls below to move or resize it.",
-        );
-      };
-      reader.readAsDataURL(file);
+        setIsUploading(false);
+      }
+    },
+    [addLogoLayer],
+  );
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await processUploadedFile(file);
     }
-    // Reset the input value to allow re-uploading the same file
     e.target.value = "";
   };
 
-  // Handle selecting a predefined school logo
   const handleLogoSelect = async (logo: Pattern) => {
-    // Immediately add to center chest instead of placement mode
-    // This restores the "easier" workflow users preferred
-    const newId = uuidv4();
+    setSelectedLogoId(logo.id);
     const trimmed = await trimImageContent(logo.thumbnail);
-    const imageUrl = trimmed.dataUrl;
-    const preset = await resolveCenterFrontLogoPlacementFromImage({
-      modelUrl: currentModelUrl,
-      imageUrl,
-      uvMapUrl: completeUVMask || completeUVMap,
-      centerFrontUvAnchor,
-    });
-    addTextureLayer({
-      id: newId,
+    await addLogoLayer({
       name: logo.name,
+      imageUrl: trimmed.dataUrl,
+    });
+    toast.success(`Added "${logo.name}"`);
+  };
+
+  const startTapToPlace = async (imageUrl: string, name: string) => {
+    const trimmed = await trimImageContent(imageUrl);
+    setPendingLayer({
+      name,
       type: "image",
       visible: true,
       locked: false,
       opacity: 1,
       blendMode: "normal",
-      order: textureLayers.length,
-      imageUrl,
-      position: preset.position,
-      rotation: preset.rotation,
-      scale: preset.scale,
+      imageUrl: trimmed.dataUrl,
+      scale: [0.25, 0.25, 1],
+      rotation: [0, 0, 0],
       flipX: false,
     });
-
-    setSelectedTextureLayerId(newId);
-    toast.success(`Added "${logo.name}" to model`);
+    setPlacementMode(true);
+    toast.message("Tap the 3D model to place your logo");
   };
 
   const moveLogo = (layerId: string, deltaX: number, deltaY: number) => {
@@ -178,25 +302,63 @@ export function Step04SchoolLogo() {
     });
   };
 
-  const logos = textureLayers.filter((l) => l.type === "image");
+  const applyPlacement = async (
+    layerId: string,
+    placement: LogoPlacementArea,
+  ) => {
+    const layer = textureLayers.find((item) => item.id === layerId);
+    if (!layer?.imageUrl) return;
+
+    setActivePlacement(placement);
+
+    const preset =
+      placement === "centerFront"
+        ? await resolveCenterFrontLogoPlacementFromImage({
+            modelUrl: currentModelUrl,
+            imageUrl: layer.imageUrl,
+            uvMapUrl: completeUVMask || completeUVMap,
+            centerFrontUvAnchor,
+          })
+        : getLogoPreset(currentModelUrl, placement);
+
+    updateTextureLayer(layerId, {
+      position: preset.position,
+      rotation: preset.rotation,
+      scale: preset.scale,
+    });
+
+    toast.success(`Moved to ${PLACEMENT_OPTIONS.find((p) => p.id === placement)?.label ?? placement}`);
+  };
+
+  const handleRemoveLogo = (layerId: string) => {
+    removeTextureLayer(layerId);
+    if (logos.length <= 1) {
+      setActiveTab("browse");
+    }
+    toast.success("Logo removed");
+  };
 
   return (
     <WizardStepShell
-      title="Add Logo"
-      description="Choose or upload a logo. It will be added to the front automatically."
+      title="Logo"
+      description="Pick from the library or upload your own. Adjust placement on the garment in the next tab."
+      action={
+        logos.length > 0 ? (
+          <Badge variant="secondary" className="text-[10px]">
+            {logos.length} on design
+          </Badge>
+        ) : null
+      }
     >
-
       {isPlacementMode ? (
-        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl text-center space-y-3 animate-pulse">
-          <div className="flex justify-center">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Search className="w-5 h-5 text-primary" />
-            </div>
+        <div className="space-y-4 rounded-xl border border-primary/25 bg-primary/5 p-4 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Crosshair className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-medium text-primary">Tap to Place</p>
-            <p className="text-xs text-muted-foreground">
-              Touch anywhere on the 3D model
+            <p className="text-sm font-semibold text-primary">Tap to place</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Touch anywhere on the 3D model to position your logo.
             </p>
           </div>
           <Button
@@ -207,236 +369,353 @@ export function Step04SchoolLogo() {
               setPendingLayer(null);
               setSelectedLogoId(null);
             }}
-            className="h-8 text-xs bg-background"
           >
-            Cancel
+            Cancel placement
           </Button>
         </div>
       ) : (
         <>
-          {/* Upload custom logo button - Compact Card Style */}
-          <div className="relative group">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full h-10 md:h-11 border border-transparent hover:border-primary/20 transition-all font-medium text-xs shadow-sm bg-muted/50 hover:bg-muted"
-              asChild
-            >
-              <label className="cursor-pointer flex items-center justify-center gap-2">
-                <Upload className="w-3.5 h-3.5" />
-                <span>Upload Custom Logo</span>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={handleFileUpload}
-                />
-              </label>
-            </Button>
-            <p className="text-[9px] text-muted-foreground text-center mt-1 md:block hidden">
-              supports png, jpg, webp
-            </p>
-          </div>
-
-          <div className="h-px bg-border/50" />
-
-          {/* School Logos Section */}
-          {schoolLogos.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-semibold">School Library</span>
-                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                  {schoolLogos.length} logos
-                </span>
-              </div>
-
-              {/* Search input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search library..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-9 pl-9 text-xs border-0 bg-muted/40 focus-visible:bg-background transition-colors rounded-lg focus-visible:ring-1"
-                />
-              </div>
-
-              {/* Logo grid - Taller for better browsing */}
-              <div className="max-h-[210px] min-h-[132px] overflow-y-auto pr-1 -mr-1 md:max-h-[44dvh] md:min-h-[160px] md:pr-1 md:-mr-1">
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                  {filteredLogos.map((logo) => (
-                    <button
-                      key={logo.id}
-                      onClick={() => handleLogoSelect(logo)}
-                      className={cn(
-                        "group relative aspect-square rounded-md md:rounded-lg overflow-hidden border transition-all active:scale-95 bg-white shadow-sm min-h-10 min-w-10",
-                        selectedLogoId === logo.id
-                          ? "border-primary ring-2 ring-primary ring-offset-1"
-                          : "border-border/40 hover:border-primary/50 hover:shadow-md",
-                      )}
-                      title={logo.name}
-                    >
-                      <div className="absolute inset-0 p-1 md:p-1.5 flex items-center justify-center">
-                        <img
-                          src={logo.thumbnail}
-                          alt={logo.name}
-                          className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
-                          loading="lazy"
-                        />
-                      </div>
-
-                      {selectedLogoId === logo.id && (
-                        <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center shadow-sm z-10">
-                          <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                {filteredLogos.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Search className="w-8 h-8 opacity-20 mb-2" />
-                    <p className="text-xs">
-                      No logos found for "{searchQuery}"
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Active logos with improved controls */}
-      {logos.length > 0 && (
-        <div className="space-y-2 pt-2 border-t">
-          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider px-1">
-            Active Logos
-          </span>
-          <div className="space-y-2 md:max-h-[140px] md:overflow-y-auto md:pr-1">
-            {logos.map((layer) => (
-              <div
-                key={layer.id}
-                className="p-2 rounded-lg md:p-2.5 md:rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm"
-                onClick={() => setSelectedTextureLayerId(layer.id)}
-              >
-                <div className="flex items-center gap-2 md:gap-3 mb-2">
-                  {layer.imageUrl && (
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-muted/30 p-1 border flex-shrink-0">
-                      <img
-                        src={layer.imageUrl}
-                        alt={layer.name}
-                        className="w-full h-full object-contain"
-                      />
+          {/* Preview strip */}
+          <div className="overflow-hidden rounded-xl border bg-muted/15">
+            <div className="grid grid-cols-2 gap-px bg-border">
+              <div className="bg-background p-3">
+                <p className="mb-2 text-[10px] font-medium text-muted-foreground">
+                  Selected logo
+                </p>
+                <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-muted/20 p-3">
+                  {selectedLayer?.imageUrl ? (
+                    <img
+                      src={selectedLayer.imageUrl}
+                      alt={selectedLayer.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-center text-[10px] text-muted-foreground">
+                      <ImagePlus className="h-5 w-5 opacity-40" />
+                      <span>No logo yet</span>
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs md:text-sm font-medium truncate block">
-                      {layer.name}
-                    </span>
-                    <span className="hidden md:block text-[10px] text-muted-foreground">
-                      Use arrows to move. Use sliders for size and rotation.
-                    </span>
-                  </div>
                 </div>
-                <div className="mb-2 rounded-lg border bg-muted/20 p-2">
-                  <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">
-                    Move logo
-                  </div>
-                  <div className="grid grid-cols-3 gap-1">
-                    <div />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-9 md:h-11 w-full"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        moveLogo(layer.id, 0, -0.03);
-                      }}
-                      aria-label="Move logo up"
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <div />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-9 md:h-11 w-full"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        moveLogo(layer.id, -0.03, 0);
-                      }}
-                      aria-label="Move logo left"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-9 md:h-11 px-2 text-[10px]"
-                      onClick={async (event) => {
-                        event.stopPropagation();
-                        const preset = layer.imageUrl
-                          ? await resolveCenterFrontLogoPlacementFromImage({
-                              modelUrl: currentModelUrl,
-                              imageUrl: layer.imageUrl,
-                              uvMapUrl: completeUVMask || completeUVMap,
-                              centerFrontUvAnchor,
-                            })
-                          : getCenterFrontLogoPosition(currentModelUrl);
-                        updateTextureLayer(layer.id, {
-                          position: preset.position,
-                          rotation: preset.rotation,
-                          scale: preset.scale,
-                        });
-                      }}
-                    >
-                      Center
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-9 md:h-11 w-full"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        moveLogo(layer.id, 0.03, 0);
-                      }}
-                      aria-label="Move logo right"
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                    <div />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-9 md:h-11 w-full"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        moveLogo(layer.id, 0, 0.03);
-                      }}
-                      aria-label="Move logo down"
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                    <div />
-                  </div>
-                </div>
-                <LayerControls layerId={layer.id} compact sliderOnly />
+                {selectedLayer && (
+                  <p className="mt-2 truncate text-center text-[10px] font-medium">
+                    {selectedLayer.name}
+                  </p>
+                )}
               </div>
-            ))}
+              <div className="bg-background p-3">
+                <p className="mb-2 text-[10px] font-medium text-muted-foreground">
+                  Placement
+                </p>
+                <GarmentPlacementPreview
+                  placement={activePlacement}
+                  hasLogo={!!selectedLayer}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      )}
 
-      {logos.length === 0 && !isPlacementMode && (
-        <p className="text-xs text-muted-foreground text-center py-4 opacity-50">
-          Select or upload a logo to get started.
-        </p>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as LogoTab)}
+            className="gap-3"
+          >
+            <TabsList className="grid h-9 w-full grid-cols-2">
+              <TabsTrigger value="browse" className="text-xs">
+                1. Choose logo
+              </TabsTrigger>
+              <TabsTrigger
+                value="adjust"
+                className="text-xs"
+                disabled={logos.length === 0}
+              >
+                2. Place &amp; adjust
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="browse" className="mt-0 space-y-4">
+              {/* Upload zone */}
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "group flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 transition-colors",
+                  isUploading
+                    ? "border-muted bg-muted/30"
+                    : "border-primary/25 bg-primary/5 hover:border-primary/50 hover:bg-primary/10",
+                )}
+              >
+                {isUploading ? (
+                  <>
+                    <Sparkles className="h-8 w-8 animate-pulse text-primary" />
+                    <span className="text-sm font-medium">Processing upload…</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 transition-transform group-hover:scale-105">
+                      <Upload className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">Upload your logo</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        PNG, JPG, or WebP · tap to browse files
+                      </p>
+                    </div>
+                  </>
+                )}
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </button>
+
+              {schoolLogos.length > 0 && (
+                <WizardSection
+                  title="School library"
+                  count={filteredLogos.length}
+                  className="p-0 border-0 bg-transparent shadow-none"
+                >
+                  <div className="space-y-3 rounded-xl border bg-card p-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search logos…"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-9 pl-9 text-xs"
+                      />
+                    </div>
+
+                    <div className="max-h-[min(280px,40dvh)] overflow-y-auto pr-0.5">
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {filteredLogos.map((logo) => (
+                          <button
+                            key={logo.id}
+                            type="button"
+                            onClick={() => handleLogoSelect(logo)}
+                            className={cn(
+                              "group flex flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition-all active:scale-[0.98]",
+                              selectedLogoId === logo.id
+                                ? "border-primary ring-2 ring-primary/20"
+                                : "border-border/60 hover:border-primary/40",
+                            )}
+                          >
+                            <div className="relative aspect-square p-2">
+                              <img
+                                src={logo.thumbnail}
+                                alt={logo.name}
+                                className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                              {selectedLogoId === logo.id && (
+                                <div className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary shadow-sm">
+                                  <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="border-t bg-muted/20 px-2 py-1.5">
+                              <p className="truncate text-[10px] font-medium leading-tight">
+                                {logo.name}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {filteredLogos.length === 0 && (
+                        <WizardEmptyState
+                          title="No logos found"
+                          description={`Nothing matched "${searchQuery}". Try a different search.`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </WizardSection>
+              )}
+            </TabsContent>
+
+            <TabsContent value="adjust" className="mt-0 space-y-4">
+              {logos.length === 0 ? (
+                <WizardEmptyState
+                  title="No logos yet"
+                  description="Choose or upload a logo first, then fine-tune placement here."
+                />
+              ) : (
+                <>
+                  {/* Layer picker */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Your logos</Label>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {logos.map((layer) => (
+                        <button
+                          key={layer.id}
+                          type="button"
+                          onClick={() => setSelectedTextureLayerId(layer.id)}
+                          className={cn(
+                            "flex shrink-0 items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors",
+                            selectedLayer?.id === layer.id
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-background hover:border-primary/30",
+                          )}
+                        >
+                          {layer.imageUrl && (
+                            <div className="h-8 w-8 overflow-hidden rounded-md border bg-white p-0.5">
+                              <img
+                                src={layer.imageUrl}
+                                alt=""
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
+                          )}
+                          <span className="max-w-[88px] truncate text-[10px] font-medium">
+                            {layer.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedLayer && (
+                    <>
+                      {/* Quick placement */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium">Quick placement</Label>
+                        <p className="text-[10px] text-muted-foreground">
+                          Snap the selected logo to a common spot on the garment.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {PLACEMENT_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() =>
+                                applyPlacement(selectedLayer.id, option.id)
+                              }
+                              className={cn(
+                                "rounded-xl border px-3 py-2.5 text-left transition-colors",
+                                activePlacement === option.id
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border bg-background hover:border-primary/30 hover:bg-muted/30",
+                              )}
+                            >
+                              <p className="text-[11px] font-medium">{option.label}</p>
+                              <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                {option.hint}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Fine movement */}
+                      <div className="rounded-xl border bg-muted/15 p-3">
+                        <p className="mb-2 text-xs font-medium">Fine-tune position</p>
+                        <div className="mx-auto grid max-w-[180px] grid-cols-3 gap-1">
+                          <div />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-full"
+                            onClick={() => moveLogo(selectedLayer.id, 0, -0.03)}
+                            aria-label="Move up"
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <div />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-full"
+                            onClick={() => moveLogo(selectedLayer.id, -0.03, 0)}
+                            aria-label="Move left"
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-10 px-1 text-[9px]"
+                            onClick={() =>
+                              applyPlacement(selectedLayer.id, "centerFront")
+                            }
+                          >
+                            Center
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-full"
+                            onClick={() => moveLogo(selectedLayer.id, 0.03, 0)}
+                            aria-label="Move right"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                          <div />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-full"
+                            onClick={() => moveLogo(selectedLayer.id, 0, 0.03)}
+                            aria-label="Move down"
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <div />
+                        </div>
+                      </div>
+
+                      {/* Size / rotation */}
+                      <div className="rounded-xl border bg-card p-3">
+                        <div className="mb-2 flex items-center gap-1.5 text-xs font-medium">
+                          <Layers className="h-3.5 w-3.5" />
+                          Size &amp; rotation
+                        </div>
+                        <LayerControls layerId={selectedLayer.id} compact sliderOnly />
+                      </div>
+
+                      {/* Extra actions */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedLayer.imageUrl && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-10 text-xs"
+                            onClick={() =>
+                              startTapToPlace(
+                                selectedLayer.imageUrl!,
+                                selectedLayer.name,
+                              )
+                            }
+                          >
+                            <Crosshair className="mr-1.5 h-3.5 w-3.5" />
+                            Tap to place
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10 text-xs text-destructive hover:text-destructive"
+                          onClick={() => handleRemoveLogo(selectedLayer.id)}
+                        >
+                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                          Remove logo
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+        </>
       )}
     </WizardStepShell>
   );

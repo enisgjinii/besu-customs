@@ -4,7 +4,7 @@ import { useConfiguratorStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { useState } from "react";
-import { WizardStepShell } from "@/components/wizard-step-layout";
+import { WizardSection, WizardStepShell } from "@/components/wizard-step-layout";
 
 const STYLE_PRESETS = [
   {
@@ -94,37 +94,42 @@ export function Step03Style() {
       }
     >
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-        {STYLE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            onClick={() => handleApplyStyle(preset)}
-            className={cn(
-              "relative flex flex-col items-center p-3 rounded-lg border transition-all active:scale-95 min-h-20 md:min-h-24",
-              selectedStyle === preset.id
-                ? "border-primary ring-2 ring-primary bg-primary/10"
-                : "border-border hover:border-primary/50",
-            )}
-          >
-            {/* Color preview */}
-            <div className="flex gap-1 mb-2">
-              {Object.values(preset.colors).map((color, i) => (
-                <div
-                  key={i}
-                  className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-            <span className="text-xs font-medium text-center leading-tight">
-              {preset.name}
-            </span>
-            {selectedStyle === preset.id && (
-              <Check className="absolute top-1.5 right-1.5 w-4 h-4 text-primary" />
-            )}
-          </button>
-        ))}
-      </div>
+      <WizardSection
+        title="Style presets"
+        description="Tap any preset to apply it to all matching sections."
+      >
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {STYLE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              onClick={() => handleApplyStyle(preset)}
+              className={cn(
+                "relative flex min-h-20 flex-col items-center rounded-lg border p-3 transition-all active:scale-95",
+                selectedStyle === preset.id
+                  ? "border-primary ring-2 ring-primary bg-primary/10"
+                  : "border-border hover:border-primary/50",
+              )}
+            >
+              {/* Color preview */}
+              <div className="mb-2 flex gap-1">
+                {Object.values(preset.colors).map((color, i) => (
+                  <div
+                    key={i}
+                    className="h-5 w-5 rounded-full border-2 border-white shadow-sm"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <span className="text-center text-xs font-medium leading-tight">
+                {preset.name}
+              </span>
+              {selectedStyle === preset.id && (
+                <Check className="absolute right-1.5 top-1.5 h-4 w-4 text-primary" />
+              )}
+            </button>
+          ))}
+        </div>
+      </WizardSection>
     </WizardStepShell>
   );
 }

@@ -17,17 +17,19 @@ export function WizardStepShell({
   className?: string;
 }) {
   return (
-    <div className={cn("space-y-3 pb-2", className)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-0.5">
-          <h2 className="text-sm font-semibold leading-tight">{title}</h2>
+    <div className={cn("space-y-3 pb-1 md:space-y-4", className)}>
+      <div className="sticky top-0 z-10 -mx-3 border-b border-border/60 bg-background/95 px-3 pb-2 pt-1 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-0.5">
+            <h2 className="text-sm font-semibold leading-tight md:text-base">{title}</h2>
           {description && (
-            <p className="text-xs leading-snug text-muted-foreground">
+            <p className="text-[11px] leading-snug text-muted-foreground md:text-xs">
               {description}
             </p>
           )}
         </div>
-        {action && <div className="shrink-0">{action}</div>}
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
       </div>
       {children}
     </div>
@@ -48,13 +50,18 @@ export function WizardSection({
   className?: string;
 }) {
   return (
-    <section className={cn("space-y-2 rounded-lg border bg-card p-3", className)}>
+    <section
+      className={cn(
+        "space-y-2 rounded-xl border border-border/70 bg-card p-3 shadow-sm md:space-y-3 md:p-4",
+        className,
+      )}
+    >
       {(title || description || count !== undefined) && (
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-0.5">
-            {title && <h3 className="text-xs font-semibold">{title}</h3>}
+            {title && <h3 className="text-xs font-semibold md:text-sm">{title}</h3>}
             {description && (
-              <p className="text-[11px] leading-snug text-muted-foreground">
+              <p className="text-[11px] leading-snug text-muted-foreground md:text-xs">
                 {description}
               </p>
             )}
@@ -83,13 +90,13 @@ export function WizardEmptyState({
   return (
     <div
       className={cn(
-        "rounded-lg border border-dashed bg-muted/10 px-3 py-5 text-center",
+        "rounded-xl border border-dashed border-border/80 bg-muted/10 px-3 py-6 text-center md:px-4",
         className,
       )}
     >
-      <p className="text-xs font-medium">{title}</p>
+      <p className="text-xs font-medium md:text-sm">{title}</p>
       {description && (
-        <p className="mt-1 text-[11px] text-muted-foreground">{description}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground md:text-xs">{description}</p>
       )}
     </div>
   );

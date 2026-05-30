@@ -93,15 +93,15 @@ export function PatternSelector({
         <Tabs
           value={activeCategory}
           onValueChange={(v) => setActiveCategory(v as PatternCategory)}
-          className="w-full space-y-2 md:space-y-3"
+          className="w-full space-y-2"
         >
-          <div className="w-full overflow-x-auto pb-1 no-scrollbar -mx-3 px-3 md:-mx-4 md:px-4">
-            <TabsList className="flex h-8 md:h-9 w-max bg-transparent p-0 gap-1.5 md:gap-2">
+          <div className="w-full overflow-x-auto pb-1 no-scrollbar -mx-2 px-2 md:-mx-1 md:px-1">
+            <TabsList className="flex h-8 w-max gap-1.5 bg-transparent p-0 md:h-9">
               {categoriesToShow.map((category) => (
                 <TabsTrigger
                   key={category.id}
                   value={category.id}
-                  className="rounded-full border border-border bg-background px-3 md:px-4 py-1.5 text-[11px] md:text-xs font-medium text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                  className="rounded-full border border-border bg-background px-3 py-1.5 text-[10px] font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:px-4 md:text-xs"
                 >
                   {category.name}
                 </TabsTrigger>
@@ -137,7 +137,7 @@ export function PatternSelector({
         </div>
       )}
       {/* Remove Pattern Action */}
-      <div className="mt-3 md:mt-4 flex justify-center">
+      <div className="mt-2 flex justify-center">
         <button
           onClick={() => {
             const removeTextureLayer =
@@ -169,14 +169,14 @@ function CategoryGrid({
 }) {
   const patterns = getPatternsByCategory(categoryId as PatternCategory);
   return (
-    <div className="overflow-visible md:max-h-[60vh] md:overflow-y-auto md:pr-1">
-      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-3 gap-2 md:gap-3 pb-1">
+    <div className="overflow-visible md:max-h-[55vh] md:overflow-y-auto md:pr-1">
+      <div className="grid grid-cols-4 gap-2 pb-1 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-6">
         {patterns.map((pattern) => (
           <button
             key={pattern.id}
             onClick={() => onSelect(pattern)}
             className={cn(
-              "group relative aspect-square rounded-md md:rounded-xl overflow-hidden border transition-all active:scale-95",
+              "group relative aspect-square overflow-hidden rounded-md border transition-all active:scale-95 md:rounded-lg",
               selectedPattern === pattern.id
                 ? "border-primary ring-2 ring-primary ring-offset-1 md:ring-offset-2 ring-offset-background"
                 : "border-border/50 hover:border-primary/50",

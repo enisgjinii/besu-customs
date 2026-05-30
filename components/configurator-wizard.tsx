@@ -10,6 +10,7 @@ import {
   Lock,
   RotateCcw,
   GripHorizontal,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -36,10 +37,10 @@ export function ConfiguratorWizard() {
   const { isMobile } = useBreakpoint();
 
   // Desktop drag-to-resize state
-  const [panelHeight, setPanelHeight] = useState(320); // pixels, desktop only
+  const [panelHeight, setPanelHeight] = useState(300); // pixels, desktop only
   const isDraggingRef = useRef(false);
   const dragStartYRef = useRef(0);
-  const dragStartHeightRef = useRef(320);
+  const dragStartHeightRef = useRef(300);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const lockedView = useConfiguratorStore((s) => s.lockedView);
@@ -66,17 +67,17 @@ export function ConfiguratorWizard() {
       : CONFIGURATOR_STEPS[currentStep]?.title;
 
   const clampPanelHeight = useCallback((rawHeight: number) => {
-    if (typeof window === "undefined") return Math.min(600, Math.max(220, rawHeight));
-    const dynamicMin = Math.max(220, Math.round(window.innerHeight * 0.24));
-    const dynamicPreferred = Math.round(window.innerHeight * 0.32);
-    const dynamicMax = Math.min(600, Math.round(window.innerHeight * 0.72));
+    if (typeof window === "undefined") return Math.min(560, Math.max(220, rawHeight));
+    const dynamicMin = Math.max(220, Math.round(window.innerHeight * 0.22));
+    const dynamicPreferred = Math.round(window.innerHeight * 0.3);
+    const dynamicMax = Math.min(560, Math.round(window.innerHeight * 0.68));
     return Math.min(dynamicMax, Math.max(dynamicMin, rawHeight || dynamicPreferred));
   }, []);
 
   useEffect(() => {
     setIsMounted(true);
     if (typeof window !== "undefined") {
-      setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.32)));
+      setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.3)));
     }
   }, [clampPanelHeight]);
 
@@ -89,7 +90,7 @@ export function ConfiguratorWizard() {
 
   useEffect(() => {
     if (isMobile || currentStepNumber !== 9) return;
-    setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.72)));
+      setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.68)));
   }, [clampPanelHeight, currentStepNumber, isMobile]);
 
   // Desktop pointer-drag handlers
@@ -197,10 +198,10 @@ export function ConfiguratorWizard() {
       )}
 
       {/* Header: Steps + Nav */}
-      <div className="flex items-center gap-2 px-2 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 flex-shrink-0">
+      <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-800 dark:bg-gray-900/80 flex-shrink-0">
         {/* Current step indicator for mobile */}
         {isMobile && (
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <div className="flex flex-col items-center">
               <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/30">
                 {currentStep + 1}
@@ -210,7 +211,7 @@ export function ConfiguratorWizard() {
               <p className="text-sm font-semibold truncate">
                 {currentStepTitle}
               </p>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="mt-0.5 flex items-center gap-2">
                 <progress
                   className="flex-1 h-1.5 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-primary [&::-webkit-progress-value]:to-primary/70 [&::-moz-progress-bar]:bg-primary"
                   max={CONFIGURATOR_STEPS.length}
@@ -224,7 +225,7 @@ export function ConfiguratorWizard() {
 
         {/* Step pills - Desktop only */}
         {!isMobile && (
-          <div className="relative flex-1 min-w-0">
+          <div className="relative min-w-0 flex-1">
             <div className="pointer-events-none absolute inset-y-0 left-0 w-5 bg-gradient-to-r from-gray-50/95 to-transparent dark:from-gray-900/95" />
             <div className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-gray-50/95 to-transparent dark:from-gray-900/95" />
             <div className="flex-1 overflow-x-auto no-scrollbar px-2">
@@ -243,7 +244,7 @@ export function ConfiguratorWizard() {
                     disabled={isDisabled}
                     title={isDisabled ? "Select a product first to unlock this step" : stepTitle}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 min-h-11",
+                      "flex min-h-10 flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-all",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : isDisabled
@@ -251,7 +252,7 @@ export function ConfiguratorWizard() {
                           : "text-gray-600 bg-gray-200 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600",
                     )}
                   >
-                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/20">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
                       {s.id}
                     </span>
                     <span>{stepTitle}</span>
@@ -285,7 +286,7 @@ export function ConfiguratorWizard() {
                 size="icon"
                 onClick={handlePrev}
                 disabled={currentStep === 0}
-                className="h-11 w-11 rounded-full"
+                className="h-10 w-10 rounded-full"
                 aria-label="Previous step"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -297,7 +298,7 @@ export function ConfiguratorWizard() {
                   currentStep === CONFIGURATOR_STEPS.length - 1 ||
                   (currentStep === 0 && !isModelSelected)
                 }
-                className="h-11 px-5 rounded-full text-sm font-semibold shadow-lg"
+                className="h-10 rounded-full px-5 text-sm font-semibold shadow-lg"
               >
                 {currentStep === CONFIGURATOR_STEPS.length - 1 ? (
                   "Done"
@@ -314,6 +315,36 @@ export function ConfiguratorWizard() {
       {!isModelSelected && currentStep > 0 && (
         <div className="px-3 py-2 border-b border-border/40 bg-amber-50/80 dark:bg-amber-900/20 text-[11px] text-amber-700 dark:text-amber-300">
           Select an apparel model in step 1 to unlock all customization steps.
+        </div>
+      )}
+
+      {isMobile && (
+        <div className="flex items-center gap-1 overflow-x-auto border-b border-border/40 bg-background px-2 py-1.5 no-scrollbar">
+          {CONFIGURATOR_STEPS.map((step, idx) => {
+            const isDisabled = !isModelSelected && idx !== 0;
+            const isActive = currentStep === idx;
+            const isComplete = idx < currentStep;
+            return (
+              <button
+                key={step.id}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => !isDisabled && setStep(idx)}
+                className={cn(
+                  "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-medium whitespace-nowrap transition-colors",
+                  isActive
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : isComplete
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                      : "border-border bg-background text-muted-foreground",
+                  isDisabled && "cursor-not-allowed opacity-40",
+                )}
+              >
+                {isComplete ? <CheckCircle2 className="h-3 w-3" /> : <span>{step.id}</span>}
+                <span>{idx === 0 ? formatProductCategoryTitle(selectedProduct?.category) : step.title}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -359,8 +390,8 @@ export function ConfiguratorWizard() {
         <div className="h-full overflow-y-auto overscroll-y-auto wizard-content-scroll">
           <div
             className={cn(
-              "p-3 sm:p-4 mx-auto pb-6 md:pb-8",
-              currentStepNumber === 9 ? "max-w-7xl" : "max-w-4xl",
+              "mx-auto p-2 pb-6 sm:p-3 md:p-4 md:pb-7",
+              currentStepNumber === 9 ? "max-w-6xl" : "max-w-5xl",
             )}
           >
             <AnimatePresence mode="wait">
@@ -379,7 +410,7 @@ export function ConfiguratorWizard() {
       </div>
 
       {isMobile && (
-        <div className="sticky bottom-0 z-20 border-t border-border bg-white/95 dark:bg-black/95 backdrop-blur px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+        <div className="sticky bottom-0 z-20 border-t border-border bg-white/95 px-3 py-2 backdrop-blur dark:bg-black/95 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"

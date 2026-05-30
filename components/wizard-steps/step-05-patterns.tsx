@@ -1,7 +1,7 @@
 "use client";
 import { useConfiguratorStore } from "@/lib/store";
 import { PatternSelector } from "@/components/pattern-selector";
-import { WizardStepShell } from "@/components/wizard-step-layout";
+import { WizardSection, WizardStepShell } from "@/components/wizard-step-layout";
 
 export function Step05Patterns() {
   return (
@@ -9,7 +9,12 @@ export function Step05Patterns() {
       title="Patterns"
       description="Select one to apply across the product."
     >
-      <PatternSelector />
+      <WizardSection
+        title="Pattern Library"
+        description="Choose a pattern category, then tap any swatch to apply instantly."
+      >
+        <PatternSelector />
+      </WizardSection>
     </WizardStepShell>
   );
 }

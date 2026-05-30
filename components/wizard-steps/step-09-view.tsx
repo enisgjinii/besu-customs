@@ -891,34 +891,34 @@ export function Step09View(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl pb-2">
-      <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm md:px-6 md:py-5">
+    <div className="mx-auto w-full max-w-6xl space-y-3 pb-1">
+      <div className="rounded-xl border border-border bg-card px-3 py-3 shadow-sm md:px-5 md:py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Final Step
             </p>
-            <h1 className="mt-1 text-sm font-semibold tracking-tight text-slate-950 md:text-3xl">
+            <h1 className="mt-1 text-base font-semibold tracking-tight text-foreground md:text-xl">
               Review and Submit Order
             </h1>
-            <p className="mt-1 max-w-2xl text-xs leading-snug text-slate-600 md:text-sm md:leading-6">
+            <p className="mt-1 max-w-2xl text-xs leading-snug text-muted-foreground md:text-sm">
               Confirm the production details, roster, delivery address, and design assets before the order is sent.
             </p>
           </div>
 
-          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-center">
+          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-border bg-muted/30 text-center">
             <div className="px-2 py-2 md:px-4 md:py-3">
-              <p className="text-xs font-semibold text-slate-950 md:text-lg">{roster.players.length}</p>
+              <p className="text-sm font-semibold text-foreground md:text-base">{roster.players.length}</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Sets</p>
             </div>
             <div className="border-x border-slate-200 px-2 py-2 md:px-4 md:py-3">
-              <p className="text-xs font-semibold text-slate-950 md:text-lg">
+              <p className="text-sm font-semibold text-foreground md:text-base">
                 ${selectedProductId ? getProductPrice(selectedProductId, printingMethod) : 0}
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Unit</p>
             </div>
             <div className="px-2 py-2 md:px-4 md:py-3">
-              <p className="text-xs font-semibold text-slate-950 md:text-lg">
+              <p className="text-sm font-semibold text-foreground md:text-base">
                 ${calculateTotalPrice(selectedProductId || "", printingMethod, roster.players.length)}
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Estimate</p>
@@ -927,15 +927,15 @@ export function Step09View(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="grid gap-3 md:gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-        <main className="space-y-3 md:space-y-5">
-          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+      <div className="grid gap-3 md:gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <main className="space-y-3 md:space-y-4">
+          <section className="rounded-xl border border-border bg-card p-3 shadow-sm md:p-4">
             <div className="mb-3 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Contact
                 </p>
-                <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
+                <h2 className="mt-1 text-sm font-semibold text-foreground md:text-base">
                   Customer Information
                 </h2>
               </div>
@@ -993,12 +993,12 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+          <section className="rounded-xl border border-border bg-card p-3 shadow-sm md:p-4">
             <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Team
               </p>
-              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
+                <h2 className="mt-1 text-sm font-semibold text-foreground md:text-base">
                 Uniform Size and Quantity
               </h2>
             </div>
@@ -1007,12 +1007,12 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+          <section className="rounded-xl border border-border bg-card p-3 shadow-sm md:p-4">
             <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Delivery
               </p>
-              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
+                <h2 className="mt-1 text-sm font-semibold text-foreground md:text-base">
                 Shipping Address
               </h2>
             </div>
@@ -1058,12 +1058,12 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-6">
+          <section className="rounded-xl border border-border bg-card p-3 shadow-sm md:p-4">
             <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Production
               </p>
-              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
+                <h2 className="mt-1 text-sm font-semibold text-foreground md:text-base">
                 Additional Notes
               </h2>
             </div>
@@ -1076,14 +1076,14 @@ export function Step09View(): React.JSX.Element {
           </section>
         </main>
 
-        <aside className="space-y-3 md:space-y-5 lg:sticky lg:top-6">
-          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-5">
+        <aside className="space-y-3 md:space-y-4 lg:sticky lg:top-4">
+          <section className="rounded-xl border border-border bg-card p-3 shadow-sm md:p-4">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Design
                 </p>
-                <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
+                <h2 className="mt-1 text-sm font-semibold text-foreground md:text-base">
                   Preview
                 </h2>
               </div>
@@ -1121,12 +1121,12 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-5">
+          <section className="rounded-xl border border-border bg-card p-3 shadow-sm md:p-4">
             <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Summary
               </p>
-              <h2 className="mt-1 text-xs font-semibold text-slate-950 md:text-lg">
+                <h2 className="mt-1 text-sm font-semibold text-foreground md:text-base">
                 Order Total
               </h2>
             </div>
@@ -1168,7 +1168,7 @@ export function Step09View(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-5">
+          <section className="rounded-xl border border-border bg-card p-3 shadow-sm md:p-4">
             <div className="flex items-start gap-3">
               <Checkbox
                 id="confirmation"

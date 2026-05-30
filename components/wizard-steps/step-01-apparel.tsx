@@ -189,44 +189,46 @@ export function Step01Apparel() {
       description="Select a product to customize."
     >
 
-      <Select
-        value={selectedProductId || ""}
-        onValueChange={setSelectedProduct}
-        onOpenChange={handleDropdownOpen}
-      >
-        <SelectTrigger className="w-full h-10 text-sm">
-          <SelectValue placeholder="Select a product..." />
-        </SelectTrigger>
-        <SelectContent
-          className="max-h-[300px]"
-          onMouseLeave={handleProductLeave}
+      <WizardSection title="Product" description="Choose a base item to customize.">
+        <Select
+          value={selectedProductId || ""}
+          onValueChange={setSelectedProduct}
+          onOpenChange={handleDropdownOpen}
         >
-          {Object.entries(groupedProducts).map(([category, items]) => (
-            <div key={category} className="py-1">
-              <div className="px-3 py-2 text-xs font-bold text-muted-foreground bg-muted/50 uppercase tracking-wide">
-                {category}
+          <SelectTrigger className="h-10 w-full text-sm">
+            <SelectValue placeholder="Select a product..." />
+          </SelectTrigger>
+          <SelectContent
+            className="max-h-[300px]"
+            onMouseLeave={handleProductLeave}
+          >
+            {Object.entries(groupedProducts).map(([category, items]) => (
+              <div key={category} className="py-1">
+                <div className="bg-muted/50 px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                  {category}
+                </div>
+                {items.map((product) => (
+                  <SelectItem
+                    key={product.id}
+                    value={product.id}
+                    className={`px-3 py-3 text-sm ${hoveredProductId === product.id ? "bg-accent" : ""}`}
+                    onMouseEnter={() => handleProductHover(product)}
+                    onFocus={() => handleProductHover(product)}
+                  >
+                    <div className="flex w-full items-center justify-between gap-4">
+                      <span className="font-medium">{product.title}</span>
+                      <span className="font-normal text-muted-foreground">
+                        {supportsEmbroidery(product.title) ? "From " : ""}
+                        ${getProductPrice(product.title, "sublimated")}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
               </div>
-              {items.map((product) => (
-                <SelectItem
-                  key={product.id}
-                  value={product.id}
-                  className={`text-sm py-3 px-3 ${hoveredProductId === product.id ? "bg-accent" : ""}`}
-                  onMouseEnter={() => handleProductHover(product)}
-                  onFocus={() => handleProductHover(product)}
-                >
-                  <div className="flex justify-between items-center w-full gap-4">
-                    <span className="font-medium">{product.title}</span>
-                    <span className="text-muted-foreground font-normal">
-                      {supportsEmbroidery(product.title) ? "From " : ""}
-                      ${getProductPrice(product.title, "sublimated")}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </div>
-          ))}
-        </SelectContent>
-      </Select>
+            ))}
+          </SelectContent>
+        </Select>
+      </WizardSection>
 
       {!selectedProductId && (
         <WizardEmptyState title="Select a product to start customizing." />
