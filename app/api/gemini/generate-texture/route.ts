@@ -1,20 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  type GeminiImageModelKey,
+  resolveGeminiImageModelIds,
+} from "@/lib/gemini-models";
 
 export const maxDuration = 60;
 
 const GEMINI_UPSTREAM_TIMEOUT_MS = 45_000;
 
-const GEMINI_MODELS = {
-  flash: "gemini-3.1-flash-image-preview",
-  pro: "gemini-3-pro-image-preview",
-} as const;
-
 const ALLOW_GEMINI_PRO_TEXTURES = process.env.ALLOW_GEMINI_PRO_TEXTURES === "true";
 
-type GeminiModel = keyof typeof GEMINI_MODELS;
+const getGeminiApiUrl = (modelId: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
 
-const getGeminiApiUrl = (model: GeminiModel) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[model]}:generateContent`;
+function shouldRetryWithFallbackModel(status: number, message: string): boolean {
+  if (status === 404) return true;
+
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("not found") ||
+    normalized.includes("not supported for generatecontent") ||
+    normalized.includes("is not found for api version")
+  );
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -156,7 +164,11 @@ function extractErrorMessage(
   return message || `Gemini API error: ${fallbackStatus}`;
 }
 
-function shouldSuggestFallback(status: number, message: string, model: GeminiModel): boolean {
+function shouldSuggestFallback(
+  status: number,
+  message: string,
+  model: GeminiImageModelKey,
+): boolean {
   if (model !== "pro") return false;
 
   const normalized = message.toLowerCase();
@@ -175,8 +187,8 @@ function shouldSuggestFallback(status: number, message: string, model: GeminiMod
 export async function POST(request: NextRequest) {
   try {
     const apiKey =
-      process.env.GOOGLE_API_KEY ||
       process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
       process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
 
     if (!apiKey) {
@@ -184,7 +196,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             message:
-              "Gemini API key not configured. Set GOOGLE_API_KEY or GEMINI_API_KEY on the server.",
+              "Gemini API key not configured. Set GEMINI_API_KEY or GOOGLE_API_KEY on the server.",
           },
         },
         { status: 500 },
@@ -192,12 +204,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as {
-      model?: GeminiModel;
+      model?: GeminiImageModelKey;
       requestBody?: Record<string, unknown>;
     };
 
-    const requestedModel: GeminiModel = body.model === "pro" ? "pro" : "flash";
-    const model: GeminiModel =
+    const requestedModel: GeminiImageModelKey = body.model === "pro" ? "pro" : "flash";
+    const model: GeminiImageModelKey =
       requestedModel === "pro" && ALLOW_GEMINI_PRO_TEXTURES ? "pro" : "flash";
     const requestBody = body.requestBody;
 
@@ -209,53 +221,81 @@ export async function POST(request: NextRequest) {
     }
 
     const normalizedRequestBody = normalizeGeminiRequestBody(requestBody);
+    const modelIds = resolveGeminiImageModelIds(model);
 
-    const abortController = new AbortController();
-    const timeout = setTimeout(() => abortController.abort(), GEMINI_UPSTREAM_TIMEOUT_MS);
+    let lastErrorResponse: Response | null = null;
+    let lastErrorData: Record<string, unknown> = {};
+    let lastMessage = "";
+    let lastModelId = modelIds[0];
 
-    const upstream = await fetch(`${getGeminiApiUrl(model)}?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(normalizedRequestBody),
-      cache: "no-store",
-      signal: abortController.signal,
-    }).finally(() => clearTimeout(timeout));
+    for (const modelId of modelIds) {
+      lastModelId = modelId;
 
-    if (!upstream.ok) {
-      const errorData = await parseErrorResponse(upstream);
-      const message = extractErrorMessage(errorData, upstream.status);
+      const abortController = new AbortController();
+      const timeout = setTimeout(() => abortController.abort(), GEMINI_UPSTREAM_TIMEOUT_MS);
+
+      const upstream = await fetch(getGeminiApiUrl(modelId), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify(normalizedRequestBody),
+        cache: "no-store",
+        signal: abortController.signal,
+      }).finally(() => clearTimeout(timeout));
+
+      if (upstream.ok) {
+        const data = await upstream.json();
+        return NextResponse.json(data, { status: 200 });
+      }
+
+      lastErrorResponse = upstream;
+      lastErrorData = await parseErrorResponse(upstream);
+      lastMessage = extractErrorMessage(lastErrorData, upstream.status);
 
       console.error("Gemini upstream error", {
         status: upstream.status,
-        model: GEMINI_MODELS[model],
-        message,
-        errorData,
+        model: modelId,
+        message: lastMessage,
+        errorData: lastErrorData,
       });
 
+      if (!shouldRetryWithFallbackModel(upstream.status, lastMessage)) {
+        break;
+      }
+    }
+
+    if (lastErrorResponse) {
       return NextResponse.json(
         {
           error: {
-            message,
-            status: upstream.status,
+            message: lastMessage,
+            status: lastErrorResponse.status,
             code:
-              typeof (errorData.error as Record<string, unknown> | undefined)?.status === "string"
-                ? ((errorData.error as Record<string, unknown>).status as string)
+              typeof (lastErrorData.error as Record<string, unknown> | undefined)?.status ===
+              "string"
+                ? ((lastErrorData.error as Record<string, unknown>).status as string)
                 : undefined,
           },
           fallbackRecommended: shouldSuggestFallback(
-            upstream.status,
-            message,
+            lastErrorResponse.status,
+            lastMessage,
             model,
           ),
         },
-        { status: upstream.status },
+        { status: lastErrorResponse.status },
       );
     }
 
-    const data = await upstream.json();
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(
+      {
+        error: {
+          message: `Gemini request failed for model ${lastModelId}.`,
+        },
+      },
+      { status: 502 },
+    );
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json(

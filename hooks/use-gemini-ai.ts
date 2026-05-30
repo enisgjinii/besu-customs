@@ -3,23 +3,26 @@
 import { useState, useCallback, useRef } from "react";
 import * as THREE from "three";
 import { generateNormalMap, generateRoughnessMap, loadImage } from "@/lib/texture-utils";
+import {
+  GEMINI_IMAGE_MODELS,
+  getGeminiImageModelLabel,
+  type GeminiImageModelKey,
+} from "@/lib/gemini-models";
 
 /**
- * 
- * s
  * Advanced Gemini AI Texture Generation Hook
  *
  * Uses Google's Nano Banana image generation models:
- * - gemini-3.1-flash-image-preview: Latest high-efficiency image model with improved quality and 4K support
- * - gemini-3-pro-image-preview: Nano Banana Pro with "Thinking" for professional 4K textures
- * 
+ * - gemini-3.1-flash-image: GA high-efficiency image model (4K support)
+ * - gemini-3-pro-image: GA Nano Banana Pro with advanced reasoning, up to 4K
+ *
  * Features:
  * - Native image generation with UV-aware mapping
  * - Up to 4K resolution output (Pro model)
  * - Aspect ratio control
  * - Professional texture prompting
  * - Advanced reasoning for complex compositions
- * 
+ *
  * API Reference: https://ai.google.dev/gemini-api/docs/image-generation
  */
 
@@ -76,12 +79,10 @@ export interface UseGeminiAIReturn {
 }
 
 // Latest Gemini models for image generation (Nano Banana family)
-const GEMINI_MODELS = {
-  // Nano Banana 2 - Latest all-around image model optimized for speed and high-volume use cases
-  flash: "gemini-3.1-flash-image-preview",
-  // Nano Banana Pro - Gemini 3 Pro Image Preview with advanced reasoning, up to 4K
-  pro: "gemini-3-pro-image-preview",
-} as const;
+const GEMINI_MODELS: Record<GeminiImageModelKey, string> = {
+  flash: GEMINI_IMAGE_MODELS.flash.primary,
+  pro: GEMINI_IMAGE_MODELS.pro.primary,
+};
 
 // Professional texture generation prompt templates
 const TEXTURE_STYLE_PROMPTS: Record<string, string> = {
@@ -398,7 +399,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
       const modelName = GEMINI_MODELS[selectedModel];
       setProgress(
-        `Generating with ${selectedModel === "pro" ? "Gemini 3 Pro" : "Gemini 3.1 Flash Image"} (${normalizedResolution})...`,
+        `Generating with ${getGeminiImageModelLabel(selectedModel)} (${normalizedResolution})...`,
       );
 
       console.log(" Gemini Advanced Request:", {
