@@ -4,9 +4,7 @@ import { useConfiguratorStore } from "@/lib/store";
 import {
   Copy,
   FlipHorizontal,
-  RotateCw,
   Trash2,
-  ZoomIn,
   Minus,
   Plus,
   ArrowUp,
@@ -23,12 +21,15 @@ interface LayerControlsProps {
   layerId: string;
   compact?: boolean;
   sliderOnly?: boolean;
+  /** Size + rotation only — no card chrome, arrange, or delete row */
+  minimal?: boolean;
 }
 
 export function LayerControls({
   layerId,
   compact = false,
   sliderOnly = false,
+  minimal = false,
 }: LayerControlsProps) {
   const { isMobile } = useBreakpoint();
   const layer = useConfiguratorStore((s) =>
@@ -44,14 +45,13 @@ export function LayerControls({
   const scale = layer.scale?.[0] || 1;
   const rotation = layer.rotation?.[2] || 0;
   const flipX = layer.flipX || false;
-  const iconBtnClass = compact
-    ? "h-7 w-7 touch-manipulation"
+  const iconBtnClass = compact || minimal
+    ? "h-7 w-7 shrink-0 touch-manipulation"
     : "h-8 w-8 touch-manipulation";
   const arrangeBtnClass = compact
     ? "h-7 w-full touch-manipulation"
     : "h-8 w-full touch-manipulation";
 
-  // Quick size adjustment functions
   const increaseSize = () => {
     const newScale = Math.min(3, scale + 0.1);
     updateTextureLayer(layerId, { scale: [newScale, newScale, newScale] });
@@ -61,6 +61,85 @@ export function LayerControls({
     const newScale = Math.max(0.05, scale - 0.1);
     updateTextureLayer(layerId, { scale: [newScale, newScale, newScale] });
   };
+
+  const showSizeButtons = !sliderOnly || minimal;
+
+  const sizeRow = (
+    <div className="flex items-center gap-2">
+      <span className="w-12 shrink-0 text-[10px] font-medium text-muted-foreground">
+        Size
+      </span>
+      {showSizeButtons && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={decreaseSize}
+          className={iconBtnClass}
+          aria-label="Decrease size"
+        >
+          <Minus className="w-3.5 h-3.5" />
+        </Button>
+      )}
+      <Slider
+        value={[scale * 100]}
+        min={5}
+        max={300}
+        step={5}
+        onValueChange={([val]) =>
+          updateTextureLayer(layerId, {
+            scale: [val / 100, val / 100, val / 100],
+          })
+        }
+        className="flex-1 cursor-pointer"
+      />
+      {showSizeButtons && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={increaseSize}
+          className={iconBtnClass}
+          aria-label="Increase size"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </Button>
+      )}
+      <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+        {Math.round(scale * 100)}%
+      </span>
+    </div>
+  );
+
+  const rotationRow = (
+    <div className="flex items-center gap-2">
+      <span className="w-12 shrink-0 text-[10px] font-medium text-muted-foreground">
+        Rotate
+      </span>
+      <Slider
+        value={[rotation * (180 / Math.PI)]}
+        min={0}
+        max={360}
+        step={5}
+        onValueChange={([val]) =>
+          updateTextureLayer(layerId, {
+            rotation: [0, 0, val * (Math.PI / 180)],
+          })
+        }
+        className="flex-1"
+      />
+      <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+        {Math.round(rotation * (180 / Math.PI))}°
+      </span>
+    </div>
+  );
+
+  if (minimal) {
+    return (
+      <div className="space-y-3">
+        {sizeRow}
+        {rotationRow}
+      </div>
+    );
+  }
 
   const handleDuplicate = () => {
     addTextureLayer({
@@ -84,65 +163,8 @@ export function LayerControls({
         compact ? "p-2 space-y-2" : "p-2.5 space-y-2.5",
       )}
     >
-      {/* Size controls with +/- buttons for easier mobile adjustment */}
-      <div className="flex items-center gap-2">
-        <ZoomIn className="w-3 h-3 text-muted-foreground shrink-0" />
-        {!sliderOnly && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={decreaseSize}
-            className={iconBtnClass}
-          >
-            <Minus className="w-4 h-4" />
-          </Button>
-        )}
-        <Slider
-          value={[scale * 100]}
-          min={5}
-          max={300}
-          step={5}
-          onValueChange={([val]) =>
-            updateTextureLayer(layerId, {
-              scale: [val / 100, val / 100, val / 100],
-            })
-          }
-          className="flex-1 cursor-pointer"
-        />
-        {!sliderOnly && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={increaseSize}
-            className={iconBtnClass}
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        )}
-        <span className="text-[10px] text-muted-foreground w-10 text-right">
-          {Math.round(scale * 100)}%
-        </span>
-      </div>
-
-      {/* Rotation */}
-      <div className="flex items-center gap-2">
-        <RotateCw className="w-3 h-3 text-muted-foreground shrink-0" />
-        <Slider
-          value={[rotation * (180 / Math.PI)]}
-          min={0}
-          max={360}
-          step={5}
-          onValueChange={([val]) =>
-            updateTextureLayer(layerId, {
-              rotation: [0, 0, val * (Math.PI / 180)],
-            })
-          }
-          className="flex-1"
-        />
-        <span className="text-[10px] text-muted-foreground w-8 text-right">
-          {Math.round(rotation * (180 / Math.PI))}°
-        </span>
-      </div>
+      {sizeRow}
+      {rotationRow}
 
       {/* Arrange Controls */}
       <div className="grid grid-cols-4 gap-1">

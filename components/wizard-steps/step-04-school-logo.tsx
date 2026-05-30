@@ -3,7 +3,6 @@
 import { useConfiguratorStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,8 +16,9 @@ import {
   ImagePlus,
   Crosshair,
   Trash2,
-  Layers,
   Sparkles,
+  Move,
+  FlipHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -47,12 +47,11 @@ type LogoTab = "browse" | "adjust";
 const PLACEMENT_OPTIONS: {
   id: LogoPlacementArea;
   label: string;
-  hint: string;
 }[] = [
-  { id: "centerFront", label: "Center chest", hint: "Main front logo" },
-  { id: "leftChest", label: "Left chest", hint: "Classic school spot" },
-  { id: "rightChest", label: "Right chest", hint: "Opposite side" },
-  { id: "back", label: "Back", hint: "Upper back area" },
+  { id: "centerFront", label: "Center" },
+  { id: "leftChest", label: "Left chest" },
+  { id: "rightChest", label: "Right chest" },
+  { id: "back", label: "Back" },
 ];
 
 function GarmentPlacementPreview({
@@ -375,43 +374,56 @@ export function Step04SchoolLogo() {
         </div>
       ) : (
         <>
-          {/* Preview strip */}
+          {/* Preview strip — browse shows logo + guide; adjust shows guide only */}
           <div className="overflow-hidden rounded-xl border bg-muted/15">
-            <div className="grid grid-cols-2 gap-px bg-border">
-              <div className="bg-background p-3">
-                <p className="mb-2 text-[10px] font-medium text-muted-foreground">
-                  Selected logo
-                </p>
-                <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-muted/20 p-3">
-                  {selectedLayer?.imageUrl ? (
-                    <img
-                      src={selectedLayer.imageUrl}
-                      alt={selectedLayer.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 text-center text-[10px] text-muted-foreground">
-                      <ImagePlus className="h-5 w-5 opacity-40" />
-                      <span>No logo yet</span>
-                    </div>
+            {activeTab === "browse" ? (
+              <div className="grid grid-cols-2 gap-px bg-border">
+                <div className="bg-background p-3">
+                  <p className="mb-2 text-[10px] font-medium text-muted-foreground">
+                    Selected logo
+                  </p>
+                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-muted/20 p-3">
+                    {selectedLayer?.imageUrl ? (
+                      <img
+                        src={selectedLayer.imageUrl}
+                        alt={selectedLayer.name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-center text-[10px] text-muted-foreground">
+                        <ImagePlus className="h-5 w-5 opacity-40" />
+                        <span>No logo yet</span>
+                      </div>
+                    )}
+                  </div>
+                  {selectedLayer && (
+                    <p className="mt-2 truncate text-center text-[10px] font-medium">
+                      {selectedLayer.name}
+                    </p>
                   )}
                 </div>
-                {selectedLayer && (
-                  <p className="mt-2 truncate text-center text-[10px] font-medium">
-                    {selectedLayer.name}
+                <div className="bg-background p-3">
+                  <p className="mb-2 text-[10px] font-medium text-muted-foreground">
+                    Placement
                   </p>
-                )}
+                  <GarmentPlacementPreview
+                    placement={activePlacement}
+                    hasLogo={!!selectedLayer}
+                  />
+                </div>
               </div>
-              <div className="bg-background p-3">
-                <p className="mb-2 text-[10px] font-medium text-muted-foreground">
-                  Placement
-                </p>
+            ) : (
+              <div className="flex items-center gap-3 bg-background p-3">
                 <GarmentPlacementPreview
                   placement={activePlacement}
                   hasLogo={!!selectedLayer}
                 />
+                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                  Use placement chips and nudge arrows below. Drag sliders for
+                  size and rotation.
+                </p>
               </div>
-            </div>
+            )}
           </div>
 
           <Tabs
@@ -538,181 +550,202 @@ export function Step04SchoolLogo() {
               )}
             </TabsContent>
 
-            <TabsContent value="adjust" className="mt-0 space-y-4">
+            <TabsContent value="adjust" className="mt-0 space-y-3">
               {logos.length === 0 ? (
                 <WizardEmptyState
                   title="No logos yet"
                   description="Choose or upload a logo first, then fine-tune placement here."
                 />
-              ) : (
-                <>
-                  {/* Layer picker */}
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Your logos</Label>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
+              ) : selectedLayer ? (
+                <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                  {/* Selected logo header — name shown once */}
+                  <div className="flex items-center gap-3 border-b bg-muted/20 px-3 py-2.5">
+                    <div className="flex shrink-0 gap-1.5 overflow-x-auto pb-0.5">
                       {logos.map((layer) => (
                         <button
                           key={layer.id}
                           type="button"
                           onClick={() => setSelectedTextureLayerId(layer.id)}
+                          title={layer.name}
                           className={cn(
-                            "flex shrink-0 items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors",
-                            selectedLayer?.id === layer.id
-                              ? "border-primary bg-primary/5"
-                              : "border-border bg-background hover:border-primary/30",
+                            "relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border bg-white p-1 transition-all",
+                            selectedLayer.id === layer.id
+                              ? "border-primary ring-2 ring-primary/25"
+                              : "border-border/60 opacity-70 hover:opacity-100",
                           )}
                         >
                           {layer.imageUrl && (
-                            <div className="h-8 w-8 overflow-hidden rounded-md border bg-white p-0.5">
-                              <img
-                                src={layer.imageUrl}
-                                alt=""
-                                className="h-full w-full object-contain"
-                              />
-                            </div>
+                            <img
+                              src={layer.imageUrl}
+                              alt=""
+                              className="h-full w-full object-contain"
+                            />
                           )}
-                          <span className="max-w-[88px] truncate text-[10px] font-medium">
-                            {layer.name}
-                          </span>
                         </button>
                       ))}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold leading-tight">
+                        {selectedLayer.name}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {logos.length} logo{logos.length === 1 ? "" : "s"} on
+                        design
+                      </p>
+                    </div>
                   </div>
 
-                  {selectedLayer && (
-                    <>
-                      {/* Quick placement */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Quick placement</Label>
-                        <p className="text-[10px] text-muted-foreground">
-                          Snap the selected logo to a common spot on the garment.
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {PLACEMENT_OPTIONS.map((option) => (
-                            <button
-                              key={option.id}
-                              type="button"
-                              onClick={() =>
-                                applyPlacement(selectedLayer.id, option.id)
-                              }
-                              className={cn(
-                                "rounded-xl border px-3 py-2.5 text-left transition-colors",
-                                activePlacement === option.id
-                                  ? "border-primary bg-primary/10"
-                                  : "border-border bg-background hover:border-primary/30 hover:bg-muted/30",
-                              )}
-                            >
-                              <p className="text-[11px] font-medium">{option.label}</p>
-                              <p className="mt-0.5 text-[9px] text-muted-foreground">
-                                {option.hint}
-                              </p>
-                            </button>
-                          ))}
-                        </div>
+                  <div className="space-y-4 p-3">
+                    {/* Placement pills */}
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Where on garment
+                      </p>
+                      <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                        {PLACEMENT_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() =>
+                              applyPlacement(selectedLayer.id, option.id)
+                            }
+                            className={cn(
+                              "shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors",
+                              activePlacement === option.id
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-background hover:border-primary/40",
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
                       </div>
+                    </div>
 
-                      {/* Fine movement */}
-                      <div className="rounded-xl border bg-muted/15 p-3">
-                        <p className="mb-2 text-xs font-medium">Fine-tune position</p>
-                        <div className="mx-auto grid max-w-[180px] grid-cols-3 gap-1">
-                          <div />
+                    {/* Compact nudge row */}
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Nudge position
+                      </p>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() =>
+                            moveLogo(selectedLayer.id, -0.03, 0)
+                          }
+                          aria-label="Move left"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <div className="flex flex-col gap-1">
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-10 w-full"
-                            onClick={() => moveLogo(selectedLayer.id, 0, -0.03)}
+                            className="h-9 w-9"
+                            onClick={() =>
+                              moveLogo(selectedLayer.id, 0, -0.03)
+                            }
                             aria-label="Move up"
                           >
                             <ArrowUp className="h-4 w-4" />
                           </Button>
-                          <div />
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-10 w-full"
-                            onClick={() => moveLogo(selectedLayer.id, -0.03, 0)}
-                            aria-label="Move left"
-                          >
-                            <ArrowLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="h-10 px-1 text-[9px]"
+                            className="h-9 w-9"
                             onClick={() =>
-                              applyPlacement(selectedLayer.id, "centerFront")
+                              moveLogo(selectedLayer.id, 0, 0.03)
                             }
-                          >
-                            Center
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-full"
-                            onClick={() => moveLogo(selectedLayer.id, 0.03, 0)}
-                            aria-label="Move right"
-                          >
-                            <ArrowRight className="h-4 w-4" />
-                          </Button>
-                          <div />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-full"
-                            onClick={() => moveLogo(selectedLayer.id, 0, 0.03)}
                             aria-label="Move down"
                           >
                             <ArrowDown className="h-4 w-4" />
                           </Button>
-                          <div />
                         </div>
-                      </div>
-
-                      {/* Size / rotation */}
-                      <div className="rounded-xl border bg-card p-3">
-                        <div className="mb-2 flex items-center gap-1.5 text-xs font-medium">
-                          <Layers className="h-3.5 w-3.5" />
-                          Size &amp; rotation
-                        </div>
-                        <LayerControls layerId={selectedLayer.id} compact sliderOnly />
-                      </div>
-
-                      {/* Extra actions */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedLayer.imageUrl && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="h-10 text-xs"
-                            onClick={() =>
-                              startTapToPlace(
-                                selectedLayer.imageUrl!,
-                                selectedLayer.name,
-                              )
-                            }
-                          >
-                            <Crosshair className="mr-1.5 h-3.5 w-3.5" />
-                            Tap to place
-                          </Button>
-                        )}
                         <Button
                           type="button"
                           variant="outline"
-                          className="h-10 text-xs text-destructive hover:text-destructive"
-                          onClick={() => handleRemoveLogo(selectedLayer.id)}
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() =>
+                            moveLogo(selectedLayer.id, 0.03, 0)
+                          }
+                          aria-label="Move right"
                         >
-                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                          Remove logo
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="ml-2 h-9 gap-1 px-2.5 text-[10px]"
+                          onClick={() =>
+                            applyPlacement(selectedLayer.id, "centerFront")
+                          }
+                        >
+                          <Move className="h-3.5 w-3.5" />
+                          Re-center
                         </Button>
                       </div>
-                    </>
-                  )}
-                </>
-              )}
+                    </div>
+
+                    {/* Size & rotation */}
+                    <LayerControls
+                      layerId={selectedLayer.id}
+                      minimal
+                    />
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 border-t pt-3">
+                      {selectedLayer.imageUrl && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 flex-1 text-xs"
+                          onClick={() =>
+                            startTapToPlace(
+                              selectedLayer.imageUrl!,
+                              selectedLayer.name,
+                            )
+                          }
+                        >
+                          <Crosshair className="mr-1.5 h-3.5 w-3.5" />
+                          Tap on model
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-3"
+                        onClick={() =>
+                          updateTextureLayer(selectedLayer.id, {
+                            flipX: !selectedLayer.flipX,
+                          })
+                        }
+                        aria-label="Flip horizontal"
+                      >
+                        <FlipHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 flex-1 text-xs text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveLogo(selectedLayer.id)}
+                      >
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </TabsContent>
           </Tabs>
         </>
