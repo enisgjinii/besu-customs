@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import * as THREE from "three";
-import { generateNormalMap, generateRoughnessMap, loadImage } from "@/lib/texture-utils";
+import { generateNormalMap, generateRoughnessMap, loadImage, resizeImageForApiReference } from "@/lib/texture-utils";
 import {
   GEMINI_IMAGE_MODELS,
   getGeminiImageModelLabel,
@@ -50,6 +50,8 @@ export interface GeminiTextureOptions {
     applyToBack?: boolean;
     useBackTexture?: boolean;
   };
+  /** @internal Used to prevent infinite timeout retries. */
+  _timeoutRetry?: boolean;
 }
 
 export interface GeminiGenerationResult {
@@ -322,9 +324,15 @@ export function useGeminiAI(): UseGeminiAIReturn {
       aspectRatio = "1:1",
       textureStyle = "realistic",
       productType,
+      _timeoutRetry = false,
     } = options;
 
     try {
+      setProgress("Preparing UV reference...");
+      const preparedUvMap = await resizeImageForApiReference(
+        uvMap,
+        _timeoutRetry ? 768 : 1024,
+      );
       // Build professional texture generation prompt
       const styleModifier = TEXTURE_STYLE_PROMPTS[textureStyle] || TEXTURE_STYLE_PROMPTS.realistic;
       
@@ -392,7 +400,7 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
 
       const requestBody = buildGeminiRequestBody(
         enhancedPrompt,
-        uvMap,
+        preparedUvMap,
         aspectRatio,
         normalizedResolution,
       );
@@ -479,6 +487,14 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           });
         }
 
+        if (isInvocationTimeout && selectedModel === "flash" && !_timeoutRetry) {
+          setProgress("Generation timed out. Retrying once with a lighter request...");
+          return await generateTexture({
+            ...options,
+            _timeoutRetry: true,
+          });
+        }
+
         const normalizedError = errorMessage.toLowerCase();
         if (normalizedError.includes("quota") || response.status === 429) {
           throw new Error("API quota exceeded. Please try again later or switch to Gemini Flash model (lower cost).");
@@ -493,7 +509,9 @@ OUTPUT: First think carefully about the UV layout analysis (Step 1), then genera
           throw new Error("Authentication failed. Please check your API key in the .env file.");
         }
         if (isInvocationTimeout) {
-          throw new Error("Generation timed out on the deployment. Try again or use a faster model / lower resolution.");
+          throw new Error(
+            "Generation timed out. The AI is taking longer than usual — please try again in a moment.",
+          );
         }
         throw new Error(errorMessage || `Gemini API error: ${response.status} ${response.statusText}`);
       }

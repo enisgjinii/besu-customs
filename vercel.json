@@ -2,7 +2,7 @@
   "regions": ["iad1"],
   "functions": {
     "app/api/gemini/**/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "app/api/**/*.ts": {
       "maxDuration": 10,

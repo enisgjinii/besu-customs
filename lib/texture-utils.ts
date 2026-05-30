@@ -158,6 +158,43 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
     });
 }
 
+/**
+ * Downscales a reference image before sending it to an image-generation API.
+ * UV layout guides do not need full resolution; smaller payloads reduce latency.
+ */
+export async function resizeImageForApiReference(
+    url: string,
+    maxDimension = 1024,
+): Promise<string> {
+    const image = await loadImage(url);
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    const largestSide = Math.max(sourceWidth, sourceHeight);
+
+    if (largestSide <= maxDimension) {
+        return url;
+    }
+
+    const scale = maxDimension / largestSide;
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+        return url;
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    return canvas.toDataURL("image/jpeg", 0.88);
+}
+
 export async function trimImageContent(
     url: string,
     options?: {

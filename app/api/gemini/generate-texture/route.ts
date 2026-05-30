@@ -4,9 +4,14 @@ import {
   resolveGeminiImageModelIds,
 } from "@/lib/gemini-models";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
-const GEMINI_UPSTREAM_TIMEOUT_MS = 45_000;
+/**
+ * Upstream wait before aborting. Default fits Vercel Hobby (60s function cap).
+ * On Pro, set GEMINI_UPSTREAM_TIMEOUT_MS=290000 in env for longer generations.
+ */
+const GEMINI_UPSTREAM_TIMEOUT_MS =
+  Number(process.env.GEMINI_UPSTREAM_TIMEOUT_MS) || 58_000;
 
 const ALLOW_GEMINI_PRO_TEXTURES = process.env.ALLOW_GEMINI_PRO_TEXTURES === "true";
 
@@ -22,6 +27,55 @@ function shouldRetryWithFallbackModel(status: number, message: string): boolean 
     normalized.includes("not supported for generatecontent") ||
     normalized.includes("is not found for api version")
   );
+}
+
+async function callGeminiUpstream(
+  modelId: string,
+  apiKey: string,
+  requestBody: Record<string, unknown>,
+): Promise<
+  | { kind: "success"; data: unknown }
+  | { kind: "error"; response: Response; errorData: Record<string, unknown>; message: string }
+  | { kind: "timeout" }
+> {
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), GEMINI_UPSTREAM_TIMEOUT_MS);
+
+  try {
+    const upstream = await fetch(getGeminiApiUrl(modelId), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify(requestBody),
+      cache: "no-store",
+      signal: abortController.signal,
+    });
+
+    if (upstream.ok) {
+      const data = await upstream.json();
+      return { kind: "success", data };
+    }
+
+    const errorData = await parseErrorResponse(upstream);
+    const message = extractErrorMessage(errorData, upstream.status);
+
+    return {
+      kind: "error",
+      response: upstream,
+      errorData,
+      message,
+    };
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return { kind: "timeout" };
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -231,37 +285,33 @@ export async function POST(request: NextRequest) {
     for (const modelId of modelIds) {
       lastModelId = modelId;
 
-      const abortController = new AbortController();
-      const timeout = setTimeout(() => abortController.abort(), GEMINI_UPSTREAM_TIMEOUT_MS);
+      const result = await callGeminiUpstream(modelId, apiKey, normalizedRequestBody);
 
-      const upstream = await fetch(getGeminiApiUrl(modelId), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify(normalizedRequestBody),
-        cache: "no-store",
-        signal: abortController.signal,
-      }).finally(() => clearTimeout(timeout));
-
-      if (upstream.ok) {
-        const data = await upstream.json();
-        return NextResponse.json(data, { status: 200 });
+      if (result.kind === "success") {
+        return NextResponse.json(result.data, { status: 200 });
       }
 
-      lastErrorResponse = upstream;
-      lastErrorData = await parseErrorResponse(upstream);
-      lastMessage = extractErrorMessage(lastErrorData, upstream.status);
+      if (result.kind === "timeout") {
+        lastMessage =
+          "Gemini request timed out before returning an image. Please retry with a simpler prompt.";
+        lastErrorResponse = null;
+
+        console.error("Gemini upstream timeout", { model: modelId });
+        break;
+      }
+
+      lastErrorResponse = result.response;
+      lastErrorData = result.errorData;
+      lastMessage = result.message;
 
       console.error("Gemini upstream error", {
-        status: upstream.status,
+        status: result.response.status,
         model: modelId,
         message: lastMessage,
         errorData: lastErrorData,
       });
 
-      if (!shouldRetryWithFallbackModel(upstream.status, lastMessage)) {
+      if (!shouldRetryWithFallbackModel(result.response.status, lastMessage)) {
         break;
       }
     }
@@ -285,6 +335,20 @@ export async function POST(request: NextRequest) {
           ),
         },
         { status: lastErrorResponse.status },
+      );
+    }
+
+    if (lastMessage) {
+      return NextResponse.json(
+        {
+          error: {
+            message: lastMessage,
+            status: 504,
+            code: "UPSTREAM_TIMEOUT",
+          },
+          fallbackRecommended: true,
+        },
+        { status: 504 },
       );
     }
 
