@@ -321,15 +321,18 @@ function buildOrderEmailHtml({
                                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 26px; border: 1px solid #fed7aa; border-radius: 12px; background: #fff7ed;">
                                     <tr><td style="padding: 16px 18px; font-size: 14px; line-height: 22px; color: #7c2d12;">${escapeHtml(orderDetails.notes)}</td></tr>
                                 </table>` : ""}
-                            ${sectionHeader("Attachments")}
+                            ${sectionHeader("Production Attachments")}
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                    ${hasPdf ? detailCell("PDF spec", pdfFilename || "Attached") : ""}
-                                    ${imageCount ? detailCell("Design views", `${imageCount} image${imageCount === 1 ? "" : "s"}`) : ""}
+                                    ${imageCount ? detailCell("3D views", `${imageCount} JPG`) : ""}
+                                    ${uvMapImage ? detailCell("UV / tech pack", "PNG") : ""}
                                 </tr>
                                 <tr>
-                                    ${uvMapImage ? detailCell("Tech pack", "Attached") : ""}
-                                    ${hasSvg ? detailCell("SVG pattern", "Attached") : ""}
+                                    ${hasSvg ? detailCell("Production SVG", "Vector pattern") : ""}
+                                    ${hasPdf ? detailCell("Order specs", pdfFilename || "PDF") : ""}
+                                </tr>
+                                <tr>
+                                    ${detailCell("Files sent", "Views, UV map, wireframe, texture, tech pack, SVG, PDF")}
                                 </tr>
                             </table>
                         </td>
@@ -455,15 +458,24 @@ export async function POST(req: NextRequest) {
                     ...(contentType ? { contentType } : {}),
                     cid: "view-right",
                 });
-            } else if (filename.includes("tech-pack") || filename.includes("uv-map") || filename.includes("uvmap")) {
-                uvMapImage = inlineImageContent;
-                attachments.push({
-                    filename: "tech-pack.png",
-                    content,
-                    ...(encoding ? { encoding } : {}),
-                    ...(contentType ? { contentType } : {}),
-                    cid: "uv-map",
-                });
+            } else if (
+                filename.includes("tech-pack") ||
+                filename.includes("uv-map") ||
+                filename.includes("uvmap") ||
+                filename.includes("uv-texture") ||
+                filename.includes("texture-only") ||
+                filename.includes("production-pattern")
+            ) {
+                if (!uvMapImage) {
+                    uvMapImage = inlineImageContent;
+                    attachments.push({
+                        filename: "tech-pack.png",
+                        content,
+                        ...(encoding ? { encoding } : {}),
+                        ...(contentType ? { contentType } : {}),
+                        cid: "uv-map",
+                    });
+                }
             } else if (filename.endsWith(".pdf")) {
                 hasPdf = true;
                 pdfFilename = file.filename;
@@ -528,7 +540,7 @@ export async function POST(req: NextRequest) {
             subject: `Order Confirmed: ${designName || "Custom Design"} - ${orderId}`,
             text:
                 message ||
-                `Here is the order form and design assets for ${designName || "your custom order"}.`,
+                `Here is the order form and design assets for ${designName || "your custom order"}. Attachments include 3D views, UV map, tech pack, production SVG, and order specs PDF.`,
             html: htmlContent,
             attachments,
         });

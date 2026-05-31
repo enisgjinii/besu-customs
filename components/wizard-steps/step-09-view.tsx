@@ -19,6 +19,10 @@ import { findNearestPantone } from "@/lib/pantone";
 import { RosterInput } from "@/components/roster-input";
 import { calculateTotalPrice, getProductPrice } from "@/lib/pricing";
 import {
+  compressDataUrlForEmail,
+  prepareProductionEmailFiles,
+} from "@/lib/prepare-production-email-files";
+import {
   isEmbeddedInShopify,
   resolveShopifyVariantId,
 } from "@/lib/shopify-variants";
@@ -539,16 +543,10 @@ export function Step09View(): React.JSX.Element {
       const contactName = `${firstName} ${lastName}`;
 
       const files: { filename: string; content: string }[] = [];
+      let productionPatternSource: string | null = null;
+
       const addProductionSvgFile = (imageDataUrl: string) => {
-        files.push({
-          filename: "Design-Production-Pattern.svg",
-          content: generateProductionSvgDataUrl({
-            imageDataUrl,
-            teamName: roster.teamName || "Custom Team",
-            contactName,
-            generatedAt: new Date().toISOString(),
-          }),
-        });
+        productionPatternSource = imageDataUrl;
       };
 
       // Add regular 3D views
@@ -560,11 +558,26 @@ export function Step09View(): React.JSX.Element {
       });
 
       // Capture Tech Pack (Texture + UV Wireframe)
-      // We start with the texture canvas
       const uvMapUrl = await generateUvMapDataUrl();
-
-      // Retrieve the stored UV Wireframe (black lines on white)
       const wireframeUrl = useConfiguratorStore.getState().completeUVMap;
+
+      if (uvMapUrl) {
+        files.push({
+          filename: "Design-UV-Map.png",
+          content: uvMapUrl,
+        });
+        files.push({
+          filename: "Design-UV-Texture.png",
+          content: uvMapUrl,
+        });
+      }
+
+      if (wireframeUrl) {
+        files.push({
+          filename: "Design-UV-Wireframe.png",
+          content: wireframeUrl,
+        });
+      }
 
       if (uvMapUrl && wireframeUrl) {
         try {
@@ -814,11 +827,25 @@ export function Step09View(): React.JSX.Element {
         console.error("PDF Generation failed", pdfError);
       }
 
+      if (productionPatternSource) {
+        const svgSource = await compressDataUrlForEmail(
+          productionPatternSource,
+          1200,
+          0.86,
+        );
+        files.push({
+          filename: "Design-Production-Pattern.svg",
+          content: generateProductionSvgDataUrl({
+            imageDataUrl: svgSource,
+            teamName: roster.teamName || "Custom Team",
+            contactName,
+            generatedAt: new Date().toISOString(),
+          }),
+        });
+      }
 
-      const emailFiles = files.filter((file) => /^Design-(front|back|left|right)\.jpg$/i.test(file.filename));
+      const emailFiles = await prepareProductionEmailFiles(files);
 
-      // Send a compact payload to stay below Vercel function body limits.
-      // Full production assets should be generated from the saved order metadata or uploaded directly to object storage.
       const response = await fetch("/api/send-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
