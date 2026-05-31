@@ -18,6 +18,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { findNearestPantone } from "@/lib/pantone";
 import { RosterInput } from "@/components/roster-input";
 import { calculateTotalPrice, getProductPrice } from "@/lib/pricing";
+import {
+  isEmbeddedInShopify,
+  resolveShopifyVariantId,
+} from "@/lib/shopify-variants";
 import jsPDF from "jspdf";
 
 const toHandleCandidate = (value: string | null | undefined): string | undefined => {
@@ -170,6 +174,15 @@ export function Step09View(): React.JSX.Element {
       if (eventType === "besu:shopify-ready") {
         setShopifyReady(true);
       }
+
+      if (eventType === "besu:checkout-error") {
+        const message =
+          typeof (data as { payload?: { message?: string } }).payload?.message ===
+          "string"
+            ? (data as { payload: { message: string } }).payload.message
+            : "Unable to open Shopify checkout.";
+        toast.error(message);
+      }
     };
 
     window.addEventListener("message", onParentMessage);
@@ -194,15 +207,34 @@ export function Step09View(): React.JSX.Element {
       normalizeTitle(selectedProduct?.title) ||
       "Custom Product";
     const resolvedProductHandle =
-      toConfiguratorShopifyHandle(selectedProductId) ||
-      "custom-configurator-order";
-    const resolvedVariantId: number | undefined = undefined;
+      selectedProduct?.shopifyProductHandle?.startsWith("configurator-")
+        ? selectedProduct.shopifyProductHandle
+        : toConfiguratorShopifyHandle(selectedProductId) ||
+          "custom-configurator-order";
     const selectedSize = normalizeShopifySize(
       roster.players[0]?.sizes?.top || roster.players[0]?.sizes?.shorts,
     );
+    const resolvedVariantId =
+      resolveShopifyVariantId(selectedProductId, selectedSize) ??
+      selectedProduct?.shopifyVariantId;
+
+    const lineProperties: Record<string, string> = {
+      Source: "Besu Configurator",
+      "Product ID": selectedProductId || "",
+      "Product Name": resolvedProductTitle,
+      Size: selectedSize,
+      "Printing Method": printingMethod,
+      Quantity: String(quantity),
+      "Team Name": roster.teamName || "",
+      Contact: `${firstName} ${lastName}`.trim(),
+      Email: email,
+      Phone: phoneNumber || "",
+      "Roster Count": String(roster.players.length),
+      "Delivery Notes": deliveryNotes || "",
+    };
 
     const lineItem = {
-      id: resolvedVariantId,
+      ...(resolvedVariantId ? { id: resolvedVariantId } : {}),
       variant_id: resolvedVariantId,
       shopifyVariantId: resolvedVariantId,
       quantity,
@@ -218,20 +250,9 @@ export function Step09View(): React.JSX.Element {
       productType: selectedProduct?.category,
       shopifyProductTitle: resolvedProductTitle,
       sku: selectedProduct?.shopifySku,
-      attributes: {
-        Source: "Besu Configurator",
-        "Product ID": selectedProductId || "",
-        "Product Name": resolvedProductTitle,
-        Size: selectedSize,
-        "Printing Method": printingMethod,
-        Quantity: String(quantity),
-        "Team Name": roster.teamName || "",
-        Contact: `${firstName} ${lastName}`.trim(),
-        Email: email,
-        Phone: phoneNumber || "",
-        "Roster Count": String(roster.players.length),
-        "Delivery Notes": deliveryNotes || "",
-      },
+      source: "Besu Configurator",
+      properties: lineProperties,
+      attributes: lineProperties,
     };
 
     const orderNote = [
@@ -252,15 +273,21 @@ export function Step09View(): React.JSX.Element {
         payload: {
           checkout: true,
           replaceCart: true,
+          source: "Besu Configurator",
           productId: selectedProductId,
           productTitle: resolvedProductTitle,
           productHandle: resolvedProductHandle,
+          variantId: resolvedVariantId,
+          variant_id: resolvedVariantId,
+          shopifyVariantId: resolvedVariantId,
           size: selectedSize,
           selectedOptions: {
             Size: selectedSize,
           },
           shopifyProductTitle: resolvedProductTitle,
+          items: [lineItem],
           line_items: [lineItem],
+          lineItems: [lineItem],
           note: orderNote,
           context: {
             selectedProductId,
@@ -485,6 +512,12 @@ export function Step09View(): React.JSX.Element {
     if (roster.players.length === 0) {
       toast.error("Please add at least one player to the roster");
       return;
+    }
+
+    const onShopifyStore = isEmbeddedInShopify();
+    if (onShopifyStore) {
+      toast.info("Adding your design to cart and opening checkout...");
+      triggerCheckout();
     }
 
     setIsSendingEmail(true);
@@ -860,8 +893,14 @@ export function Step09View(): React.JSX.Element {
           status: "success",
           message: successMessage,
         });
-        toast.success(successMessage);
-        triggerCheckout();
+        toast.success(
+          onShopifyStore
+            ? "Design saved. Complete payment in Shopify checkout."
+            : successMessage,
+        );
+        if (!onShopifyStore) {
+          triggerCheckout();
+        }
       } else {
         console.error("Email send failed:", data);
         const errorMessage = data.error || "Unknown error";
@@ -870,7 +909,9 @@ export function Step09View(): React.JSX.Element {
           message: `We could not submit the order: ${errorMessage}`,
         });
         toast.error(`Failed to submit order: ${errorMessage}`);
-        triggerCheckout();
+        if (!onShopifyStore) {
+          triggerCheckout();
+        }
       }
 
     } catch (e) {
@@ -884,7 +925,9 @@ export function Step09View(): React.JSX.Element {
         message: `Order submission failed before confirmation: ${message}`,
       });
       toast.error("Order submission failed. Please try again.");
-      triggerCheckout();
+      if (!onShopifyStore) {
+        triggerCheckout();
+      }
     } finally {
       setIsSendingEmail(false);
     }
