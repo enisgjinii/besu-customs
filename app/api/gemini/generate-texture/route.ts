@@ -6,14 +6,8 @@ import {
 
 export const maxDuration = 300;
 
-/**
- * Upstream wait before aborting. Default fits Vercel Hobby (60s function cap).
- * On Pro, set GEMINI_UPSTREAM_TIMEOUT_MS=290000 in env for longer generations.
- */
 const GEMINI_UPSTREAM_TIMEOUT_MS =
-  Number(process.env.GEMINI_UPSTREAM_TIMEOUT_MS) || 58_000;
-
-const ALLOW_GEMINI_PRO_TEXTURES = process.env.ALLOW_GEMINI_PRO_TEXTURES === "true";
+  Number(process.env.GEMINI_UPSTREAM_TIMEOUT_MS) || 290_000;
 
 const getGeminiApiUrl = (modelId: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
@@ -262,9 +256,7 @@ export async function POST(request: NextRequest) {
       requestBody?: Record<string, unknown>;
     };
 
-    const requestedModel: GeminiImageModelKey = body.model === "pro" ? "pro" : "flash";
-    const model: GeminiImageModelKey =
-      requestedModel === "pro" && ALLOW_GEMINI_PRO_TEXTURES ? "pro" : "flash";
+    const model: GeminiImageModelKey = body.model === "pro" ? "pro" : "flash";
     const requestBody = body.requestBody;
 
     if (!requestBody) {

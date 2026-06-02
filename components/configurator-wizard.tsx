@@ -10,7 +10,6 @@ import {
   Lock,
   RotateCcw,
   GripHorizontal,
-  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -315,36 +314,6 @@ export function ConfiguratorWizard() {
       {!isModelSelected && currentStep > 0 && (
         <div className="px-3 py-2 border-b border-border/40 bg-amber-50/80 dark:bg-amber-900/20 text-[11px] text-amber-700 dark:text-amber-300">
           Select an apparel model in step 1 to unlock all customization steps.
-        </div>
-      )}
-
-      {isMobile && (
-        <div className="flex items-center gap-1 overflow-x-auto border-b border-border/40 bg-background px-2 py-1.5 no-scrollbar">
-          {CONFIGURATOR_STEPS.map((step, idx) => {
-            const isDisabled = !isModelSelected && idx !== 0;
-            const isActive = currentStep === idx;
-            const isComplete = idx < currentStep;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                disabled={isDisabled}
-                onClick={() => !isDisabled && setStep(idx)}
-                className={cn(
-                  "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-medium whitespace-nowrap transition-colors",
-                  isActive
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : isComplete
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                      : "border-border bg-background text-muted-foreground",
-                  isDisabled && "cursor-not-allowed opacity-40",
-                )}
-              >
-                {isComplete ? <CheckCircle2 className="h-3 w-3" /> : <span>{step.id}</span>}
-                <span>{idx === 0 ? formatProductCategoryTitle(selectedProduct?.category) : step.title}</span>
-              </button>
-            );
-          })}
         </div>
       )}
 

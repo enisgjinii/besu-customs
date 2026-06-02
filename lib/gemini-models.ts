@@ -1,20 +1,19 @@
 /**
  * Gemini image generation model IDs.
  *
- * GA models (May 2026) are preferred; preview IDs are kept as fallbacks until
- * Google shuts them down (June 25, 2026).
+ * Google currently exposes Gemini 3 Pro Image as the highest-quality image
+ * generation model and Gemini 2.5 Flash Image as the lower-latency fallback.
  *
  * @see https://ai.google.dev/gemini-api/docs/changelog
  */
 export const GEMINI_IMAGE_MODELS = {
   flash: {
-    primary: "gemini-3.1-flash-image",
-    fallback: "gemini-3.1-flash-image-preview",
-    /** Faster model used when primary requests time out on serverless. */
+    primary: "gemini-2.5-flash-image",
+    fallback: "gemini-2.5-flash-image",
     fast: "gemini-2.5-flash-image",
   },
   pro: {
-    primary: "gemini-3-pro-image",
+    primary: "gemini-3-pro-image-preview",
     fallback: "gemini-3-pro-image-preview",
     fast: "gemini-2.5-flash-image",
   },
@@ -32,5 +31,5 @@ export function resolveGeminiImageModelIds(model: GeminiImageModelKey): string[]
 }
 
 export function getGeminiImageModelLabel(model: GeminiImageModelKey): string {
-  return model === "pro" ? "Gemini 3 Pro Image" : "Gemini 3.1 Flash Image";
+  return model === "pro" ? "Gemini 3 Pro Image" : "Gemini 2.5 Flash Image";
 }

@@ -13,8 +13,8 @@ import {
  * Advanced Gemini AI Texture Generation Hook
  *
  * Uses Google's Nano Banana image generation models:
- * - gemini-3.1-flash-image: GA high-efficiency image model (4K support)
- * - gemini-3-pro-image: GA Nano Banana Pro with advanced reasoning, up to 4K
+ * - gemini-2.5-flash-image: lower-latency fallback model
+ * - gemini-3-pro-image-preview: Nano Banana Pro with advanced reasoning, up to 4K
  *
  * Features:
  * - Native image generation with UV-aware mapping

@@ -50,6 +50,34 @@ const PATTERN_PRESETS = [
 const CORRECTION_PREFIX =
   "Revise the current uniform design using these corrections:";
 
+type GenerationMode = "flash" | "premium";
+
+const GENERATION_MODE_CONFIG: Record<
+  GenerationMode,
+  {
+    label: string;
+    shortLabel: string;
+    description: string;
+    model: "flash" | "pro";
+    resolution: "1K" | "4K";
+  }
+> = {
+  flash: {
+    label: "Flash",
+    shortLabel: "Fast draft",
+    description: "Lower latency preview using Gemini Flash.",
+    model: "flash",
+    resolution: "1K",
+  },
+  premium: {
+    label: "Premium",
+    shortLabel: "Best quality",
+    description: "Higher-detail generation using Gemini Pro. Slower but better.",
+    model: "pro",
+    resolution: "4K",
+  },
+};
+
 export function AITextureGenerator({
   onTextureGenerated,
   className,
@@ -58,6 +86,8 @@ export function AITextureGenerator({
   const [correctionPrompt, setCorrectionPrompt] = useState("");
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [generationMode, setGenerationMode] =
+    useState<GenerationMode>("premium");
 
   // Player info for back of jersey
   const [includePlayerInfo, setIncludePlayerInfo] = useState(false);
@@ -219,19 +249,22 @@ export function AITextureGenerator({
       .filter(Boolean)
       .join(" ");
 
-    console.log(" Calling Google Gemini Flash with fast texture settings:", {
+    const selectedGenerationMode = GENERATION_MODE_CONFIG[generationMode];
+
+    console.log("Calling Gemini texture generation:", {
       prompt: googlePrompt,
-      model: "flash",
-      resolution: "1K",
+      mode: generationMode,
+      model: selectedGenerationMode.model,
+      resolution: selectedGenerationMode.resolution,
     });
 
     const result = await generateGoogle({
       prompt: googlePrompt,
       uvMap: uvGuide,
       generatePbr: false,
-      model: "flash",
+      model: selectedGenerationMode.model,
       aspectRatio: "1:1",
-      resolution: "1K",
+      resolution: selectedGenerationMode.resolution,
       textureStyle: "realistic",
       productType: modelType,
     });
@@ -262,6 +295,7 @@ export function AITextureGenerator({
     includePlayerInfo,
     playerName,
     jerseyNumber,
+    generationMode,
     generateGoogle,
     onTextureGenerated,
     currentModelUrl,
@@ -314,6 +348,55 @@ export function AITextureGenerator({
         <p className="text-[10px] text-muted-foreground">
           This option creates a full texture mapped across the entire product.
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs font-medium">Generation mode</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {(Object.entries(GENERATION_MODE_CONFIG) as Array<
+            [GenerationMode, (typeof GENERATION_MODE_CONFIG)[GenerationMode]]
+          >).map(([modeKey, modeConfig]) => {
+            const isActive = generationMode === modeKey;
+            return (
+              <button
+                key={modeKey}
+                type="button"
+                onClick={() => setGenerationMode(modeKey)}
+                disabled={isGenerating}
+                className={cn(
+                  "rounded-xl border px-3 py-3 text-left transition-colors",
+                  isActive
+                    ? "border-primary bg-primary/8 shadow-sm"
+                    : "border-border bg-background hover:border-primary/30",
+                  isGenerating && "cursor-not-allowed opacity-60",
+                )}
+                aria-pressed={isActive}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    {modeConfig.label}
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-medium",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {modeConfig.resolution}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] font-medium text-muted-foreground">
+                  {modeConfig.shortLabel}
+                </p>
+                <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                  {modeConfig.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -509,7 +592,9 @@ export function AITextureGenerator({
         ) : (
           <>
             <Sparkles className="mr-2 h-4 w-4" />
-            Generate full texture
+            {generationMode === "premium"
+              ? "Generate premium full texture"
+              : "Generate flash full texture"}
           </>
         )}
       </Button>
