@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { LayerControls } from "@/components/layer-controls";
 import { analyzeUvLayoutFromDataUrl } from "@/lib/uv-layout-analyzer";
+import { resolveChestTextLayerDefaults } from "@/lib/team-text-placement";
 import { generateTestPattern, visualizeTransformations, generateComparisonGrid } from "@/lib/uv-debug-helper";
 import { loadImage } from "@/lib/texture-utils";
 import {
@@ -38,11 +39,17 @@ export function Step08AIImages() {
   const addTextureLayer = useConfiguratorStore(
     (state) => state.addTextureLayer,
   );
+  const updateTextureLayer = useConfiguratorStore(
+    (state) => state.updateTextureLayer,
+  );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
   const setSelectedTextureLayerId = useConfiguratorStore(
     (state) => state.setSelectedTextureLayerId,
   );
   const completeUVMap = useConfiguratorStore((state) => state.completeUVMap);
+  const centerFrontUvAnchor = useConfiguratorStore(
+    (state) => state.centerFrontUvAnchor,
+  );
   const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
   const applyTextureToBack = useConfiguratorStore((state) => state.applyTextureToBack);
   const setApplyTextureToBack = useConfiguratorStore((state) => state.setApplyTextureToBack);
@@ -587,7 +594,11 @@ export function Step08AIImages() {
   const handleGeneratedTexture = useCallback(async (
     texture: THREE.Texture,
     url: string,
-    options?: { normalMapUrl?: string | null; roughnessMapUrl?: string | null }
+    options?: {
+      normalMapUrl?: string | null;
+      roughnessMapUrl?: string | null;
+      teamName?: string | null;
+    }
   ) => {
     const requestApplyId = applyGenerationRef.current;
     const requestModelUrl = currentModelUrl ?? null;
@@ -626,6 +637,33 @@ export function Step08AIImages() {
       flipX: false,
     });
 
+    const teamName = options?.teamName?.trim();
+    let teamTextLayerId: string | null = null;
+    if (teamName) {
+      const latestLayers = useConfiguratorStore.getState().textureLayers;
+      const existingTeamNameLayer = latestLayers.find(
+        (layer) => layer.type === "text" && layer.name.startsWith("Team Name:"),
+      );
+      const layerId = existingTeamNameLayer?.id ?? uuidv4();
+      const teamTextLayer = resolveChestTextLayerDefaults({
+        id: layerId,
+        text: teamName,
+        modelUrl: requestModelUrl,
+        centerFrontUvAnchor,
+        order: latestLayers.length,
+        namePrefix: "Team Name",
+        textColor: "#ffffff",
+      });
+
+      if (existingTeamNameLayer) {
+        updateTextureLayer(existingTeamNameLayer.id, teamTextLayer);
+      } else {
+        addTextureLayer(teamTextLayer);
+      }
+
+      teamTextLayerId = layerId;
+    }
+
     // Apply PBR maps if provided
     if (normalMapUrl) {
       useConfiguratorStore.getState().setGlobalNormalMap(normalMapUrl);
@@ -639,14 +677,20 @@ export function Step08AIImages() {
       useConfiguratorStore.getState().setGlobalRoughnessMap(null);
     }
 
-    setSelectedTextureLayerId(newId);
-    toast.success("AI Pattern added successfully!");
+    setSelectedTextureLayerId(teamTextLayerId ?? newId);
+    toast.success(
+      teamTextLayerId
+        ? "AI pattern and team name added successfully!"
+        : "AI Pattern added successfully!",
+    );
   }, [
     addTextureLayer,
+    updateTextureLayer,
     textureLayers.length,
     setSelectedTextureLayerId,
     completeUVMap,
     currentModelUrl,
+    centerFrontUvAnchor,
   ]);
 
   const handleGenerateTestPattern = async () => {

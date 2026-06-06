@@ -22,6 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  extractTeamNameFromPrompt,
+  normalizeUniformTeamName,
+} from "@/lib/team-text-placement";
 import * as THREE from "three";
 import { toast } from "sonner";
 
@@ -30,7 +34,11 @@ interface AITextureGeneratorProps {
   onTextureGenerated?: (
     texture: THREE.Texture,
     url: string,
-    options?: { normalMapUrl?: string | null; roughnessMapUrl?: string | null },
+    options?: {
+      normalMapUrl?: string | null;
+      roughnessMapUrl?: string | null;
+      teamName?: string | null;
+    },
   ) => void | Promise<void>;
   className?: string;
 }
@@ -206,24 +214,43 @@ export function AITextureGenerator({
 
     const cleanName = playerName.trim().toUpperCase();
     const cleanNumber = jerseyNumber.trim().replace(/\D/g, "").slice(0, 3);
+    const detectedTeamName =
+      modelType === "jersey and shorts"
+        ? normalizeUniformTeamName(extractTeamNameFromPrompt(prompt) ?? "")
+        : "";
     const wantsPersonalization =
       includePlayerInfo && (cleanName.length > 0 || cleanNumber.length > 0);
 
-    const textGuardrail = wantsPersonalization
+    const teamIdentityGuardrail = detectedTeamName
       ? [
-          cleanName
-            ? `Place the player name "${cleanName}" once across the upper back`
-            : null,
-          cleanNumber
-            ? `Place a single jersey number "${cleanNumber}" centered on the back`
-            : null,
-          "Do not add any other names, numbers, letters, words, or watermarks anywhere else on the garment",
-        ]
-          .filter(Boolean)
-          .join(". ")
-      : modelType === "duffle-bag"
-        ? "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the bag; keep all panels free of typography"
-        : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography";
+          `Team identity: the team name is "${detectedTeamName}".`,
+          `Create an original team logo or monogram inspired by the user's theme; do not copy an existing sports logo.`,
+          `Reserve a clean, readable front-chest wordmark zone for "${detectedTeamName}" that fits within the jersey torso from shoulder to shoulder.`,
+          "Small matching logo marks may appear on the waistband, short leg, or back neck only when they improve the uniform.",
+        ].join(" ")
+      : null;
+
+    const typographyGuardrail = [
+      wantsPersonalization
+        ? [
+            cleanName
+              ? `Place the player name "${cleanName}" once across the upper back`
+              : null,
+            cleanNumber
+              ? `Place a single jersey number "${cleanNumber}" centered on the back`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(". ")
+        : null,
+      modelType === "duffle-bag"
+        ? "Do not add names, numbers, letters, words, logos, or watermarks anywhere on the bag."
+        : detectedTeamName
+          ? `Do not add random text, unrelated words, watermarks, or oversized typography. The only front text should be the "${detectedTeamName}" team identity.`
+          : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography.",
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     const trimmedPrompt = prompt.trim();
     const trimmedCorrection = correctionPrompt.trim();
@@ -240,11 +267,12 @@ export function AITextureGenerator({
     const googlePrompt = [
       basePrompt,
       modelGuard,
-      textGuardrail,
+      teamIdentityGuardrail,
+      typographyGuardrail,
       "Use the provided UV map as strict placement guide.",
       "Keep output as flat 2D texture only (no lighting, no shadows).",
       "Fill all UV islands with design and keep style coherent.",
-      "Do not add watermarks or extra text.",
+      "Do not add watermarks or extra text beyond the allowed team/player identity.",
     ]
       .filter(Boolean)
       .join(" ");
@@ -280,6 +308,7 @@ export function AITextureGenerator({
       await onTextureGenerated(result.texture, result.imageUrl, {
         normalMapUrl: result.normalMapUrl,
         roughnessMapUrl: result.roughnessMapUrl,
+        teamName: detectedTeamName || null,
       });
     }
 

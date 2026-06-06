@@ -20,6 +20,11 @@ import { v4 as uuidv4 } from "uuid";
 
 import { cn } from "@/lib/utils";
 import { WizardStepShell } from "@/components/wizard-step-layout";
+import {
+  DEFAULT_CHEST_TEXT_VALUE,
+  resolveChestTextLayerDefaults,
+  estimateChestTextFontSize,
+} from "@/lib/team-text-placement";
 
 // Popular Google Fonts
 const FONT_FAMILIES = [
@@ -54,12 +59,16 @@ export function Step06Text() {
     (state) => state.removeTextureLayer,
   );
   const textureLayers = useConfiguratorStore((state) => state.textureLayers);
+  const currentModelUrl = useConfiguratorStore((state) => state.currentModelUrl);
+  const centerFrontUvAnchor = useConfiguratorStore(
+    (state) => state.centerFrontUvAnchor,
+  );
   const setSelectedTextureLayerId = useConfiguratorStore(
     (state) => state.setSelectedTextureLayerId,
   );
 
-  const [textInput, setTextInput] = useState("");
-  const [textColor, setTextColor] = useState("#000000");
+  const [textInput, setTextInput] = useState(DEFAULT_CHEST_TEXT_VALUE);
+  const [textColor, setTextColor] = useState("#ffffff");
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [activeColorLayerId, setActiveColorLayerId] = useState<string | null>(
@@ -95,20 +104,22 @@ export function Step06Text() {
       return;
     }
 
-    // Set pending layer and enable placement mode
-    setPendingLayer({
-      type: "text",
-      text: textInput,
-      name: `Text: ${textInput}`,
-      textColor: textColor,
-      fontSize: 80,
-      fontFamily: "Roboto",
-      scale: [1, 1, 1],
-      rotation: [0, 0, 0],
+    const newId = uuidv4();
+    const layer = resolveChestTextLayerDefaults({
+      id: newId,
+      text: textInput.trim(),
+      modelUrl: currentModelUrl,
+      centerFrontUvAnchor,
+      order: textureLayers.length,
+      namePrefix: "Text",
+      textColor,
     });
-    setPlacementMode(true);
-    setTextInput(""); // Clear input
-    toast.info("Click anywhere on the model to place the text");
+
+    addTextureLayer(layer);
+    setSelectedTextId(newId);
+    setSelectedTextureLayerId(newId);
+    setTextInput("");
+    toast.success("Text added to the chest");
   };
 
   const handleDeleteText = (id: string) => {
@@ -334,7 +345,7 @@ export function Step06Text() {
                                 Size ({layer.fontSize}px)
                               </label>
                               <Slider
-                                value={[layer.fontSize || 80]}
+                                value={[layer.fontSize || estimateChestTextFontSize(layer.text || "")]}
                                 onValueChange={(v) =>
                                   updateTextureLayer(layer.id, {
                                     fontSize: v[0],
@@ -454,7 +465,7 @@ export function Step06Text() {
                     </span>
                   </div>
                   <Slider
-                    value={[selectedLayer!.fontSize || 80]}
+                    value={[selectedLayer!.fontSize || estimateChestTextFontSize(selectedLayer!.text || "")]}
                     onValueChange={(v) =>
                       updateTextureLayer(selectedLayer!.id, { fontSize: v[0] })
                     }
@@ -522,7 +533,17 @@ export function Step06Text() {
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { label: "Top", pos: [0.5, 0.15, 0] },
-                    { label: "Chest", pos: [0.5, 0.35, 0] },
+                    {
+                      label: "Chest",
+                      pos:
+                        resolveChestTextLayerDefaults({
+                          text: selectedLayer!.text || DEFAULT_CHEST_TEXT_VALUE,
+                          modelUrl: currentModelUrl,
+                          centerFrontUvAnchor,
+                          order: selectedLayer!.order ?? 0,
+                          textColor: selectedLayer!.textColor,
+                        }).position,
+                    },
                     { label: "Mid", pos: [0.5, 0.5, 0] },
                     { label: "Left", pos: [0.25, 0.35, 0] },
                     { label: "Right", pos: [0.75, 0.35, 0] },
@@ -535,6 +556,14 @@ export function Step06Text() {
                       onClick={() =>
                         updateTextureLayer(selectedLayer!.id, {
                           position: pos as [number, number, number],
+                          ...(label === "Chest"
+                            ? {
+                                fontSize: estimateChestTextFontSize(
+                                  selectedLayer!.text || DEFAULT_CHEST_TEXT_VALUE,
+                                ),
+                                scale: [1, 1, 1] as [number, number, number],
+                              }
+                            : {}),
                           // Handle back rotation if needed
                           rotation:
                             label === "Back" ? [0, Math.PI, 0] : [0, 0, 0],

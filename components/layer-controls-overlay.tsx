@@ -77,6 +77,14 @@ export function LayerControlsOverlay() {
 
   const isExpanded = isPinnedOpen || isHovered;
   const isExporting = isGeneratingGif || !!isGeneratingVideo;
+  const selectedLayerName = selectedLayer.name || selectedLayer.type;
+  const selectedLayerLabel =
+    selectedLayer.type === "text"
+      ? selectedLayerName.startsWith("Text:") ||
+        selectedLayerName.startsWith("Team Name:")
+        ? selectedLayerName
+        : `Text: ${selectedLayerName}`
+      : `Layer: ${selectedLayerName}`;
 
   const handleDuplicate = () => {
     if (selectedTextureLayerId) {
@@ -369,7 +377,7 @@ export function LayerControlsOverlay() {
             className="bg-white/95 dark:bg-gray-900/95 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center gap-2 backdrop-blur-sm"
           >
             <span className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[140px] truncate">
-              {selectedLayer.type === "text" ? "Text" : "Layer"}: {selectedLayer.name || selectedLayer.type}
+              {selectedLayerLabel}
             </span>
 
             <Tooltip>

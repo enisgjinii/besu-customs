@@ -426,6 +426,10 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
           ctx.font = `bold ${fontSize}px ${fontFamily}, Arial, sans-serif`;
           ctx.fillStyle = layer.textColor || "#000000";
+          const strokeWidth = Math.max(
+            0,
+            (layer.strokeWidth ?? 0) * (CANVAS_SIZE / 512) * scaleMultiplier,
+          );
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 
@@ -450,6 +454,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
 
           if (!isCurvedText) {
             // Simple rotated text
+            if (strokeWidth > 0) {
+              ctx.lineJoin = "round";
+              ctx.lineWidth = strokeWidth;
+              ctx.strokeStyle = layer.strokeColor || "rgba(0,0,0,0.85)";
+              ctx.strokeText(layer.text, 0, 0);
+            }
             ctx.fillText(layer.text, 0, 0);
           } else {
             // Curved text for large rotation values
@@ -473,6 +483,12 @@ function TextureCompositor({ scene }: { scene: THREE.Group }) {
               ctx.translate(0, cy);
               ctx.rotate(direction * theta);
               ctx.translate(0, -direction * radius);
+              if (strokeWidth > 0) {
+                ctx.lineJoin = "round";
+                ctx.lineWidth = strokeWidth;
+                ctx.strokeStyle = layer.strokeColor || "rgba(0,0,0,0.85)";
+                ctx.strokeText(char, 0, 0);
+              }
               ctx.fillText(char, 0, 0);
               ctx.restore();
 

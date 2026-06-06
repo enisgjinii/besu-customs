@@ -93,6 +93,8 @@ export interface TextureLayer {
   dataUrl?: string;
   text?: string;
   textColor?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
   fontSize?: number;
   fontFamily?: string;
   imageUrl?: string;
