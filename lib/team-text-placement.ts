@@ -4,7 +4,7 @@ import type { TextureLayer } from "@/lib/store";
 const DEFAULT_TEAM_NAME = "Besu";
 const DEFAULT_FONT_FAMILY = "Oswald";
 const DEFAULT_TEXT_COLOR = "#ffffff";
-const TARGET_CHEST_WIDTH_UV = 0.3;
+const TARGET_CHEST_WIDTH_UV = 0.22;
 
 function sanitizeTeamName(value: string): string {
   return value
@@ -50,7 +50,7 @@ export function estimateChestTextFontSize(text: string): number {
   const estimatedSize =
     targetPixelsAtBaseCanvas / Math.max(normalized.length * estimatedAverageGlyphWidth, 1);
 
-  return Math.round(Math.min(54, Math.max(28, estimatedSize)));
+  return Math.round(Math.min(48, Math.max(20, estimatedSize)));
 }
 
 export function resolveChestTextLayerDefaults(params: {
