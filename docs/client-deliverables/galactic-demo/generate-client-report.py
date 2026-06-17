@@ -22,7 +22,7 @@ from reportlab.platypus import (
 
 
 HERE = Path(__file__).resolve().parent
-OUTPUT = HERE / "besu-galactic-client-verification.pdf"
+OUTPUT = HERE / "besu-galactic-technical-verification.pdf"
 TODAY = date(2026, 6, 17)
 
 INK = colors.HexColor("#111827")
@@ -122,7 +122,7 @@ def header_footer(canvas, doc) -> None:
     canvas.line(0.75 * inch, 0.5 * inch, width - 0.75 * inch, 0.5 * inch)
     canvas.setFont("Helvetica", 8)
     canvas.setFillColor(MUTED)
-    canvas.drawString(0.75 * inch, 0.32 * inch, "Prepared for client approval and project closeout.")
+    canvas.drawString(0.75 * inch, 0.32 * inch, "Technical implementation and verification record.")
     canvas.drawRightString(width - 0.75 * inch, 0.32 * inch, f"Page {doc.page}")
     canvas.restoreState()
 
@@ -155,9 +155,9 @@ def build() -> None:
         rightMargin=0.75 * inch,
         topMargin=0.72 * inch,
         bottomMargin=0.68 * inch,
-        title="Besu Customs Galactic AI Designer Verification and Scope Report",
+        title="Besu Customs Galactic AI Designer Technical Verification Report",
         author="Besu Customs",
-        subject="Client approval and project closeout evidence",
+        subject="AI Designer implementation and technical verification evidence",
     )
     story: list = []
 
@@ -166,11 +166,11 @@ def build() -> None:
         [
             Spacer(1, 0.55 * inch),
             para("BESU CUSTOMS", styles["Kicker"]),
-            para("Galactic AI Designer Verification & Scope Report", styles["Title"]),
-            para("Implementation evidence, feasibility decisions, deliverables, and final approval recommendation", styles["Subtitle"]),
+            para("Galactic AI Designer Technical Verification Report", styles["Title"]),
+            para("Implementation evidence, test results, generated artifacts, and technical constraints", styles["Subtitle"]),
             figure("03-galactic-fitted-final.png", "Verified final app state: generated space texture with editable GALACTIC team name fitted to the chest.", styles, 4.2 * inch),
             Spacer(1, 0.08 * inch),
-            callout("Decision requested", "Approve the completed in-scope AI Designer improvements and proceed with project closeout and payment release. Separately scoped ideas are documented below and do not block acceptance of the current delivery.", styles, PALE_GREEN, GREEN),
+            callout("Verification result", "The tested workflow generated the requested space-themed uniform, extracted and placed the GALACTIC team name, produced coordinated visual marks, and exported a 360-degree video artifact.", styles, PALE_GREEN, GREEN),
             Spacer(1, 0.15 * inch),
             para(f"Prepared {TODAY.strftime('%B %d, %Y')}", styles["Small"]),
         ]
@@ -180,26 +180,25 @@ def build() -> None:
     story.extend(
         [
             PageBreak(),
-            para("1. Executive Decision Summary", styles["H1"]),
-            para("The requested workflow was tested in the live local Besu Customs application using Bryant's exact Galactic prompt. The application generated a coordinated space-themed jersey and shorts texture, extracted the team name, created an editable GALACTIC chest layer, fitted it to the garment, and exported a 360-degree client video.", styles["Body"]),
-            callout("Current-scope result: COMPLETE", "Automatic team-name extraction, editable chest placement, improved first-insert sizing, AI texture generation, logo/monogram content in the generated design, and 360-degree video export are demonstrated in this report.", styles, PALE_GREEN, GREEN),
+            para("1. Technical Summary", styles["H1"]),
+            para("The workflow was tested in the local Besu Customs application using the exact Galactic prompt. The application generated a coordinated space-themed jersey and shorts texture, extracted the team name, created an editable GALACTIC chest layer, fitted it to the garment, and exported a 360-degree video.", styles["Body"]),
+            callout("Implementation status: VERIFIED", "Automatic team-name extraction, editable chest placement, improved initial sizing, AI texture generation, generated logo/monogram content, and 360-degree video export are demonstrated in this report.", styles, PALE_GREEN, GREEN),
             Spacer(1, 0.14 * inch),
-            para("Exact acceptance prompt", styles["H2"]),
+            para("Exact test prompt", styles["H2"]),
             callout("Prompt used without rewriting", PROMPT, styles),
             Spacer(1, 0.14 * inch),
-            para("Delivered files", styles["H2"]),
+            para("Generated artifacts", styles["H2"]),
             styled_table(
                 [
                     [para("Deliverable", styles["TableBold"]), para("File", styles["TableBold"]), para("Status", styles["TableBold"])],
-                    [para("Approval report", styles["Table"]), para("besu-galactic-client-verification.pdf", styles["Table"]), para("COMPLETE", styles["TableBold"])],
-                    [para("Client demo video", styles["Table"]), para("galactic-uniform-client-demo.mp4", styles["Table"]), para("COMPLETE", styles["TableBold"])],
-                    [para("Ready-to-send message", styles["Table"]), para("client-message.txt", styles["Table"]), para("COMPLETE", styles["TableBold"])],
+                    [para("Technical report", styles["Table"]), para("besu-galactic-technical-verification.pdf", styles["Table"]), para("VERIFIED", styles["TableBold"])],
+                    [para("360-degree video", styles["Table"]), para("galactic-uniform-technical-demo.mp4", styles["Table"]), para("VERIFIED", styles["TableBold"])],
                 ],
                 [1.55 * inch, 3.7 * inch, 1.25 * inch],
             ),
             Spacer(1, 0.18 * inch),
-            para("Acceptance position", styles["H2"]),
-            para("The implemented items resolve the usability concern shown in the earlier oversized-text screenshot. New 3D model authoring and a four-concept selection workflow are valid future enhancements, but they are not defects in the delivered AI Designer and should be handled as a separate phase.", styles["Body"]),
+            para("Technical boundary", styles["H2"]),
+            para("The implemented sizing adjustment resolves the oversized-text behavior shown in the earlier screenshot. Tucked-garment geometry requires a compatible 3D model. Four-concept generation requires additional orchestration, persistence, selection UI, and generation-cost controls.", styles["Body"]),
         ]
     )
 
@@ -225,17 +224,17 @@ def build() -> None:
         [para("Automatically add team name from prompt", styles["Table"]), para("DONE", styles["TableBold"]), para("GALACTIC was detected and created as a separate editable chest text layer.", styles["Table"])],
         [para("Fit text shoulder-to-shoulder by default", styles["Table"]), para("DONE", styles["TableBold"]), para("Shared placement now uses a narrower target width and smaller bounds; the verified result fits at 23px.", styles["Table"])],
         [para("Create a team logo", styles["Table"]), para("DONE / AI-VARIABLE", styles["TableBold"]), para("This run generated coordinated G marks on the chest/shorts. AI artwork varies. A guaranteed, separately editable vector-logo generator would be a future feature.", styles["Table"])],
-        [para("Tucked jersey and visible waistline", styles["Table"]), para("MODEL-DEPENDENT", styles["TableBold"]), para("The silhouette is defined by the selected GLB model, not the prompt. An approved prebuilt tucked model can be swapped in; new modeling, UV work, rigging, and QA are separate scope.", styles["Table"])],
-        [para("Generate four uniform options at once", styles["Table"]), para("FUTURE SCOPE", styles["TableBold"]), para("Technically feasible, but requires multi-generation orchestration, cost/rate controls, result persistence, and a selection workflow. It is not required for current acceptance.", styles["Table"])],
+        [para("Tucked jersey and visible waistline", styles["Table"]), para("MODEL-DEPENDENT", styles["TableBold"]), para("The silhouette is defined by the selected GLB model, not the prompt. A compatible tucked model can be swapped in; creating one requires modeling, UV work, rigging, and QA.", styles["Table"])],
+        [para("Generate four uniform options at once", styles["Table"]), para("ADDITIONAL WORKFLOW", styles["TableBold"]), para("Technically feasible, but requires multi-generation orchestration, cost/rate controls, result persistence, and a selection workflow.", styles["Table"])],
         [para("360-degree video export", styles["Table"]), para("DONE", styles["TableBold"]), para("A five-second H.264 MP4 was exported and is supplied with this report.", styles["Table"])],
     ]
     story.extend(
         [
             PageBreak(),
-            para("5. Feasibility & Scope Determination", styles["H1"]),
+            para("5. Feasibility & Technical Constraints", styles["H1"]),
             styled_table(scope_rows, [1.65 * inch, 1.25 * inch, 3.6 * inch]),
             Spacer(1, 0.18 * inch),
-            callout("No acceptance blocker remains", "The first three usability/design requests and video export are demonstrated. The tucked silhouette depends on a different 3D asset, while multi-concept generation is an additional product workflow. Neither changes the completion status of the existing scope.", styles, PALE_GREEN, GREEN),
+            callout("Verified behavior and constraints", "Team-name extraction, fitted editable text, generated visual marks, and video export are demonstrated. A tucked silhouette depends on a different 3D asset, while multi-concept generation requires an additional application workflow.", styles, PALE_GREEN, GREEN),
             Spacer(1, 0.16 * inch),
             para("Operational notes", styles["H2"]),
             para("AI texture and logo details are generative, so individual visual output can vary while the editable name-placement behavior remains deterministic. The app retains manual editing so users can reposition or restyle the generated team name after the first-fit default.", styles["Body"]),
@@ -247,12 +246,12 @@ def build() -> None:
         [
             PageBreak(),
             para("6. 360-Degree Video Verification", styles["H1"]),
-            figure("04-video-contact-sheet.png", "Frames sampled from the delivered MP4 show the generated uniform rotating through front, side, back, and opposite-side views.", styles, 4.9 * inch),
+            figure("04-video-contact-sheet.png", "Frames sampled from the MP4 show the generated uniform rotating through front, side, back, and opposite-side views.", styles, 4.9 * inch),
             styled_table(
                 [
                     [para("Property", styles["TableBold"]), para("Verified value", styles["TableBold"])],
-                    [para("File", styles["Table"]), para("galactic-uniform-client-demo.mp4", styles["Table"])],
-                    [para("Format", styles["Table"]), para("H.264 MP4, browser/client friendly", styles["Table"])],
+                    [para("File", styles["Table"]), para("galactic-uniform-technical-demo.mp4", styles["Table"])],
+                    [para("Format", styles["Table"]), para("H.264 MP4", styles["Table"])],
                     [para("Duration", styles["Table"]), para("5 seconds", styles["Table"])],
                     [para("Resolution", styles["Table"]), para("1920 x 886 at 30 fps", styles["Table"])],
                 ],
@@ -269,7 +268,7 @@ def build() -> None:
         ("reference-04-clean-chatgpt.png", "Clean ChatGPT reference output supplied for visual comparison."),
         ("reference-05-old-app-prompt.png", "Earlier Besu app prompt/result context supplied with the feedback."),
     ]
-    story.extend([PageBreak(), para("7. Client Reference Record", styles["H1"]), para("The following source images are included so the approval record remains self-contained.", styles["Body"])])
+    story.extend([PageBreak(), para("7. Source Reference Record", styles["H1"]), para("The following source images are included to preserve the visual requirements and comparison context.", styles["Body"])])
     for index, (path, caption) in enumerate(refs):
         story.append(figure(path, caption, styles, 5.3 * inch))
         if index != len(refs) - 1:
