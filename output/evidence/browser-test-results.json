@@ -1,0 +1,15 @@
+{
+  "testedAt": "2026-06-18T10:15:53.263Z",
+  "url": "http://127.0.0.1:3000/",
+  "model": "Soccer Jersey Crew Neck",
+  "generatedTeam": "BESU",
+  "assertions": {
+    "playerPersonalizationControlAbsent": true,
+    "playerNameInputAbsent": true,
+    "jerseyNumberInputAbsent": true,
+    "frontTeamNameVisible": true,
+    "backTypographyBlank": true
+  },
+  "browserErrorCount": 0,
+  "browserErrors": []
+}

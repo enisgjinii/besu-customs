@@ -6,11 +6,9 @@ import { useConfiguratorStore } from "@/lib/store";
 import {
   Loader2,
   Sparkles,
-  User,
   Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PillToggle } from "@/components/ui/pill-toggle";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -96,11 +94,6 @@ export function AITextureGenerator({
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [generationMode, setGenerationMode] =
     useState<GenerationMode>("premium");
-
-  // Player info for back of jersey
-  const [includePlayerInfo, setIncludePlayerInfo] = useState(false);
-  const [playerName, setPlayerName] = useState("");
-  const [jerseyNumber, setJerseyNumber] = useState("");
 
   // Debug options specifically for soccer jersey crew neck
   const soccerJerseyDebug = useConfiguratorStore((s) => s.soccerJerseyDebug);
@@ -212,41 +205,25 @@ export function AITextureGenerator({
                 ? "This design is for jersey and shorts."
                 : "Match the current product type only.";
 
-    const cleanName = playerName.trim().toUpperCase();
-    const cleanNumber = jerseyNumber.trim().replace(/\D/g, "").slice(0, 3);
     const detectedTeamName =
       modelType === "jersey and shorts"
         ? normalizeUniformTeamName(extractTeamNameFromPrompt(prompt) ?? "")
         : "";
-    const wantsPersonalization =
-      includePlayerInfo && (cleanName.length > 0 || cleanNumber.length > 0);
 
     const teamIdentityGuardrail = detectedTeamName
       ? [
           `Team identity: the team name is "${detectedTeamName}".`,
           `Create an original team logo or monogram inspired by the user's theme; do not copy an existing sports logo.`,
-          `Reserve a clean, readable front-chest wordmark zone for "${detectedTeamName}" that fits within the jersey torso from shoulder to shoulder.`,
-          "Small matching logo marks may appear on the waistband, short leg, or back neck only when they improve the uniform.",
+          `Place the team name "${detectedTeamName}" exactly once, on the front chest only, fitting within the jersey torso from shoulder to shoulder.`,
+          "Small matching logo marks may appear on the waistband or short leg only when they improve the uniform.",
         ].join(" ")
       : null;
 
     const typographyGuardrail = [
-      wantsPersonalization
-        ? [
-            cleanName
-              ? `Place the player name "${cleanName}" once across the upper back`
-              : null,
-            cleanNumber
-              ? `Place a single jersey number "${cleanNumber}" centered on the back`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(". ")
-        : null,
       modelType === "duffle-bag"
         ? "Do not add names, numbers, letters, words, logos, or watermarks anywhere on the bag."
         : detectedTeamName
-          ? `Do not add random text, unrelated words, watermarks, or oversized typography. The only front text should be the "${detectedTeamName}" team identity.`
+          ? `The only permitted text is the "${detectedTeamName}" team name on the front chest. Keep the entire back torso and back neck free of team names, player names, numbers, letters, logos, monograms, and watermarks.`
           : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography.",
     ]
       .filter(Boolean)
@@ -321,9 +298,6 @@ export function AITextureGenerator({
     correctionPrompt,
     uvMap,
     uvMask,
-    includePlayerInfo,
-    playerName,
-    jerseyNumber,
     generationMode,
     generateGoogle,
     onTextureGenerated,
@@ -450,51 +424,6 @@ export function AITextureGenerator({
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="rounded-xl border bg-muted/20 px-3 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <Label
-              htmlFor="player-info-toggle"
-              className="flex items-center gap-1.5 text-xs font-medium"
-            >
-              <User className="h-3.5 w-3.5" />
-              Add player name and number
-            </Label>
-            <p className="text-[10px] text-muted-foreground">
-              Optional. The AI will place them on the back area only.
-            </p>
-          </div>
-          <PillToggle
-            checked={includePlayerInfo}
-            onCheckedChange={setIncludePlayerInfo}
-            disabled={isGenerating}
-          />
-        </div>
-
-        {includePlayerInfo && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Input
-              placeholder="NAME"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
-              disabled={isGenerating}
-              className="h-8 text-xs uppercase"
-              maxLength={20}
-            />
-            <Input
-              placeholder="00"
-              value={jerseyNumber}
-              onChange={(e) =>
-                setJerseyNumber(e.target.value.replace(/\D/g, "").slice(0, 3))
-              }
-              disabled={isGenerating}
-              className="h-8 text-xs"
-              maxLength={3}
-            />
-          </div>
-        )}
       </div>
 
       {isSoccerJerseyCrewNeck && (
