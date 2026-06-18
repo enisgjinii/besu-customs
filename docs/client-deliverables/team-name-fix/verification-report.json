@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-06-18T11:37:19.310Z",
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "michaelPromptExtractsTeamName": true,
+    "chestLayerPosition": [
+      0.5,
+      0.25,
+      0
+    ],
+    "chestLayerName": "Team Name: MICHAEL"
+  },
+  "michaelPrompt": "Make a jersey about Michael Jackson, and show him doing the moonwalk. Also, please put the team name Michael on the front. Also, please add space and stars to the background to make it look epic.",
+  "results": [
+    {
+      "label": "Michael Baptiste test prompt (Jun 18)",
+      "prompt": "Make a jersey about Michael Jackson, and show him doing the moonwalk. Also, please put the team name Michael on the front. Also, please add space and stars to the background to make it look epic.",
+      "expected": "Michael",
+      "extracted": "Michael",
+      "normalized": "MICHAEL",
+      "pass": true
+    },
+    {
+      "label": "team name is Lakers",
+      "prompt": "Create a jersey for team name is Lakers with flames",
+      "expected": "Lakers",
+      "extracted": "Lakers",
+      "normalized": "LAKERS",
+      "pass": true
+    },
+    {
+      "label": "team name Lakers on the front",
+      "prompt": "team name Lakers on the front with gold trim",
+      "expected": "Lakers",
+      "extracted": "Lakers",
+      "normalized": "LAKERS",
+      "pass": true
+    },
+    {
+      "label": "put the team name Bulls on the front",
+      "prompt": "put the team name Bulls on the front",
+      "expected": "Bulls",
+      "extracted": "Bulls",
+      "normalized": "BULLS",
+      "pass": true
+    },
+    {
+      "label": "team called the Galactic",
+      "prompt": "uniform for a team called the Galactic with space theme",
+      "expected": "Galactic",
+      "extracted": "Galactic",
+      "normalized": "GALACTIC",
+      "pass": true
+    },
+    {
+      "label": "no team name (should not extract)",
+      "prompt": "Make a jersey about Michael Jackson with stars",
+      "expected": null,
+      "extracted": null,
+      "normalized": null,
+      "pass": true
+    }
+  ],
+  "chestLayerPreview": {
+    "name": "Team Name: MICHAEL",
+    "text": "MICHAEL",
+    "position": [
+      0.5,
+      0.25,
+      0
+    ],
+    "fontSize": 26,
+    "note": "Position [0.5, Y, 0] = center chest on UV map (front panel, not back)."
+  }
+}
