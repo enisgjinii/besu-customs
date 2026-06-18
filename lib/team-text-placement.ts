@@ -16,14 +16,33 @@ function sanitizeTeamName(value: string): string {
     .trim();
 }
 
+const TEAM_NAME_STOP_LOOKAHEAD =
+  '(?=\\s+on\\s+the\\s+(?:front|back)\\b|\\s+(?:using|with|featuring|inspired|based|for|and|like|including)\\b|[,.;!?]|$)';
+
 export function extractTeamNameFromPrompt(prompt: string): string | null {
   const normalizedPrompt = prompt.trim();
   if (!normalizedPrompt) return null;
 
   const patterns = [
-    /\bteam\s+(?:called|named)\s+["']?(?:the\s+)?([a-z0-9][a-z0-9 '&.-]{1,40}?)(?=\s+(?:using|with|featuring|inspired|based|for|and|like|including)\b|[,.;!?]|$)/i,
-    /\bteam\s+name\s+(?:is|:)\s+["']?(?:the\s+)?([a-z0-9][a-z0-9 '&.-]{1,40}?)(?=\s+(?:using|with|featuring|inspired|based|for|and|like|including)\b|[,.;!?]|$)/i,
-    /\bfor\s+(?:a|the)\s+team\s+["']?(?:the\s+)?([a-z0-9][a-z0-9 '&.-]{1,40}?)(?=\s+(?:using|with|featuring|inspired|based|and|like|including)\b|[,.;!?]|$)/i,
+    // "put/place/add the team name Michael on the front"
+    new RegExp(
+      `\\b(?:put|place|add)\\s+(?:the\\s+)?team\\s+name\\s+["']?([a-z0-9][a-z0-9 '&.-]{1,40}?)["']?\\s+on\\s+the\\s+front\\b`,
+      "i",
+    ),
+    // "team name Michael on the front"
+    /\bteam\s+name\s+["']?([a-z0-9][a-z0-9 '&.-]{1,40}?)["']?\s+on\s+the\s+front\b/i,
+    new RegExp(
+      `\\bteam\\s+(?:called|named)\\s+["']?(?:the\\s+)?([a-z0-9][a-z0-9 '&.-]{1,40}?)${TEAM_NAME_STOP_LOOKAHEAD}`,
+      "i",
+    ),
+    new RegExp(
+      `\\bteam\\s+name\\s+(?:(?:is|:)\\s+)?["']?(?:the\\s+)?([a-z0-9][a-z0-9 '&.-]{1,40}?)${TEAM_NAME_STOP_LOOKAHEAD}`,
+      "i",
+    ),
+    new RegExp(
+      `\\bfor\\s+(?:a|the)\\s+team\\s+["']?(?:the\\s+)?([a-z0-9][a-z0-9 '&.-]{1,40}?)${TEAM_NAME_STOP_LOOKAHEAD}`,
+      "i",
+    ),
   ];
 
   for (const pattern of patterns) {

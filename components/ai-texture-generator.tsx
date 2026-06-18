@@ -214,7 +214,7 @@ export function AITextureGenerator({
       ? [
           `Team identity: the team name is "${detectedTeamName}".`,
           `Create an original team logo or monogram inspired by the user's theme; do not copy an existing sports logo.`,
-          `Place the team name "${detectedTeamName}" exactly once, on the front chest only, fitting within the jersey torso from shoulder to shoulder.`,
+          `The front-chest team name "${detectedTeamName}" is added in a separate compositing step — do not render that name or any letters/numbers anywhere in the texture.`,
           "Small matching logo marks may appear on the waistband or short leg only when they improve the uniform.",
         ].join(" ")
       : null;
@@ -223,7 +223,7 @@ export function AITextureGenerator({
       modelType === "duffle-bag"
         ? "Do not add names, numbers, letters, words, logos, or watermarks anywhere on the bag."
         : detectedTeamName
-          ? `The only permitted text is the "${detectedTeamName}" team name on the front chest. Keep the entire back torso and back neck free of team names, player names, numbers, letters, logos, monograms, and watermarks.`
+          ? `Do not add any names, numbers, letters, words, logos, monograms, or watermarks anywhere on the jersey. The team name "${detectedTeamName}" will be placed on the front chest automatically — keep every panel typography-free, especially the back torso and back neck.`
           : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography.",
     ]
       .filter(Boolean)
