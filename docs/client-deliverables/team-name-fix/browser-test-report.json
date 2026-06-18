@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-06-18T20:08:34.321528+00:00",
+  "baseUrl": "http://localhost:3000",
+  "prompt": "Make a jersey about Michael Jackson, and show him doing the moonwalk. Also, please put the team name Michael on the front. Also, please add space and stars to the background to make it look epic.",
+  "steps": [
+    {
+      "step": "Load app",
+      "detail": "localhost:3000 opened",
+      "ok": true
+    },
+    {
+      "step": "Select product",
+      "detail": "Basketball Jersey selected",
+      "ok": true
+    },
+    {
+      "step": "Open step",
+      "detail": "AI Design step active",
+      "ok": true
+    },
+    {
+      "step": "UV ready",
+      "detail": "Texture generation unlocked",
+      "ok": true
+    },
+    {
+      "step": "Screenshot",
+      "detail": "04-local-prompt-ready.png",
+      "ok": true
+    },
+    {
+      "step": "Generate",
+      "detail": "Flash generation started",
+      "ok": true
+    },
+    {
+      "step": "Generation",
+      "detail": "Completed with team name layer",
+      "ok": true
+    },
+    {
+      "step": "Assert team layer",
+      "detail": "present",
+      "ok": true
+    },
+    {
+      "step": "Screenshot",
+      "detail": "05-local-after-generated.png (post-generation, AI step)",
+      "ok": true
+    },
+    {
+      "step": "Open step",
+      "detail": "Review step for front/back view lock",
+      "ok": true
+    },
+    {
+      "step": "Screenshot",
+      "detail": "06-local-after-front.png",
+      "ok": true
+    },
+    {
+      "step": "Screenshot",
+      "detail": "07-local-after-back.png",
+      "ok": true
+    }
+  ],
+  "screenshots": [
+    "04-local-prompt-ready.png",
+    "05-local-after-generated.png",
+    "06-local-after-front.png",
+    "07-local-after-back.png"
+  ],
+  "assertions": [
+    {
+      "name": "Team name layer added",
+      "pass": true,
+      "detail": "Team Name layer visible in UI"
+    },
+    {
+      "name": "AI generation completed locally with team name layer",
+      "pass": true,
+      "detail": "Flash generation returned and Team Name layer was added automatically."
+    }
+  ],
+  "success": true
+}

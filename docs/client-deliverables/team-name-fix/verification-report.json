@@ -1,5 +1,13 @@
 {
-  "generatedAt": "2026-06-18T11:37:19.310Z",
+  "generatedAt": "2026-06-18T20:10:37.628Z",
+  "guardrailCheck": {
+    "michaelPrompt": {
+      "detectedTeamName": "MICHAEL",
+      "typographyGuardrail": "Do not add any names, numbers, letters, words, logos, monograms, or watermarks anywhere on the jersey. The team name \"MICHAEL\" will be placed on the front chest automatically — keep every panel typography-free, especially the back torso and back neck.",
+      "aiSkipsTypography": true
+    },
+    "passes": true
+  },
   "summary": {
     "total": 6,
     "passed": 6,

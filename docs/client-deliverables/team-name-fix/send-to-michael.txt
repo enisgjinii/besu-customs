@@ -1,13 +1,15 @@
 Hi Michael,
 
-Thanks for testing — great catch on the team name landing on the back instead of the front.
+Re-tested your exact Michael Jackson prompt locally after the fix — all passed.
 
-We traced it: your prompt said "put the team name Michael on the front," but the app only recognized more formal phrasing like "team name is Michael." Because of that, the AI defaulted to a back-of-jersey name placement.
+What changed:
+- Your wording "put the team name Michael on the front" is now recognized
+- After AI generation, the app adds "Team Name: MICHAEL" on the front chest automatically
+- The back no longer gets the team name baked in by the AI
 
-Fix is in:
-- The app now understands natural wording like "put the team name X on the front"
-- When a team name is detected, it is placed on the front chest automatically as an editable text layer (not left to the AI)
+Attached PDF includes:
+- Your original test screenshots (before)
+- New local re-test screenshots (after)
+- Automated test results
 
-Attached is a short PDF with your test screenshots, root cause, and local verification results. Once this is deployed, you can rerun the same Michael Jackson prompt and MICHAEL should appear on the front chest.
-
-Let me know when you want to retest on production.
+Once this is deployed to production, you can rerun the same prompt on besu-customs.vercel.app to confirm.

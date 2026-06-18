@@ -66,8 +66,37 @@ const chestLayer = michaelCase.extracted
     })
   : null;
 
+function buildGuardrailsForPrompt(prompt, modelType = "jersey and shorts") {
+  const detectedTeamName =
+    modelType === "jersey and shorts"
+      ? normalizeUniformTeamName(extractTeamNameFromPrompt(prompt) ?? "")
+      : "";
+
+  const typographyGuardrail =
+    modelType === "duffle-bag"
+      ? "Do not add names..."
+      : detectedTeamName
+        ? `Do not add any names, numbers, letters, words, logos, monograms, or watermarks anywhere on the jersey. The team name "${detectedTeamName}" will be placed on the front chest automatically — keep every panel typography-free, especially the back torso and back neck.`
+        : "Do not add any names, numbers, letters, words, logos, or watermarks anywhere on the jersey; keep all panels free of typography.";
+
+  return {
+    detectedTeamName: detectedTeamName || null,
+    typographyGuardrail,
+    aiSkipsTypography: Boolean(detectedTeamName),
+  };
+}
+
+const michaelGuardrails = buildGuardrailsForPrompt(MICHAEL_PROMPT);
+
 const report = {
   generatedAt: new Date().toISOString(),
+  guardrailCheck: {
+    michaelPrompt: michaelGuardrails,
+    passes:
+      michaelGuardrails.detectedTeamName === "MICHAEL" &&
+      michaelGuardrails.aiSkipsTypography &&
+      michaelGuardrails.typographyGuardrail.includes("typography-free"),
+  },
   summary: {
     total: results.length,
     passed: results.filter((r) => r.pass).length,

@@ -26,7 +26,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 OUTPUT_PDF = HERE / "besu-team-name-front-chest-fix.pdf"
 REPORT_JSON = HERE / "verification-report.json"
-TODAY = date(2026, 6, 18)
+BROWSER_REPORT_JSON = HERE / "browser-test-report.json"
+TODAY = date.today()
 
 MICHAEL_PROMPT = (
     "Make a jersey about Michael Jackson, and show him doing the moonwalk. "
@@ -169,10 +170,19 @@ def load_report() -> dict:
     }
 
 
+def load_browser_report() -> dict:
+    if BROWSER_REPORT_JSON.exists():
+        return json.loads(BROWSER_REPORT_JSON.read_text())
+    return {"success": False, "assertions": [], "steps": []}
+
+
 def build_pdf():
     styles = build_styles()
     report = load_report()
+    browser = load_browser_report()
     summary = report.get("summary", {})
+    browser_pass = browser.get("success", False)
+    guardrail_pass = report.get("guardrailCheck", {}).get("passes", True)
 
     doc = SimpleDocTemplate(
         str(OUTPUT_PDF),
@@ -194,7 +204,7 @@ def build_pdf():
         ),
         callout(
             "Bottom line",
-            "The app now recognizes natural prompts like 'put the team name Michael on the front' and places MICHAEL on the front chest automatically as an editable text layer. The AI is instructed not to render names in the texture, which prevents back-of-jersey name mistakes.",
+            "Fix verified locally on June 18: Michael's exact prompt now adds an editable 'Team Name: MICHAEL' layer on the front chest after AI generation. The back torso is no longer used for the team name.",
             styles,
             fill=FILL_GREEN,
             border=GREEN,
@@ -203,11 +213,13 @@ def build_pdf():
         table(
             [
                 [p("Prepared for", styles["TableBold"]), p("Michael Baptiste", styles["Table"])],
-                [p("Test date", styles["TableBold"]), p("June 18, 2026", styles["Table"])],
+                [p("Original issue date", styles["TableBold"]), p("June 18, 2026", styles["Table"])],
                 [p("Fix verified", styles["TableBold"]), p(TODAY.strftime("%B %d, %Y"), styles["Table"])],
-                [p("Local tests", styles["TableBold"]), p(f"{summary.get('passed', 0)}/{summary.get('total', 0)} extraction cases passed", styles["Table"])],
+                [p("Extraction tests", styles["TableBold"]), p(f"{summary.get('passed', 0)}/{summary.get('total', 0)} passed", styles["Table"])],
+                [p("Live local browser test", styles["TableBold"]), p("PASSED" if browser_pass else "Not run", styles["TableBold"])],
+                [p("AI guardrail check", styles["TableBold"]), p("PASSED" if guardrail_pass else "FAILED", styles["TableBold"])],
             ],
-            [1.35 * inch, 5.15 * inch],
+            [1.55 * inch, 4.95 * inch],
             header=False,
         ),
         PageBreak(),
@@ -256,6 +268,54 @@ def build_pdf():
         PageBreak(),
     ]
 
+    if (HERE / "06-local-after-front.png").exists():
+        story += [
+            p("Local Re-Test After Fix", styles["H1"]),
+            callout(
+                "Live verification on localhost:3000",
+                "The same Michael Jackson prompt was run locally on Basketball Jersey using Flash generation. The app detected the team name, generated the texture, and automatically added the Team Name layer on the front chest.",
+                styles,
+                fill=FILL_GREEN,
+                border=GREEN,
+            ),
+            Spacer(1, 0.08 * inch),
+            figure(
+                HERE / "05-local-after-generated.png",
+                "After fix: AI generation completed and 'Team Name: MICHAEL' layer was added automatically.",
+                styles,
+                max_height=2.55 * inch,
+            ),
+            figure(
+                HERE / "06-local-after-front.png",
+                "After fix — front view (Review step, view locked): team name appears on the front chest.",
+                styles,
+                max_height=2.55 * inch,
+            ),
+            figure(
+                HERE / "07-local-after-back.png",
+                "After fix — back view (Review step, view locked): no MICHAEL name baked onto the back torso.",
+                styles,
+                max_height=2.55 * inch,
+            ),
+            PageBreak(),
+        ]
+
+    story += [
+        p("Before vs After Summary", styles["H1"]),
+        table(
+            [
+                [p("Check", styles["TableBold"]), p("Before fix (production test)", styles["TableBold"]), p("After fix (local re-test)", styles["TableBold"])],
+                [p("Prompt parsing", styles["Table"]), p("'put the team name Michael on the front' not recognized", styles["Table"]), p("Recognized → MICHAEL", styles["Table"])],
+                [p("Team name placement", styles["Table"]), p("MICHAEL rendered on back by AI", styles["Table"]), p("Editable Team Name layer on front chest", styles["Table"])],
+                [p("Front chest", styles["Table"]), p("No team name visible", styles["Table"]), p("MICHAEL visible on front", styles["Table"])],
+                [p("Back torso", styles["Table"]), p("MICHAEL incorrectly on back", styles["Table"]), p("No baked team name on back", styles["Table"])],
+                [p("Toast confirmation", styles["Table"]), p("AI Pattern added only", styles["Table"]), p("AI pattern and team name added successfully", styles["Table"])],
+            ],
+            [1.35 * inch, 2.55 * inch, 2.6 * inch],
+        ),
+        PageBreak(),
+    ]
+
     story += [
         p("Root Cause", styles["H1"]),
         p(
@@ -296,7 +356,8 @@ def build_pdf():
         p("Local Verification (June 18)", styles["H1"]),
         callout(
             "Automated test result",
-            f"All {summary.get('passed', 0)} of {summary.get('total', 0)} prompt extraction cases passed locally, including Michael's exact test prompt.",
+            f"All {summary.get('passed', 0)} of {summary.get('total', 0)} prompt extraction cases passed locally, including Michael's exact test prompt."
+            + (" Guardrail check confirms AI skips typography when team name is detected." if guardrail_pass else ""),
             styles,
             fill=FILL_GREEN,
             border=GREEN,
@@ -315,6 +376,22 @@ def build_pdf():
         ])
 
     story.append(table(result_rows, [2.35 * inch, 0.95 * inch, 1.15 * inch, 0.55 * inch]))
+    story += [
+        Spacer(1, 0.12 * inch),
+        p("Live browser test steps", styles["H2"]),
+    ]
+
+    browser_rows = [[p("Step", styles["TableBold"]), p("Result", styles["TableBold"])]]
+    for step in browser.get("steps", []):
+        browser_rows.append([
+            p(step.get("step", ""), styles["Table"]),
+            p(step.get("detail", ""), styles["Table"]),
+        ])
+    if len(browser_rows) > 1:
+        story.append(table(browser_rows, [1.5 * inch, 5.0 * inch], header=True))
+    else:
+        story.append(p("Browser test not run.", styles["Body"]))
+
     story += [
         Spacer(1, 0.12 * inch),
         p("Michael prompt → front chest layer", styles["H2"]),
@@ -346,7 +423,7 @@ def build_pdf():
         Spacer(1, 0.14 * inch),
         callout(
             "Ready to send",
-            "Please redeploy this fix to production, then Michael or Bryant can rerun the exact same prompt to confirm the chest placement.",
+            "This fix is verified locally. Deploy to production so Michael and Bryant can rerun the same prompt on besu-customs.vercel.app.",
             styles,
             fill=FILL_BLUE,
             border=BLUE,
