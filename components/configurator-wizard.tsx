@@ -54,16 +54,17 @@ export function ConfiguratorWizard() {
   const products = useConfiguratorStore((s) => s.products);
   const textureLayers = useConfiguratorStore((s) => s.textureLayers);
   const isModelSelected = !!(currentModelUrl || selectedProductId);
-  const currentStepNumber = currentStep + 1;
   const selectedProduct = products.find(
     (product) =>
       product.id === selectedProductId ||
       (!!currentModelUrl && product.modelUrl === currentModelUrl),
   );
+  const activeStep = CONFIGURATOR_STEPS[currentStep];
   const currentStepTitle =
     currentStep === 0
       ? formatProductCategoryTitle(selectedProduct?.category)
-      : CONFIGURATOR_STEPS[currentStep]?.title;
+      : activeStep?.title;
+  const isReviewStep = activeStep?.title === "REVIEW";
 
   const clampPanelHeight = useCallback((rawHeight: number) => {
     if (typeof window === "undefined") return Math.min(560, Math.max(220, rawHeight));
@@ -88,9 +89,9 @@ export function ConfiguratorWizard() {
   }, [currentStep, setStep]);
 
   useEffect(() => {
-    if (isMobile || currentStepNumber !== 9) return;
-      setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.68)));
-  }, [clampPanelHeight, currentStepNumber, isMobile]);
+    if (isMobile || !isReviewStep) return;
+    setPanelHeight(clampPanelHeight(Math.round(window.innerHeight * 0.68)));
+  }, [clampPanelHeight, isReviewStep, isMobile]);
 
   // Desktop pointer-drag handlers
   const handleDragStart = useCallback(
@@ -161,7 +162,8 @@ export function ConfiguratorWizard() {
   const CurrentComponent = CONFIGURATOR_STEPS[currentStep]?.component;
   if (!isMounted) return null;
 
-  const showViewLock = [6, 8, 9].includes(currentStepNumber);
+  const showViewLock =
+    activeStep?.title === "IMAGES" || activeStep?.title === "REVIEW";
 
   return (
     <div
@@ -360,7 +362,7 @@ export function ConfiguratorWizard() {
           <div
             className={cn(
               "mx-auto p-2 pb-6 sm:p-3 md:p-4 md:pb-7",
-              currentStepNumber === 9 ? "max-w-6xl" : "max-w-5xl",
+              isReviewStep ? "max-w-6xl" : "max-w-5xl",
             )}
           >
             <AnimatePresence mode="wait">
