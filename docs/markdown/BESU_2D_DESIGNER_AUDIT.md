@@ -1,7 +1,7 @@
 # Besu Customs 2D Designer — Repository Audit
 
-Date: 2026-07-22  
-Branch: `feature/besu-2d-ai-designer`
+Date: 2026-08-01
+Branch: `main`
 
 ## Current stack
 
@@ -61,6 +61,23 @@ Vercel hosts the Next.js standalone app and API routes. Supabase hosts database/
 - AI-generated artwork is raster. SVG export embeds the raster and is explicitly labeled non-editable.
 - Existing Shopify metadata varies by product; a real theme/cart test remains required.
 - Removing legacy dependencies before route/import verification could break admin tooling.
+
+## Production-readiness update
+
+- The tracked `client_google.json` credential file was removed and replaced by `client_google.example.json`. The previously committed Google OAuth client secret must be rotated in Google Cloud because removal from Git does not invalidate it.
+- `.gitignore` now excludes real OAuth JSON, credential JSON, private keys, and environment files.
+- The generation route keeps OpenAI access server-only, validates the request with Zod, bounds in-memory request/rate-limit maps, restricts correction assets to the configured Supabase host, and only enables mock mode when `DESIGNER_MOCK_AI=true`.
+- Supabase uploads validate configuration, PNG content, size, bucket errors, and the returned public URL.
+- Persisted designer state migrated from v3 to v4 with fresh front/back transform objects and a safe reset path.
+- Checkout validates both artwork sides, roster names/numbers/quantities/sizes, customer identity/email, and iframe embedding before posting `besu:checkout`.
+- Production ZIP export contains both sides as PNG/SVG, a PDF order pack, and configuration JSON.
+
+## Remaining validation
+
+- OpenAI billing/model access must be enabled for a real generation test.
+- The Supabase hostname and bucket must be reachable from the deployment before real uploads can be validated.
+- A client-owned Shopify theme/cart sandbox test remains required to confirm variant handling and parent-frame checkout behavior.
+- Vercel production access settings and the final client alias should be confirmed by the project owner.
 
 ## Implementation plan
 

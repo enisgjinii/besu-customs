@@ -1,23 +1,72 @@
-# Besu 2D Designer setup
+# BESU 2D Designer setup
 
-Required server environment variables:
+The root route is the client-facing 2D designer. The legacy 3D/admin routes remain available and should be tested separately before removing old dependencies.
+
+## Required environment
+
+Set these values in Vercel and in a local ignored `.env.local` file. Never prefix server secrets with `NEXT_PUBLIC_`.
 
 ```text
-OPENAI_API_KEY=
-NEXT_PUBLIC_SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=                         # server-only
+NEXT_PUBLIC_SUPABASE_URL=https://...    # public project URL
+SUPABASE_SERVICE_ROLE_KEY=              # server-only; never expose to the browser
 DESIGNER_ASSETS_BUCKET=designer-assets
 ```
 
 Optional:
 
 ```text
-OPENAI_IMAGE_MODEL=gpt-image-2
-DESIGNER_MOCK_AI=true
+OPENAI_IMAGE_MODEL=gpt-image-1
+DESIGNER_MOCK_AI=true                   # development/testing only
 ```
 
-When `OPENAI_API_KEY` is absent, the endpoint automatically returns deterministic mock artwork so the complete UI can be tested without API cost. Set `DESIGNER_MOCK_AI=true` to force mock mode even when a key exists.
+`OPENAI_IMAGE_MODEL` defaults to `gpt-image-1`, which supports transparent PNG image generation/editing. Set a different model only after validating its image API parameters and account access.
 
-The `designer-assets` Supabase Storage bucket must exist and permit public reads, while writes remain server-only through the service-role key. Never expose that key to the browser.
+## Supabase Storage
 
-Before production release, validate OpenAI billing/model access, bucket policy, front/back generation, PNG/PDF downloads, the raster limitation of SVG exports, SMTP delivery, and a Shopify sandbox checkout.
+1. In Supabase Storage, create a bucket named `designer-assets`, or set `DESIGNER_ASSETS_BUCKET` to a different bucket name.
+2. Enable public read access for that bucket so generated artwork can be shown in the preview, exports, and Shopify metadata.
+3. Keep writes server-only. The app uploads through `SUPABASE_SERVICE_ROLE_KEY`; do not put that key in client code or `NEXT_PUBLIC_*` variables.
+4. The server writes PNG files at `generated/YYYY-MM-DD/<id>.png` with `image/png` content type and a one-year cache policy.
+5. Test a real upload and public read before enabling client checkout.
+
+The app returns a clear configuration error when the Supabase URL, service-role key, bucket, public policy, or upload response is invalid.
+
+## Mock mode
+
+Run the local app with mock generation when OpenAI billing or Supabase is not ready:
+
+```bash
+DESIGNER_MOCK_AI=true pnpm dev
+```
+
+Mock mode is explicit. Production does not silently fall back to mock artwork when `OPENAI_API_KEY` is missing.
+
+## Real AI/storage mode
+
+1. Set `OPENAI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and the bucket name.
+2. Leave `DESIGNER_MOCK_AI` unset or set it to `false`.
+3. Generate front artwork and confirm the response contains a Supabase public asset URL.
+4. Generate back artwork, then test a correction using the generated asset URL.
+5. Confirm the public asset loads in a clean browser session and in an iframe.
+
+## Production readiness checklist
+
+- [ ] No OAuth JSON, API key, service-role key, SMTP password, or `.env*` file is tracked.
+- [ ] Any previously exposed credential has been rotated.
+- [ ] OpenAI billing/model access is active and the image model is enabled.
+- [ ] Supabase bucket exists, public reads work, and server-only writes work.
+- [ ] Front and back artwork generation and correction work.
+- [ ] Long team/player names remain inside safe print boundaries.
+- [ ] Roster, customer, and size validation blocks incomplete orders.
+- [ ] PNG, SVG, PDF, and ZIP exports are downloaded and opened successfully.
+- [ ] Shopify iframe receives and handles `besu:checkout`.
+- [ ] Vercel production deployment is READY and the intended alias is accessible to the client.
+- [ ] A Shopify sandbox/cart test and a clean mobile browser test are complete.
+
+## Known limitations
+
+- Serverless in-memory idempotency/rate limiting is best-effort and resets between instances; use durable storage/rate limiting for high-volume production traffic.
+- SVG exports preserve the layout but can contain raster artwork, so they are not guaranteed to be fully editable vector files.
+- Shopify checkout requires the designer to be embedded in an iframe; standalone use reports a clear submission error.
+- Real AI generation remains dependent on OpenAI billing and Supabase network/storage availability.

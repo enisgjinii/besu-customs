@@ -3,15 +3,19 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { DesignerState, DesignerStep, GarmentType, GarmentView, GenerationVersion, RosterPlayer } from "./types";
 
-const transform = { scale: 1, x: 0, y: 0, rotation: 0 };
-const textTransform = { scale: 1, x: 0, y: 0 };
-const initial: DesignerState = {
-  activeStep: 0, style: "modern", sport: "Basketball",
-  garmentType: "jersey", view: "front", prompt: "", correction: "", teamName: "",
-  font: "Inter, sans-serif", colors: { primary: "#101820", secondary: "#d4af37", accent: "#ffffff" },
-  artwork: {}, transforms: { front: transform, back: transform }, textTransforms: { front: textTransform, back: textTransform }, history: [], roster: [],
-  customer: { name: "", email: "", phone: "", notes: "" },
-};
+function createInitialState(): DesignerState {
+  return {
+    activeStep: 0, style: "modern", sport: "Basketball",
+    garmentType: "jersey", view: "front", prompt: "", correction: "", teamName: "",
+    font: "Inter, sans-serif", colors: { primary: "#101820", secondary: "#d4af37", accent: "#ffffff" },
+    artwork: {},
+    transforms: { front: { scale: 1, x: 0, y: 0, rotation: 0 }, back: { scale: 1, x: 0, y: 0, rotation: 0 } },
+    textTransforms: { front: { scale: 1, x: 0, y: 0 }, back: { scale: 1, x: 0, y: 0 } },
+    history: [], roster: [], customer: { name: "", email: "", phone: "", notes: "" },
+  };
+}
+
+const initial = createInitialState();
 
 type Actions = {
   patch: (value: Partial<DesignerState>) => void;
@@ -36,5 +40,24 @@ export const useDesignerStore = create<DesignerState & Actions>()(persist((set) 
   addPlayer: () => set((s) => ({ roster: [...s.roster, { id: crypto.randomUUID(), name: "", number: "", topSize: "M", shortsSize: "M", quantity: 1 }] })),
   updatePlayer: (id, value) => set((s) => ({ roster: s.roster.map((p) => p.id === id ? { ...p, ...value } : p) })),
   removePlayer: (id) => set((s) => ({ roster: s.roster.filter((p) => p.id !== id) })),
-  reset: () => set(initial),
-}), { name: "besu-2d-designer-v3", version: 3, partialize: (s) => Object.fromEntries(Object.entries(s).filter(([,v]) => typeof v !== "function")) as DesignerState }));
+  reset: () => set(createInitialState()),
+}), {
+  name: "besu-2d-designer-v4",
+  version: 4,
+  migrate: (persisted) => {
+    const source = (persisted || {}) as Partial<DesignerState>;
+    const fresh = createInitialState();
+    return {
+      ...fresh,
+      ...source,
+      colors: { ...fresh.colors, ...(source.colors || {}) },
+      transforms: { ...fresh.transforms, ...(source.transforms || {}), front: { ...fresh.transforms.front, ...(source.transforms?.front || {}) }, back: { ...fresh.transforms.back, ...(source.transforms?.back || {}) } },
+      textTransforms: { ...fresh.textTransforms, ...(source.textTransforms || {}), front: { ...fresh.textTransforms.front, ...(source.textTransforms?.front || {}) }, back: { ...fresh.textTransforms.back, ...(source.textTransforms?.back || {}) } },
+      artwork: source.artwork && typeof source.artwork === "object" ? source.artwork : {},
+      history: Array.isArray(source.history) ? source.history.slice(0, 8) : [],
+      roster: Array.isArray(source.roster) ? source.roster : [],
+      customer: { ...fresh.customer, ...(source.customer || {}) },
+    } as DesignerState;
+  },
+  partialize: (s) => Object.fromEntries(Object.entries(s).filter(([,v]) => typeof v !== "function")) as DesignerState,
+}));

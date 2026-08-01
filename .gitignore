@@ -18,6 +18,15 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+
+# OAuth and private credential files
+client_google.json
+client_secret*.json
+credentials*.json
+*oauth*.json
+*.pem
+*.key
 
 # vercel
 .vercel

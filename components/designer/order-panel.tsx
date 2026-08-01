@@ -17,9 +17,7 @@ import {
   downloadDesignerPng, downloadDesignerSvg, downloadProductionBundle,
   downloadProductionPdf, serializeDesignerSvg, type ProductionCaptures,
 } from "@/lib/designer/export-service";
-import { sendDesignerCheckout, validateCheckout } from "@/lib/designer/shopify-service";
-
-const sizes = ["YS", "YM", "YL", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
+import { DESIGNER_SIZES, sendDesignerCheckout, validateCheckout } from "@/lib/designer/shopify-service";
 
 function waitForPreview() {
   return new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
@@ -50,8 +48,9 @@ export function OrderPanel({ mode = "roster" }: { mode?: "roster" | "review" }) 
   const errors = useMemo(() => validateCheckout(s), [s]);
   const rosterReady = s.roster.length > 0 && s.roster.every(player => player.name.trim() && player.number.trim() && player.quantity > 0);
   const customerReady = Boolean(s.customer.name.trim() && /^\S+@\S+\.\S+$/.test(s.customer.email));
-  const checks = [
-    { label: "Front artwork", ready: Boolean(s.artwork.front) },
+        const checks = [
+          { label: "Design ID", ready: Boolean(s.designId) },
+          { label: "Front artwork", ready: Boolean(s.artwork.front) },
     { label: "Back artwork", ready: Boolean(s.artwork.back) },
     { label: "Team", ready: Boolean(s.teamName.trim()) },
     { label: "Roster", ready: rosterReady },
@@ -90,8 +89,8 @@ export function OrderPanel({ mode = "roster" }: { mode?: "roster" | "review" }) 
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}><Typography fontWeight={800}>Roster</Typography><Typography variant="caption">{total} pieces</Typography></Stack>
         <Stack spacing={1.25}>{s.roster.map((player, index) => <Box key={player.id} sx={{ p: 1.25, border: "1px solid #dedede", bgcolor: "#fff" }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}><Typography variant="caption" fontWeight={800}>PLAYER {index + 1}</Typography><IconButton size="small" aria-label={`Remove player ${index + 1}`} onClick={() => s.removePlayer(player.id)}><DeleteOutlineRounded fontSize="small" /></IconButton></Stack>
-          <Stack direction="row" spacing={1}><TextField label="Name" value={player.name} onChange={e => s.updatePlayer(player.id, { name: e.target.value })} /><TextField label="#" value={player.number} onChange={e => s.updatePlayer(player.id, { number: e.target.value.replace(/\D/g, "").slice(0, 3) })} sx={{ maxWidth: 82 }} /></Stack>
-          <Stack direction="row" spacing={1} mt={1}><FormControl><InputLabel>Top</InputLabel><Select label="Top" value={player.topSize} onChange={e => s.updatePlayer(player.id, { topSize: e.target.value })}>{sizes.map(size => <MenuItem key={size} value={size}>{size}</MenuItem>)}</Select></FormControl><FormControl><InputLabel>Shorts</InputLabel><Select label="Shorts" value={player.shortsSize} onChange={e => s.updatePlayer(player.id, { shortsSize: e.target.value })}>{sizes.map(size => <MenuItem key={size} value={size}>{size}</MenuItem>)}</Select></FormControl><TextField label="Qty" type="number" value={player.quantity} inputProps={{ min: 1, max: 99 }} onChange={e => s.updatePlayer(player.id, { quantity: Math.max(1, Math.min(99, Number(e.target.value))) })} /></Stack>
+          <Stack direction="row" spacing={1}><TextField label="Name" value={player.name} onChange={e => s.updatePlayer(player.id, { name: e.target.value.slice(0, 18) })} inputProps={{ maxLength: 18 }} /><TextField label="#" value={player.number} onChange={e => s.updatePlayer(player.id, { number: e.target.value.replace(/\D/g, "").slice(0, 3) })} sx={{ maxWidth: 82 }} /></Stack>
+          <Stack direction="row" spacing={1} mt={1}><FormControl><InputLabel>Top</InputLabel><Select label="Top" value={player.topSize} onChange={e => s.updatePlayer(player.id, { topSize: e.target.value })}>{DESIGNER_SIZES.map(size => <MenuItem key={size} value={size}>{size}</MenuItem>)}</Select></FormControl><FormControl><InputLabel>Shorts</InputLabel><Select label="Shorts" value={player.shortsSize} onChange={e => s.updatePlayer(player.id, { shortsSize: e.target.value })}>{DESIGNER_SIZES.map(size => <MenuItem key={size} value={size}>{size}</MenuItem>)}</Select></FormControl><TextField label="Qty" type="number" value={player.quantity} inputProps={{ min: 1, max: 99 }} onChange={e => s.updatePlayer(player.id, { quantity: Math.max(1, Math.min(99, Number(e.target.value))) })} /></Stack>
         </Box>)}</Stack>
         <Button fullWidth variant="outlined" startIcon={<AddRounded />} onClick={s.addPlayer} sx={{ mt: 1.5 }}>Add player</Button>
       </> : <>
