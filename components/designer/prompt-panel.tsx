@@ -15,6 +15,19 @@ export function PromptPanel() {
   const s = useDesignerStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [mockMode, setMockMode] = useState(false);
+
+  function friendlyError(code?: string, fallback?: string) {
+    const messages: Record<string, string> = {
+      missing_openai_key: "AI generation is not configured yet. Add the production OpenAI key, or enable mock mode for local testing.",
+      storage_not_configured: "Artwork storage is not configured yet. Add the Supabase URL, service key, and assets bucket.",
+      invalid_previous_asset: "This artwork revision is no longer available. Generate the side again before requesting a correction.",
+      rate_limited: "Generation is temporarily busy. Wait a moment and try again.",
+      generation_timeout: "Generation took too long. Try a simpler brief or try again.",
+      upstream_error: "The image service could not complete this request. Try again in a moment.",
+    };
+    return (code && messages[code]) || fallback || "Artwork generation failed. Please try again.";
+  }
 
   async function generate() {
     setError(""); setBusy(true);
@@ -24,16 +37,18 @@ export function PromptPanel() {
         body: JSON.stringify({ garmentType: s.garmentType, designDescription: s.prompt, teamName: s.teamName, colors: s.colors, style: s.style, view: s.view, correction: s.correction || undefined, previousAssetUrl: s.artwork[s.view], requestId: crypto.randomUUID() }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Generation failed.");
+      if (!response.ok) throw new Error(friendlyError(data.code, data.error));
+      setMockMode(Boolean(data.mock));
       s.addVersion({ id: data.id, prompt: s.prompt, correction: s.correction || undefined, colors: s.colors, assetUrl: data.assetUrl, createdAt: data.createdAt, garmentType: s.garmentType, view: s.view });
       s.setStep(1);
-    } catch (e) { setError(e instanceof Error ? e.message : "Generation failed."); }
+    } catch (e) { setError(e instanceof Error ? e.message : "Artwork generation failed. Please try again."); }
     finally { setBusy(false); }
   }
 
   return <Card component="section">
     <CardContent sx={{ p: { xs: 2, md: 2.5 }, "&:last-child": { pb: 2.5 } }}>
       <Typography fontWeight={800} mb={2}>Brief</Typography>
+      {mockMode && <Alert severity="info" sx={{ mb: 2 }}>Preview mode — artwork is simulated and is not production artwork.</Alert>}
 
       <FormLabel sx={{ fontSize: 12, fontWeight: 700 }}>Garment</FormLabel>
       <ToggleButtonGroup exclusive fullWidth size="small" value={s.garmentType} onChange={(_, v: GarmentType | null) => v && s.setGarment(v)} sx={{ my: 1 }}>

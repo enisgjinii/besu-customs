@@ -91,6 +91,8 @@ function productionPdf(state: DesignerState, previewData?: { front: string; back
     `Customer: ${state.customer.name} (${state.customer.email})`,
     `Phone: ${state.customer.phone || "-"}`,
     `Total quantity: ${total}`,
+    `Front artwork: ${state.artwork.front || "-"}`,
+    `Back artwork: ${state.artwork.back || "-"}`,
   ], 18, 48);
   doc.setFontSize(13);
   doc.text("Roster", 18, 94);
@@ -148,7 +150,7 @@ export async function downloadProductionBundle(state: DesignerState, captures: P
   zip.file(`${prefix}-FRONT.png`, frontPng);
   zip.file(`${prefix}-BACK.png`, backPng);
   zip.file(`${prefix}-PRODUCTION.pdf`, pdf);
-  zip.file(`${prefix}-CONFIGURATION.json`, JSON.stringify({
+  const orderData = JSON.stringify({
     designId: state.designId || null,
     garmentType: state.garmentType,
     sport: state.sport,
@@ -159,7 +161,8 @@ export async function downloadProductionBundle(state: DesignerState, captures: P
     roster: state.roster,
     customer: state.customer,
     exportedAt: new Date().toISOString(),
-  }, null, 2));
+  }, null, 2);
+  zip.file(`${prefix}-ORDER.json`, orderData);
   const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
   const url = URL.createObjectURL(blob);
   clickDownload(url, `${prefix}-PRODUCTION.zip`);

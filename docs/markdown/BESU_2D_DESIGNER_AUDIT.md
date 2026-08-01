@@ -79,6 +79,19 @@ Vercel hosts the Next.js standalone app and API routes. Supabase hosts database/
 - A client-owned Shopify theme/cart sandbox test remains required to confirm variant handling and parent-frame checkout behavior.
 - Vercel production access settings and the final client alias should be confirmed by the project owner.
 
+## Client approval checklist
+
+- Michael/Bryant approve the jersey, shorts, and uniform template direction, safe-print proportions, and front/back placement.
+- Owner confirms OpenAI billing, the selected image model, and a production `OPENAI_API_KEY` in Vercel.
+- Owner confirms the Supabase host resolves publicly, creates the `designer-assets` bucket (or sets `DESIGNER_ASSETS_BUCKET`), enables public reads, and keeps writes server-only.
+- Owner supplies a Shopify theme/product sandbox that can receive the existing `besu:checkout` message and confirms the variant mapping.
+- Owner confirms SMTP, production domain/alias, Vercel protection, and client access policy.
+- QA signs off mock generation, real generation, correction generation, front/back switching, PNG/SVG/PDF/ZIP exports, mobile layout, and iframe checkout.
+
+### Exact request to send Michael/Bryant
+
+“Please approve the BESU 2D template direction for jersey, shorts, and uniform (front/back safe-print areas and team/player text placement). Also provide the Shopify test product/theme URL and confirm which production domain should be shared with the client. We still need OpenAI billing/model access and the Supabase storage bucket enabled before real-artwork and checkout QA can be signed off.”
+
 ## Implementation plan
 
 1. Replace the home route with the isolated 2D designer and persistent state.
