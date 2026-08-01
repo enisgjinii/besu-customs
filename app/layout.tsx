@@ -2,9 +2,6 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { VercelToolbar } from "@vercel/toolbar/next";
-import { Toaster } from "@/components/ui/sonner";
-import { OnboardingTour } from "@/components/onboarding-tour";
-import { OnboardingKeyboardHandler } from "@/components/onboarding-keyboard-handler";
 import { AuthProvider } from "@/lib/auth-context";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -12,6 +9,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { ErrorLoggerInit } from "@/app/error-logger-init";
 import { ServiceWorkerInit } from "@/components/service-worker-init";
 import { ConnectionIndicator } from "@/components/connection-indicator";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
+import { LegacyGlobalUi } from "@/components/legacy-global-ui";
 import "./globals.css";
 
 const macan = localFont({
@@ -43,7 +42,7 @@ const macan = localFont({
 
 export const metadata: Metadata = {
   title: "Besu Customs",
-  description: "3D Product Configurator",
+  description: "AI-powered 2D custom sportswear designer for production-ready team uniforms.",
   generator: "Enis Gjini",
   appleWebApp: {
     capable: true,
@@ -58,8 +57,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false, // Prevent zooming which can cause performance issues with WebGL
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover", // For notched devices
 };
 
@@ -78,22 +77,22 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`font-sans ${macan.variable} overflow-hidden`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          forcedTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          <ErrorBoundary>
-            <AuthProvider>
-              <QueryProvider>{children}</QueryProvider>
-              <Toaster />
-              <OnboardingTour />
-              <OnboardingKeyboardHandler />
-            </AuthProvider>
-          </ErrorBoundary>
-        </ThemeProvider>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            forcedTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            <ErrorBoundary>
+              <AuthProvider>
+                <QueryProvider>{children}</QueryProvider>
+                <LegacyGlobalUi />
+              </AuthProvider>
+            </ErrorBoundary>
+          </ThemeProvider>
+        </AppRouterCacheProvider>
         {shouldInjectAnalytics && <Analytics />}
         {shouldInjectToolbar && <VercelToolbar />}
         <ErrorLoggerInit />

@@ -242,16 +242,6 @@ const nextConfig = {
           },
         ],
       },
-      // Cache JS/CSS chunks (hashed filenames) for long-term caching
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
       // Cache font files
       {
         source: "/:path*.(woff|woff2|ttf|otf|eot)",
