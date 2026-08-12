@@ -2,25 +2,40 @@
 
 import { useMemo, useState } from "react";
 import {
-  Alert, Box, Button, Card, CardContent, CircularProgress, Divider, FormControl,
-  IconButton, InputLabel, MenuItem, Select, Snackbar, Stack, TextField, Typography,
-} from "@mui/material";
-import AddRounded from "@mui/icons-material/AddRounded";
-import CheckCircleRounded from "@mui/icons-material/CheckCircleRounded";
-import DeleteOutlineRounded from "@mui/icons-material/DeleteOutlineRounded";
-import DownloadRounded from "@mui/icons-material/DownloadRounded";
-import Inventory2Outlined from "@mui/icons-material/Inventory2Outlined";
-import LocalMallRounded from "@mui/icons-material/LocalMallRounded";
-import RadioButtonUncheckedRounded from "@mui/icons-material/RadioButtonUncheckedRounded";
+  Alert,
+  Button,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  Separator,
+  Spinner,
+  TextArea,
+  TextField,
+} from "@heroui/react";
+import {
+  CheckCircle2,
+  Circle,
+  Download,
+  Package,
+  Plus,
+  ShoppingBag,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { useDesignerStore } from "@/lib/designer/store";
 import {
-  downloadDesignerPng, downloadDesignerSvg, downloadProductionBundle,
-  downloadProductionPdf, serializeDesignerSvg, type ProductionCaptures,
+  downloadDesignerPng,
+  downloadDesignerSvg,
+  downloadProductionBundle,
+  downloadProductionPdf,
+  serializeDesignerSvg,
+  type ProductionCaptures,
 } from "@/lib/designer/export-service";
 import { DESIGNER_SIZES, sendDesignerCheckout, validateCheckout } from "@/lib/designer/shopify-service";
 
 function waitForPreview() {
-  return new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  return new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 }
 
 async function captureProductionViews() {
@@ -40,17 +55,22 @@ async function captureProductionViews() {
   return captures;
 }
 
-export function OrderPanel({ mode = "roster" }: { mode?: "roster" | "review" }) {
+export function OrderPanel({
+  mode = "roster",
+  focus = "review",
+}: {
+  mode?: "roster" | "review";
+  focus?: "review" | "export";
+}) {
   const s = useDesignerStore();
-  const [notice, setNotice] = useState<{ severity: "success" | "error"; text: string } | null>(null);
   const [exporting, setExporting] = useState<"png" | "svg" | "pdf" | "zip" | null>(null);
   const total = s.roster.reduce((sum, player) => sum + player.quantity, 0);
   const errors = useMemo(() => validateCheckout(s), [s]);
-  const rosterReady = s.roster.length > 0 && s.roster.every(player => player.name.trim() && player.number.trim() && player.quantity > 0);
+  const rosterReady = s.roster.length > 0 && s.roster.every((player) => player.name.trim() && player.number.trim() && player.quantity > 0);
   const customerReady = Boolean(s.customer.name.trim() && /^\S+@\S+\.\S+$/.test(s.customer.email));
-        const checks = [
-          { label: "Design ID", ready: Boolean(s.designId) },
-          { label: "Front artwork", ready: Boolean(s.artwork.front) },
+  const checks = [
+    { label: "Design ID", ready: Boolean(s.designId) },
+    { label: "Front artwork", ready: Boolean(s.artwork.front) },
     { label: "Back artwork", ready: Boolean(s.artwork.back) },
     { label: "Team", ready: Boolean(s.teamName.trim()) },
     { label: "Roster", ready: rosterReady },
@@ -70,9 +90,9 @@ export function OrderPanel({ mode = "roster" }: { mode?: "roster" | "review" }) 
         if (kind === "pdf") await downloadProductionPdf(snapshot, captures);
         else await downloadProductionBundle(snapshot, captures);
       }
-      setNotice({ severity: "success", text: `${kind.toUpperCase()} ready.` });
+      toast.success(`${kind.toUpperCase()} ready.`);
     } catch (error) {
-      setNotice({ severity: "error", text: error instanceof Error ? error.message : "Export failed." });
+      toast.error(error instanceof Error ? error.message : "Export failed.");
     } finally {
       setExporting(null);
     }
@@ -80,57 +100,226 @@ export function OrderPanel({ mode = "roster" }: { mode?: "roster" | "review" }) 
 
   function checkout() {
     const result = sendDesignerCheckout(s);
-    setNotice(result.ok ? { severity: "success", text: "Sent to Shopify." } : { severity: "error", text: result.errors[0] });
+    if (result.ok) toast.success("Sent to Shopify.");
+    else toast.error(result.errors[0]);
   }
 
-  return <Card component="section">
-    <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-      {mode === "roster" ? <>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}><Typography fontWeight={800}>Roster</Typography><Typography variant="caption">{total} pieces</Typography></Stack>
-        <Stack spacing={1.25}>{s.roster.map((player, index) => <Box key={player.id} sx={{ p: 1.25, border: "1px solid #dedede", bgcolor: "#fff" }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}><Typography variant="caption" fontWeight={800}>PLAYER {index + 1}</Typography><IconButton size="small" aria-label={`Remove player ${index + 1}`} onClick={() => s.removePlayer(player.id)}><DeleteOutlineRounded fontSize="small" /></IconButton></Stack>
-          <Stack direction="row" spacing={1}><TextField label="Name" value={player.name} onChange={e => s.updatePlayer(player.id, { name: e.target.value.slice(0, 18) })} inputProps={{ maxLength: 18 }} /><TextField label="#" value={player.number} onChange={e => s.updatePlayer(player.id, { number: e.target.value.replace(/\D/g, "").slice(0, 3) })} sx={{ maxWidth: 82 }} /></Stack>
-          <Stack direction="row" spacing={1} mt={1}><FormControl><InputLabel>Top</InputLabel><Select label="Top" value={player.topSize} onChange={e => s.updatePlayer(player.id, { topSize: e.target.value })}>{DESIGNER_SIZES.map(size => <MenuItem key={size} value={size}>{size}</MenuItem>)}</Select></FormControl><FormControl><InputLabel>Shorts</InputLabel><Select label="Shorts" value={player.shortsSize} onChange={e => s.updatePlayer(player.id, { shortsSize: e.target.value })}>{DESIGNER_SIZES.map(size => <MenuItem key={size} value={size}>{size}</MenuItem>)}</Select></FormControl><TextField label="Qty" type="number" value={player.quantity} inputProps={{ min: 1, max: 99 }} onChange={e => s.updatePlayer(player.id, { quantity: Math.max(1, Math.min(99, Number(e.target.value))) })} /></Stack>
-        </Box>)}</Stack>
-        <Button fullWidth variant="outlined" startIcon={<AddRounded />} onClick={s.addPlayer} sx={{ mt: 1.5 }}>Add player</Button>
-      </> : <>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography fontWeight={800}>Order review</Typography>
-          <Typography variant="caption" fontWeight={800}>{errors.length ? `${errors.length} TO DO` : "READY"}</Typography>
-        </Stack>
-        <Box sx={{ borderBlock: "1px solid #dedede", my: 2 }}>
-          {checks.map((check, index) => <Stack key={check.label} direction="row" alignItems="center" spacing={1.25} sx={{ py: 1.1, borderTop: index ? "1px solid #ededed" : 0 }}>
-            {check.ready ? <CheckCircleRounded sx={{ fontSize: 18 }} /> : <RadioButtonUncheckedRounded color="disabled" sx={{ fontSize: 18 }} />}
-            <Typography variant="body2" sx={{ flex: 1 }}>{check.label}</Typography>
-            <Typography variant="caption" color="text.secondary">{check.ready ? "Ready" : "Missing"}</Typography>
-          </Stack>)}
-        </Box>
-        <Stack spacing={.6}>
-          <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Team</Typography><Typography variant="caption" fontWeight={800}>{s.teamName || "—"}</Typography></Stack>
-          <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Uniform</Typography><Typography variant="caption" fontWeight={800} textTransform="capitalize">{s.sport} · {s.garmentType}</Typography></Stack>
-          <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Quantity</Typography><Typography variant="caption" fontWeight={800}>{total}</Typography></Stack>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="caption" color="text.secondary">Colors</Typography>
-            <Stack direction="row" spacing={.5}>{Object.values(s.colors).map(color => <Box key={color} title={color} sx={{ width: 14, height: 14, bgcolor: color, border: "1px solid #888", borderRadius: "50%" }} />)}</Stack>
-          </Stack>
-        </Stack>
-        <Divider sx={{ my: 2.5 }} />
-        <Typography fontWeight={800} mb={2}>Customer</Typography>
-        <Stack spacing={1.25}><TextField label="Full name" value={s.customer.name} onChange={e => s.patch({ customer: { ...s.customer, name: e.target.value } })} /><TextField label="Email" type="email" value={s.customer.email} onChange={e => s.patch({ customer: { ...s.customer, email: e.target.value } })} /><TextField label="Phone" value={s.customer.phone} onChange={e => s.patch({ customer: { ...s.customer, phone: e.target.value } })} /><TextField label="Notes" multiline minRows={2} value={s.customer.notes} onChange={e => s.patch({ customer: { ...s.customer, notes: e.target.value } })} /></Stack>
-        <Divider sx={{ my: 2.5 }} />
-        <Typography fontWeight={800}>Production files</Typography>
-        <Typography variant="caption" color="text.secondary">PNG and SVG export the visible side.</Typography>
-        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, mt: 1.5 }}>
-          <Button variant="outlined" startIcon={exporting === "png" ? <CircularProgress size={16} /> : <DownloadRounded />} disabled={Boolean(exporting)} onClick={() => runExport("png")}>PNG</Button>
-          <Button variant="outlined" disabled={Boolean(exporting)} onClick={() => runExport("svg")}>SVG</Button>
-          <Button variant="outlined" disabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back} onClick={() => runExport("pdf")}>{exporting === "pdf" ? <CircularProgress size={16} /> : "PDF"}</Button>
-          <Button variant="contained" startIcon={exporting === "zip" ? <CircularProgress size={16} color="inherit" /> : <Inventory2Outlined />} disabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back} onClick={() => runExport("zip")}>ZIP</Button>
-        </Box>
-        <Typography variant="caption" color="text.secondary">ZIP includes both sides, PNG, SVG, PDF, and order data.</Typography>
-        {errors.length > 0 && <Alert icon={false} severity="info" sx={{ mt: 2 }}>{errors[0]}</Alert>}
-        <Button fullWidth variant="contained" startIcon={<LocalMallRounded />} disabled={errors.length > 0} onClick={checkout} sx={{ mt: 2 }}>Add to Shopify</Button>
-      </>}
-    </CardContent>
-    {notice && <Snackbar open autoHideDuration={4000} onClose={() => setNotice(null)}><Alert severity={notice.severity}>{notice.text}</Alert></Snackbar>}
-  </Card>;
+  return (
+    <section className="flex flex-col gap-2">
+      {mode === "roster" ? (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-muted">{s.roster.length} players</span>
+            <span className="text-[11px] font-extrabold">{total} pcs</span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            {s.roster.map((player, index) => (
+              <div
+                key={player.id}
+                className="rounded-lg border border-border bg-surface p-1.5"
+              >
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-xs font-extrabold">P{index + 1}</span>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Remove player ${index + 1}`}
+                    className="size-7 min-w-7"
+                    onPress={() => s.removePlayer(player.id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+                <div className="flex gap-1.5">
+                  <TextField
+                    fullWidth
+                    name={`name-${player.id}`}
+                    value={player.name}
+                    onChange={(value) => s.updatePlayer(player.id, { name: value.slice(0, 18) })}
+                  >
+                    <Label>Name</Label>
+                    <Input maxLength={18} />
+                  </TextField>
+                  <TextField
+                    name={`number-${player.id}`}
+                    value={player.number}
+                    className="max-w-[72px]"
+                    onChange={(value) => s.updatePlayer(player.id, { number: value.replace(/\D/g, "").slice(0, 3) })}
+                  >
+                    <Label>#</Label>
+                    <Input maxLength={3} />
+                  </TextField>
+                </div>
+                <div className="mt-1.5 flex gap-1.5">
+                  <Select
+                    fullWidth
+                    selectedKey={player.topSize}
+                    onSelectionChange={(key) => key && s.updatePlayer(player.id, { topSize: String(key) })}
+                  >
+                    <Label>Top</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {DESIGNER_SIZES.map((size) => (
+                          <ListBox.Item key={size} id={size} textValue={size}>
+                            {size}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  <Select
+                    fullWidth
+                    selectedKey={player.shortsSize}
+                    onSelectionChange={(key) => key && s.updatePlayer(player.id, { shortsSize: String(key) })}
+                  >
+                    <Label>Shorts</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {DESIGNER_SIZES.map((size) => (
+                          <ListBox.Item key={size} id={size} textValue={size}>
+                            {size}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  <TextField
+                    name={`qty-${player.id}`}
+                    type="number"
+                    value={String(player.quantity)}
+                    className="max-w-16"
+                    onChange={(value) => s.updatePlayer(player.id, { quantity: Math.max(1, Math.min(99, Number(value) || 1)) })}
+                  >
+                    <Label>Qty</Label>
+                    <Input min={1} max={99} />
+                  </TextField>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button fullWidth size="sm" variant="outline" className="min-h-8" onPress={s.addPlayer}>
+            <Plus className="size-3" />
+            Add player
+          </Button>
+        </>
+      ) : focus === "export" ? (
+        <>
+          <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Files</p>
+          <div className="grid grid-cols-2 gap-1">
+            <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting)} onPress={() => runExport("png")}>
+              {exporting === "png" ? <Spinner size="sm" /> : <Download className="size-3" />}
+              PNG
+            </Button>
+            <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting)} onPress={() => runExport("svg")}>
+              SVG
+            </Button>
+            <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back} onPress={() => runExport("pdf")}>
+              {exporting === "pdf" ? <Spinner size="sm" /> : "PDF"}
+            </Button>
+            <Button size="sm" className="min-h-8" isDisabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back} onPress={() => runExport("zip")}>
+              {exporting === "zip" ? <Spinner size="sm" color="current" /> : <Package className="size-3" />}
+              ZIP
+            </Button>
+          </div>
+
+          {errors.length > 0 && (
+            <Alert status="accent" className="py-1.5">
+              <Alert.Content>
+                <Alert.Title className="text-xs">{errors[0]}</Alert.Title>
+              </Alert.Content>
+            </Alert>
+          )}
+
+          <Button fullWidth size="sm" className="min-h-8" isDisabled={errors.length > 0} onPress={checkout}>
+            <ShoppingBag className="size-3.5" />
+            Add to Shopify
+          </Button>
+        </>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-muted">Checklist</span>
+            <span className="text-[11px] font-extrabold">{errors.length ? `${errors.length} to do` : "Ready"}</span>
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            {checks.map((check, index) => (
+              <div
+                key={check.label}
+                className={`flex items-center gap-1.5 px-2 py-1 ${index ? "border-t border-separator" : ""}`}
+              >
+                {check.ready
+                  ? <CheckCircle2 className="size-3.5 text-success" />
+                  : <Circle className="size-3.5 text-muted" />}
+                <span className="flex-1 text-[11px] font-semibold">{check.label}</span>
+                <span className="text-[11px] text-muted">{check.ready ? "Ready" : "—"}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            <div className="flex justify-between">
+              <span className="text-[11px] text-muted">Team</span>
+              <span className="text-[11px] font-extrabold">{s.teamName || "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[11px] text-muted">Uniform</span>
+              <span className="text-[11px] font-extrabold capitalize">{s.sport} · {s.garmentType}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[11px] text-muted">Qty</span>
+              <span className="text-[11px] font-extrabold">{total}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted">Colors</span>
+              <div className="flex gap-1">
+                {Object.values(s.colors).map((color) => (
+                  <span
+                    key={color}
+                    title={color}
+                    className="size-2.5 rounded-full border border-border"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+          <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Customer</p>
+          <div className="flex flex-col gap-1.5">
+            <TextField fullWidth name="customer-name" value={s.customer.name} onChange={(value) => s.patch({ customer: { ...s.customer, name: value } })}>
+              <Label>Full name</Label>
+              <Input />
+            </TextField>
+            <TextField fullWidth name="customer-email" type="email" value={s.customer.email} onChange={(value) => s.patch({ customer: { ...s.customer, email: value } })}>
+              <Label>Email</Label>
+              <Input />
+            </TextField>
+            <TextField fullWidth name="customer-phone" value={s.customer.phone} onChange={(value) => s.patch({ customer: { ...s.customer, phone: value } })}>
+              <Label>Phone</Label>
+              <Input />
+            </TextField>
+            <TextField fullWidth name="customer-notes" value={s.customer.notes} onChange={(value) => s.patch({ customer: { ...s.customer, notes: value } })}>
+              <Label>Notes</Label>
+              <TextArea rows={2} />
+            </TextField>
+          </div>
+        </>
+      )}
+    </section>
+  );
 }

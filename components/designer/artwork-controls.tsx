@@ -2,19 +2,33 @@
 
 import { useState } from "react";
 import {
-  Box, Button, Card, CardContent, Chip, Divider, FormControl, InputLabel,
-  MenuItem, Select, Slider, Stack, ToggleButton, ToggleButtonGroup, Typography,
-} from "@mui/material";
-import CenterFocusStrongRounded from "@mui/icons-material/CenterFocusStrongRounded";
-import HistoryRounded from "@mui/icons-material/HistoryRounded";
-import RestartAltRounded from "@mui/icons-material/RestartAltRounded";
+  Button,
+  Chip,
+  Label,
+  ListBox,
+  Select,
+  Separator,
+  Slider,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@heroui/react";
+import { Focus, History, RotateCcw } from "lucide-react";
 import { useDesignerStore } from "@/lib/designer/store";
+import { cn } from "@/lib/utils";
 
 type Layer = "artwork" | "text";
 
-export function ArtworkControls() {
+const FONTS = [
+  { id: "Inter, sans-serif", label: "Athletic sans" },
+  { id: "Impact, sans-serif", label: "Impact" },
+  { id: "Georgia, serif", label: "Classic serif" },
+  { id: "monospace", label: "Block mono" },
+];
+
+export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
   const s = useDesignerStore();
-  const [layer, setLayer] = useState<Layer>("artwork");
+  const [layerState, setLayer] = useState<Layer>("artwork");
+  const layer = forcedLayer ?? layerState;
   const artwork = s.transforms[s.view];
   const text = s.textTransforms[s.view];
   const rows = layer === "artwork" ? [
@@ -43,21 +57,129 @@ export function ArtworkControls() {
     else s.setTextTransform({ scale: .9, x: 0, y: 0 });
   }
 
-  return <Card component="section">
-    <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}><Typography fontWeight={800}>Placement</Typography><Chip size="small" label={s.view} sx={{ textTransform: "capitalize" }} /></Stack>
-      <ToggleButtonGroup exclusive fullWidth size="small" value={layer} onChange={(_, value: Layer | null) => value && setLayer(value)} sx={{ mb: 2 }}><ToggleButton value="artwork">Artwork</ToggleButton><ToggleButton value="text">Text</ToggleButton></ToggleButtonGroup>
+  return (
+    <section className="flex flex-col gap-2">
+      {!forcedLayer ? (
+        <div className="flex items-center justify-between gap-1.5">
+          <ToggleButtonGroup
+            size="sm"
+            selectionMode="single"
+            isDetached
+            disallowEmptySelection
+            selectedKeys={new Set([layer])}
+            onSelectionChange={(keys) => {
+              const next = [...keys][0] as Layer | undefined;
+              if (next) setLayer(next);
+            }}
+            className="gap-0.5 rounded-full"
+          >
+            <ToggleButton id="artwork" className="rounded-full text-[11px] font-bold">Artwork</ToggleButton>
+            <ToggleButton id="text" className="rounded-full text-[11px] font-bold">Type</ToggleButton>
+          </ToggleButtonGroup>
+          <Chip size="sm" className="capitalize">{s.view}</Chip>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-1.5">
+          <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
+            {layer === "artwork" ? "Artwork layer" : "Type layer"}
+          </p>
+          <Chip size="sm" className="capitalize">{s.view}</Chip>
+        </div>
+      )}
 
-      {layer === "text" && <FormControl sx={{ mb: 2 }}><InputLabel>Font</InputLabel><Select label="Font" value={s.font} onChange={e => s.patch({ font: e.target.value })}><MenuItem value="Inter, sans-serif">Athletic sans</MenuItem><MenuItem value="Impact, sans-serif">Impact</MenuItem><MenuItem value="Georgia, serif">Classic serif</MenuItem><MenuItem value="monospace">Block mono</MenuItem></Select></FormControl>}
+      {layer === "text" && (
+        <Select
+          fullWidth
+          selectedKey={s.font}
+          onSelectionChange={(key) => key && s.patch({ font: String(key) })}
+        >
+          <Label>Font</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {FONTS.map((font) => (
+                <ListBox.Item key={font.id} id={font.id} textValue={font.label}>
+                  {font.label}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+      )}
 
-      <Stack spacing={1.6}>{rows.map(row => <Box key={row.key}>
-        <Stack direction="row" justifyContent="space-between"><Typography variant="caption" fontWeight={700}>{row.label}</Typography><Typography variant="caption" color="text.secondary">{row.text}</Typography></Stack>
-        <Slider size="small" value={row.value} min={row.min} max={row.max} step={row.step} onChange={(_, value) => update(row.key, value as number)} aria-label={`${layer} ${row.label}`} />
-      </Box>)}</Stack>
+      <div className="flex flex-col gap-1.5">
+        {rows.map((row) => (
+          <Slider
+            key={row.key}
+            className="w-full"
+            value={row.value}
+            minValue={row.min}
+            maxValue={row.max}
+            step={row.step}
+            aria-label={`${layer} ${row.label}`}
+            onChange={(value) => update(row.key, Array.isArray(value) ? value[0] : value)}
+          >
+            <div className="flex w-full items-center justify-between">
+              <Label className="text-[11px] font-bold">{row.label}</Label>
+              <span className="text-[11px] text-muted">{row.text}</span>
+            </div>
+            <Slider.Track>
+              <Slider.Fill />
+              <Slider.Thumb />
+            </Slider.Track>
+          </Slider>
+        ))}
+      </div>
 
-      <Stack direction="row" spacing={1} mt={1}><Button fullWidth variant="outlined" startIcon={<RestartAltRounded />} onClick={reset}>Reset</Button><Button fullWidth variant="outlined" startIcon={<CenterFocusStrongRounded />} onClick={safeFit}>Safe fit</Button></Stack>
+      <div className="flex gap-1">
+        <Button fullWidth size="sm" variant="outline" className="min-h-8" onPress={reset}>
+          <RotateCcw className="size-3" />
+          Reset
+        </Button>
+        <Button fullWidth size="sm" variant="outline" className="min-h-8" onPress={safeFit}>
+          <Focus className="size-3" />
+          Safe fit
+        </Button>
+      </div>
 
-      {s.history.length > 0 && <><Divider sx={{ my: 2.5 }} /><Stack direction="row" spacing={1} alignItems="center" mb={1.5}><HistoryRounded fontSize="small" /><Typography variant="subtitle2">Versions</Typography><Chip size="small" label={`${s.history.length}/8`} /></Stack><Stack direction="row" spacing={1} sx={{ overflowX: "auto", pb: 1 }}>{s.history.map((version, index) => <Box component="button" key={version.id} onClick={() => s.restoreVersion(version)} sx={{ p: .5, minWidth: 76, bgcolor: "#fff", border: "1px solid", borderColor: version.id === s.designId ? "#000" : "#ddd", cursor: "pointer", textAlign: "left" }}><Box component="img" src={version.assetUrl} alt={`Version ${s.history.length - index}`} sx={{ display: "block", width: 66, height: 58, objectFit: "cover", bgcolor: "#f2f2f2" }} /><Typography variant="caption" noWrap display="block">v{s.history.length - index}</Typography></Box>)}</Stack></>}
-    </CardContent>
-  </Card>;
+      {s.history.length > 0 && (
+        <>
+          <Separator className="my-0.5" />
+          <div className="flex items-center gap-1.5">
+            <History className="size-4" />
+            <span className="text-xs font-bold">Versions</span>
+            <Chip size="sm">{`${s.history.length}/8`}</Chip>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {s.history.map((version, index) => (
+              <button
+                type="button"
+                key={version.id}
+                onClick={() => s.restoreVersion(version)}
+                className={cn(
+                  "min-w-16 rounded-lg border border-border bg-background p-1 text-left transition-colors",
+                  version.id === s.designId
+                    ? "border-foreground/40"
+                    : "hover:border-foreground/20",
+                )}
+              >
+                {/* Dynamic designer asset URLs (blob/CDN) — next/image not suitable */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={version.assetUrl}
+                  alt={`Version ${s.history.length - index}`}
+                  className="block h-[46px] w-[54px] rounded bg-[rgba(15,23,42,0.06)] object-cover"
+                />
+                <span className="block truncate text-xs font-bold">v{s.history.length - index}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
 }

@@ -1,24 +1,80 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Popover, Stack, TextField, Typography } from "@mui/material";
+import {
+  Button,
+  ColorSwatchPicker,
+  Input,
+  Label,
+  Popover,
+  TextField,
+} from "@heroui/react";
 
 const swatches = ["#000000", "#FFFFFF", "#D4AF37", "#C8102E", "#0033A0", "#006341", "#FF6A00", "#6A1B9A"];
 
 export function ColorControl({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [draft, setDraft] = useState(value);
-  function apply(next: string) { if (/^#[0-9a-f]{6}$/i.test(next)) { onChange(next); setDraft(next.toUpperCase()); } }
-  return <>
-    <Button variant="outlined" onClick={event => { setDraft(value.toUpperCase()); setAnchor(event.currentTarget); }} sx={{ flex: 1, minWidth: 0, justifyContent: "flex-start", px: 1 }}>
-      <Box sx={{ width: 18, height: 18, bgcolor: value, border: "1px solid #aaa", mr: 1, flexShrink: 0 }} />
-      <Typography variant="caption" noWrap sx={{ textTransform: "capitalize" }}>{label}</Typography>
-    </Button>
-    <Popover open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: "bottom", horizontal: "left" }}>
-      <Box sx={{ width: 240, p: 2 }}><Typography fontWeight={800} mb={1.5} textTransform="capitalize">{label}</Typography>
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1 }}>{swatches.map(color => <Box component="button" key={color} aria-label={color} onClick={() => { apply(color); setAnchor(null); }} sx={{ height: 38, bgcolor: color, border: color === value ? "3px solid #000" : "1px solid #bbb", cursor: "pointer" }} />)}</Box>
-        <Stack direction="row" spacing={1} mt={2}><TextField label="Hex" value={draft} onChange={e => setDraft(e.target.value.toUpperCase())} inputProps={{ maxLength: 7 }} /><Button variant="contained" onClick={() => { apply(draft); setAnchor(null); }}>Set</Button></Stack>
-      </Box>
+
+  function apply(next: string) {
+    if (/^#[0-9a-f]{6}$/i.test(next)) {
+      onChange(next.toUpperCase());
+      setDraft(next.toUpperCase());
+    }
+  }
+
+  return (
+    <Popover>
+      <Button
+        variant="outline"
+        size="sm"
+        className="min-h-8 min-w-0 flex-1 justify-start rounded-full px-2"
+        onPress={() => setDraft(value.toUpperCase())}
+      >
+        <span
+          className="mr-1.5 size-3.5 shrink-0 rounded-full border border-border"
+          style={{ backgroundColor: value }}
+        />
+        <span className="truncate text-[11px] font-bold capitalize">{label}</span>
+      </Button>
+      <Popover.Content className="w-[200px] p-0">
+        <Popover.Dialog className="p-2.5">
+          <Popover.Heading className="mb-1.5 text-xs font-extrabold capitalize">{label}</Popover.Heading>
+          <ColorSwatchPicker
+            size="sm"
+            variant="square"
+            value={value}
+            onChange={(color) => {
+              apply(color.toString("hex"));
+            }}
+            className="mb-3"
+          >
+            {swatches.map((color) => (
+              <ColorSwatchPicker.Item key={color} color={color}>
+                <ColorSwatchPicker.Swatch />
+                <ColorSwatchPicker.Indicator />
+              </ColorSwatchPicker.Item>
+            ))}
+          </ColorSwatchPicker>
+          <div className="flex gap-1.5">
+            <TextField
+              fullWidth
+              name="hex"
+              value={draft}
+              onChange={(v) => setDraft(v.toUpperCase())}
+            >
+              <Label>Hex</Label>
+              <Input maxLength={7} />
+            </TextField>
+            <Button
+              size="sm"
+              className="mt-auto min-h-9 self-end px-3"
+              onPress={() => apply(draft)}
+            >
+              Set
+            </Button>
+          </div>
+        </Popover.Dialog>
+      </Popover.Content>
     </Popover>
-  </>;
+  );
 }

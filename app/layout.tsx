@@ -9,7 +9,6 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { ErrorLoggerInit } from "@/app/error-logger-init";
 import { ServiceWorkerInit } from "@/components/service-worker-init";
 import { ConnectionIndicator } from "@/components/connection-indicator";
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { LegacyGlobalUi } from "@/components/legacy-global-ui";
 import "./globals.css";
 
@@ -77,22 +76,20 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`font-sans ${macan.variable} overflow-hidden`}
       >
-        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            forcedTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-            <ErrorBoundary>
-              <AuthProvider>
-                <QueryProvider>{children}</QueryProvider>
-                <LegacyGlobalUi />
-              </AuthProvider>
-            </ErrorBoundary>
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          forcedTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <ErrorBoundary>
+            <AuthProvider>
+              <QueryProvider>{children}</QueryProvider>
+              <LegacyGlobalUi />
+            </AuthProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
         {shouldInjectAnalytics && <Analytics />}
         {shouldInjectToolbar && <VercelToolbar />}
         <ErrorLoggerInit />
