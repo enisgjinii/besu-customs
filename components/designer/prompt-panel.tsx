@@ -101,40 +101,47 @@ export function PromptPanel() {
   const canGenerate = !busy && !needsTeam && !needsBrief;
 
   return (
-    <section className="flex w-full flex-col gap-3">
+    <section className="flex w-full min-w-0 flex-col gap-3">
       {mockMode ? (
         <Alert status="accent" className="py-2">
           <Alert.Indicator />
-          <Alert.Content><Alert.Title className="text-xs">Preview mode — direct AI renders are simulated (DESIGNER_MOCK_AI).</Alert.Title></Alert.Content>
+          <Alert.Content>
+            <Alert.Title className="text-xs">Preview mode — direct AI renders are simulated.</Alert.Title>
+          </Alert.Content>
         </Alert>
       ) : null}
 
       <div className="rounded-xl bg-[#f7f7f5] p-3 ring-1 ring-border/55">
         <div className="flex items-center gap-2">
-          <Sparkles className="size-4" />
+          <Sparkles className="size-4 shrink-0" />
           <p className="m-0 text-[12px] font-semibold">Direct AI uniform generation</p>
         </div>
         <p className="m-0 mt-1 text-[11px] leading-snug text-muted">
-          AI renders four finished uniform concepts directly — jersey + shorts, front + back. No flat 2D texture or template step.
+          One brief creates four finished jersey + shorts concepts. Pick one, then refine it with AI.
         </p>
       </div>
 
-      <TextField fullWidth className="w-full" name="team" value={s.teamName} onChange={(value) => s.patch({ teamName: value.toUpperCase().slice(0, 60) })}>
+      <TextField fullWidth className="w-full min-w-0" name="team" value={s.teamName} onChange={(value) => s.patch({ teamName: value.toUpperCase().slice(0, 60) })}>
         <Label>Team name</Label>
         <Input placeholder="GALACTIC" maxLength={60} className="min-h-11" autoComplete="organization" />
       </TextField>
 
-      <TextField fullWidth className="w-full" name="design" value={s.prompt} onChange={(value) => s.patch({ prompt: value })}>
+      <TextField fullWidth className="w-full min-w-0" name="design" value={s.prompt} onChange={(value) => s.patch({ prompt: value })}>
         <Label>Tell AI what the uniform should look like</Label>
-        <TextArea placeholder="Sleeveless basketball uniform with jersey and shorts, outer space theme, moon, comets, aggressive premium NBA-style graphics" rows={4} maxLength={800} />
+        <TextArea
+          placeholder="Sleeveless basketball uniform, outer space theme, moon, comets, aggressive premium NBA-style graphics"
+          rows={3}
+          maxLength={800}
+          className="min-h-[112px]"
+        />
       </TextField>
 
-      <TextField fullWidth className="w-full" name="inspiration" value={s.inspiration} onChange={(value) => s.patch({ inspiration: value })}>
+      <TextField fullWidth className="w-full min-w-0" name="inspiration" value={s.inspiration} onChange={(value) => s.patch({ inspiration: value })}>
         <Label>Visual inspiration (optional)</Label>
-        <Input placeholder="Neon nebula energy, sharp side panels, premium pro-team look" maxLength={400} className="min-h-11" />
+        <Input placeholder="Neon nebula, sharp side panels, premium pro-team look" maxLength={400} className="min-h-11" />
       </TextField>
 
-      <Select fullWidth className="w-full" selectedKey={s.style} onSelectionChange={(key) => key && s.patch({ style: String(key) as DesignStyle })}>
+      <Select fullWidth className="w-full min-w-0" selectedKey={s.style} onSelectionChange={(key) => key && s.patch({ style: String(key) as DesignStyle })}>
         <Label>Style bias</Label>
         <Select.Trigger className="min-h-11 w-full"><Select.Value /><Select.Indicator /></Select.Trigger>
         <Select.Popover>
@@ -150,9 +157,9 @@ export function PromptPanel() {
 
       <div className="rounded-xl bg-[#f7f7f5] p-3 ring-1 ring-border/55">
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="m-0 text-[12px] font-semibold">Guide colors (optional)</p>
-            <p className="m-0 mt-0.5 text-[11px] text-muted">Leave off to let AI explore different palettes.</p>
+            <p className="m-0 mt-0.5 text-[11px] leading-snug text-muted">Leave off to let AI explore different palettes.</p>
           </div>
           <button
             type="button"
@@ -160,13 +167,16 @@ export function PromptPanel() {
             aria-checked={s.colorsEnabled}
             aria-label="Enable guide colors"
             onClick={() => s.patch({ colorsEnabled: !s.colorsEnabled })}
-            className={cn("relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25", s.colorsEnabled ? "bg-foreground" : "bg-foreground/20")}
+            className={cn(
+              "relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25",
+              s.colorsEnabled ? "bg-foreground" : "bg-foreground/20",
+            )}
           >
             <span className={cn("absolute top-0.5 size-6 rounded-full bg-white shadow transition-transform", s.colorsEnabled ? "translate-x-5" : "translate-x-0.5")} />
           </button>
         </div>
         {s.colorsEnabled ? (
-          <div className="mt-2.5 flex gap-1.5">
+          <div className="mt-2.5 grid grid-cols-3 gap-1.5">
             <ColorControl label="primary" value={s.colors.primary} onChange={(value) => s.patch({ colors: { ...s.colors, primary: value } })} />
             <ColorControl label="secondary" value={s.colors.secondary} onChange={(value) => s.patch({ colors: { ...s.colors, secondary: value } })} />
             <ColorControl label="accent" value={s.colors.accent} onChange={(value) => s.patch({ colors: { ...s.colors, accent: value } })} />
@@ -174,19 +184,35 @@ export function PromptPanel() {
         ) : null}
       </div>
 
-      <div>
+      <div className="min-w-0">
         <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Logo reference (optional)</p>
-        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLogo(file); event.target.value = ""; }} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void uploadLogo(file);
+            event.target.value = "";
+          }}
+        />
         {s.logoUrl ? (
-          <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-white p-2">
+          <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/80 bg-white p-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={s.logoUrl} alt="Uploaded logo reference" className="size-11 rounded-lg bg-[#f7f7f5] object-contain" />
-            <div className="min-w-0 flex-1"><p className="m-0 text-[12px] font-semibold">Logo reference saved</p><p className="m-0 text-[11px] text-muted">AI reserves a crest position; the real file stays attached to the order.</p></div>
-            <Button isIconOnly size="sm" variant="ghost" aria-label="Remove logo" className="size-10" onPress={() => s.setLogo(undefined)}><X className="size-4" /></Button>
+            <img src={s.logoUrl} alt="Uploaded logo reference" className="size-11 shrink-0 rounded-lg bg-[#f7f7f5] object-contain" />
+            <div className="min-w-0 flex-1">
+              <p className="m-0 truncate text-[12px] font-semibold">Logo reference saved</p>
+              <p className="m-0 mt-0.5 line-clamp-2 text-[10px] leading-snug text-muted">The real file stays attached to the order.</p>
+            </div>
+            <Button isIconOnly size="sm" variant="ghost" aria-label="Remove logo" className="size-10 shrink-0" onPress={() => s.setLogo(undefined)}>
+              <X className="size-4" />
+            </Button>
           </div>
         ) : (
           <Button fullWidth size="sm" variant="outline" className="min-h-11" isPending={logoBusy} onPress={() => fileRef.current?.click()}>
-            {logoBusy ? <Spinner size="sm" /> : <Upload className="size-4" />} Upload logo reference
+            {logoBusy ? <Spinner size="sm" /> : <Upload className="size-4 shrink-0" />}
+            <span className="truncate">Upload logo reference</span>
           </Button>
         )}
       </div>
@@ -195,11 +221,19 @@ export function PromptPanel() {
       {!needsTeam && needsBrief ? <p className="m-0 text-[11px] text-muted">Describe the uniform in at least 8 characters.</p> : null}
 
       {error ? (
-        <Alert status="danger" className="py-2"><Alert.Indicator /><Alert.Content><Alert.Title className="text-xs">{error}</Alert.Title></Alert.Content></Alert>
+        <Alert status="danger" className="py-2">
+          <Alert.Indicator />
+          <Alert.Content><Alert.Title className="text-xs">{error}</Alert.Title></Alert.Content>
+        </Alert>
       ) : null}
 
-      <Button fullWidth size="sm" isPending={busy} isDisabled={!canGenerate} onPress={generate} className={cn("min-h-11 font-semibold", "sticky bottom-0 z-10")}>
-        {({ isPending }) => <>{isPending ? <Spinner size="sm" color="current" /> : <Sparkles className="size-4" />}{isPending ? stage || "Rendering uniforms…" : "Generate 4 Direct AI Uniforms"}</>}
+      <Button fullWidth size="sm" isPending={busy} isDisabled={!canGenerate} onPress={generate} className="min-h-12 font-semibold">
+        {({ isPending }) => (
+          <>
+            {isPending ? <Spinner size="sm" color="current" /> : <Sparkles className="size-4 shrink-0" />}
+            <span className="truncate">{isPending ? stage || "Rendering uniforms…" : "Generate 4 Direct AI Uniforms"}</span>
+          </>
+        )}
       </Button>
     </section>
   );
