@@ -45,6 +45,7 @@ export function DesignerPage() {
   const [resetOpen, setResetOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const panelScrollRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   const store = useDesignerStore();
   const stepIndex = store.activeStep;
@@ -63,7 +64,7 @@ export function DesignerPage() {
     }
     store.setStep(STEP_INDEX[next] as DesignerStep);
     panelScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-    setSheetExpanded(false);
+    if (window.matchMedia("(max-width: 767px)").matches) setSheetExpanded(false);
     if (next === "order") setOrderFocus("review");
   }
 
@@ -97,9 +98,27 @@ export function DesignerPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    const active = navRef.current?.querySelector<HTMLElement>(`[data-step-index="${stepIndex}"]`);
+    active?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [stepIndex]);
+
+  useEffect(() => {
+    const onFocusIn = (event: FocusEvent) => {
+      if (!window.matchMedia("(max-width: 767px)").matches) return;
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+        setSheetExpanded(true);
+      }
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => document.removeEventListener("focusin", onFocusIn);
+  }, []);
+
   return (
     <main
-      data-designer-shell="v10-four-concepts"
+      data-designer-shell="v11-mobile-pass"
       className="designer-shell flex h-[var(--designer-vvh,100dvh)] w-full overflow-hidden bg-[#f7f7f5] max-md:flex-col md:bg-white"
     >
       <Surface
@@ -109,28 +128,33 @@ export function DesignerPage() {
           "md:h-full md:w-1/4 md:min-w-[340px] md:max-w-[460px] md:border-r md:border-separator md:px-3",
           "md:pb-[max(12px,env(safe-area-inset-bottom,0px))] md:pt-[max(12px,env(safe-area-inset-top,0px))]",
           "md:shadow-[8px_0_24px_rgba(15,23,42,0.03)]",
-          "max-md:order-2 max-md:w-full max-md:max-w-none max-md:min-w-0 max-md:flex-col",
-          "max-md:rounded-t-[22px] max-md:border-t max-md:border-separator",
-          "max-md:shadow-[0_-12px_40px_rgba(15,23,42,0.08)]",
-          "max-md:pb-[max(8px,env(safe-area-inset-bottom,0px))]",
+          "max-md:order-2 max-md:w-full max-md:min-w-0 max-md:max-w-none max-md:flex-col",
+          "max-md:rounded-t-[24px] max-md:border-t max-md:border-separator/80",
+          "max-md:shadow-[0_-14px_44px_rgba(15,23,42,0.10)]",
+          "max-md:pb-[max(6px,env(safe-area-inset-bottom,0px))]",
           "max-md:transition-[height] max-md:duration-200 max-md:ease-out",
-          sheetExpanded ? "max-md:h-[min(82dvh,700px)]" : "max-md:h-[min(48dvh,440px)]",
+          sheetExpanded
+            ? "max-md:h-[min(82dvh,760px)]"
+            : "max-md:h-[clamp(360px,58dvh,540px)]",
         )}
       >
         <button
           type="button"
-          className="flex w-full shrink-0 flex-col items-center gap-2 px-3 pb-1 pt-2 md:hidden"
+          className="flex min-h-8 w-full shrink-0 flex-col items-center justify-center gap-1 px-3 pb-1 pt-1.5 md:hidden"
           aria-expanded={sheetExpanded}
           aria-label={sheetExpanded ? "Collapse controls" : "Expand controls"}
           onClick={() => setSheetExpanded((open) => !open)}
         >
-          <span className="h-1 w-10 rounded-full bg-foreground/15" />
-          <span className="sr-only">{sheetExpanded ? "Collapse" : "Expand"} panel</span>
+          <span className="h-1 w-11 rounded-full bg-foreground/20" />
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+            {sheetExpanded ? "More preview" : "More controls"}
+          </span>
         </button>
 
-        <div className="flex h-full w-full min-h-0 flex-col px-3 max-md:px-3 md:px-0">
+        <div className="flex h-full w-full min-h-0 flex-col px-2.5 md:px-0">
           <nav
-            className="grid shrink-0 grid-cols-6 gap-1 md:flex md:gap-0 md:border-b md:border-separator/70"
+            ref={navRef}
+            className="designer-mobile-tabs flex shrink-0 snap-x gap-1 overflow-x-auto px-0.5 pb-1 md:overflow-visible md:border-b md:border-separator/70 md:px-0 md:pb-0"
             aria-label="Designer sections"
           >
             {DESIGNER_STEPS.map((item, index) => {
@@ -141,15 +165,16 @@ export function DesignerPage() {
               return (
                 <button
                   key={item.id}
+                  data-step-index={index}
                   type="button"
                   aria-current={active ? "page" : undefined}
                   aria-disabled={locked}
                   disabled={locked}
                   onClick={() => goToStep(item.id)}
                   className={cn(
-                    "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl bg-white px-0.5 text-[8px] font-semibold tracking-tight transition-[color,box-shadow,background-color,border-color] ring-1",
+                    "flex min-h-12 min-w-[72px] flex-none snap-start flex-col items-center justify-center gap-0.5 rounded-xl bg-white px-1.5 text-[10px] font-semibold tracking-tight transition-[color,box-shadow,background-color,border-color] ring-1",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25 disabled:cursor-not-allowed disabled:opacity-35",
-                    "md:min-h-0 md:flex-1 md:flex-row md:gap-1 md:rounded-none md:bg-transparent md:px-0.5 md:py-2.5 md:text-[10px] md:font-medium md:tracking-normal md:shadow-none md:ring-0",
+                    "md:min-h-0 md:min-w-0 md:flex-1 md:flex-row md:gap-1 md:rounded-none md:bg-transparent md:px-0.5 md:py-2.5 md:text-[10px] md:font-medium md:tracking-normal md:shadow-none md:ring-0",
                     "md:border-b-2 md:border-transparent md:focus-visible:ring-0 md:focus-visible:border-foreground/40",
                     active
                       ? "bg-foreground text-white shadow-sm ring-foreground md:bg-transparent md:text-foreground md:shadow-none md:ring-0 md:border-foreground"
@@ -158,19 +183,22 @@ export function DesignerPage() {
                         : "text-foreground/65 ring-border/70 hover:text-foreground hover:ring-foreground/14 md:text-muted md:ring-0 md:hover:text-foreground md:hover:border-foreground/20",
                   )}
                 >
-                  <Icon className={cn("size-3.5", active ? "text-white md:text-foreground" : undefined)} strokeWidth={1.7} aria-hidden />
-                  <span>{item.label}</span>
+                  <Icon className={cn("size-4", active ? "text-white md:text-foreground" : undefined)} strokeWidth={1.7} aria-hidden />
+                  <span className="leading-none">{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          <Card variant="secondary" className="mt-2 min-h-0 flex-1 overflow-hidden rounded-2xl border-0 bg-white shadow-none ring-1 ring-border/55">
+          <Card
+            variant="secondary"
+            className="mt-1.5 min-h-0 flex-1 overflow-hidden rounded-[18px] border-0 bg-white shadow-none ring-1 ring-border/55 md:mt-2 md:rounded-2xl"
+          >
             <Card.Content className="flex h-full min-h-0 flex-col p-0">
               <div className="flex shrink-0 items-start justify-between gap-2 border-b border-separator/70 px-3 py-2.5">
                 <div className="min-w-0">
-                  <h2 className="m-0 text-[1.05rem] font-semibold tracking-tight text-foreground">{stepDef.header}</h2>
-                  <p className="m-0 mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted">{stepDef.hint}</p>
+                  <h2 className="m-0 truncate text-[1rem] font-semibold tracking-tight text-foreground md:text-[1.05rem]">{stepDef.header}</h2>
+                  <p className={cn("m-0 mt-0.5 text-[11px] leading-snug text-muted", sheetExpanded ? "line-clamp-2" : "line-clamp-1 md:line-clamp-2")}>{stepDef.hint}</p>
                 </div>
                 {step === "order" ? (
                   <ToggleButtonGroup
@@ -192,26 +220,39 @@ export function DesignerPage() {
                 ) : null}
               </div>
 
-              <div ref={panelScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
+              <div
+                ref={panelScrollRef}
+                data-designer-panel-scroll
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 pb-6 [scrollbar-width:thin]"
+              >
                 <StepDetail step={step} orderFocus={orderFocus} />
               </div>
 
               {stepDef.nextLabel ? (
-                <div className="flex shrink-0 gap-2 border-t border-separator/70 px-3 py-2.5">
-                  <Button variant="outline" size="sm" isDisabled={stepIndex === 0} onPress={goBack} className="min-h-11 min-w-11 px-3" aria-label="Previous step">
-                    <ChevronLeft className="size-4" strokeWidth={1.75} /><span className="hidden sm:inline">Back</span>
+                <div className="flex shrink-0 gap-2 border-t border-separator/70 bg-white/95 px-3 py-2.5 backdrop-blur-sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    isDisabled={stepIndex === 0}
+                    onPress={goBack}
+                    className="min-h-11 min-w-11 px-3"
+                    aria-label="Previous step"
+                  >
+                    <ChevronLeft className="size-4" strokeWidth={1.75} />
+                    <span className="hidden min-[380px]:inline">Back</span>
                   </Button>
                   <Button
                     size="sm"
                     onPress={goNext}
                     isDisabled={step === "concepts" && !store.selectedConceptId}
-                    className="min-h-11 flex-1 font-semibold"
+                    className="min-h-11 min-w-0 flex-1 font-semibold"
                   >
-                    Continue to {stepDef.nextLabel}<ChevronRight className="size-4" strokeWidth={1.75} />
+                    <span className="truncate">Continue to {stepDef.nextLabel}</span>
+                    <ChevronRight className="size-4 shrink-0" strokeWidth={1.75} />
                   </Button>
                 </div>
               ) : (
-                <div className="flex shrink-0 gap-2 border-t border-separator/70 px-3 py-2.5">
+                <div className="flex shrink-0 gap-2 border-t border-separator/70 bg-white/95 px-3 py-2.5 backdrop-blur-sm">
                   <Button variant="outline" size="sm" onPress={goBack} className="min-h-11 flex-1">
                     <ChevronLeft className="size-4" strokeWidth={1.75} />Back to Roster
                   </Button>
@@ -222,10 +263,23 @@ export function DesignerPage() {
         </div>
       </Surface>
 
-      <div className="relative order-1 min-h-0 flex-1 bg-[#f7f7f5] md:order-none md:bg-[#f4f4f2]">
+      <div className="relative order-1 min-h-[120px] flex-1 bg-[#f7f7f5] md:order-none md:min-h-0 md:bg-[#f4f4f2]">
         <GarmentCanvas />
-        <div className="absolute z-20" style={{ top: "max(10px, env(safe-area-inset-top, 0px))", right: "max(10px, env(safe-area-inset-right, 0px))" }}>
-          <Button isIconOnly size="sm" variant="ghost" aria-label="Reset design" className="size-10 rounded-full bg-white/95 text-muted shadow-sm ring-1 ring-border/50 backdrop-blur-sm" onPress={() => setResetOpen(true)}>
+        <div
+          className="absolute z-30"
+          style={{
+            top: "max(8px, env(safe-area-inset-top, 0px))",
+            right: "max(8px, env(safe-area-inset-right, 0px))",
+          }}
+        >
+          <Button
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            aria-label="Reset design"
+            className="size-10 rounded-full bg-white/95 text-muted shadow-sm ring-1 ring-border/50 backdrop-blur-sm"
+            onPress={() => setResetOpen(true)}
+          >
             <RotateCcw className="size-3.5" strokeWidth={1.75} aria-hidden />
           </Button>
         </div>
@@ -234,13 +288,13 @@ export function DesignerPage() {
       <Modal>
         <Modal.Backdrop isOpen={resetOpen} onOpenChange={setResetOpen}>
           <Modal.Container>
-            <Modal.Dialog className="sm:max-w-[340px]">
+            <Modal.Dialog className="max-md:mx-3 max-md:w-[calc(100%-1.5rem)] sm:max-w-[340px]">
               <Modal.CloseTrigger />
               <Modal.Header><Modal.Heading className="font-semibold">Start a new design?</Modal.Heading></Modal.Header>
               <Modal.Body><p className="text-sm text-muted">Clears concepts, selected artwork, roster, and customer details.</p></Modal.Body>
-              <Modal.Footer className="gap-2">
-                <Button variant="outline" slot="close" className="min-h-11">Cancel</Button>
-                <Button className="min-h-11" onPress={() => { store.reset(); store.setStep(0); setOrderFocus("review"); setResetOpen(false); }}>Clear design</Button>
+              <Modal.Footer className="gap-2 max-[360px]:flex-col-reverse">
+                <Button variant="outline" slot="close" className="min-h-11 max-[360px]:w-full">Cancel</Button>
+                <Button className="min-h-11 max-[360px]:w-full" onPress={() => { store.reset(); store.setStep(0); setOrderFocus("review"); setResetOpen(false); }}>Clear design</Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
