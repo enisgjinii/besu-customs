@@ -16,7 +16,7 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
-import { Images, Upload, X } from "lucide-react";
+import { Sparkles, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -53,7 +53,7 @@ export function PromptPanel() {
           reader.readAsDataURL(file);
         });
         s.setLogo(dataUrl);
-        toast.message("Logo stored locally for preview. Configure Supabase to persist logos for checkout.");
+        toast.message("Logo saved for this design session.");
       } else {
         const message = e instanceof Error ? e.message : "Logo upload failed.";
         setError(message);
@@ -68,7 +68,7 @@ export function PromptPanel() {
     if (busy || isGenerationInFlight()) return;
     setError("");
     setBusy(true);
-    setStage("Preparing four distinct concepts…");
+    setStage("Preparing four direct AI renders…");
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
@@ -78,7 +78,7 @@ export function PromptPanel() {
         signal: abortRef.current.signal,
         onProgress: ({ conceptIndex, conceptCount, conceptLabel }) => {
           if (conceptIndex && conceptCount) {
-            setStage(`Creating ${conceptIndex}/${conceptCount} · ${conceptLabel || "Concept"}`);
+            setStage(`Rendering ${conceptIndex}/${conceptCount} · ${conceptLabel || "AI concept"}`);
           }
         },
       });
@@ -87,7 +87,7 @@ export function PromptPanel() {
       s.setStep(2);
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
-      const message = e instanceof Error ? e.message : "Concept generation failed. Please try again.";
+      const message = e instanceof Error ? e.message : "Direct AI generation failed. Please try again.";
       setError(message);
       toast.error(message);
     } finally {
@@ -105,16 +105,17 @@ export function PromptPanel() {
       {mockMode ? (
         <Alert status="accent" className="py-2">
           <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title className="text-xs">Preview mode — artwork is simulated (DESIGNER_MOCK_AI).</Alert.Title>
-          </Alert.Content>
+          <Alert.Content><Alert.Title className="text-xs">Preview mode — direct AI renders are simulated (DESIGNER_MOCK_AI).</Alert.Title></Alert.Content>
         </Alert>
       ) : null}
 
       <div className="rounded-xl bg-[#f7f7f5] p-3 ring-1 ring-border/55">
-        <p className="m-0 text-[12px] font-semibold">Four-direction concept generation</p>
+        <div className="flex items-center gap-2">
+          <Sparkles className="size-4" />
+          <p className="m-0 text-[12px] font-semibold">Direct AI uniform generation</p>
+        </div>
         <p className="m-0 mt-1 text-[11px] leading-snug text-muted">
-          One brief creates four intentionally different basketball design directions. You choose one before refinement.
+          AI renders four finished uniform concepts directly — jersey + shorts, front + back. No flat 2D texture or template step.
         </p>
       </div>
 
@@ -124,17 +125,17 @@ export function PromptPanel() {
       </TextField>
 
       <TextField fullWidth className="w-full" name="design" value={s.prompt} onChange={(value) => s.patch({ prompt: value })}>
-        <Label>Design description</Label>
-        <TextArea placeholder="Basketball uniform jersey and shorts, outer space with moon and comets" rows={3} maxLength={800} />
+        <Label>Tell AI what the uniform should look like</Label>
+        <TextArea placeholder="Sleeveless basketball uniform with jersey and shorts, outer space theme, moon, comets, aggressive premium NBA-style graphics" rows={4} maxLength={800} />
       </TextField>
 
       <TextField fullWidth className="w-full" name="inspiration" value={s.inspiration} onChange={(value) => s.patch({ inspiration: value })}>
-        <Label>Inspiration (optional)</Label>
-        <Input placeholder="Neon nebula energy, clean geometric panels" maxLength={400} className="min-h-11" />
+        <Label>Visual inspiration (optional)</Label>
+        <Input placeholder="Neon nebula energy, sharp side panels, premium pro-team look" maxLength={400} className="min-h-11" />
       </TextField>
 
       <Select fullWidth className="w-full" selectedKey={s.style} onSelectionChange={(key) => key && s.patch({ style: String(key) as DesignStyle })}>
-        <Label>Overall style bias</Label>
+        <Label>Style bias</Label>
         <Select.Trigger className="min-h-11 w-full"><Select.Value /><Select.Indicator /></Select.Trigger>
         <Select.Popover>
           <ListBox>
@@ -151,7 +152,7 @@ export function PromptPanel() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="m-0 text-[12px] font-semibold">Guide colors (optional)</p>
-            <p className="m-0 mt-0.5 text-[11px] text-muted">Off lets AI explore palettes across all four directions.</p>
+            <p className="m-0 mt-0.5 text-[11px] text-muted">Leave off to let AI explore different palettes.</p>
           </div>
           <button
             type="button"
@@ -174,31 +175,31 @@ export function PromptPanel() {
       </div>
 
       <div>
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Logo (optional)</p>
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Logo reference (optional)</p>
         <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLogo(file); event.target.value = ""; }} />
         {s.logoUrl ? (
           <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-white p-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={s.logoUrl} alt="Uploaded logo" className="size-11 rounded-lg bg-[#f7f7f5] object-contain" />
-            <div className="min-w-0 flex-1"><p className="m-0 text-[12px] font-semibold">Logo ready</p><p className="m-0 text-[11px] text-muted">Placed on front only</p></div>
+            <img src={s.logoUrl} alt="Uploaded logo reference" className="size-11 rounded-lg bg-[#f7f7f5] object-contain" />
+            <div className="min-w-0 flex-1"><p className="m-0 text-[12px] font-semibold">Logo reference saved</p><p className="m-0 text-[11px] text-muted">AI reserves a crest position; the real file stays attached to the order.</p></div>
             <Button isIconOnly size="sm" variant="ghost" aria-label="Remove logo" className="size-10" onPress={() => s.setLogo(undefined)}><X className="size-4" /></Button>
           </div>
         ) : (
           <Button fullWidth size="sm" variant="outline" className="min-h-11" isPending={logoBusy} onPress={() => fileRef.current?.click()}>
-            {logoBusy ? <Spinner size="sm" /> : <Upload className="size-4" />} Upload logo
+            {logoBusy ? <Spinner size="sm" /> : <Upload className="size-4" />} Upload logo reference
           </Button>
         )}
       </div>
 
       {needsTeam ? <p className="m-0 text-[11px] text-muted">Enter a team name before generating.</p> : null}
-      {!needsTeam && needsBrief ? <p className="m-0 text-[11px] text-muted">Add a short design description (8+ characters).</p> : null}
+      {!needsTeam && needsBrief ? <p className="m-0 text-[11px] text-muted">Describe the uniform in at least 8 characters.</p> : null}
 
       {error ? (
         <Alert status="danger" className="py-2"><Alert.Indicator /><Alert.Content><Alert.Title className="text-xs">{error}</Alert.Title></Alert.Content></Alert>
       ) : null}
 
       <Button fullWidth size="sm" isPending={busy} isDisabled={!canGenerate} onPress={generate} className={cn("min-h-11 font-semibold", "sticky bottom-0 z-10")}>
-        {({ isPending }) => <>{isPending ? <Spinner size="sm" color="current" /> : <Images className="size-4" />}{isPending ? stage || "Creating concepts…" : "Generate 4 Concepts"}</>}
+        {({ isPending }) => <>{isPending ? <Spinner size="sm" color="current" /> : <Sparkles className="size-4" />}{isPending ? stage || "Rendering uniforms…" : "Generate 4 Direct AI Uniforms"}</>}
       </Button>
     </section>
   );
