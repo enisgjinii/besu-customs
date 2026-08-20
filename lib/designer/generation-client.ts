@@ -1,52 +1,18 @@
 "use client";
 
-import {
-  buildColorVariationCorrection,
-  type GenerationMode,
-} from "@/lib/designer/openai-service";
-import type {
-  DesignConcept,
-  DesignerColors,
-  DesignerState,
-  GarmentView,
-  GenerationVersion,
-} from "@/lib/designer/types";
+import { buildColorVariationCorrection, type GenerationMode } from "@/lib/designer/openai-service";
+import type { DesignConcept, DesignerColors, DesignerState, GarmentView, GenerationVersion } from "@/lib/designer/types";
 
-export const LOADING_STAGES = [
-  "Preparing brief…",
-  "Generating kit artwork…",
-  "Saving design…",
-] as const;
+export const LOADING_STAGES = ["Preparing brief…", "Generating kit artwork…", "Saving design…"] as const;
 
 export const CONCEPT_DIRECTIONS = [
-  {
-    id: "cosmic-energy",
-    label: "Cosmic Energy",
-    direction: "Bold galactic basketball graphics, sweeping nebula motion, comet trails, star fields, dramatic angular panels, premium NBA-inspired energy.",
-  },
-  {
-    id: "velocity-cut",
-    label: "Velocity Cut",
-    direction: "Fast aggressive court aesthetic with sharp diagonal cuts, speed lines, layered geometric panels, high-energy modern professional basketball styling.",
-  },
-  {
-    id: "heritage-court",
-    label: "Heritage Court",
-    direction: "Retro-modern basketball identity with structured side panels, vintage court geometry, restrained texture, classic championship uniform proportions.",
-  },
-  {
-    id: "elite-minimal",
-    label: "Elite Minimal",
-    direction: "Luxury minimal basketball kit with clean negative space, precise trim geometry, premium tonal panels, subtle asymmetry and modern pro-team sophistication.",
-  },
+  { id: "cosmic-energy", label: "Cosmic Energy", direction: "Bold galactic basketball graphics, sweeping nebula motion, comet trails, star fields, dramatic angular panels, premium NBA-inspired energy." },
+  { id: "velocity-cut", label: "Velocity Cut", direction: "Fast aggressive court aesthetic with sharp diagonal cuts, speed lines, layered geometric panels, high-energy modern professional basketball styling." },
+  { id: "heritage-court", label: "Heritage Court", direction: "Retro-modern basketball identity with structured side panels, vintage court geometry, restrained texture, classic championship uniform proportions." },
+  { id: "elite-minimal", label: "Elite Minimal", direction: "Luxury minimal basketball kit with clean negative space, precise trim geometry, premium tonal panels, subtle asymmetry and modern pro-team sophistication." },
 ] as const;
 
-export type GenerateResult = {
-  versions: GenerationVersion[];
-  mock: boolean;
-  colors: DesignerColors;
-};
-
+export type GenerateResult = { versions: GenerationVersion[]; mock: boolean; colors: DesignerColors };
 export type GenerateProgress = {
   stage: (typeof LOADING_STAGES)[number];
   view?: GarmentView;
@@ -66,10 +32,7 @@ type GenerateOptions = {
 };
 
 let inFlightRequestId: string | null = null;
-
-export function isGenerationInFlight() {
-  return Boolean(inFlightRequestId);
-}
+export function isGenerationInFlight() { return Boolean(inFlightRequestId); }
 
 function friendlyError(code?: string, fallback?: string) {
   const messages: Record<string, string> = {
@@ -87,15 +50,7 @@ function friendlyError(code?: string, fallback?: string) {
   return (code && messages[code]) || fallback || "Artwork generation failed. Please try again.";
 }
 
-async function generateOne(
-  state: DesignerState,
-  view: GarmentView,
-  mode: GenerationMode,
-  colors: DesignerColors | undefined,
-  correction: string | undefined,
-  requestId: string,
-  signal?: AbortSignal,
-) {
+async function generateOne(state: DesignerState, view: GarmentView, mode: GenerationMode, colors: DesignerColors | undefined, correction: string | undefined, requestId: string, signal?: AbortSignal) {
   const response = await fetch("/api/designer/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -118,44 +73,21 @@ async function generateOne(
   });
   const data = await response.json();
   if (!response.ok) throw new Error(friendlyError(data.code, data.error));
-  return data as {
-    id: string;
-    assetUrl: string;
-    createdAt: string;
-    mock?: boolean;
-    colors?: DesignerColors | null;
-  };
+  return data as { id: string; assetUrl: string; createdAt: string; mock?: boolean; colors?: DesignerColors | null };
 }
 
 async function generateKitUnlocked(options: GenerateOptions): Promise<GenerateResult> {
   const mode = options.mode || "generate";
   const views = options.views || (["front", "back"] as GarmentView[]);
   const versions: GenerationVersion[] = [];
-  let mock = false;
   let resolvedColors = options.colors || options.state.colors;
-
   options.onProgress?.({ stage: LOADING_STAGES[0] });
   const primaryView = views.includes("front") ? "front" : views[0];
   options.onProgress?.({ stage: LOADING_STAGES[1], view: primaryView });
-
-  const correction = mode === "color_variation"
-    ? buildColorVariationCorrection(resolvedColors)
-    : options.correction;
-
-  const data = await generateOne(
-    options.state,
-    primaryView,
-    mode,
-    resolvedColors,
-    correction,
-    crypto.randomUUID(),
-    options.signal,
-  );
-
-  mock = Boolean(data.mock);
+  const correction = mode === "color_variation" ? buildColorVariationCorrection(resolvedColors) : options.correction;
+  const data = await generateOne(options.state, primaryView, mode, resolvedColors, correction, crypto.randomUUID(), options.signal);
   if (data.colors) resolvedColors = data.colors;
   options.onProgress?.({ stage: LOADING_STAGES[2], view: primaryView });
-
   for (const view of views) {
     versions.push({
       id: view === primaryView ? data.id : `${data.id}-${view}`,
@@ -169,19 +101,15 @@ async function generateKitUnlocked(options: GenerateOptions): Promise<GenerateRe
       mode,
     });
   }
-
-  return { versions, mock, colors: resolvedColors };
+  return { versions, mock: Boolean(data.mock), colors: resolvedColors };
 }
 
 export async function generateUniformKit(options: GenerateOptions): Promise<GenerateResult> {
   if (inFlightRequestId) throw new Error(friendlyError("duplicate"));
   const batchId = crypto.randomUUID();
   inFlightRequestId = batchId;
-  try {
-    return await generateKitUnlocked(options);
-  } finally {
-    if (inFlightRequestId === batchId) inFlightRequestId = null;
-  }
+  try { return await generateKitUnlocked(options); }
+  finally { if (inFlightRequestId === batchId) inFlightRequestId = null; }
 }
 
 export async function generateConceptSet(options: {
@@ -194,30 +122,17 @@ export async function generateConceptSet(options: {
   inFlightRequestId = batchId;
   const concepts: DesignConcept[] = [];
   let mock = false;
-
   try {
     for (let index = 0; index < CONCEPT_DIRECTIONS.length; index += 1) {
       const preset = CONCEPT_DIRECTIONS[index];
-      options.onProgress?.({
-        stage: LOADING_STAGES[1],
-        conceptIndex: index + 1,
-        conceptCount: CONCEPT_DIRECTIONS.length,
-        conceptLabel: preset.label,
-      });
-
+      options.onProgress?.({ stage: LOADING_STAGES[1], conceptIndex: index + 1, conceptCount: CONCEPT_DIRECTIONS.length, conceptLabel: preset.label });
       const conceptState: DesignerState = {
         ...options.state,
         prompt: `${options.state.prompt.trim()}\n\nART DIRECTION ${index + 1}/4 — ${preset.label}: ${preset.direction}\nMake this composition clearly different from the other proposed directions.`,
         artwork: {},
         designId: undefined,
       };
-
-      const result = await generateKitUnlocked({
-        state: conceptState,
-        mode: "generate",
-        views: ["front", "back"],
-        signal: options.signal,
-      });
+      const result = await generateKitUnlocked({ state: conceptState, mode: "generate", views: ["front", "back"], signal: options.signal });
       mock = mock || result.mock;
       const primary = result.versions[0];
       concepts.push({
@@ -227,6 +142,7 @@ export async function generateConceptSet(options: {
         prompt: conceptState.prompt,
         assetUrl: primary.assetUrl,
         colors: result.colors,
+        colorsEnabled: options.state.colorsEnabled,
         createdAt: primary.createdAt,
         designId: primary.id,
       });
