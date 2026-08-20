@@ -24,7 +24,7 @@ The directions are:
 - **Heritage Court** — retro-modern championship structure and classic basketball proportions.
 - **Elite Minimal** — luxury negative space, precise trim geometry and restrained pro-team styling.
 
-The generation endpoint currently permits five generation requests per minute per IP. A fresh four-concept set consumes four requests, leaving one immediate request within that window. Regeneration should therefore be treated as a new set rather than silently firing duplicate requests.
+The generation endpoint permits up to 12 generation requests per minute per IP. A fresh four-concept set consumes four requests, leaving enough bounded capacity for regeneration and several refinement/color-variation requests without removing abuse/cost protection.
 
 ## Architecture
 
