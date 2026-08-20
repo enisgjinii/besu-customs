@@ -7,7 +7,12 @@ const DesignerPage = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="min-h-dvh bg-background" data-designer-loading="v2" />
+      <div
+        className="flex min-h-dvh items-center justify-center bg-[#f7f7f5]"
+        data-designer-loading="v3"
+      >
+        <div className="h-8 w-8 animate-pulse rounded-full bg-foreground/10" />
+      </div>
     ),
   },
 );

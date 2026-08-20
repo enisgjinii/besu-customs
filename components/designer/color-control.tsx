@@ -27,18 +27,18 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
       <Button
         variant="outline"
         size="sm"
-        className="min-h-8 min-w-0 flex-1 justify-start rounded-full border-slate-300 bg-slate-50 px-2 text-slate-900 shadow-sm hover:bg-white"
+        className="min-h-11 min-w-0 flex-1 justify-start rounded-xl border-border bg-white px-2.5 text-foreground shadow-none ring-1 ring-border/50 hover:bg-[#f7f7f5]"
         onPress={() => setDraft(value.toUpperCase())}
       >
         <span
-          className="mr-1.5 size-3.5 shrink-0 rounded-full border border-border"
+          className="mr-2 size-4 shrink-0 rounded-full border border-border shadow-inner"
           style={{ backgroundColor: value }}
         />
-        <span className="truncate text-[11px] font-medium capitalize">{label}</span>
+        <span className="truncate text-[12px] font-medium capitalize">{label}</span>
       </Button>
-      <Popover.Content className="w-[200px] p-0">
-        <Popover.Dialog className="p-2.5">
-          <Popover.Heading className="mb-1.5 text-xs font-semibold capitalize">{label}</Popover.Heading>
+      <Popover.Content className="w-[220px] p-0">
+        <Popover.Dialog className="p-3">
+          <Popover.Heading className="mb-2 text-xs font-semibold capitalize">{label}</Popover.Heading>
           <ColorSwatchPicker
             size="sm"
             variant="square"
@@ -56,7 +56,7 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
               </ColorSwatchPicker.Item>
             ))}
           </ColorSwatchPicker>
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <TextField
               fullWidth
               name="hex"
@@ -64,11 +64,11 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
               onChange={(v) => setDraft(v.toUpperCase())}
             >
               <Label>Hex</Label>
-              <Input maxLength={7} />
+              <Input maxLength={7} className="min-h-11" />
             </TextField>
             <Button
               size="sm"
-              className="mt-auto min-h-9 self-end px-3"
+              className="mt-auto min-h-11 self-end px-3.5"
               onPress={() => apply(draft)}
             >
               Set

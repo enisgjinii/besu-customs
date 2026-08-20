@@ -17,13 +17,14 @@ import { Sparkles } from "lucide-react";
 import { useDesignerStore } from "@/lib/designer/store";
 import type { DesignStyle, GarmentType } from "@/lib/designer/types";
 import { ColorControl } from "./color-control";
+import { cn } from "@/lib/utils";
 
 const SPORTS = ["Basketball", "Soccer", "Volleyball", "Baseball", "Flag Football"] as const;
 const STYLES = ["modern", "minimal", "geometric", "retro", "aggressive"] as const;
-const GARMENTS: { id: GarmentType; label: string }[] = [
-  { id: "jersey", label: "Jersey" },
-  { id: "shorts", label: "Shorts" },
-  { id: "uniform", label: "Uniform" },
+const GARMENTS: { id: GarmentType; label: string; sublabel: string }[] = [
+  { id: "jersey", label: "Jersey", sublabel: "Top" },
+  { id: "shorts", label: "Shorts", sublabel: "Bottom" },
+  { id: "uniform", label: "Uniform", sublabel: "Kit" },
 ];
 
 export function PromptPanel() {
@@ -94,11 +95,13 @@ export function PromptPanel() {
   }
 
   const needsTeam = !s.teamName.trim();
+  const needsBrief = s.prompt.trim().length < 8;
+  const canGenerate = !busy && !needsTeam && !needsBrief;
 
   return (
-    <section className="flex w-full flex-col gap-2">
+    <section className="flex w-full flex-col gap-3">
       {mockMode && (
-        <Alert status="accent" className="py-1.5">
+        <Alert status="accent" className="py-2">
           <Alert.Indicator />
           <Alert.Content>
             <Alert.Title className="text-xs">Preview mode — artwork is simulated.</Alert.Title>
@@ -106,30 +109,42 @@ export function PromptPanel() {
         </Alert>
       )}
 
-      <Select
-        fullWidth
-        className="w-full"
-        selectedKey={s.garmentType}
-        onSelectionChange={(key) => key && s.setGarment(String(key) as GarmentType)}
-      >
-        <Label>Garment</Label>
-        <Select.Trigger className="w-full">
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {GARMENTS.map((garment) => (
-              <ListBox.Item key={garment.id} id={garment.id} textValue={garment.label}>
-                {garment.label}
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
-      </Select>
+      <div>
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+          Garment
+        </p>
+        <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Garment type">
+          {GARMENTS.map((garment) => {
+            const active = s.garmentType === garment.id;
+            return (
+              <button
+                key={garment.id}
+                type="button"
+                onClick={() => s.setGarment(garment.id)}
+                className={cn(
+                  "flex min-h-11 flex-col items-center justify-center rounded-xl px-1.5 py-1.5 text-center transition-colors ring-1",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25",
+                  active
+                    ? "bg-foreground text-white ring-foreground"
+                    : "bg-white text-foreground ring-border/70 hover:ring-foreground/20",
+                )}
+              >
+                <span className="text-[12px] font-semibold leading-none">{garment.label}</span>
+                <span
+                  className={cn(
+                    "mt-0.5 text-[10px]",
+                    active ? "text-white/75" : "text-muted",
+                  )}
+                >
+                  {garment.sublabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-2">
         <Select
           fullWidth
           className="w-full"
@@ -137,7 +152,7 @@ export function PromptPanel() {
           onSelectionChange={(key) => key && s.patch({ sport: String(key) })}
         >
           <Label>Sport</Label>
-          <Select.Trigger className="w-full">
+          <Select.Trigger className="min-h-11 w-full">
             <Select.Value />
             <Select.Indicator />
           </Select.Trigger>
@@ -160,7 +175,7 @@ export function PromptPanel() {
           onSelectionChange={(key) => key && s.patch({ style: String(key) as DesignStyle })}
         >
           <Label>Style</Label>
-          <Select.Trigger className="w-full">
+          <Select.Trigger className="min-h-11 w-full">
             <Select.Value />
             <Select.Indicator />
           </Select.Trigger>
@@ -185,25 +200,30 @@ export function PromptPanel() {
         onChange={(value) => s.patch({ teamName: value.toUpperCase().slice(0, 60) })}
       >
         <Label>Team name</Label>
-        <Input placeholder="BESU ELITE" maxLength={60} />
+        <Input placeholder="BESU ELITE" maxLength={60} className="min-h-11" />
       </TextField>
 
-      <div className="flex gap-1">
-        <ColorControl
-          label="primary"
-          value={s.colors.primary}
-          onChange={(value) => s.patch({ colors: { ...s.colors, primary: value } })}
-        />
-        <ColorControl
-          label="secondary"
-          value={s.colors.secondary}
-          onChange={(value) => s.patch({ colors: { ...s.colors, secondary: value } })}
-        />
-        <ColorControl
-          label="accent"
-          value={s.colors.accent}
-          onChange={(value) => s.patch({ colors: { ...s.colors, accent: value } })}
-        />
+      <div>
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+          Colors
+        </p>
+        <div className="flex gap-1.5">
+          <ColorControl
+            label="primary"
+            value={s.colors.primary}
+            onChange={(value) => s.patch({ colors: { ...s.colors, primary: value } })}
+          />
+          <ColorControl
+            label="secondary"
+            value={s.colors.secondary}
+            onChange={(value) => s.patch({ colors: { ...s.colors, secondary: value } })}
+          />
+          <ColorControl
+            label="accent"
+            value={s.colors.accent}
+            onChange={(value) => s.patch({ colors: { ...s.colors, accent: value } })}
+          />
+        </div>
       </div>
 
       <TextField
@@ -216,7 +236,7 @@ export function PromptPanel() {
         <Label>Brief</Label>
         <TextArea
           placeholder="Black uniform with angular gold side panels"
-          rows={2}
+          rows={3}
           maxLength={800}
         />
       </TextField>
@@ -238,12 +258,32 @@ export function PromptPanel() {
         </TextField>
       )}
 
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Chip
+          size="sm"
+          variant={s.artwork.front ? "primary" : "secondary"}
+          color={s.artwork.front ? "success" : "default"}
+        >
+          {s.artwork.front ? "Front ready" : "Front needed"}
+        </Chip>
+        <Chip
+          size="sm"
+          variant={s.artwork.back ? "primary" : "secondary"}
+          color={s.artwork.back ? "success" : "default"}
+        >
+          {s.artwork.back ? "Back ready" : "Back needed"}
+        </Chip>
+      </div>
+
       {needsTeam && (
-        <p className="text-[10px] text-muted">Enter a team name before generating.</p>
+        <p className="m-0 text-[11px] text-muted">Enter a team name before generating.</p>
+      )}
+      {!needsTeam && needsBrief && (
+        <p className="m-0 text-[11px] text-muted">Add a short design brief (8+ characters).</p>
       )}
 
       {error && (
-        <Alert status="danger" className="py-1.5">
+        <Alert status="danger" className="py-2">
           <Alert.Indicator />
           <Alert.Content>
             <Alert.Title className="text-xs">{error}</Alert.Title>
@@ -251,36 +291,19 @@ export function PromptPanel() {
         </Alert>
       )}
 
-      <div className="flex gap-1">
-        <Chip
-          size="sm"
-          variant={s.artwork.front ? "primary" : "secondary"}
-          color={s.artwork.front ? "success" : "default"}
-        >
-          {s.artwork.front ? "Front ✓" : "Front"}
-        </Chip>
-        <Chip
-          size="sm"
-          variant={s.artwork.back ? "primary" : "secondary"}
-          color={s.artwork.back ? "success" : "default"}
-        >
-          {s.artwork.back ? "Back ✓" : "Back"}
-        </Chip>
-      </div>
-
       <Button
         fullWidth
         size="sm"
         isPending={busy}
-        isDisabled={busy || s.prompt.trim().length < 8 || needsTeam}
+        isDisabled={!canGenerate}
         onPress={generate}
-        className="min-h-8"
+        className="min-h-11 font-semibold"
       >
         {({ isPending }) => (
           <>
-            {isPending ? <Spinner size="sm" color="current" /> : <Sparkles className="size-3.5" />}
+            {isPending ? <Spinner size="sm" color="current" /> : <Sparkles className="size-4" />}
             {isPending
-              ? "Creating…"
+              ? "Creating artwork…"
               : s.artwork[s.view]
                 ? `Revise ${s.view}`
                 : `Generate ${s.view}`}

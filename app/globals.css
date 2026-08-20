@@ -95,6 +95,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.78),
       0 1px 2px rgba(15, 23, 42, 0.06) !important;
     color: #0f172a !important;
+    font-size: 16px !important; /* iOS: avoid focus zoom */
   }
 
   [data-designer-shell] input:hover,
@@ -107,8 +108,8 @@
   [data-designer-shell] input:focus-visible,
   [data-designer-shell] textarea:focus-visible {
     background-color: #ffffff !important;
-    border-color: #60a5fa !important;
-    outline: 2px solid rgba(37, 99, 235, 0.18) !important;
+    border-color: #64748b !important;
+    outline: 2px solid rgba(15, 23, 42, 0.14) !important;
     outline-offset: 1px;
   }
 
@@ -126,12 +127,36 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.78),
       0 1px 2px rgba(15, 23, 42, 0.06) !important;
     color: #0f172a !important;
+    min-height: 44px;
   }
 
   [data-designer-shell] button[aria-haspopup="listbox"]:hover,
   [data-designer-shell] [role="combobox"]:hover {
     background-color: #ffffff !important;
     border-color: #94a3b8 !important;
+  }
+
+  /* Slider thumbs: easier to grab on phones */
+  [data-designer-shell] [role="slider"],
+  [data-designer-shell] [data-slot="thumb"] {
+    width: 22px !important;
+    height: 22px !important;
+    touch-action: none;
+  }
+
+  [data-designer-shell].designer-shell {
+    transition: none;
+  }
+
+  @media (max-width: 767px) {
+    [data-designer-shell] {
+      /* Bottom sheet height transitions */
+    }
+
+    [data-designer-shell] > [data-slot="surface"],
+    [data-designer-shell] > .relative.z-30 {
+      transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
   }
 }
 

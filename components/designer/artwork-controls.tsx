@@ -22,6 +22,7 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
   const layer = forcedLayer ?? layerState;
   const artwork = s.transforms[s.view];
   const text = s.textTransforms[s.view];
+  const hasArtwork = Boolean(s.artwork[s.view]);
   const rows = layer === "artwork" ? [
     { key: "scale" as const, label: "Scale", value: artwork.scale, min: .55, max: 1.35, step: .01, text: `${Math.round(artwork.scale * 100)}%` },
     { key: "x" as const, label: "Horizontal", value: artwork.x, min: -100, max: 100, step: 1, text: `${artwork.x}px` },
@@ -49,9 +50,9 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
   }
 
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-3">
       {!forcedLayer ? (
-        <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center justify-between gap-2">
           <ToggleButtonGroup
             size="sm"
             selectionMode="single"
@@ -63,22 +64,36 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
               if (next) setLayer(next);
             }}
             className="gap-0.5 rounded-full"
+            aria-label="Placement layer"
           >
-            <ToggleButton id="artwork" className="rounded-full text-[11px] font-medium">Artwork</ToggleButton>
-            <ToggleButton id="text" className="rounded-full text-[11px] font-medium">Type</ToggleButton>
+            <ToggleButton id="artwork" className="min-h-10 rounded-full px-3 text-[12px] font-medium">
+              Artwork
+            </ToggleButton>
+            <ToggleButton id="text" className="min-h-10 rounded-full px-3 text-[12px] font-medium">
+              Type
+            </ToggleButton>
           </ToggleButtonGroup>
           <Chip size="sm" className="capitalize">{s.view}</Chip>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
             {layer === "artwork" ? "Artwork layer" : "Type layer"}
           </p>
           <Chip size="sm" className="capitalize">{s.view}</Chip>
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
+      {layer === "artwork" && !hasArtwork ? (
+        <div className="rounded-xl bg-[#f7f7f5] px-3 py-3 ring-1 ring-border/60">
+          <p className="m-0 text-[12px] font-semibold text-foreground">No artwork on this view yet</p>
+          <p className="m-0 mt-1 text-[11px] leading-snug text-muted">
+            Generate a design first, then drag on the canvas or use the sliders below.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-3">
         {rows.map((row) => (
           <Slider
             key={row.key}
@@ -91,10 +106,10 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
             onChange={(value) => update(row.key, Array.isArray(value) ? value[0] : value)}
           >
             <div className="flex w-full items-center justify-between">
-              <Label className="text-[11px] font-medium">{row.label}</Label>
-              <span className="text-[11px] text-muted">{row.text}</span>
+              <Label className="text-[12px] font-medium">{row.label}</Label>
+              <span className="tabular-nums text-[12px] text-muted">{row.text}</span>
             </div>
-            <Slider.Track>
+            <Slider.Track className="mt-2">
               <Slider.Fill />
               <Slider.Thumb />
             </Slider.Track>
@@ -102,13 +117,13 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
         ))}
       </div>
 
-      <div className="flex gap-1">
-        <Button fullWidth size="sm" variant="outline" className="min-h-8" onPress={reset}>
-          <RotateCcw className="size-3" />
+      <div className="flex gap-2">
+        <Button fullWidth size="sm" variant="outline" className="min-h-11" onPress={reset}>
+          <RotateCcw className="size-3.5" />
           Reset
         </Button>
-        <Button fullWidth size="sm" variant="outline" className="min-h-8" onPress={safeFit}>
-          <Focus className="size-3" />
+        <Button fullWidth size="sm" variant="outline" className="min-h-11" onPress={safeFit}>
+          <Focus className="size-3.5" />
           Safe fit
         </Button>
       </div>
@@ -117,21 +132,22 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
         <>
           <Separator className="my-0.5" />
           <div className="flex items-center gap-1.5">
-            <History className="size-4" />
-            <span className="text-xs font-medium">Versions</span>
+            <History className="size-4 text-muted" />
+            <span className="text-xs font-semibold">Versions</span>
             <Chip size="sm">{`${s.history.length}/8`}</Chip>
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
             {s.history.map((version, index) => (
               <button
                 type="button"
                 key={version.id}
                 onClick={() => s.restoreVersion(version)}
                 className={cn(
-                  "min-w-16 rounded-lg border border-border bg-background p-1 text-left transition-colors",
+                  "min-h-11 min-w-[72px] rounded-xl border border-border bg-background p-1.5 text-left transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25",
                   version.assetUrl === s.artwork[version.view]
-                    ? "border-foreground/40"
-                    : "hover:border-foreground/20",
+                    ? "border-foreground/45 ring-1 ring-foreground/15"
+                    : "hover:border-foreground/25",
                 )}
               >
                 {/* Dynamic designer asset URLs (blob/CDN) — next/image not suitable */}
@@ -139,9 +155,11 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
                 <img
                   src={version.assetUrl}
                   alt={`Version ${s.history.length - index}`}
-                  className="block h-[46px] w-[54px] rounded bg-[rgba(15,23,42,0.06)] object-cover"
+                  className="block h-[52px] w-full rounded-md bg-[rgba(15,23,42,0.06)] object-cover"
                 />
-                <span className="block truncate text-xs font-medium">v{s.history.length - index}</span>
+                <span className="mt-1 block truncate text-[11px] font-semibold">
+                  v{s.history.length - index}
+                </span>
               </button>
             ))}
           </div>
