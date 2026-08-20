@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Images,
   Move,
   Package,
   ShoppingBag,
@@ -10,6 +11,7 @@ import {
 export type DesignerStepId =
   | "product"
   | "design"
+  | "concepts"
   | "refine"
   | "roster"
   | "order";
@@ -45,21 +47,31 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
   },
   {
     id: "design",
-    label: "Design",
+    label: "Brief",
     header: "Describe your design",
-    chooseTitle: "Generate your uniform",
-    nextLabel: "Refine",
-    hint: "Team name + brief. Optional logo and colors. AI builds the coordinated kit.",
+    chooseTitle: "Create four directions",
+    nextLabel: "Concepts",
+    hint: "Team name + brief. AI creates four clearly different uniform directions.",
     expandsDetail: true,
     icon: Sparkles,
+  },
+  {
+    id: "concepts",
+    label: "Concepts",
+    header: "Choose a concept",
+    chooseTitle: "Pick one of four designs",
+    nextLabel: "Refine",
+    hint: "Compare four distinct concepts and select the direction to customize.",
+    expandsDetail: true,
+    icon: Images,
   },
   {
     id: "refine",
     label: "Refine",
     header: "Refine",
-    chooseTitle: "Refine your kit",
+    chooseTitle: "Refine your selected kit",
     nextLabel: "Roster",
-    hint: "Try different colors, refine the concept, or open advanced placement.",
+    hint: "Try colors, refine the selected concept, or open advanced placement.",
     expandsDetail: true,
     icon: Move,
   },
@@ -88,11 +100,14 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
 export const STEP_INDEX: Record<DesignerStepId, number> = {
   product: 0,
   design: 1,
-  refine: 2,
-  roster: 3,
-  order: 4,
+  concepts: 2,
+  refine: 3,
+  roster: 4,
+  order: 5,
 };
 
+// Shared by refinement/color-variation flows. Concept generation presents its
+// own per-concept progress copy in PromptPanel while keeping this contract stable.
 export const LOADING_STAGES = [
   "Preparing brief…",
   "Generating kit artwork…",

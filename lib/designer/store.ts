@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import { getDesignerProduct } from "./products";
 import type {
   ActivePiece,
+  DesignConcept,
   DesignerState,
   DesignerStep,
   GarmentType,
@@ -33,6 +34,8 @@ function createInitialState(): DesignerState {
     colors: { primary: "#101820", secondary: "#d4af37", accent: "#ffffff" },
     colorsEnabled: false,
     artwork: {},
+    concepts: [],
+    selectedConceptId: undefined,
     transforms: {
       front: { scale: 1, x: 0, y: 0, rotation: 0 },
       back: { scale: 1, x: 0, y: 0, rotation: 0 },
@@ -63,6 +66,8 @@ type Actions = {
   setTextTransform: (value: Partial<DesignerState["textTransforms"]["front"]>) => void;
   setLogoTransform: (value: Partial<DesignerState["logoTransform"]>) => void;
   setLogo: (logoUrl: string | undefined) => void;
+  setConcepts: (concepts: DesignConcept[]) => void;
+  selectConcept: (conceptId: string) => void;
   addVersion: (version: GenerationVersion) => void;
   restoreVersion: (version: GenerationVersion) => void;
   addPlayer: () => void;
@@ -86,6 +91,10 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           sport: product.sport,
           garmentType: product.garmentType,
           activePiece: product.garmentType === "shorts" ? "shorts" : "jersey",
+          concepts: [],
+          selectedConceptId: undefined,
+          artwork: {},
+          designId: undefined,
         });
       },
       setGarment: (garmentType) =>
@@ -111,8 +120,21 @@ export const useDesignerStore = create<DesignerState & Actions>()(
         })),
       setLogoTransform: (value) =>
         set((s) => ({ logoTransform: { ...s.logoTransform, ...value } })),
-      setLogo: (logoUrl) => set({ logoUrl, logoTransform: logoUrl ? { scale: 1, x: 0, y: 0 } : { scale: 1, x: 0, y: 0 } }),
-      // A design ID identifies the whole order. Each generated image has its own version ID.
+      setLogo: (logoUrl) => set({ logoUrl, logoTransform: { scale: 1, x: 0, y: 0 } }),
+      setConcepts: (concepts) => set({ concepts, selectedConceptId: undefined, artwork: {}, designId: undefined }),
+      selectConcept: (conceptId) =>
+        set((s) => {
+          const concept = s.concepts.find((item) => item.id === conceptId);
+          if (!concept) return {};
+          return {
+            selectedConceptId: concept.id,
+            artwork: { front: concept.assetUrl, back: concept.assetUrl },
+            colors: concept.colors,
+            colorsEnabled: concept.colorsEnabled,
+            designId: concept.designId,
+            correction: "",
+          };
+        }),
       addVersion: (version) =>
         set((s) => ({
           artwork: { ...s.artwork, [version.view]: version.assetUrl },
@@ -125,7 +147,6 @@ export const useDesignerStore = create<DesignerState & Actions>()(
         set((s) => ({
           garmentType: v.garmentType,
           view: v.view,
-          prompt: v.prompt,
           colors: v.colors,
           artwork: { ...s.artwork, [v.view]: v.assetUrl },
           designId: s.designId || v.id,
@@ -146,16 +167,13 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           };
         }),
       updatePlayer: (id, value) =>
-        set((s) => ({
-          roster: s.roster.map((p) => (p.id === id ? { ...p, ...value } : p)),
-        })),
+        set((s) => ({ roster: s.roster.map((p) => (p.id === id ? { ...p, ...value } : p)) })),
       removePlayer: (id) =>
         set((s) => {
           const roster = s.roster.filter((p) => p.id !== id);
           return {
             roster,
-            previewPlayerId:
-              s.previewPlayerId === id ? roster[0]?.id : s.previewPlayerId,
+            previewPlayerId: s.previewPlayerId === id ? roster[0]?.id : s.previewPlayerId,
           };
         }),
       setPreviewPlayer: (previewPlayerId) => set({ previewPlayerId }),
@@ -163,7 +181,7 @@ export const useDesignerStore = create<DesignerState & Actions>()(
     }),
     {
       name: "besu-2d-designer-v5",
-      version: 6,
+      version: 7,
       migrate: (persisted) => {
         const source = (persisted || {}) as Partial<DesignerState>;
         const fresh = createInitialState();
@@ -174,9 +192,11 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           inspiration: source.inspiration || "",
           colorsEnabled: typeof source.colorsEnabled === "boolean" ? source.colorsEnabled : false,
           activePiece: source.activePiece || fresh.activePiece,
-          activeStep: ([0, 1, 2, 3, 4] as const).includes(source.activeStep as DesignerStep)
+          activeStep: ([0, 1, 2, 3, 4, 5] as const).includes(source.activeStep as DesignerStep)
             ? (source.activeStep as DesignerStep)
             : 0,
+          concepts: Array.isArray(source.concepts) ? source.concepts.slice(0, 4) : [],
+          selectedConceptId: source.selectedConceptId,
           colors: { ...fresh.colors, ...(source.colors || {}) },
           transforms: {
             ...fresh.transforms,
@@ -199,9 +219,7 @@ export const useDesignerStore = create<DesignerState & Actions>()(
         } as DesignerState;
       },
       partialize: (s) =>
-        Object.fromEntries(
-          Object.entries(s).filter(([, v]) => typeof v !== "function"),
-        ) as DesignerState,
+        Object.fromEntries(Object.entries(s).filter(([, v]) => typeof v !== "function")) as DesignerState,
     },
   ),
 );

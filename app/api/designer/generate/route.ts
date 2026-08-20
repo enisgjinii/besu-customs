@@ -6,6 +6,7 @@ import { assertStorageConfiguration, isLocalDesignerAssetUrl, storeGeneratedAsse
 
 export const maxDuration = 120;
 const MAX_BODY_BYTES = 24_576;
+const MAX_GENERATIONS_PER_MINUTE = 12;
 
 const colorsSchema = z.object({
   primary: z.string().regex(/^#[0-9a-f]{6}$/i),
@@ -194,7 +195,8 @@ export async function POST(req: NextRequest) {
   const now = Date.now();
   cleanup(now);
   const recent = usage.get(ip) || [];
-  if (recent.length >= 5) {
+  // One concept set uses four requests. Keep a bounded budget for regeneration + refinement.
+  if (recent.length >= MAX_GENERATIONS_PER_MINUTE) {
     return NextResponse.json({ error: "Too many generations. Try again in one minute.", code: "rate_limited" }, { status: 429 });
   }
   usage.set(ip, [...recent, now]);
@@ -233,7 +235,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(mock);
     }
 
-    // Prefer Supabase; local disk fallback is used in development when the project URL is unreachable.
     if (process.env.DESIGNER_LOCAL_ASSETS !== "true") {
       try {
         assertStorageConfiguration();

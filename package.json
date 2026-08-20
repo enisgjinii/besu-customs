@@ -8,7 +8,7 @@
     "dev": "next dev",
     "lint": "eslint app/page.tsx components/designer lib/designer app/api/designer --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test:designer": "node scripts/verify-designer-2d.mjs && node scripts/verify-designer-checkout-payload.mjs",
+    "test:designer": "node scripts/verify-designer-2d.mjs && node scripts/verify-designer-checkout-payload.mjs && node scripts/verify-four-concepts.mjs",
     "start": "next start"
   },
   "dependencies": {
