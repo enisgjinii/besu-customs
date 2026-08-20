@@ -106,8 +106,10 @@ export const STEP_INDEX: Record<DesignerStepId, number> = {
   order: 5,
 };
 
+// Shared by refinement/color-variation flows. Concept generation presents its
+// own per-concept progress copy in PromptPanel while keeping this contract stable.
 export const LOADING_STAGES = [
   "Preparing brief…",
-  "Generating concept artwork…",
-  "Saving concept…",
+  "Generating kit artwork…",
+  "Saving design…",
 ] as const;
