@@ -125,12 +125,12 @@ export const useDesignerStore = create<DesignerState & Actions>()(
       selectConcept: (conceptId) =>
         set((s) => {
           const concept = s.concepts.find((item) => item.id === conceptId);
-          if (!concept) return s;
+          if (!concept) return {};
           return {
             selectedConceptId: concept.id,
             artwork: { front: concept.assetUrl, back: concept.assetUrl },
             colors: concept.colors,
-            colorsEnabled: true,
+            colorsEnabled: concept.colorsEnabled,
             designId: concept.designId,
             correction: "",
           };
