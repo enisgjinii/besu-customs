@@ -64,6 +64,7 @@ export interface DesignConcept {
   prompt: string;
   assetUrl: string;
   colors: DesignerColors;
+  colorsEnabled: boolean;
   createdAt: string;
   designId: string;
 }
