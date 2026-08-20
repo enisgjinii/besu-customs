@@ -26,7 +26,7 @@ export function GarmentCanvas() {
     <section className="relative h-full w-full overflow-hidden bg-[#f4f4f2]">
       <div
         id="production-canvas"
-        className="absolute inset-3 flex min-h-0 items-center justify-center overflow-hidden rounded-[24px] bg-white ring-1 ring-border/60 sm:inset-6"
+        className="absolute inset-2 flex min-h-0 items-center justify-center overflow-hidden rounded-[18px] bg-white ring-1 ring-border/60 sm:inset-6 sm:rounded-[24px]"
       >
         <svg
           viewBox="0 0 1200 900"
@@ -39,57 +39,53 @@ export function GarmentCanvas() {
           {artwork ? (
             <image
               href={artwork}
-              x="70"
-              y="40"
-              width="1060"
-              height="820"
+              x="58"
+              y="34"
+              width="1084"
+              height="832"
               preserveAspectRatio="xMidYMid meet"
               transform={`translate(${600 - 600 * previewScale} ${450 - 450 * previewScale}) scale(${previewScale})`}
             />
           ) : (
-            <g>
-              <rect x="270" y="210" width="660" height="480" rx="42" fill="#ffffff" stroke="#deded8" strokeWidth="4" strokeDasharray="14 14" />
-              <text x="600" y="420" textAnchor="middle" fill="#171717" fontFamily="Open Sans, sans-serif" fontSize="32" fontWeight="700">
-                Direct AI Uniform Designer
-              </text>
-              <text x="600" y="470" textAnchor="middle" fill="#737373" fontFamily="Open Sans, sans-serif" fontSize="22">
-                Describe the uniform, generate four concepts, then choose one.
-              </text>
-              <text x="600" y="510" textAnchor="middle" fill="#737373" fontFamily="Open Sans, sans-serif" fontSize="20">
-                AI will render the finished jersey + shorts directly.
-              </text>
+            <g opacity="0.8">
+              <rect x="260" y="190" width="680" height="520" rx="46" fill="#ffffff" stroke="#deded8" strokeWidth="4" strokeDasharray="16 14" />
+              <circle cx="600" cy="415" r="62" fill="#f4f4f2" />
             </g>
           )}
         </svg>
+
+        {!artwork ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-12 text-center max-[360px]:px-8">
+            <div className="max-w-[320px]">
+              <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-foreground text-white shadow-sm sm:size-12">
+                <Sparkles className="size-4 sm:size-5" />
+              </span>
+              <p className="m-0 mt-2.5 text-[13px] font-semibold text-foreground sm:text-[15px]">Direct AI Uniform Designer</p>
+              <p className="m-0 mt-1 text-[10px] leading-snug text-muted sm:text-[12px]">
+                Describe the kit, generate four finished uniforms, then choose your direction.
+              </p>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <div
-        className="pointer-events-none absolute left-1/2 top-5 z-20 -translate-x-1/2 sm:top-8"
-      >
-        <div className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-2 text-[11px] font-semibold shadow-sm ring-1 ring-border/60 backdrop-blur-sm">
-          <Sparkles className="size-3.5" />
-          {selectedConcept ? `Direct AI · ${selectedConcept.label}` : artwork ? "Direct AI render" : "Direct AI mode"}
+      <div className="pointer-events-none absolute left-3 right-14 top-3 z-20 sm:left-1/2 sm:right-auto sm:top-8 sm:-translate-x-1/2">
+        <div className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1.5 text-[10px] font-semibold shadow-sm ring-1 ring-border/60 backdrop-blur-sm sm:gap-2 sm:px-3 sm:py-2 sm:text-[11px]">
+          <Sparkles className="size-3.5 shrink-0" />
+          <span className="truncate">
+            {selectedConcept ? `Direct AI · ${selectedConcept.label}` : artwork ? "Direct AI render" : "Direct AI mode"}
+          </span>
         </div>
       </div>
 
       {artwork ? (
         <div
-          className="absolute z-20 flex flex-col gap-1.5"
+          className="absolute z-20 flex gap-1.5 sm:flex-col"
           style={{
-            bottom: "max(12px, env(safe-area-inset-bottom, 0px))",
+            bottom: "max(10px, env(safe-area-inset-bottom, 0px))",
             right: "max(10px, env(safe-area-inset-right, 0px))",
           }}
         >
-          <Button
-            isIconOnly
-            size="sm"
-            variant="ghost"
-            aria-label="Zoom in"
-            className="size-10 rounded-full bg-white/95 shadow-sm ring-1 ring-border/60"
-            onPress={() => nudgeZoom(0.1)}
-          >
-            <Plus className="size-4" />
-          </Button>
           <Button
             isIconOnly
             size="sm"
@@ -100,12 +96,22 @@ export function GarmentCanvas() {
           >
             <Minus className="size-4" />
           </Button>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            aria-label="Zoom in"
+            className="size-10 rounded-full bg-white/95 shadow-sm ring-1 ring-border/60"
+            onPress={() => nudgeZoom(0.1)}
+          >
+            <Plus className="size-4" />
+          </Button>
         </div>
       ) : null}
 
       {artwork ? (
-        <p className="pointer-events-none absolute inset-x-6 bottom-4 z-10 m-0 text-center text-[10px] font-medium text-muted sm:bottom-6">
-          This is the AI-generated finished uniform render — not a flat 2D texture.
+        <p className="pointer-events-none absolute inset-x-24 bottom-4 z-10 m-0 hidden text-center text-[10px] font-medium text-muted sm:block sm:bottom-6">
+          AI-generated finished uniform render
         </p>
       ) : null}
     </section>
