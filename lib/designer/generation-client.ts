@@ -4,6 +4,7 @@ import { buildColorVariationCorrection, type GenerationMode } from "@/lib/design
 import type { DesignConcept, DesignerColors, DesignerState, GarmentView, GenerationVersion } from "@/lib/designer/types";
 
 export const LOADING_STAGES = ["Preparing brief…", "Generating kit artwork…", "Saving design…"] as const;
+const MAX_CONCEPT_BASE_BRIEF = 460;
 
 export const CONCEPT_DIRECTIONS = [
   { id: "cosmic-energy", label: "Cosmic Energy", direction: "Bold galactic basketball graphics, sweeping nebula motion, comet trails, star fields, dramatic angular panels, premium NBA-inspired energy." },
@@ -123,12 +124,13 @@ export async function generateConceptSet(options: {
   const concepts: DesignConcept[] = [];
   let mock = false;
   try {
+    const baseBrief = options.state.prompt.trim().slice(0, MAX_CONCEPT_BASE_BRIEF);
     for (let index = 0; index < CONCEPT_DIRECTIONS.length; index += 1) {
       const preset = CONCEPT_DIRECTIONS[index];
       options.onProgress?.({ stage: LOADING_STAGES[1], conceptIndex: index + 1, conceptCount: CONCEPT_DIRECTIONS.length, conceptLabel: preset.label });
       const conceptState: DesignerState = {
         ...options.state,
-        prompt: `${options.state.prompt.trim()}\n\nART DIRECTION ${index + 1}/4 — ${preset.label}: ${preset.direction}\nMake this composition clearly different from the other proposed directions.`,
+        prompt: `${baseBrief}\n\nART DIRECTION ${index + 1}/4 — ${preset.label}: ${preset.direction}\nMake this composition clearly different from the other proposed directions.`,
         artwork: {},
         designId: undefined,
       };
