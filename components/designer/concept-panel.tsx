@@ -54,11 +54,15 @@ export function ConceptPanel() {
               <div className="p-2.5">
                 <p className="m-0 text-[12px] font-semibold text-foreground">{concept.label}</p>
                 <p className="m-0 mt-1 line-clamp-3 text-[10px] leading-snug text-muted">{concept.direction}</p>
-                <div className="mt-2 flex gap-1">
-                  {Object.values(concept.colors).map((color) => (
-                    <span key={color} className="size-3 rounded-full border border-border" style={{ backgroundColor: color }} />
-                  ))}
-                </div>
+                {concept.colorsEnabled ? (
+                  <div className="mt-2 flex gap-1">
+                    {Object.values(concept.colors).map((color) => (
+                      <span key={color} className="size-3 rounded-full border border-border" style={{ backgroundColor: color }} />
+                    ))}
+                  </div>
+                ) : (
+                  <span className="mt-2 inline-block text-[9px] font-medium uppercase tracking-wide text-muted">AI-selected palette</span>
+                )}
               </div>
             </button>
           );
@@ -68,7 +72,7 @@ export function ConceptPanel() {
       {s.selectedConceptId ? (
         <div className="rounded-xl bg-[#f7f7f5] p-3 ring-1 ring-border/55">
           <p className="m-0 text-[12px] font-semibold">Concept selected</p>
-          <p className="m-0 mt-1 text-[11px] text-muted">This artwork is now loaded into the jersey + shorts preview and will be the base for refinement.</p>
+          <p className="m-0 mt-1 text-[11px] text-muted">This artwork is loaded into the jersey + shorts preview and is now the base for refinement.</p>
         </div>
       ) : (
         <p className="m-0 text-center text-[11px] text-muted">Select one concept to continue.</p>
