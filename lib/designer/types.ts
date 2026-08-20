@@ -1,6 +1,6 @@
 export type GarmentType = "jersey" | "shorts" | "uniform";
 export type GarmentView = "front" | "back";
-export type DesignerStep = 0 | 1 | 2 | 3 | 4;
+export type DesignerStep = 0 | 1 | 2 | 3 | 4 | 5;
 export type DesignStyle = "modern" | "minimal" | "geometric" | "retro" | "aggressive";
 export type ActivePiece = "jersey" | "shorts";
 
@@ -57,6 +57,17 @@ export interface GenerationVersion {
   mode?: "generate" | "refine" | "color_variation";
 }
 
+export interface DesignConcept {
+  id: string;
+  label: string;
+  direction: string;
+  prompt: string;
+  assetUrl: string;
+  colors: DesignerColors;
+  createdAt: string;
+  designId: string;
+}
+
 export interface DesignerState {
   activeStep: DesignerStep;
   productId: string;
@@ -64,7 +75,6 @@ export interface DesignerState {
   sport: string;
   garmentType: GarmentType;
   view: GarmentView;
-  /** When garment is uniform, which piece is emphasized in the canvas chrome. */
   activePiece: ActivePiece;
   prompt: string;
   inspiration: string;
@@ -72,17 +82,16 @@ export interface DesignerState {
   teamName: string;
   font: string;
   colors: DesignerColors;
-  /** Optional colors — when false, AI invents palette from brief. */
   colorsEnabled: boolean;
   artwork: Partial<Record<GarmentView, string>>;
+  concepts: DesignConcept[];
+  selectedConceptId?: string;
   transforms: Record<GarmentView, ArtworkTransform>;
   history: GenerationVersion[];
   textTransforms: Record<GarmentView, TextTransform>;
-  /** Client-held logo data URL or stored public URL (never sent as Shopify base64). */
   logoUrl?: string;
   logoTransform: LogoTransform;
   roster: RosterPlayer[];
-  /** Roster player id used for back preview; falls back to first player. */
   previewPlayerId?: string;
   customer: CustomerDetails;
   designId?: string;
