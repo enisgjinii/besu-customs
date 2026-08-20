@@ -12,8 +12,8 @@ import { LegacyGlobalUi } from "@/components/legacy-global-ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Besu Customs",
-  description: "AI-powered 2D custom sportswear designer for production-ready team uniforms.",
+  title: "Besu Customs · Direct AI Uniform Designer",
+  description: "Direct AI sportswear designer that renders complete custom team uniforms from a brief, then supports AI refinement, roster, export, and checkout.",
   generator: "Enis Gjini",
   appleWebApp: {
     capable: true,
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "Besu Customs",
   },
   formatDetection: {
-    telephone: false, // Prevent auto-linking phone numbers
+    telephone: false,
   },
 };
 
@@ -30,7 +30,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover", // For notched devices — designer uses visualViewport for keyboard
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -39,8 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const shouldInjectToolbar = process.env.NODE_ENV === "development";
-  const shouldInjectAnalytics =
-    process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true";
+  const shouldInjectAnalytics = process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true";
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -52,10 +51,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body
-        suppressHydrationWarning
-        className="font-sans overflow-hidden"
-      >
+      <body suppressHydrationWarning className="font-sans overflow-hidden">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

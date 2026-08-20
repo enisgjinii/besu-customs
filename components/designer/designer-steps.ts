@@ -1,11 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Images,
-  Move,
   Package,
   ShoppingBag,
   Sparkles,
   Users,
+  WandSparkles,
 } from "lucide-react";
 
 export type DesignerStepId =
@@ -40,40 +40,40 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
     label: "Product",
     header: "Choose product",
     chooseTitle: "Select your uniform",
-    nextLabel: "Design",
-    hint: "Pick the garment kit to customize. Pricing shown when available.",
+    nextLabel: "AI Brief",
+    hint: "Choose the garment type AI should design.",
     expandsDetail: true,
     icon: Package,
   },
   {
     id: "design",
-    label: "Brief",
-    header: "Describe your design",
-    chooseTitle: "Create four directions",
+    label: "AI Brief",
+    header: "Describe the uniform",
+    chooseTitle: "Generate direct AI uniforms",
     nextLabel: "Concepts",
-    hint: "Team name + brief. AI creates four clearly different uniform directions.",
+    hint: "Describe the finished uniform. AI renders four complete visual directions directly.",
     expandsDetail: true,
     icon: Sparkles,
   },
   {
     id: "concepts",
     label: "Concepts",
-    header: "Choose a concept",
-    chooseTitle: "Pick one of four designs",
+    header: "Choose an AI uniform",
+    chooseTitle: "Pick one of four direct renders",
     nextLabel: "Refine",
-    hint: "Compare four distinct concepts and select the direction to customize.",
+    hint: "Compare four finished AI uniform renders and choose the one to continue with.",
     expandsDetail: true,
     icon: Images,
   },
   {
     id: "refine",
-    label: "Refine",
-    header: "Refine",
-    chooseTitle: "Refine your selected kit",
+    label: "Refine AI",
+    header: "Refine with AI",
+    chooseTitle: "Edit the selected uniform with AI",
     nextLabel: "Roster",
-    hint: "Try colors, refine the selected concept, or open advanced placement.",
+    hint: "Tell AI what to change or recolor while preserving the selected uniform identity.",
     expandsDetail: true,
-    icon: Move,
+    icon: WandSparkles,
   },
   {
     id: "roster",
@@ -81,7 +81,7 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
     header: "Roster",
     chooseTitle: "Build your roster",
     nextLabel: "Order",
-    hint: "Add players and preview a selected player on the back.",
+    hint: "Add player names, numbers, sizes, and quantities to the selected AI design.",
     expandsDetail: true,
     icon: Users,
   },
@@ -91,7 +91,7 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
     header: "Order",
     chooseTitle: "Review your order",
     nextLabel: null,
-    hint: "Confirm checklist, export production files, or send to Shopify.",
+    hint: "Confirm the AI design, roster, exports, and Shopify handoff.",
     expandsDetail: true,
     icon: ShoppingBag,
   },
@@ -106,10 +106,8 @@ export const STEP_INDEX: Record<DesignerStepId, number> = {
   order: 5,
 };
 
-// Shared by refinement/color-variation flows. Concept generation presents its
-// own per-concept progress copy in PromptPanel while keeping this contract stable.
 export const LOADING_STAGES = [
-  "Preparing brief…",
-  "Generating kit artwork…",
-  "Saving design…",
+  "Preparing AI edit…",
+  "Rendering uniform…",
+  "Saving AI render…",
 ] as const;

@@ -94,34 +94,32 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           concepts: [],
           selectedConceptId: undefined,
           artwork: {},
+          history: [],
           designId: undefined,
         });
       },
-      setGarment: (garmentType) =>
-        set({
-          garmentType,
-          activePiece: garmentType === "shorts" ? "shorts" : "jersey",
-        }),
+      setGarment: (garmentType) => set({
+        garmentType,
+        activePiece: garmentType === "shorts" ? "shorts" : "jersey",
+        concepts: [],
+        selectedConceptId: undefined,
+        artwork: {},
+        history: [],
+        designId: undefined,
+      }),
       setView: (view) => set({ view }),
       setActivePiece: (activePiece) => set({ activePiece }),
       setTransform: (value) =>
         set((s) => ({
-          transforms: {
-            ...s.transforms,
-            [s.view]: { ...s.transforms[s.view], ...value },
-          },
+          transforms: { ...s.transforms, [s.view]: { ...s.transforms[s.view], ...value } },
         })),
       setTextTransform: (value) =>
         set((s) => ({
-          textTransforms: {
-            ...s.textTransforms,
-            [s.view]: { ...s.textTransforms[s.view], ...value },
-          },
+          textTransforms: { ...s.textTransforms, [s.view]: { ...s.textTransforms[s.view], ...value } },
         })),
-      setLogoTransform: (value) =>
-        set((s) => ({ logoTransform: { ...s.logoTransform, ...value } })),
+      setLogoTransform: (value) => set((s) => ({ logoTransform: { ...s.logoTransform, ...value } })),
       setLogo: (logoUrl) => set({ logoUrl, logoTransform: { scale: 1, x: 0, y: 0 } }),
-      setConcepts: (concepts) => set({ concepts, selectedConceptId: undefined, artwork: {}, designId: undefined }),
+      setConcepts: (concepts) => set({ concepts, selectedConceptId: undefined, artwork: {}, history: [], designId: undefined }),
       selectConcept: (conceptId) =>
         set((s) => {
           const concept = s.concepts.find((item) => item.id === conceptId);
@@ -132,12 +130,13 @@ export const useDesignerStore = create<DesignerState & Actions>()(
             colors: concept.colors,
             colorsEnabled: concept.colorsEnabled,
             designId: concept.designId,
+            history: [],
             correction: "",
           };
         }),
       addVersion: (version) =>
         set((s) => ({
-          artwork: { ...s.artwork, [version.view]: version.assetUrl },
+          artwork: { front: version.assetUrl, back: version.assetUrl },
           designId: s.designId || version.id,
           colors: version.colors,
           history: [version, ...s.history].slice(0, 12),
@@ -148,7 +147,7 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           garmentType: v.garmentType,
           view: v.view,
           colors: v.colors,
-          artwork: { ...s.artwork, [v.view]: v.assetUrl },
+          artwork: { front: v.assetUrl, back: v.assetUrl },
           designId: s.designId || v.id,
         })),
       addPlayer: () =>
@@ -161,10 +160,7 @@ export const useDesignerStore = create<DesignerState & Actions>()(
             shortsSize: "M",
             quantity: 1,
           };
-          return {
-            roster: [...s.roster, player],
-            previewPlayerId: s.previewPlayerId || player.id,
-          };
+          return { roster: [...s.roster, player], previewPlayerId: s.previewPlayerId || player.id };
         }),
       updatePlayer: (id, value) =>
         set((s) => ({ roster: s.roster.map((p) => (p.id === id ? { ...p, ...value } : p)) })),
@@ -180,41 +176,23 @@ export const useDesignerStore = create<DesignerState & Actions>()(
       reset: () => set(createInitialState()),
     }),
     {
-      name: "besu-2d-designer-v5",
-      version: 7,
+      // Deliberately new key: direct AI renders are incompatible with legacy flat-2D persisted artwork.
+      name: "besu-direct-ai-designer-v1",
+      version: 1,
       migrate: (persisted) => {
         const source = (persisted || {}) as Partial<DesignerState>;
         const fresh = createInitialState();
         return {
           ...fresh,
           ...source,
-          productId: source.productId || fresh.productId,
-          inspiration: source.inspiration || "",
-          colorsEnabled: typeof source.colorsEnabled === "boolean" ? source.colorsEnabled : false,
-          activePiece: source.activePiece || fresh.activePiece,
           activeStep: ([0, 1, 2, 3, 4, 5] as const).includes(source.activeStep as DesignerStep)
             ? (source.activeStep as DesignerStep)
             : 0,
           concepts: Array.isArray(source.concepts) ? source.concepts.slice(0, 4) : [],
-          selectedConceptId: source.selectedConceptId,
-          colors: { ...fresh.colors, ...(source.colors || {}) },
-          transforms: {
-            ...fresh.transforms,
-            ...(source.transforms || {}),
-            front: { ...fresh.transforms.front, ...(source.transforms?.front || {}) },
-            back: { ...fresh.transforms.back, ...(source.transforms?.back || {}) },
-          },
-          textTransforms: {
-            ...fresh.textTransforms,
-            ...(source.textTransforms || {}),
-            front: { ...fresh.textTransforms.front, ...(source.textTransforms?.front || {}) },
-            back: { ...fresh.textTransforms.back, ...(source.textTransforms?.back || {}) },
-          },
-          logoTransform: { ...fresh.logoTransform, ...(source.logoTransform || {}) },
-          artwork: source.artwork && typeof source.artwork === "object" ? source.artwork : {},
           history: Array.isArray(source.history) ? source.history.slice(0, 12) : [],
           roster: Array.isArray(source.roster) ? source.roster : [],
           customer: { ...fresh.customer, ...(source.customer || {}) },
+          colors: { ...fresh.colors, ...(source.colors || {}) },
           font: DESIGNER_FONT_FAMILY,
         } as DesignerState;
       },
