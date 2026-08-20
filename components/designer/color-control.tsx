@@ -27,16 +27,16 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
       <Button
         variant="outline"
         size="sm"
-        className="min-h-11 min-w-0 flex-1 justify-start rounded-xl border-border bg-white px-2.5 text-foreground shadow-none ring-1 ring-border/50 hover:bg-[#f7f7f5]"
+        className="min-h-11 min-w-0 w-full justify-start rounded-xl border-border bg-white px-2 text-foreground shadow-none ring-1 ring-border/50 hover:bg-[#f7f7f5] sm:px-2.5"
         onPress={() => setDraft(value.toUpperCase())}
       >
         <span
-          className="mr-2 size-4 shrink-0 rounded-full border border-border shadow-inner"
+          className="size-4 shrink-0 rounded-full border border-border shadow-inner"
           style={{ backgroundColor: value }}
         />
-        <span className="truncate text-[12px] font-medium capitalize">{label}</span>
+        <span className="min-w-0 truncate text-[10px] font-medium capitalize min-[380px]:text-[11px] sm:text-[12px]">{label}</span>
       </Button>
-      <Popover.Content className="w-[220px] p-0">
+      <Popover.Content className="w-[min(250px,calc(100vw-24px))] p-0">
         <Popover.Dialog className="p-3">
           <Popover.Heading className="mb-2 text-xs font-semibold capitalize">{label}</Popover.Heading>
           <ColorSwatchPicker
@@ -44,9 +44,7 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
             variant="square"
             value={value}
             aria-label={`${label} color presets`}
-            onChange={(color) => {
-              apply(color.toString("hex"));
-            }}
+            onChange={(color) => apply(color.toString("hex"))}
             className="mb-3"
           >
             {swatches.map((color) => (
@@ -56,21 +54,12 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
               </ColorSwatchPicker.Item>
             ))}
           </ColorSwatchPicker>
-          <div className="flex gap-2">
-            <TextField
-              fullWidth
-              name="hex"
-              value={draft}
-              onChange={(v) => setDraft(v.toUpperCase())}
-            >
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+            <TextField fullWidth className="min-w-0" name="hex" value={draft} onChange={(v) => setDraft(v.toUpperCase())}>
               <Label>Hex</Label>
               <Input maxLength={7} className="min-h-11" />
             </TextField>
-            <Button
-              size="sm"
-              className="mt-auto min-h-11 self-end px-3.5"
-              onPress={() => apply(draft)}
-            >
+            <Button size="sm" className="min-h-11 px-3.5" onPress={() => apply(draft)}>
               Set
             </Button>
           </div>
