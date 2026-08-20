@@ -7,6 +7,9 @@
 /.next/
 /out/
 
+# local designer asset fallback (when Supabase is unavailable in development)
+/.designer-assets/
+
 # production
 /build
 

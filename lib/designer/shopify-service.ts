@@ -101,6 +101,8 @@ export function buildDesignerCheckoutPayload(state: DesignerState) {
     Colors: Object.values(state.colors).join(", "),
     "Front artwork URL": state.artwork.front || "",
     "Back artwork URL": state.artwork.back || "",
+    "Logo URL": state.logoUrl && !state.logoUrl.startsWith("data:") ? state.logoUrl : "",
+    "Product ID": state.productId || "",
     Roster: rosterSummary,
     "Roster count": String(state.roster.length),
     "Total pieces": String(totalQuantity),

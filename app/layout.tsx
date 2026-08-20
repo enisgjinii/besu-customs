@@ -28,9 +28,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-  viewportFit: "cover", // For notched devices
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover", // For notched devices — designer uses visualViewport for keyboard
 };
 
 export default function RootLayout({

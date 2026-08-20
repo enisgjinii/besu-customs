@@ -1,78 +1,89 @@
-# BESU 2D Designer setup
+# BESU 2D AI Designer
 
-The root route is the client-facing 2D designer. The legacy 3D/admin routes remain available and should be tested separately before removing old dependencies.
+Production customer flow for Besu Customs: AI-first 2D sports uniform design with deterministic typography, roster, exports, and Shopify checkout handoff. Legacy 3D routes remain available under admin/review paths and are not loaded on the public home route.
 
-## Required environment
+## Customer journey
 
-Set these values in Vercel and in a local ignored `.env.local` file. Never prefix server secrets with `NEXT_PUBLIC_`.
+1. **Product** — choose jersey, shorts, or coordinated uniform (name, description, price when available).
+2. **Design** — Team Name + Design Description (+ optional inspiration, logo, guide colors). CTA: **Generate My Uniform** (front + back kit).
+3. **Refine** — Try Different Colors (preserves concept), free-text refinement, version history. Advanced placement is secondary.
+4. **Roster** — players, sizes, quantities; select a preview player for the back view.
+5. **Order** — checklist, customer details, PNG/SVG/PDF/ZIP export, Shopify `besu:checkout`.
+
+Mandatory Colors/Patterns wizard steps are removed from this AI journey. Color utilities remain for optional guide colors and variation presets.
+
+## Architecture
+
+| Area | Location |
+| --- | --- |
+| UI shell | `components/designer/` |
+| State | `lib/designer/store.ts` (Zustand + persist, no secrets) |
+| Templates | `lib/designer/templates.ts` (normalized bounds + masks) |
+| Typography | `lib/designer/typography.ts` (`fitTextToBounds`, front/back rules) |
+| OpenAI prompts | `lib/designer/openai-service.ts` |
+| OpenAI config | `lib/designer/config.ts` (server-only) |
+| Generate API | `app/api/designer/generate/route.ts` |
+| Logo upload | `app/api/designer/logo/route.ts` |
+| Storage | `lib/designer/storage-service.ts` (Supabase) |
+| Shopify | `lib/designer/shopify-service.ts` |
+| Export | `lib/designer/export-service.ts` |
+
+The home route dynamically imports only the 2D designer (`ssr: false`). Three.js / GLB / HDR are not pulled into the pure 2D session.
+
+## Front / back rules
+
+- **Team name** is deterministic and placed on the **FRONT only**, fitted to chest bounds from the template registry.
+- **Back** shows roster **player name + number** for the selected preview player.
+- AI prompts forbid text/logos/mannequins/scenery so misspellings never become production typography.
+
+## AI modes
+
+- `generate` — new kit artwork (optional colors; otherwise palette from brief).
+- `refine` — edit previous asset with correction text; previous design kept on failure.
+- `color_variation` — same composition, new palette (includes Black / Electric Blue / White preset).
+
+Server keys: `OPENAI_API_KEY`, optional `OPENAI_IMAGE_MODEL` (default `gpt-image-1`). Never use `NEXT_PUBLIC_` for OpenAI. Do not rename Gemini env vars.
+
+`DESIGNER_MOCK_AI=true` is an explicit local/dev opt-in only. Production does not silently fall back to mock when the key is missing.
+
+## Templates / adding a garment
+
+1. Add a `GarmentTemplate` in `lib/designer/templates.ts` with silhouette, design mask, and normalized bounds (`teamName` front-only; `playerName`/`number` back-only).
+2. Register it and wire `resolveTemplate()` for the sport/piece/view.
+3. Add a catalog entry in `lib/designer/products.ts` and Shopify mapping in `lib/designer/shopify-service.ts` if needed.
+4. Extend `assertTypographyContract` coverage via `pnpm test:designer`.
+
+## Shopify
+
+Checkout posts `{ type: "besu:checkout", payload }` to the parent iframe. Payload includes design ID, artwork **URLs**, roster metadata, product handles, and variant IDs — not giant base64. Local data-URL logos are omitted from Shopify properties until stored as HTTPS URLs.
+
+Set `NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN` to the HTTPS storefront origin. Production blocks checkout when it is missing.
+
+## Exports
+
+PNG / SVG / PDF / ZIP. SVG may embed raster AI artwork (labeled non-editable). Deterministic text remains SVG text (vector). Design is recoverable from configuration/`designId` + stored asset URLs before checkout.
+
+## Environment
 
 ```text
-OPENAI_API_KEY=                         # server-only
-NEXT_PUBLIC_SUPABASE_URL=https://...    # public project URL
-SUPABASE_SERVICE_ROLE_KEY=              # server-only; never expose to the browser
-DESIGNER_ASSETS_BUCKET=designer-assets
-```
-
-Optional:
-
-```text
+OPENAI_API_KEY=
 OPENAI_IMAGE_MODEL=gpt-image-1
-DESIGNER_MOCK_AI=true                   # development/testing only
-NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS=false
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+DESIGNER_ASSETS_BUCKET=designer-assets
+DESIGNER_MOCK_AI=false
+NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN=
 ```
 
-`OPENAI_IMAGE_MODEL` defaults to `gpt-image-1`, which supports transparent PNG image generation/editing. Set a different model only after validating its image API parameters and account access.
+See also `docs/markdown/BESU_2D_DESIGNER_SETUP.md`.
 
-## Supabase Storage
-
-1. In Supabase Storage, create a bucket named `designer-assets`, or set `DESIGNER_ASSETS_BUCKET` to a different bucket name.
-2. Enable public read access for that bucket so generated artwork can be shown in the preview, exports, and Shopify metadata.
-3. Keep writes server-only. The app uploads through `SUPABASE_SERVICE_ROLE_KEY`; do not put that key in client code or `NEXT_PUBLIC_*` variables.
-4. The server writes PNG files at `generated/YYYY-MM-DD/<id>.png` with `image/png` content type and a one-year cache policy.
-5. Test a real upload and public read before enabling client checkout.
-
-The app returns a clear configuration error when the Supabase URL, service-role key, bucket, public policy, or upload response is invalid.
-
-## Shopify checkout
-
-The active 2D designer does not require Shopify API credentials in the Next.js environment. Checkout uses the existing parent iframe `besu:checkout` message contract and sends compact design IDs, Supabase artwork URLs, roster metadata, product handles, and variant IDs. Set `NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN` to the HTTPS storefront origin that hosts the iframe. Production checkout is intentionally blocked when this origin is missing or invalid, so customer/order data is not posted to an unknown parent frame. A real Shopify theme/cart sandbox is still required for final cart behavior sign-off.
-
-## Mock mode
-
-Run the local app with mock generation when OpenAI billing or Supabase is not ready:
+## Verification
 
 ```bash
-DESIGNER_MOCK_AI=true pnpm dev
+pnpm typecheck
+pnpm lint
+pnpm test:designer
+pnpm build
 ```
 
-Mock mode is explicit. Production does not silently fall back to mock artwork when `OPENAI_API_KEY` is missing.
-
-## Real AI/storage mode
-
-1. Set `OPENAI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and the bucket name.
-2. Leave `DESIGNER_MOCK_AI` unset or set it to `false`.
-3. Generate front artwork and confirm the response contains a Supabase public asset URL.
-4. Generate back artwork, then test a correction using the generated asset URL.
-5. Confirm the public asset loads in a clean browser session and in an iframe.
-
-## Production readiness checklist
-
-- [ ] No OAuth JSON, API key, service-role key, SMTP password, or `.env*` file is tracked.
-- [ ] Any previously exposed credential has been rotated.
-- [ ] OpenAI billing/model access is active and the image model is enabled.
-- [ ] Supabase bucket exists, public reads work, and server-only writes work.
-- [ ] Front and back artwork generation and correction work.
-- [ ] Long team/player names remain inside safe print boundaries.
-- [ ] Roster, customer, and size validation blocks incomplete orders.
-- [ ] PNG, SVG, PDF, and ZIP exports are downloaded and opened successfully.
-- [ ] Shopify iframe receives and handles `besu:checkout`.
-- [ ] `NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN` is set to the approved HTTPS Shopify storefront origin.
-- [ ] Vercel production deployment is READY and the intended alias is accessible to the client.
-- [ ] A Shopify sandbox/cart test and a clean mobile browser test are complete.
-
-## Known limitations
-
-- Serverless in-memory idempotency/rate limiting is best-effort and resets between instances; use durable storage/rate limiting for high-volume production traffic.
-- SVG exports preserve the layout but can contain raster artwork, so they are not guaranteed to be fully editable vector files.
-- Shopify checkout requires the designer to be embedded in an iframe; standalone use reports a clear submission error.
-- Real AI generation remains dependent on OpenAI billing and Supabase network/storage availability.
+Acceptance scenario (Bryant): Team **Galactic**, brief *basketball uniform jersey+shorts, outer space moon/comets*, then color variation **black / electric blue / white**. Confirm front team name, no team name on back, coordinated jersey/shorts via piece toggle.

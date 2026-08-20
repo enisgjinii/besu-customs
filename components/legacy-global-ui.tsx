@@ -7,6 +7,13 @@ import { OnboardingKeyboardHandler } from "@/components/onboarding-keyboard-hand
 
 export function LegacyGlobalUi() {
   const pathname = usePathname();
-  if (pathname === "/") return null;
-  return <><Toaster /><OnboardingTour /><OnboardingKeyboardHandler /></>;
+  // Always show toasts (designer lives on "/"). Keep onboarding off the 2D designer home.
+  if (pathname === "/") return <Toaster position="top-center" richColors closeButton />;
+  return (
+    <>
+      <Toaster position="top-center" richColors closeButton />
+      <OnboardingTour />
+      <OnboardingKeyboardHandler />
+    </>
+  );
 }

@@ -1,14 +1,16 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Move,
+  Package,
   ShoppingBag,
   Sparkles,
   Users,
 } from "lucide-react";
 
 export type DesignerStepId =
+  | "product"
   | "design"
-  | "place"
+  | "refine"
   | "roster"
   | "order";
 
@@ -26,29 +28,38 @@ export type DesignerStepDef = {
   chooseTitle: string;
   nextLabel: string | null;
   hint: string;
-  /** Whether selecting an option opens denser controls in the bottom panel */
   expandsDetail: boolean;
   icon: LucideIcon;
 };
 
 export const DESIGNER_STEPS: DesignerStepDef[] = [
   {
+    id: "product",
+    label: "Product",
+    header: "Choose product",
+    chooseTitle: "Select your uniform",
+    nextLabel: "Design",
+    hint: "Pick the garment kit to customize. Pricing shown when available.",
+    expandsDetail: true,
+    icon: Package,
+  },
+  {
     id: "design",
     label: "Design",
-    header: "Design",
-    chooseTitle: "Design your uniform",
-    nextLabel: "Place",
-    hint: "Choose garment, colors, and brief — then generate front and back artwork.",
+    header: "Describe your design",
+    chooseTitle: "Generate your uniform",
+    nextLabel: "Refine",
+    hint: "Team name + brief. Optional logo and colors. AI builds the coordinated kit.",
     expandsDetail: true,
     icon: Sparkles,
   },
   {
-    id: "place",
-    label: "Place",
-    header: "Place",
-    chooseTitle: "Place your artwork",
+    id: "refine",
+    label: "Refine",
+    header: "Refine",
+    chooseTitle: "Refine your kit",
     nextLabel: "Roster",
-    hint: "Drag on the preview or use sliders to scale, move, and rotate the active view.",
+    hint: "Try different colors, refine the concept, or open advanced placement.",
     expandsDetail: true,
     icon: Move,
   },
@@ -58,7 +69,7 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
     header: "Roster",
     chooseTitle: "Build your roster",
     nextLabel: "Order",
-    hint: "Add each player's name, number, sizes, and quantities.",
+    hint: "Add players and preview a selected player on the back.",
     expandsDetail: true,
     icon: Users,
   },
@@ -68,37 +79,22 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
     header: "Order",
     chooseTitle: "Review your order",
     nextLabel: null,
-    hint: "Confirm the checklist, customer details, then export or check out.",
+    hint: "Confirm checklist, export production files, or send to Shopify.",
     expandsDetail: true,
     icon: ShoppingBag,
   },
 ];
 
 export const STEP_INDEX: Record<DesignerStepId, number> = {
-  design: 0,
-  place: 1,
-  roster: 2,
-  order: 3,
+  product: 0,
+  design: 1,
+  refine: 2,
+  roster: 3,
+  order: 4,
 };
 
-export const GARMENT_OPTIONS: StepOption[] = [
-  { id: "jersey", label: "Jersey", sublabel: "Top only" },
-  { id: "shorts", label: "Shorts", sublabel: "Bottom" },
-  { id: "uniform", label: "Uniform", sublabel: "Full kit" },
-];
-
-export const COLOR_ROLE_OPTIONS: StepOption[] = [
-  { id: "primary", label: "Primary", sublabel: "Base" },
-  { id: "secondary", label: "Secondary", sublabel: "Panels" },
-  { id: "accent", label: "Accent", sublabel: "Trim" },
-];
-
-export const PLACE_LAYER_OPTIONS: StepOption[] = [
-  { id: "artwork", label: "Artwork", sublabel: "Print layer" },
-  { id: "text", label: "Type", sublabel: "Team / number" },
-];
-
-export const ORDER_FOCUS_OPTIONS: StepOption[] = [
-  { id: "review", label: "Review", sublabel: "Checkout" },
-  { id: "export", label: "Export", sublabel: "Files" },
-];
+export const LOADING_STAGES = [
+  "Preparing brief…",
+  "Generating kit artwork…",
+  "Saving design…",
+] as const;

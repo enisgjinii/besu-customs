@@ -23,7 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useDesignerStore } from "@/lib/designer/store";
+import { getPreviewPlayer, useDesignerStore } from "@/lib/designer/store";
 import {
   downloadDesignerPng,
   downloadDesignerSvg,
@@ -111,6 +111,48 @@ export function OrderPanel({
             </span>
             <span className="text-[12px] font-semibold tabular-nums">{total} pcs</span>
           </div>
+
+          {s.roster.length > 0 ? (
+            <div className="rounded-xl bg-[#f7f7f5] px-3 py-2.5 ring-1 ring-border/55">
+              <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                Back preview player
+              </p>
+              <p className="m-0 mt-0.5 text-[11px] text-muted">
+                Name and number on the back update from the selected player.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {s.roster.map((player) => {
+                  const selected = (s.previewPlayerId || s.roster[0]?.id) === player.id;
+                  return (
+                    <button
+                      key={player.id}
+                      type="button"
+                      onClick={() => {
+                        s.setPreviewPlayer(player.id);
+                        s.setView("back");
+                      }}
+                      className={`min-h-10 rounded-full px-3 text-[11px] font-semibold ring-1 ${
+                        selected
+                          ? "bg-foreground text-white ring-foreground"
+                          : "bg-white text-foreground ring-border/70"
+                      }`}
+                    >
+                      {(player.name || "Player").slice(0, 12)}
+                      {player.number ? ` #${player.number}` : ""}
+                    </button>
+                  );
+                })}
+              </div>
+              {getPreviewPlayer(s) ? (
+                <p className="m-0 mt-2 text-[11px] text-muted">
+                  Showing back for{" "}
+                  <span className="font-semibold text-foreground">
+                    {getPreviewPlayer(s)?.name || "Unnamed"} #{getPreviewPlayer(s)?.number || "—"}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {s.roster.length === 0 ? (
             <div className="rounded-xl bg-[#f7f7f5] px-3 py-4 text-center ring-1 ring-border/60">

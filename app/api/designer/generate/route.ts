@@ -1,17 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { buildArtworkPrompt } from "@/lib/designer/openai-service";
-import { assertStorageConfiguration, storeGeneratedAsset } from "@/lib/designer/storage-service";
+import { assertOpenAiConfigured, getOpenAiConfig } from "@/lib/designer/config";
+import { buildArtworkPrompt, type GenerationMode } from "@/lib/designer/openai-service";
+import { assertStorageConfiguration, isLocalDesignerAssetUrl, storeGeneratedAsset } from "@/lib/designer/storage-service";
 
 export const maxDuration = 120;
-const MAX_BODY_BYTES = 16_384;
-const schema = z.object({
-  garmentType: z.enum(["jersey", "shorts", "uniform"]), designDescription: z.string().trim().min(8).max(800),
-  teamName: z.string().trim().min(1).max(60), colors: z.object({ primary: z.string().regex(/^#[0-9a-f]{6}$/i), secondary: z.string().regex(/^#[0-9a-f]{6}$/i), accent: z.string().regex(/^#[0-9a-f]{6}$/i) }),
-  style: z.enum(["modern", "minimal", "geometric", "retro", "aggressive"]).default("modern"), view: z.enum(["front", "back"]), correction: z.string().trim().max(400).optional(), previousAssetUrl: z.string().url().max(2000).optional(), requestId: z.string().uuid(),
-}).superRefine((value, ctx) => {
-  if (value.correction && !value.previousAssetUrl) ctx.addIssue({ code: "custom", path: ["previousAssetUrl"], message: "A previous artwork URL is required for a correction." });
+const MAX_BODY_BYTES = 24_576;
+
+const colorsSchema = z.object({
+  primary: z.string().regex(/^#[0-9a-f]{6}$/i),
+  secondary: z.string().regex(/^#[0-9a-f]{6}$/i),
+  accent: z.string().regex(/^#[0-9a-f]{6}$/i),
 });
+
+const schema = z
+  .object({
+    garmentType: z.enum(["jersey", "shorts", "uniform"]),
+    designDescription: z.string().trim().min(8).max(800),
+    teamName: z.string().trim().min(1).max(60),
+    colors: colorsSchema.optional(),
+    style: z.enum(["modern", "minimal", "geometric", "retro", "aggressive"]).default("modern"),
+    view: z.enum(["front", "back"]),
+    sport: z.string().trim().max(40).optional(),
+    mode: z.enum(["generate", "refine", "color_variation"]).default("generate"),
+    correction: z.string().trim().max(400).optional(),
+    previousAssetUrl: z.string().url().max(2000).optional(),
+    inspiration: z.string().trim().max(400).optional(),
+    hasLogo: z.boolean().optional(),
+    requestId: z.string().uuid(),
+  })
+  .superRefine((value, ctx) => {
+    const mode: GenerationMode = value.mode;
+    if ((mode === "refine" || mode === "color_variation") && !value.previousAssetUrl) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["previousAssetUrl"],
+        message: "A previous artwork URL is required for refinement or color variation.",
+      });
+    }
+    if (mode === "color_variation" && !value.colors) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["colors"],
+        message: "Colors are required for a color variation.",
+      });
+    }
+    if (value.correction && mode === "generate" && !value.previousAssetUrl) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["previousAssetUrl"],
+        message: "A previous artwork URL is required for a correction.",
+      });
+    }
+  });
+
 const requests = new Map<string, { at: number; response?: unknown }>();
 const usage = new Map<string, number[]>();
 const REQUEST_TTL = 15 * 60_000;
@@ -21,7 +63,8 @@ function cleanup(now: number) {
   for (const [key, entry] of requests) if (now - entry.at > REQUEST_TTL) requests.delete(key);
   for (const [key, entries] of usage) {
     const active = entries.filter((time) => now - time < USAGE_TTL);
-    if (active.length) usage.set(key, active); else usage.delete(key);
+    if (active.length) usage.set(key, active);
+    else usage.delete(key);
   }
   if (requests.size > 2000) {
     const oldest = [...requests.entries()].sort((a, b) => a[1].at - b[1].at).slice(0, requests.size - 2000);
@@ -29,12 +72,25 @@ function cleanup(now: number) {
   }
 }
 
-function isAllowedAssetUrl(value: string) {
+function isAllowedAssetUrl(value: string, origin?: string) {
   try {
     const asset = new URL(value);
-    const storage = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL) : null;
-    return asset.protocol === "https:" && Boolean(storage && asset.hostname === storage.hostname && asset.port === storage.port && asset.pathname.startsWith("/storage/v1/object/public/"));
-  } catch { return false; }
+    if (origin && isLocalDesignerAssetUrl(value, origin)) return true;
+    const storage = process.env.NEXT_PUBLIC_SUPABASE_URL
+      ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL.trim().replace(/^["']|["']$/g, ""))
+      : null;
+    return (
+      asset.protocol === "https:" &&
+      Boolean(
+        storage &&
+          asset.hostname === storage.hostname &&
+          asset.port === storage.port &&
+          asset.pathname.startsWith("/storage/v1/object/public/"),
+      )
+    );
+  } catch {
+    return false;
+  }
 }
 
 function isAllowedMockAssetUrl(value: string, origin: string) {
@@ -50,69 +106,226 @@ function toError(code: string, message: string, status = 500) {
   return Object.assign(new Error(message), { code, status });
 }
 
-async function requestOpenAiImage(input: z.infer<typeof schema>, signal: AbortSignal) {
-  const prompt = buildArtworkPrompt(input);
-  const base = { model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1", prompt, size: "1024x1024", quality: "medium", background: "transparent", output_format: "png" };
-  if (input.correction && input.previousAssetUrl) {
-    if (!isAllowedAssetUrl(input.previousAssetUrl)) throw toError("invalid_previous_asset", "The previous artwork URL is not a permitted storage asset.", 400);
+async function requestOpenAiImage(
+  input: z.infer<typeof schema>,
+  signal: AbortSignal,
+  origin: string,
+) {
+  const { imageModel } = getOpenAiConfig();
+  const prompt = buildArtworkPrompt({
+    garmentType: input.garmentType,
+    designDescription: input.designDescription,
+    teamName: input.teamName,
+    colors: input.colors,
+    style: input.style,
+    view: input.view,
+    sport: input.sport,
+    mode: input.mode,
+    correction: input.correction,
+    previousAssetUrl: input.previousAssetUrl,
+    inspiration: input.inspiration,
+    hasLogo: input.hasLogo,
+  });
+
+  const base = {
+    model: imageModel,
+    prompt,
+    size: "1024x1024",
+    quality: "medium",
+    background: "transparent",
+    output_format: "png",
+  };
+
+  const needsEdit =
+    Boolean(input.previousAssetUrl) &&
+    (input.mode === "refine" || input.mode === "color_variation" || Boolean(input.correction));
+
+  if (needsEdit && input.previousAssetUrl) {
+    if (!isAllowedAssetUrl(input.previousAssetUrl, origin)) {
+      throw toError("invalid_previous_asset", "The previous artwork URL is not a permitted storage asset.", 400);
+    }
     const previous = await fetch(input.previousAssetUrl, { signal, cache: "no-store" });
     if (!previous.ok) throw toError("invalid_previous_asset", "The previous design could not be loaded for correction.", 400);
     const bytes = await previous.arrayBuffer();
-    if (bytes.byteLength > 10 * 1024 * 1024) throw toError("invalid_previous_asset", "The previous design is too large to edit.", 400);
-    if (!previous.headers.get("content-type")?.toLowerCase().startsWith("image/png")) throw toError("invalid_previous_asset", "The previous design is not a PNG asset.", 400);
+    if (bytes.byteLength > 10 * 1024 * 1024) {
+      throw toError("invalid_previous_asset", "The previous design is too large to edit.", 400);
+    }
+    if (!previous.headers.get("content-type")?.toLowerCase().startsWith("image/png")) {
+      throw toError("invalid_previous_asset", "The previous design is not a PNG asset.", 400);
+    }
     const form = new FormData();
-    form.append("model", base.model); form.append("prompt", prompt); form.append("size", base.size);
-    form.append("quality", base.quality); form.append("background", base.background); form.append("output_format", base.output_format);
-    form.append("image", new Blob([bytes], { type: previous.headers.get("content-type") || "image/png" }), "previous-design.png");
-    return fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form, signal });
+    form.append("model", base.model);
+    form.append("prompt", prompt);
+    form.append("size", base.size);
+    form.append("quality", base.quality);
+    form.append("background", base.background);
+    form.append("output_format", base.output_format);
+    form.append(
+      "image",
+      new Blob([bytes], { type: previous.headers.get("content-type") || "image/png" }),
+      "previous-design.png",
+    );
+    return fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: form,
+      signal,
+    });
   }
-  return fetch("https://api.openai.com/v1/images/generations", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(base), signal });
+
+  return fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(base),
+    signal,
+  });
 }
 
 export async function POST(req: NextRequest) {
   const contentLength = Number(req.headers.get("content-length") || "0");
-  if (contentLength > MAX_BODY_BYTES) return NextResponse.json({ error: "The design request is too large.", code: "body_too_large" }, { status: 413 });
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "The design request is too large.", code: "body_too_large" }, { status: 413 });
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "local";
-  const now = Date.now(); cleanup(now); const recent = usage.get(ip) || [];
-  if (recent.length >= 5) return NextResponse.json({ error: "Too many generations. Try again in one minute.", code: "rate_limited" }, { status: 429 });
+  const now = Date.now();
+  cleanup(now);
+  const recent = usage.get(ip) || [];
+  if (recent.length >= 5) {
+    return NextResponse.json({ error: "Too many generations. Try again in one minute.", code: "rate_limited" }, { status: 429 });
+  }
   usage.set(ip, [...recent, now]);
+
   try {
     const input = schema.parse(await req.json());
     const duplicate = requests.get(input.requestId);
     if (duplicate?.response) return NextResponse.json(duplicate.response);
-    if (duplicate) return NextResponse.json({ error: "This design is already generating.", code: "duplicate" }, { status: 409 });
-    requests.set(input.requestId, { at: now });
-    const id = crypto.randomUUID();
-    if (process.env.DESIGNER_MOCK_AI === "true") {
-      if (input.correction && input.previousAssetUrl && !isAllowedMockAssetUrl(input.previousAssetUrl, req.nextUrl.origin)) throw toError("invalid_previous_asset", "The previous mock artwork URL is not valid.", 400);
-      const mock = { id, assetUrl: `${req.nextUrl.origin}/api/designer/mock?primary=${encodeURIComponent(input.colors.primary)}&secondary=${encodeURIComponent(input.colors.secondary)}&accent=${encodeURIComponent(input.colors.accent)}`, createdAt: new Date().toISOString(), mock: true };
-      requests.set(input.requestId, { at: now, response: mock }); return NextResponse.json(mock);
+    if (duplicate) {
+      return NextResponse.json({ error: "This design is already generating.", code: "duplicate" }, { status: 409 });
     }
-    if (!process.env.OPENAI_API_KEY?.trim()) throw toError("missing_openai_key", "AI generation is not configured. Set OPENAI_API_KEY or enable DESIGNER_MOCK_AI for development.", 503);
-    assertStorageConfiguration();
-    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 110_000);
+    requests.set(input.requestId, { at: now });
+
+    const id = crypto.randomUUID();
+    const { mockAi } = assertOpenAiConfigured();
+
+    if (mockAi) {
+      if (
+        input.previousAssetUrl &&
+        !isAllowedMockAssetUrl(input.previousAssetUrl, req.nextUrl.origin) &&
+        !isAllowedAssetUrl(input.previousAssetUrl, req.nextUrl.origin)
+      ) {
+        throw toError("invalid_previous_asset", "The previous mock artwork URL is not valid.", 400);
+      }
+      const colors = input.colors || { primary: "#101820", secondary: "#00A3FF", accent: "#FFFFFF" };
+      const mock = {
+        id,
+        assetUrl: `${req.nextUrl.origin}/api/designer/mock?primary=${encodeURIComponent(colors.primary)}&secondary=${encodeURIComponent(colors.secondary)}&accent=${encodeURIComponent(colors.accent)}&view=${input.view}`,
+        createdAt: new Date().toISOString(),
+        mock: true,
+        mode: input.mode,
+        colors,
+        prompt: buildArtworkPrompt({ ...input, colors }),
+      };
+      requests.set(input.requestId, { at: now, response: mock });
+      return NextResponse.json(mock);
+    }
+
+    // Prefer Supabase; local disk fallback is used in development when the project URL is unreachable.
+    if (process.env.DESIGNER_LOCAL_ASSETS !== "true") {
+      try {
+        assertStorageConfiguration();
+      } catch (error) {
+        if (process.env.NODE_ENV !== "development") throw error;
+      }
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 110_000);
     let upstream: Response;
-    try { upstream = await requestOpenAiImage(input, controller.signal); } finally { clearTimeout(timeout); }
+    try {
+      upstream = await requestOpenAiImage(input, controller.signal, req.nextUrl.origin);
+    } finally {
+      clearTimeout(timeout);
+    }
+
     if (!upstream.ok) {
-      const e = await upstream.json().catch(() => ({})) as { error?: { message?: string; code?: string } };
+      const e = (await upstream.json().catch(() => ({}))) as { error?: { message?: string; code?: string } };
       const upstreamMessage = e.error?.message || "";
-      const billingBlocked = e.error?.code === "insufficient_quota" || /billing|credit|quota/i.test(upstreamMessage);
-      const code = billingBlocked ? "insufficient_quota" : upstream.status === 429 ? "rate_limited" : e.error?.code || "upstream_error";
-      const message = code === "insufficient_quota" ? "OpenAI image generation is not available because billing or credits are not active." : e.error?.message || "Image generation failed.";
-      const status = upstream.status === 429 ? 429 : upstream.status === 400 ? 400 : upstream.status === 401 ? 502 : 502;
+      const billingBlocked =
+        e.error?.code === "insufficient_quota" || /billing|credit|quota/i.test(upstreamMessage);
+      const invalidKey =
+        upstream.status === 401 || /incorrect api key|invalid.?api.?key|authentication/i.test(upstreamMessage);
+      const code = billingBlocked
+        ? "insufficient_quota"
+        : invalidKey
+          ? "invalid_openai_key"
+          : upstream.status === 429
+            ? "rate_limited"
+            : e.error?.code || "upstream_error";
+      const message =
+        code === "insufficient_quota"
+          ? "OpenAI image generation is not available because billing or credits are not active."
+          : code === "invalid_openai_key"
+            ? "OpenAI rejected the API key. Update OPENAI_API_KEY in .env / .env.local (no quotes), then restart the dev server."
+            : code === "rate_limited"
+              ? "Too many generation requests. Please wait a moment and try again."
+              : e.error?.message || "Image generation failed.";
+      const status =
+        upstream.status === 429
+          ? 429
+          : upstream.status === 400
+            ? 400
+            : invalidKey
+              ? 401
+              : 502;
       return NextResponse.json({ error: message, code }, { status });
     }
-    const data = await upstream.json() as { data?: { b64_json?: string }[] }; const encoded = data.data?.[0]?.b64_json;
+
+    const data = (await upstream.json()) as { data?: { b64_json?: string }[] };
+    const encoded = data.data?.[0]?.b64_json;
     if (!encoded) throw new Error("The image service returned no artwork.");
-    const stored = await storeGeneratedAsset(Uint8Array.from(Buffer.from(encoded, "base64")), id);
-    const response = { id, assetUrl: stored.url, storagePath: stored.path, createdAt: new Date().toISOString(), mock: false };
-    requests.set(input.requestId, { at: now, response }); return NextResponse.json(response);
+
+    const stored = await storeGeneratedAsset(Uint8Array.from(Buffer.from(encoded, "base64")), id, {
+      publicOrigin: req.nextUrl.origin,
+    });
+    const response = {
+      id,
+      assetUrl: stored.url,
+      storagePath: stored.path,
+      createdAt: new Date().toISOString(),
+      mock: false,
+      localAsset: Boolean(stored.local),
+      mode: input.mode,
+      colors: input.colors || null,
+    };
+    requests.set(input.requestId, { at: now, response });
+    return NextResponse.json(response);
   } catch (error) {
-    if (error instanceof z.ZodError) return NextResponse.json({ error: "Please check the design details.", fields: error.flatten().fieldErrors, code: "invalid_input" }, { status: 400 });
-    if (error instanceof Error && error.name === "AbortError") return NextResponse.json({ error: "Generation timed out. Please try a simpler request.", code: "generation_timeout" }, { status: 504 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Please check the design details.", fields: error.flatten().fieldErrors, code: "invalid_input" },
+        { status: 400 },
+      );
+    }
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json(
+        { error: "Generation timed out. Please try a simpler request.", code: "generation_timeout" },
+        { status: 504 },
+      );
+    }
     const typed = error as Error & { code?: string; status?: number };
     const status = typed.status || 500;
-    if (status >= 500) console.error("Designer generation failed", { code: typed.code || "generation_failed", message: typed.message || "Unknown error" });
-    return NextResponse.json({ error: typed.message || "Generation failed.", code: typed.code || "generation_failed" }, { status });
+    if (status >= 500) {
+      console.error("Designer generation failed", {
+        code: typed.code || "generation_failed",
+        message: typed.message || "Unknown error",
+      });
+    }
+    return NextResponse.json(
+      { error: typed.message || "Generation failed.", code: typed.code || "generation_failed" },
+      { status },
+    );
   }
 }

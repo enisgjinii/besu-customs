@@ -12,13 +12,12 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  FlipHorizontal2,
   RotateCcw,
-  Shirt,
 } from "lucide-react";
 import { GarmentCanvas } from "./garment-canvas";
+import { ProductPanel } from "./product-panel";
 import { PromptPanel } from "./prompt-panel";
-import { ArtworkControls } from "./artwork-controls";
+import { RefinePanel } from "./refine-panel";
 import { OrderPanel } from "./order-panel";
 import {
   DESIGNER_STEPS,
@@ -38,14 +37,15 @@ function StepDetail({
   step: DesignerStepId;
   orderFocus: OrderFocus;
 }) {
+  if (step === "product") return <ProductPanel />;
   if (step === "design") return <PromptPanel />;
-  if (step === "place") return <ArtworkControls />;
+  if (step === "refine") return <RefinePanel />;
   if (step === "roster") return <OrderPanel mode="roster" />;
   return <OrderPanel mode="review" focus={orderFocus} />;
 }
 
 function stepIdFromIndex(index: DesignerStep): DesignerStepId {
-  return DESIGNER_STEPS[index]?.id ?? "design";
+  return DESIGNER_STEPS[index]?.id ?? "product";
 }
 
 export function DesignerPage() {
@@ -63,6 +63,7 @@ export function DesignerPage() {
   function goToStep(next: DesignerStepId) {
     store.setStep(STEP_INDEX[next] as DesignerStep);
     panelScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    setSheetExpanded(false);
     if (next === "order") setOrderFocus("review");
   }
 
@@ -97,17 +98,11 @@ export function DesignerPage() {
     };
   }, []);
 
-  // Collapse the mobile sheet when switching steps so the canvas stays visible.
-  useEffect(() => {
-    setSheetExpanded(false);
-  }, [step]);
-
   return (
     <main
-      data-designer-shell="v8-canvas-first"
+      data-designer-shell="v9-ai-first"
       className="designer-shell flex h-[var(--designer-vvh,100dvh)] w-full overflow-hidden bg-[#f7f7f5] max-md:flex-col md:bg-white"
     >
-      {/* Desktop: left control rail. Mobile: bottom sheet after canvas. */}
       <Surface
         variant="default"
         className={cn(
@@ -115,7 +110,6 @@ export function DesignerPage() {
           "md:h-full md:w-1/4 md:min-w-[320px] md:max-w-[430px] md:border-r md:border-separator md:px-3",
           "md:pb-[max(12px,env(safe-area-inset-bottom,0px))] md:pt-[max(12px,env(safe-area-inset-top,0px))]",
           "md:shadow-[8px_0_24px_rgba(15,23,42,0.03)]",
-          // Mobile bottom sheet
           "max-md:order-2 max-md:w-full max-md:max-w-none max-md:min-w-0 max-md:flex-col",
           "max-md:rounded-t-[22px] max-md:border-t max-md:border-separator",
           "max-md:shadow-[0_-12px_40px_rgba(15,23,42,0.08)]",
@@ -126,7 +120,6 @@ export function DesignerPage() {
             : "max-md:h-[min(46dvh,420px)]",
         )}
       >
-        {/* Mobile sheet grab + expand */}
         <button
           type="button"
           className="flex w-full shrink-0 flex-col items-center gap-2 px-3 pb-1 pt-2 md:hidden"
@@ -142,7 +135,7 @@ export function DesignerPage() {
 
         <div className="flex h-full w-full min-h-0 flex-col px-3 max-md:px-3 md:px-0">
           <nav
-            className="grid shrink-0 grid-cols-4 gap-1.5"
+            className="grid shrink-0 grid-cols-5 gap-1 md:flex md:gap-0 md:border-b md:border-separator/70"
             aria-label="Designer sections"
           >
             {DESIGNER_STEPS.map((item, index) => {
@@ -156,17 +149,22 @@ export function DesignerPage() {
                   aria-current={active ? "page" : undefined}
                   onClick={() => goToStep(item.id)}
                   className={cn(
-                    "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white text-[10px] font-semibold tracking-wide transition-[color,box-shadow,background-color] ring-1",
+                    "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white text-[9px] font-semibold tracking-wide transition-[color,box-shadow,background-color,border-color] ring-1",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25",
+                    "md:min-h-0 md:flex-1 md:flex-row md:gap-1 md:rounded-none md:bg-transparent md:px-0.5 md:py-2.5 md:text-[11px] md:font-medium md:tracking-normal md:shadow-none md:ring-0",
+                    "md:border-b-2 md:border-transparent md:focus-visible:ring-0 md:focus-visible:border-foreground/40",
                     active
-                      ? "bg-foreground text-white shadow-sm ring-foreground"
+                      ? "bg-foreground text-white shadow-sm ring-foreground md:bg-transparent md:text-foreground md:shadow-none md:ring-0 md:border-foreground"
                       : complete
-                        ? "text-foreground ring-foreground/20 hover:ring-foreground/30"
-                        : "text-foreground/65 ring-border/70 hover:text-foreground hover:ring-foreground/14",
+                        ? "text-foreground ring-foreground/20 hover:ring-foreground/30 md:text-foreground/80 md:ring-0 md:hover:text-foreground md:hover:border-foreground/25"
+                        : "text-foreground/65 ring-border/70 hover:text-foreground hover:ring-foreground/14 md:text-muted md:ring-0 md:hover:text-foreground md:hover:border-foreground/20",
                   )}
                 >
                   <Icon
-                    className={cn("size-3.5", active && "text-white")}
+                    className={cn(
+                      "size-3.5",
+                      active ? "text-white md:text-foreground" : undefined,
+                    )}
                     strokeWidth={1.7}
                     aria-hidden
                   />
@@ -271,40 +269,6 @@ export function DesignerPage() {
         <GarmentCanvas />
 
         <div
-          className="pointer-events-none absolute inset-x-0 z-20 flex justify-center px-3"
-          style={{ top: "max(10px, env(safe-area-inset-top, 0px))" }}
-        >
-          <ToggleButtonGroup
-            size="sm"
-            selectionMode="single"
-            isDetached
-            disallowEmptySelection
-            selectedKeys={new Set([store.view])}
-            onSelectionChange={(keys) => {
-              const next = [...keys][0];
-              if (next === "front" || next === "back") store.setView(next);
-            }}
-            className="pointer-events-auto gap-0.5 rounded-full bg-white/95 p-1 shadow-sm ring-1 ring-border/60 backdrop-blur-sm"
-            aria-label="Garment view"
-          >
-            <ToggleButton
-              id="front"
-              className="min-h-10 gap-1.5 rounded-full px-3.5 text-[12px] font-semibold"
-            >
-              <Shirt className="size-3.5" strokeWidth={1.75} aria-hidden />
-              Front
-            </ToggleButton>
-            <ToggleButton
-              id="back"
-              className="min-h-10 gap-1.5 rounded-full px-3.5 text-[12px] font-semibold"
-            >
-              <FlipHorizontal2 className="size-3.5" strokeWidth={1.75} aria-hidden />
-              Back
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </div>
-
-        <div
           className="absolute z-20"
           style={{
             top: "max(10px, env(safe-area-inset-top, 0px))",
@@ -345,7 +309,7 @@ export function DesignerPage() {
                   className="min-h-11"
                   onPress={() => {
                     reset();
-                    goToStep("design");
+                    goToStep("product");
                     setOrderFocus("review");
                     setResetOpen(false);
                   }}
