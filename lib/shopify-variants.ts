@@ -323,7 +323,7 @@ export function resolveShopifyVariantId(productId: string | null | undefined, si
   if (!productId) return undefined;
   const byProduct = SHOPIFY_VARIANTS_BY_PRODUCT[productId];
   if (!byProduct) return undefined;
-  return byProduct[sizeLabel] ?? Object.values(byProduct)[0];
+  return byProduct[sizeLabel];
 }
 
 export function isEmbeddedInShopify(): boolean {

@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import { useDesignerStore } from "@/lib/designer/store";
+import type { ArtworkTransform } from "@/lib/designer/types";
 
 const sleevelessJersey = "M245 155 315 80Q335 135 400 150Q465 135 485 80l70 75-30 135 30 360H245l30-360z";
 const sleevedJersey = "M190 155 315 80Q335 135 400 150Q465 135 485 80l125 75 105 105-95 95-50-58 5 353H225l5-353-50 58-95-95z";
@@ -169,15 +171,28 @@ function ShortsPiece({ y = 0 }: { y?: number }) {
 
 export function GarmentCanvas() {
   const s = useDesignerStore();
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    transform: ArtworkTransform;
+    unitsPerPixel: number;
+  } | null>(null);
   const viewBox =
     s.garmentType === "uniform"
       ? "100 0 600 1130"
       : s.garmentType === "shorts"
         ? "150 120 500 600"
         : "150 0 500 730";
+  const viewBoxWidth = Number(viewBox.split(" ")[2]) || 500;
+  const hasArtwork = Boolean(s.artwork[s.view]);
+
+  function clamp(value: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, value));
+  }
 
   return (
-    <section className="relative h-full w-full overflow-hidden bg-transparent">
+    <section className="relative h-full w-full overflow-hidden bg-white">
       <div
         id="production-canvas"
         className="relative grid h-full place-items-center px-6 pb-6 pt-14 sm:px-16 sm:pb-8 sm:pt-16"
@@ -186,8 +201,38 @@ export function GarmentCanvas() {
           viewBox={viewBox}
           role="img"
           aria-label={`${s.garmentType} ${s.view} design preview`}
-          className="h-full w-full max-h-full max-w-[520px] sm:max-w-[600px]"
-          style={{ filter: "drop-shadow(0 24px 36px rgba(28, 25, 23, 0.12))" }}
+          className="h-full w-full max-h-full max-w-[520px] touch-none select-none sm:max-w-[600px]"
+          data-artwork-draggable={hasArtwork ? "true" : "false"}
+          onPointerDown={(event) => {
+            if (!hasArtwork || event.button > 0) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            dragRef.current = {
+              pointerId: event.pointerId,
+              startX: event.clientX,
+              startY: event.clientY,
+              transform: s.transforms[s.view],
+              unitsPerPixel: viewBoxWidth / Math.max(rect.width, 1),
+            };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            const drag = dragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            s.setTransform({
+              x: clamp(drag.transform.x + (event.clientX - drag.startX) * drag.unitsPerPixel, -120, 120),
+              y: clamp(drag.transform.y + (event.clientY - drag.startY) * drag.unitsPerPixel, -120, 120),
+            });
+          }}
+          onPointerUp={(event) => {
+            if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+          }}
+          onPointerCancel={(event) => {
+            if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+          }}
+          style={{
+            cursor: hasArtwork ? "grab" : "default",
+            filter: "drop-shadow(0 24px 36px rgba(28, 25, 23, 0.12))",
+          }}
         >
           {s.garmentType !== "shorts" && <JerseyPiece />}
           {s.garmentType !== "jersey" && (

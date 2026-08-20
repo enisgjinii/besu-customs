@@ -13,8 +13,8 @@ function designPrefix(state: DesignerState) {
   return `BESU-${id}-${state.garmentType.toUpperCase()}`;
 }
 
-function filePrefix(state: DesignerState) {
-  return `${designPrefix(state)}-${state.view.toUpperCase()}`;
+function filePrefix(state: DesignerState, view = state.view) {
+  return `${designPrefix(state)}-${view.toUpperCase()}`;
 }
 
 function clickDownload(url: string, filename: string) {
@@ -24,18 +24,63 @@ function clickDownload(url: string, filename: string) {
   anchor.click();
 }
 
-export function serializeDesignerSvg() {
-  const source = document.querySelector("#production-canvas svg");
-  if (!source) throw new Error("Preview is not ready for export.");
-  return new XMLSerializer().serializeToString(source);
+async function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not prepare the production preview."));
+    reader.readAsDataURL(blob);
+  });
 }
 
-export function downloadDesignerSvg(state: DesignerState) {
-  const xml = serializeDesignerSvg();
+async function imageHrefToDataUrl(value: string) {
+  if (value.startsWith("data:")) return value;
+  const url = new URL(value, window.location.href);
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Unsupported artwork URL in production preview.");
+  const response = await fetch(url.toString(), { cache: "no-store", mode: "cors" });
+  if (!response.ok) throw new Error("Artwork asset could not be loaded for export.");
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  if (!contentType.startsWith("image/")) throw new Error("Artwork asset is not an image.");
+  const blob = await response.blob();
+  if (blob.size > 20 * 1024 * 1024) throw new Error("Artwork asset is too large for browser export.");
+  return blobToDataUrl(blob);
+}
+
+export async function serializeDesignerSvg(options: { embedImages?: boolean } = {}) {
+  const source = document.querySelector("#production-canvas svg");
+  if (!source) throw new Error("Preview is not ready for export.");
+  const clone = source.cloneNode(true) as SVGSVGElement;
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+  if (options.embedImages) {
+    const images = [...clone.querySelectorAll("image")];
+    await Promise.all(images.map(async (image) => {
+      const href = image.getAttribute("href") || image.getAttribute("xlink:href");
+      if (!href) return;
+      const dataUrl = await imageHrefToDataUrl(href);
+      image.setAttribute("href", dataUrl);
+      image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", dataUrl);
+    }));
+  }
+
+  return new XMLSerializer().serializeToString(clone);
+}
+
+function downloadSvg(xml: string, state: DesignerState, view = state.view) {
   const note = "<!-- AI artwork may be embedded raster content; this SVG is not guaranteed to be fully editable. -->\n";
   const url = URL.createObjectURL(new Blob([note, xml], { type: "image/svg+xml" }));
-  clickDownload(url, `${filePrefix(state)}.svg`);
+  clickDownload(url, `${filePrefix(state, view)}.svg`);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function downloadDesignerSvg(state: DesignerState, captures?: ProductionCaptures) {
+  if (captures) {
+    downloadSvg(captures.front, state, "front");
+    downloadSvg(captures.back, state, "back");
+    return;
+  }
+  downloadSvg(await serializeDesignerSvg({ embedImages: true }), state);
 }
 
 async function svgToPngBlob(xml: string, state: DesignerState) {
@@ -62,11 +107,23 @@ async function svgToPngBlob(xml: string, state: DesignerState) {
   }
 }
 
-export async function downloadDesignerPng(state: DesignerState) {
-  const blob = await svgToPngBlob(serializeDesignerSvg(), state);
+function downloadPng(blob: Blob, state: DesignerState, view = state.view) {
   const downloadUrl = URL.createObjectURL(blob);
-  clickDownload(downloadUrl, `${filePrefix(state)}.png`);
+  clickDownload(downloadUrl, `${filePrefix(state, view)}.png`);
   setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+}
+
+export async function downloadDesignerPng(state: DesignerState, captures?: ProductionCaptures) {
+  if (captures) {
+    const [front, back] = await Promise.all([
+      svgToPngBlob(captures.front, state),
+      svgToPngBlob(captures.back, state),
+    ]);
+    downloadPng(front, state, "front");
+    downloadPng(back, state, "back");
+    return;
+  }
+  downloadPng(await svgToPngBlob(await serializeDesignerSvg({ embedImages: true }), state), state);
 }
 
 function productionPdf(state: DesignerState, previewData?: { front: string; back: string }) {
@@ -112,15 +169,6 @@ function productionPdf(state: DesignerState, previewData?: { front: string; back
     doc.addImage(previewData.back, "PNG", 114, 26, 78, 120, undefined, "FAST");
   }
   return doc.output("blob");
-}
-
-async function blobToDataUrl(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not prepare the production preview."));
-    reader.readAsDataURL(blob);
-  });
 }
 
 async function createProductionFiles(state: DesignerState, captures: ProductionCaptures) {

@@ -32,7 +32,7 @@ import {
   serializeDesignerSvg,
   type ProductionCaptures,
 } from "@/lib/designer/export-service";
-import { DESIGNER_SIZES, sendDesignerCheckout, validateCheckout } from "@/lib/designer/shopify-service";
+import { DESIGNER_SIZES, sendDesignerCheckout, validateCheckout, validateRoster } from "@/lib/designer/shopify-service";
 
 function waitForPreview() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
@@ -46,7 +46,7 @@ async function captureProductionViews() {
     for (const view of ["front", "back"] as const) {
       useDesignerStore.getState().setView(view);
       await waitForPreview();
-      captures[view] = serializeDesignerSvg();
+      captures[view] = await serializeDesignerSvg({ embedImages: true });
     }
   } finally {
     useDesignerStore.getState().setView(originalView);
@@ -66,7 +66,8 @@ export function OrderPanel({
   const [exporting, setExporting] = useState<"png" | "svg" | "pdf" | "zip" | null>(null);
   const total = s.roster.reduce((sum, player) => sum + player.quantity, 0);
   const errors = useMemo(() => validateCheckout(s), [s]);
-  const rosterReady = s.roster.length > 0 && s.roster.every((player) => player.name.trim() && player.number.trim() && player.quantity > 0);
+  const rosterErrors = useMemo(() => validateRoster(s), [s]);
+  const rosterReady = rosterErrors.length === 0;
   const customerReady = Boolean(s.customer.name.trim() && /^\S+@\S+\.\S+$/.test(s.customer.email));
   const checks = [
     { label: "Design ID", ready: Boolean(s.designId) },
@@ -80,16 +81,12 @@ export function OrderPanel({
   async function runExport(kind: "png" | "svg" | "pdf" | "zip") {
     setExporting(kind);
     try {
-      if (kind === "png") {
-        await downloadDesignerPng(s);
-      } else if (kind === "svg") {
-        downloadDesignerSvg(s);
-      } else {
-        const snapshot = useDesignerStore.getState();
-        const captures = await captureProductionViews();
-        if (kind === "pdf") await downloadProductionPdf(snapshot, captures);
-        else await downloadProductionBundle(snapshot, captures);
-      }
+      const snapshot = useDesignerStore.getState();
+      const captures = await captureProductionViews();
+      if (kind === "png") await downloadDesignerPng(snapshot, captures);
+      else if (kind === "svg") await downloadDesignerSvg(snapshot, captures);
+      else if (kind === "pdf") await downloadProductionPdf(snapshot, captures);
+      else await downloadProductionBundle(snapshot, captures);
       toast.success(`${kind.toUpperCase()} ready.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Export failed.");
@@ -109,8 +106,8 @@ export function OrderPanel({
       {mode === "roster" ? (
         <>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-muted">{s.roster.length} players</span>
-            <span className="text-[11px] font-extrabold">{total} pcs</span>
+            <span className="text-[11px] font-medium text-muted">{s.roster.length} players</span>
+            <span className="text-[11px] font-semibold">{total} pcs</span>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -120,7 +117,7 @@ export function OrderPanel({
                 className="rounded-lg border border-border bg-surface p-1.5"
               >
                 <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-xs font-extrabold">P{index + 1}</span>
+                  <span className="text-xs font-semibold">P{index + 1}</span>
                   <Button
                     isIconOnly
                     size="sm"
@@ -214,17 +211,25 @@ export function OrderPanel({
             <Plus className="size-3" />
             Add player
           </Button>
+
+          {rosterErrors.length > 0 && (
+            <Alert status="accent" className="py-1.5">
+              <Alert.Content>
+                <Alert.Title className="text-xs">{rosterErrors[0]}</Alert.Title>
+              </Alert.Content>
+            </Alert>
+          )}
         </>
       ) : focus === "export" ? (
         <>
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Files</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Files</p>
           <div className="grid grid-cols-2 gap-1">
-            <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting)} onPress={() => runExport("png")}>
+            <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back} onPress={() => runExport("png")}>
               {exporting === "png" ? <Spinner size="sm" /> : <Download className="size-3" />}
-              PNG
+              PNGs
             </Button>
-            <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting)} onPress={() => runExport("svg")}>
-              SVG
+            <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back} onPress={() => runExport("svg")}>
+              SVGs
             </Button>
             <Button size="sm" variant="outline" className="min-h-8" isDisabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back} onPress={() => runExport("pdf")}>
               {exporting === "pdf" ? <Spinner size="sm" /> : "PDF"}
@@ -251,8 +256,8 @@ export function OrderPanel({
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-muted">Checklist</span>
-            <span className="text-[11px] font-extrabold">{errors.length ? `${errors.length} to do` : "Ready"}</span>
+            <span className="text-[11px] font-medium text-muted">Checklist</span>
+            <span className="text-[11px] font-semibold">{errors.length ? `${errors.length} to do` : "Ready"}</span>
           </div>
 
           <div className="overflow-hidden rounded-lg border border-border bg-surface">
@@ -273,15 +278,15 @@ export function OrderPanel({
           <div className="flex flex-col gap-0.5">
             <div className="flex justify-between">
               <span className="text-[11px] text-muted">Team</span>
-              <span className="text-[11px] font-extrabold">{s.teamName || "—"}</span>
+              <span className="text-[11px] font-semibold">{s.teamName || "—"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[11px] text-muted">Uniform</span>
-              <span className="text-[11px] font-extrabold capitalize">{s.sport} · {s.garmentType}</span>
+              <span className="text-[11px] font-semibold capitalize">{s.sport} · {s.garmentType}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[11px] text-muted">Qty</span>
-              <span className="text-[11px] font-extrabold">{total}</span>
+              <span className="text-[11px] font-semibold">{total}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-muted">Colors</span>
@@ -299,7 +304,7 @@ export function OrderPanel({
           </div>
 
           <Separator />
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Customer</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Customer</p>
           <div className="flex flex-col gap-1.5">
             <TextField fullWidth name="customer-name" value={s.customer.name} onChange={(value) => s.patch({ customer: { ...s.customer, name: value } })}>
               <Label>Full name</Label>

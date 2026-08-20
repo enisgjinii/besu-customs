@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   Chip,
+  Input,
   Label,
   ListBox,
   Select,
@@ -14,10 +15,16 @@ import {
 } from "@heroui/react";
 import { Sparkles } from "lucide-react";
 import { useDesignerStore } from "@/lib/designer/store";
-import type { DesignStyle } from "@/lib/designer/types";
+import type { DesignStyle, GarmentType } from "@/lib/designer/types";
+import { ColorControl } from "./color-control";
 
 const SPORTS = ["Basketball", "Soccer", "Volleyball", "Baseball", "Flag Football"] as const;
 const STYLES = ["modern", "minimal", "geometric", "retro", "aggressive"] as const;
+const GARMENTS: { id: GarmentType; label: string }[] = [
+  { id: "jersey", label: "Jersey" },
+  { id: "shorts", label: "Shorts" },
+  { id: "uniform", label: "Uniform" },
+];
 
 export function PromptPanel() {
   const s = useDesignerStore();
@@ -34,8 +41,14 @@ export function PromptPanel() {
       invalid_previous_asset:
         "This artwork revision is no longer available. Generate the side again before requesting a correction.",
       rate_limited: "Generation is temporarily busy. Wait a moment and try again.",
+      rate_limit: "Generation is temporarily busy. Wait a moment and try again.",
+      insufficient_quota:
+        "OpenAI billing or image credits are not active for this deployment.",
       generation_timeout: "Generation took too long. Try a simpler brief or try again.",
+      timeout: "Generation took too long. Try a simpler brief or try again.",
       upstream_error: "The image service could not complete this request. Try again in a moment.",
+      body_too_large: "That request is too large. Shorten the brief or correction and try again.",
+      invalid_input: "Please check the design details and try again.",
     };
     return (code && messages[code]) || fallback || "Artwork generation failed. Please try again.";
   }
@@ -96,19 +109,19 @@ export function PromptPanel() {
       <Select
         fullWidth
         className="w-full"
-        selectedKey={s.sport}
-        onSelectionChange={(key) => key && s.patch({ sport: String(key) })}
+        selectedKey={s.garmentType}
+        onSelectionChange={(key) => key && s.setGarment(String(key) as GarmentType)}
       >
-        <Label>Sport</Label>
+        <Label>Garment</Label>
         <Select.Trigger className="w-full">
           <Select.Value />
           <Select.Indicator />
         </Select.Trigger>
         <Select.Popover>
           <ListBox>
-            {SPORTS.map((sport) => (
-              <ListBox.Item key={sport} id={sport} textValue={sport}>
-                {sport}
+            {GARMENTS.map((garment) => (
+              <ListBox.Item key={garment.id} id={garment.id} textValue={garment.label}>
+                {garment.label}
                 <ListBox.ItemIndicator />
               </ListBox.Item>
             ))}
@@ -116,28 +129,82 @@ export function PromptPanel() {
         </Select.Popover>
       </Select>
 
-      <Select
+      <div className="grid grid-cols-2 gap-1.5">
+        <Select
+          fullWidth
+          className="w-full"
+          selectedKey={s.sport}
+          onSelectionChange={(key) => key && s.patch({ sport: String(key) })}
+        >
+          <Label>Sport</Label>
+          <Select.Trigger className="w-full">
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {SPORTS.map((sport) => (
+                <ListBox.Item key={sport} id={sport} textValue={sport}>
+                  {sport}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+
+        <Select
+          fullWidth
+          className="w-full"
+          selectedKey={s.style}
+          onSelectionChange={(key) => key && s.patch({ style: String(key) as DesignStyle })}
+        >
+          <Label>Style</Label>
+          <Select.Trigger className="w-full">
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {STYLES.map((style) => (
+                <ListBox.Item key={style} id={style} textValue={style} className="capitalize">
+                  {style}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+      </div>
+
+      <TextField
         fullWidth
         className="w-full"
-        selectedKey={s.style}
-        onSelectionChange={(key) => key && s.patch({ style: String(key) as DesignStyle })}
+        name="team"
+        value={s.teamName}
+        onChange={(value) => s.patch({ teamName: value.toUpperCase().slice(0, 60) })}
       >
-        <Label>Style</Label>
-        <Select.Trigger className="w-full">
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {STYLES.map((style) => (
-              <ListBox.Item key={style} id={style} textValue={style} className="capitalize">
-                {style}
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
-      </Select>
+        <Label>Team name</Label>
+        <Input placeholder="BESU ELITE" maxLength={60} />
+      </TextField>
+
+      <div className="flex gap-1">
+        <ColorControl
+          label="primary"
+          value={s.colors.primary}
+          onChange={(value) => s.patch({ colors: { ...s.colors, primary: value } })}
+        />
+        <ColorControl
+          label="secondary"
+          value={s.colors.secondary}
+          onChange={(value) => s.patch({ colors: { ...s.colors, secondary: value } })}
+        />
+        <ColorControl
+          label="accent"
+          value={s.colors.accent}
+          onChange={(value) => s.patch({ colors: { ...s.colors, accent: value } })}
+        />
+      </div>
 
       <TextField
         fullWidth
@@ -172,7 +239,7 @@ export function PromptPanel() {
       )}
 
       {needsTeam && (
-        <p className="text-[10px] text-muted">Set a team name in Text before generating.</p>
+        <p className="text-[10px] text-muted">Enter a team name before generating.</p>
       )}
 
       {error && (

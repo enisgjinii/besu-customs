@@ -1,17 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Move,
-  Palette,
   ShoppingBag,
   Sparkles,
-  Type,
   Users,
 } from "lucide-react";
 
 export type DesignerStepId =
   | "design"
-  | "colors"
-  | "text"
   | "place"
   | "roster"
   | "order";
@@ -26,7 +22,6 @@ export type StepOption = {
 export type DesignerStepDef = {
   id: DesignerStepId;
   label: string;
-  /** Centered panel header, e.g. "1/6 Design" */
   header: string;
   chooseTitle: string;
   nextLabel: string | null;
@@ -40,37 +35,17 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
   {
     id: "design",
     label: "Design",
-    header: "1/6 Design",
-    chooseTitle: "Choose your garment",
-    nextLabel: "Colors",
-    hint: "Pick jersey, shorts, or a full uniform, then generate artwork from your brief.",
+    header: "Design",
+    chooseTitle: "Design your uniform",
+    nextLabel: "Place",
+    hint: "Pick the garment, team name, colors, and brief, then generate artwork.",
     expandsDetail: true,
     icon: Sparkles,
   },
   {
-    id: "colors",
-    label: "Colors",
-    header: "2/6 Select color",
-    chooseTitle: "Choose your colors",
-    nextLabel: "Text",
-    hint: "Set primary, secondary, and accent colors for the jersey palette.",
-    expandsDetail: true,
-    icon: Palette,
-  },
-  {
-    id: "text",
-    label: "Text",
-    header: "3/6 Select type",
-    chooseTitle: "Choose your type",
-    nextLabel: "Place",
-    hint: "Select a font and set the team name shown on the front.",
-    expandsDetail: true,
-    icon: Type,
-  },
-  {
     id: "place",
     label: "Place",
-    header: "4/6 Place art",
+    header: "Place",
     chooseTitle: "Place your artwork",
     nextLabel: "Roster",
     hint: "Nudge scale, position, and rotation for artwork or type on the active view.",
@@ -80,7 +55,7 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
   {
     id: "roster",
     label: "Roster",
-    header: "5/6 Roster",
+    header: "Roster",
     chooseTitle: "Build your roster",
     nextLabel: "Order",
     hint: "Add players with name, number, sizes, and quantities.",
@@ -90,7 +65,7 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
   {
     id: "order",
     label: "Order",
-    header: "6/6 Order",
+    header: "Order",
     chooseTitle: "Review your order",
     nextLabel: null,
     hint: "Export production files and send the finished design to Shopify.",
@@ -101,19 +76,10 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
 
 export const STEP_INDEX: Record<DesignerStepId, number> = {
   design: 0,
-  colors: 1,
-  text: 2,
-  place: 3,
-  roster: 4,
-  order: 5,
+  place: 1,
+  roster: 2,
+  order: 3,
 };
-
-export const FONT_OPTIONS: StepOption[] = [
-  { id: "Inter, sans-serif", label: "Athletic sans", sublabel: "Clean" },
-  { id: "Impact, sans-serif", label: "Impact", sublabel: "Bold" },
-  { id: "Georgia, serif", label: "Classic serif", sublabel: "Traditional" },
-  { id: "monospace", label: "Block mono", sublabel: "Tech" },
-];
 
 export const GARMENT_OPTIONS: StepOption[] = [
   { id: "jersey", label: "Jersey", sublabel: "Top only" },

@@ -27,29 +27,30 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
       <Button
         variant="outline"
         size="sm"
-        className="min-h-8 min-w-0 flex-1 justify-start rounded-full px-2"
+        className="min-h-8 min-w-0 flex-1 justify-start rounded-full border-slate-300 bg-slate-50 px-2 text-slate-900 shadow-sm hover:bg-white"
         onPress={() => setDraft(value.toUpperCase())}
       >
         <span
           className="mr-1.5 size-3.5 shrink-0 rounded-full border border-border"
           style={{ backgroundColor: value }}
         />
-        <span className="truncate text-[11px] font-bold capitalize">{label}</span>
+        <span className="truncate text-[11px] font-medium capitalize">{label}</span>
       </Button>
       <Popover.Content className="w-[200px] p-0">
         <Popover.Dialog className="p-2.5">
-          <Popover.Heading className="mb-1.5 text-xs font-extrabold capitalize">{label}</Popover.Heading>
+          <Popover.Heading className="mb-1.5 text-xs font-semibold capitalize">{label}</Popover.Heading>
           <ColorSwatchPicker
             size="sm"
             variant="square"
             value={value}
+            aria-label={`${label} color presets`}
             onChange={(color) => {
               apply(color.toString("hex"));
             }}
             className="mb-3"
           >
             {swatches.map((color) => (
-              <ColorSwatchPicker.Item key={color} color={color}>
+              <ColorSwatchPicker.Item key={color} color={color} aria-label={`${label} ${color}`}>
                 <ColorSwatchPicker.Swatch />
                 <ColorSwatchPicker.Indicator />
               </ColorSwatchPicker.Item>

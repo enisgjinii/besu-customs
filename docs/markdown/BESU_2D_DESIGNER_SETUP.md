@@ -18,6 +18,7 @@ Optional:
 ```text
 OPENAI_IMAGE_MODEL=gpt-image-1
 DESIGNER_MOCK_AI=true                   # development/testing only
+NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS=false
 ```
 
 `OPENAI_IMAGE_MODEL` defaults to `gpt-image-1`, which supports transparent PNG image generation/editing. Set a different model only after validating its image API parameters and account access.
@@ -31,6 +32,10 @@ DESIGNER_MOCK_AI=true                   # development/testing only
 5. Test a real upload and public read before enabling client checkout.
 
 The app returns a clear configuration error when the Supabase URL, service-role key, bucket, public policy, or upload response is invalid.
+
+## Shopify checkout
+
+The active 2D designer does not require Shopify API credentials in the Next.js environment. Checkout uses the existing parent iframe `besu:checkout` message contract and sends compact design IDs, Supabase artwork URLs, roster metadata, product handles, and variant IDs. Set `NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN` to the HTTPS storefront origin that hosts the iframe. Production checkout is intentionally blocked when this origin is missing or invalid, so customer/order data is not posted to an unknown parent frame. A real Shopify theme/cart sandbox is still required for final cart behavior sign-off.
 
 ## Mock mode
 
@@ -61,6 +66,7 @@ Mock mode is explicit. Production does not silently fall back to mock artwork wh
 - [ ] Roster, customer, and size validation blocks incomplete orders.
 - [ ] PNG, SVG, PDF, and ZIP exports are downloaded and opened successfully.
 - [ ] Shopify iframe receives and handles `besu:checkout`.
+- [ ] `NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN` is set to the approved HTTPS Shopify storefront origin.
 - [ ] Vercel production deployment is READY and the intended alias is accessible to the client.
 - [ ] A Shopify sandbox/cart test and a clean mobile browser test are complete.
 

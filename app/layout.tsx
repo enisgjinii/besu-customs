@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { VercelToolbar } from "@vercel/toolbar/next";
 import { AuthProvider } from "@/lib/auth-context";
@@ -11,33 +10,6 @@ import { ServiceWorkerInit } from "@/components/service-worker-init";
 import { ConnectionIndicator } from "@/components/connection-indicator";
 import { LegacyGlobalUi } from "@/components/legacy-global-ui";
 import "./globals.css";
-
-const macan = localFont({
-  src: [
-    {
-      path: "../public/font/Macan Font/MacanPanWeb-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/font/Macan Font/MacanPanWeb-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../public/font/Macan Font/MacanPanWeb-Semibold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../public/font/Macan Font/MacanPanWeb-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
-  variable: "--font-macan",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Besu Customs",
@@ -72,9 +44,17 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
         suppressHydrationWarning
-        className={`font-sans ${macan.variable} overflow-hidden`}
+        className="font-sans overflow-hidden"
       >
         <ThemeProvider
           attribute="class"

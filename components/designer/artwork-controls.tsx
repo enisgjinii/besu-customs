@@ -5,8 +5,6 @@ import {
   Button,
   Chip,
   Label,
-  ListBox,
-  Select,
   Separator,
   Slider,
   ToggleButton,
@@ -17,13 +15,6 @@ import { useDesignerStore } from "@/lib/designer/store";
 import { cn } from "@/lib/utils";
 
 type Layer = "artwork" | "text";
-
-const FONTS = [
-  { id: "Inter, sans-serif", label: "Athletic sans" },
-  { id: "Impact, sans-serif", label: "Impact" },
-  { id: "Georgia, serif", label: "Classic serif" },
-  { id: "monospace", label: "Block mono" },
-];
 
 export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
   const s = useDesignerStore();
@@ -73,42 +64,18 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
             }}
             className="gap-0.5 rounded-full"
           >
-            <ToggleButton id="artwork" className="rounded-full text-[11px] font-bold">Artwork</ToggleButton>
-            <ToggleButton id="text" className="rounded-full text-[11px] font-bold">Type</ToggleButton>
+            <ToggleButton id="artwork" className="rounded-full text-[11px] font-medium">Artwork</ToggleButton>
+            <ToggleButton id="text" className="rounded-full text-[11px] font-medium">Type</ToggleButton>
           </ToggleButtonGroup>
           <Chip size="sm" className="capitalize">{s.view}</Chip>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-1.5">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
             {layer === "artwork" ? "Artwork layer" : "Type layer"}
           </p>
           <Chip size="sm" className="capitalize">{s.view}</Chip>
         </div>
-      )}
-
-      {layer === "text" && (
-        <Select
-          fullWidth
-          selectedKey={s.font}
-          onSelectionChange={(key) => key && s.patch({ font: String(key) })}
-        >
-          <Label>Font</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              {FONTS.map((font) => (
-                <ListBox.Item key={font.id} id={font.id} textValue={font.label}>
-                  {font.label}
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
       )}
 
       <div className="flex flex-col gap-1.5">
@@ -124,7 +91,7 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
             onChange={(value) => update(row.key, Array.isArray(value) ? value[0] : value)}
           >
             <div className="flex w-full items-center justify-between">
-              <Label className="text-[11px] font-bold">{row.label}</Label>
+              <Label className="text-[11px] font-medium">{row.label}</Label>
               <span className="text-[11px] text-muted">{row.text}</span>
             </div>
             <Slider.Track>
@@ -151,7 +118,7 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
           <Separator className="my-0.5" />
           <div className="flex items-center gap-1.5">
             <History className="size-4" />
-            <span className="text-xs font-bold">Versions</span>
+            <span className="text-xs font-medium">Versions</span>
             <Chip size="sm">{`${s.history.length}/8`}</Chip>
           </div>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
@@ -162,7 +129,7 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
                 onClick={() => s.restoreVersion(version)}
                 className={cn(
                   "min-w-16 rounded-lg border border-border bg-background p-1 text-left transition-colors",
-                  version.id === s.designId
+                  version.assetUrl === s.artwork[version.view]
                     ? "border-foreground/40"
                     : "hover:border-foreground/20",
                 )}
@@ -174,7 +141,7 @@ export function ArtworkControls({ forcedLayer }: { forcedLayer?: Layer }) {
                   alt={`Version ${s.history.length - index}`}
                   className="block h-[46px] w-[54px] rounded bg-[rgba(15,23,42,0.06)] object-cover"
                 />
-                <span className="block truncate text-xs font-bold">v{s.history.length - index}</span>
+                <span className="block truncate text-xs font-medium">v{s.history.length - index}</span>
               </button>
             ))}
           </div>

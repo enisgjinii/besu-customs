@@ -70,6 +70,8 @@ Vercel hosts the Next.js standalone app and API routes. Supabase hosts database/
 - Supabase uploads validate configuration, PNG content, size, bucket errors, and the returned public URL.
 - Persisted designer state migrated from v3 to v4 with fresh front/back transform objects and a safe reset path.
 - Checkout validates both artwork sides, roster names/numbers/quantities/sizes, customer identity/email, and iframe embedding before posting `besu:checkout`.
+- The design ID is stable for the life of an order while each AI result retains its own revision ID; front/back PNG and SVG actions export both sides.
+- Production checkout requires `NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN` and rejects unmapped Shopify sizes rather than silently falling back to another variant.
 - Production ZIP export contains both sides as PNG/SVG, a PDF order pack, and configuration JSON.
 
 ## Remaining validation
