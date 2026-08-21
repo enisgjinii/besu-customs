@@ -2,13 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
-  Alert,
   Button,
   Input,
   Label,
   ListBox,
   Select,
-  Separator,
   Spinner,
   TextArea,
   TextField,
@@ -60,39 +58,41 @@ export function OrderPanel({
   const rosterErrors = useMemo(() => validateRoster(s), [s]);
 
   async function runExport(kind: "png" | "svg" | "pdf" | "zip") {
+    if (exporting) return;
     setExporting(kind);
     try {
       const snapshot = useDesignerStore.getState();
+      if (!snapshot.artwork.front || !snapshot.artwork.back) throw new Error("Complete the design first.");
       const captures = await captureProductionViews();
       if (kind === "png") await downloadDesignerPng(snapshot, captures);
       else if (kind === "svg") await downloadDesignerSvg(snapshot, captures);
       else if (kind === "pdf") await downloadProductionPdf(snapshot, captures);
       else await downloadProductionBundle(snapshot, captures);
       toast.success(`${kind.toUpperCase()} ready.`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Export failed.");
+    } catch (exportError) {
+      toast.error(exportError instanceof Error ? exportError.message : "Export failed.");
     } finally {
       setExporting(null);
     }
   }
 
   function checkout() {
-    const result = sendDesignerCheckout(s);
+    const result = sendDesignerCheckout(useDesignerStore.getState());
     if (result.ok) toast.success("Sent to Shopify.");
-    else toast.error(result.errors[0]);
+    else toast.error(result.errors[0] || "Checkout failed.");
   }
 
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {mode === "roster" ? (
         <>
-          <div className="flex items-center justify-between text-[12px]">
-            <span className="text-muted">{s.roster.length} players</span>
-            <span className="font-semibold tabular-nums">{total} pcs</span>
+          <div className="flex items-center justify-between text-[11px] text-muted">
+            <span>{s.roster.length} players</span>
+            <span className="font-semibold tabular-nums text-foreground">{total} pcs</span>
           </div>
 
-          {s.roster.length > 0 ? (
-            <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {s.roster.length > 1 ? (
+            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {s.roster.map((player) => {
                 const selected = (s.previewPlayerId || s.roster[0]?.id) === player.id;
                 return (
@@ -103,9 +103,9 @@ export function OrderPanel({
                       s.setPreviewPlayer(player.id);
                       s.setView("back");
                     }}
-                    className={`min-h-9 shrink-0 rounded-full px-3 text-[11px] font-medium ring-1 ${selected ? "bg-foreground text-white ring-foreground" : "bg-white text-foreground ring-border/70"}`}
+                    className={`min-h-8 shrink-0 rounded-full px-2.5 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 ${selected ? "bg-[#181816] text-white" : "bg-black/[0.035] text-foreground"}`}
                   >
-                    {(player.name || "Player").slice(0, 12)}{player.number ? ` #${player.number}` : ""}
+                    {(player.name || `Player ${s.roster.indexOf(player) + 1}`).slice(0, 12)}{player.number ? ` #${player.number}` : ""}
                   </button>
                 );
               })}
@@ -114,15 +114,19 @@ export function OrderPanel({
 
           <div className="flex min-w-0 flex-col gap-2">
             {s.roster.map((player, index) => (
-              <div key={player.id} className="min-w-0 rounded-xl border border-border/80 bg-white p-3">
+              <div key={player.id} className="min-w-0 rounded-xl bg-black/[0.025] p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[12px] font-semibold">Player {index + 1}</span>
-                  <button type="button" onClick={() => s.removePlayer(player.id)} className="min-h-8 px-1 text-[11px] font-medium text-muted hover:text-foreground">
+                  <span className="text-[11px] font-semibold">{index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => s.removePlayer(player.id)}
+                    className="min-h-8 rounded-md px-1.5 text-[10px] font-medium text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 hover:text-foreground"
+                  >
                     Remove
                   </button>
                 </div>
 
-                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_80px] gap-2">
+                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_76px] gap-2">
                   <TextField fullWidth className="min-w-0" name={`name-${player.id}`} value={player.name} onChange={(value) => s.updatePlayer(player.id, { name: value.slice(0, 18) })}>
                     <Label>Name</Label>
                     <Input maxLength={18} className="min-h-11" />
@@ -167,15 +171,11 @@ export function OrderPanel({
             ))}
           </div>
 
-          <Button fullWidth size="sm" variant="outline" className="min-h-10" onPress={s.addPlayer}>
+          <Button fullWidth size="sm" variant="ghost" className="min-h-10 rounded-xl bg-black/[0.025]" onPress={s.addPlayer}>
             Add player
           </Button>
 
-          {rosterErrors.length > 0 ? (
-            <Alert status="accent" className="py-2">
-              <Alert.Content><Alert.Title className="text-xs">{rosterErrors[0]}</Alert.Title></Alert.Content>
-            </Alert>
-          ) : null}
+          {rosterErrors.length > 0 ? <p role="alert" className="m-0 text-[11px] font-medium text-muted">{rosterErrors[0]}</p> : null}
         </>
       ) : focus === "export" ? (
         <>
@@ -185,9 +185,9 @@ export function OrderPanel({
                 key={kind}
                 size="sm"
                 variant={kind === "zip" ? "primary" : "outline"}
-                className="min-h-11 uppercase"
+                className="min-h-11 rounded-xl uppercase"
                 isDisabled={Boolean(exporting) || !s.artwork.front || !s.artwork.back}
-                onPress={() => runExport(kind)}
+                onPress={() => void runExport(kind)}
               >
                 {exporting === kind ? <Spinner size="sm" color={kind === "zip" ? "current" : undefined} /> : null}
                 {kind}
@@ -195,40 +195,30 @@ export function OrderPanel({
             ))}
           </div>
 
-          {errors.length > 0 ? (
-            <Alert status="accent" className="py-2">
-              <Alert.Content><Alert.Title className="text-xs">{errors[0]}</Alert.Title></Alert.Content>
-            </Alert>
-          ) : null}
+          {errors.length > 0 ? <p role="alert" className="m-0 text-[11px] font-medium text-muted">{errors[0]}</p> : null}
 
-          <Button fullWidth size="sm" className="min-h-12 font-semibold" isDisabled={errors.length > 0} onPress={checkout}>
+          <Button fullWidth size="sm" className="min-h-12 rounded-xl font-semibold" isDisabled={errors.length > 0} onPress={checkout}>
             Add to Shopify
           </Button>
         </>
       ) : (
         <>
-          <div className="flex min-w-0 flex-col gap-1.5 rounded-xl bg-[#f7f7f5] px-3 py-2.5 ring-1 ring-border/50">
-            <div className="flex justify-between gap-3 text-[12px]"><span className="text-muted">Team</span><span className="truncate font-semibold">{s.teamName || "—"}</span></div>
-            <div className="flex justify-between gap-3 text-[12px]"><span className="text-muted">Qty</span><span className="font-semibold tabular-nums">{total}</span></div>
-            <div className="flex items-center justify-between gap-3 text-[12px]">
+          <div className="flex min-w-0 flex-col gap-1.5 rounded-xl bg-black/[0.025] px-3 py-2.5">
+            <div className="flex justify-between gap-3 text-[11px]"><span className="text-muted">Team</span><span className="truncate font-semibold">{s.teamName || "—"}</span></div>
+            <div className="flex justify-between gap-3 text-[11px]"><span className="text-muted">Qty</span><span className="font-semibold tabular-nums">{total}</span></div>
+            <div className="flex items-center justify-between gap-3 text-[11px]">
               <span className="text-muted">Colors</span>
-              <div className="flex gap-1.5">
+              <div className="flex -space-x-0.5">
                 {Object.entries(s.colors).map(([role, color]) => (
-                  <span key={role} title={`${role}: ${color}`} className="size-3.5 rounded-full border border-border" style={{ backgroundColor: color }} />
+                  <span key={role} title={`${role}: ${color}`} className="size-3.5 rounded-full ring-1 ring-white" style={{ backgroundColor: color }} />
                 ))}
               </div>
             </div>
           </div>
 
-          {errors.length > 0 ? (
-            <Alert status="accent" className="py-2">
-              <Alert.Content><Alert.Title className="text-xs">{errors[0]}</Alert.Title></Alert.Content>
-            </Alert>
-          ) : null}
+          {errors.length > 0 ? <p role="alert" className="m-0 text-[11px] font-medium text-muted">{errors[0]}</p> : null}
 
-          <Separator />
-
-          <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-2 pt-1">
             <TextField fullWidth className="min-w-0" name="customer-name" value={s.customer.name} onChange={(value) => s.patch({ customer: { ...s.customer, name: value } })}>
               <Label>Name</Label><Input className="min-h-11" autoComplete="name" />
             </TextField>
@@ -239,7 +229,7 @@ export function OrderPanel({
               <Label>Phone</Label><Input className="min-h-11" inputMode="tel" autoComplete="tel" />
             </TextField>
             <TextField fullWidth className="min-w-0" name="customer-notes" value={s.customer.notes} onChange={(value) => s.patch({ customer: { ...s.customer, notes: value } })}>
-              <Label>Notes</Label><TextArea rows={2} className="min-h-[80px]" />
+              <Label>Notes</Label><TextArea rows={2} className="min-h-[76px]" />
             </TextField>
           </div>
         </>

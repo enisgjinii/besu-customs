@@ -1,14 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Button,
-  Card,
-  Modal,
-  Surface,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "@heroui/react";
+import { Button, Modal, ToggleButton, ToggleButtonGroup } from "@heroui/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { GarmentCanvas } from "./garment-canvas";
 import { ProductPanel } from "./product-panel";
@@ -46,7 +39,7 @@ export function DesignerPage() {
   const [orderFocus, setOrderFocus] = useState<OrderFocus>("review");
   const [resetOpen, setResetOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const controlsRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
 
   const store = useDesignerStore();
@@ -69,7 +62,10 @@ export function DesignerPage() {
 
     if (window.matchMedia("(max-width: 767px)").matches) {
       requestAnimationFrame(() => {
-        controlsRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        controlsRef.current?.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start",
+        });
       });
     }
   }
@@ -95,155 +91,145 @@ export function DesignerPage() {
 
   return (
     <motion.main
-      data-designer-shell="v16-framer-motion"
-      className="flex min-h-dvh w-full flex-col bg-[#f7f7f5] text-foreground md:h-dvh md:min-h-0 md:flex-row md:overflow-hidden md:bg-white"
+      data-designer-shell="v17-studio-minimal"
+      className="flex min-h-dvh w-full flex-col bg-[#efeee9] text-foreground md:h-dvh md:min-h-0 md:flex-row md:overflow-hidden"
       initial={reduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: reduceMotion ? 0 : 0.2 }}
+      transition={{ duration: reduceMotion ? 0 : 0.18 }}
     >
-      <Surface
+      <aside
         ref={controlsRef}
-        variant="default"
-        className={cn(
-          "order-3 w-full rounded-none border-0 bg-white md:order-none md:relative md:z-30 md:flex md:h-full md:w-1/4 md:min-w-[340px] md:max-w-[460px] md:shrink-0 md:overflow-hidden md:border-r md:border-separator md:px-3",
-          "md:pb-[max(12px,env(safe-area-inset-bottom,0px))] md:pt-[max(12px,env(safe-area-inset-top,0px))]",
-        )}
+        className="order-3 w-full bg-[#fcfcfa] md:order-none md:flex md:h-full md:w-[390px] md:min-w-[350px] md:max-w-[420px] md:shrink-0 md:border-r md:border-black/[0.06]"
       >
         <div className="flex w-full min-w-0 flex-col md:h-full md:min-h-0">
           <nav
             aria-label="Designer sections"
-            className="sticky top-0 z-40 flex overflow-x-auto border-y border-border/70 bg-white px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:static md:z-auto md:overflow-visible md:border-x-0 md:border-t-0 md:px-0"
+            className="sticky top-0 z-40 bg-[#fcfcfa]/95 px-3 py-2 backdrop-blur-md md:static md:shrink-0"
           >
-            {DESIGNER_STEPS.map((item) => {
-              const active = item.id === step;
-              const locked =
-                (item.id === "refine" || item.id === "roster" || item.id === "order") &&
-                !store.selectedConceptId;
+            <div className="flex min-w-max gap-0.5 overflow-x-auto rounded-xl bg-black/[0.035] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:min-w-0">
+              {DESIGNER_STEPS.map((item) => {
+                const active = item.id === step;
+                const locked =
+                  (item.id === "refine" || item.id === "roster" || item.id === "order") &&
+                  !store.selectedConceptId;
 
-              return (
-                <motion.button
-                  key={item.id}
-                  type="button"
-                  aria-current={active ? "page" : undefined}
-                  aria-disabled={locked}
-                  disabled={locked}
-                  onClick={() => goToStep(item.id)}
-                  whileTap={reduceMotion || locked ? undefined : { scale: 0.97 }}
-                  transition={{ duration: 0.14, ease }}
-                  className={cn(
-                    "relative min-h-11 shrink-0 border-b-2 px-3 text-[11px] font-medium transition-colors focus-visible:outline-none disabled:opacity-30 md:min-w-0 md:flex-1 md:px-1 md:text-[10px]",
-                    active
-                      ? "border-transparent text-foreground"
-                      : "border-transparent text-muted hover:text-foreground",
-                  )}
-                >
-                  {item.label}
-                  {active ? (
-                    <motion.span
-                      layoutId="designer-active-tab"
-                      className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground"
-                      transition={{ duration: reduceMotion ? 0 : 0.22, ease }}
-                    />
-                  ) : null}
-                </motion.button>
-              );
-            })}
+                return (
+                  <motion.button
+                    key={item.id}
+                    type="button"
+                    aria-current={active ? "page" : undefined}
+                    aria-disabled={locked}
+                    disabled={locked}
+                    onClick={() => goToStep(item.id)}
+                    whileTap={reduceMotion || locked ? undefined : { scale: 0.97 }}
+                    className={cn(
+                      "relative min-h-9 shrink-0 rounded-lg px-3 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 md:min-w-0 md:flex-1 md:px-1.5 md:text-[10px]",
+                      active ? "text-white" : "text-muted hover:text-foreground",
+                      locked && "opacity-25",
+                    )}
+                  >
+                    {active ? (
+                      <motion.span
+                        layoutId="designer-active-tab"
+                        className="absolute inset-0 rounded-lg bg-[#181816]"
+                        transition={{ duration: reduceMotion ? 0 : 0.22, ease }}
+                      />
+                    ) : null}
+                    <span className="relative z-10">{item.label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
           </nav>
 
-          <Card className="m-3 overflow-hidden rounded-2xl border border-border/70 bg-white shadow-none md:m-0 md:mt-2 md:min-h-0 md:flex-1 md:border-0 md:ring-1 md:ring-border/55">
-            <Card.Content className="flex p-0 md:h-full md:min-h-0 md:flex-col">
-              <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3 md:px-3">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.h2
-                    key={stepDef.header}
-                    className="m-0 text-[17px] font-semibold tracking-tight md:text-[1rem]"
-                    initial={reduceMotion ? false : { opacity: 0, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={reduceMotion ? undefined : { opacity: 0, y: -2 }}
-                    transition={{ duration: reduceMotion ? 0 : 0.16, ease }}
-                  >
-                    {stepDef.header}
-                  </motion.h2>
-                </AnimatePresence>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex shrink-0 items-center justify-between gap-3 px-4 pb-2 pt-3 md:px-5 md:pt-4">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.h2
+                  key={stepDef.header}
+                  className="m-0 text-[15px] font-semibold tracking-[-0.02em]"
+                  initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -2 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.15, ease }}
+                >
+                  {stepDef.header}
+                </motion.h2>
+              </AnimatePresence>
 
-                {step === "order" ? (
-                  <ToggleButtonGroup
-                    size="sm"
-                    selectionMode="single"
-                    isDetached
-                    disallowEmptySelection
-                    selectedKeys={new Set([orderFocus])}
-                    onSelectionChange={(keys) => {
-                      const next = [...keys][0];
-                      if (next === "review" || next === "export") setOrderFocus(next);
-                    }}
-                    className="shrink-0 gap-0.5"
-                    aria-label="Order panel"
-                  >
-                    <ToggleButton id="review" className="min-h-8 px-2.5 text-[11px]">Review</ToggleButton>
-                    <ToggleButton id="export" className="min-h-8 px-2.5 text-[11px]">Files</ToggleButton>
-                  </ToggleButtonGroup>
-                ) : null}
-              </div>
+              {step === "order" ? (
+                <ToggleButtonGroup
+                  size="sm"
+                  selectionMode="single"
+                  isDetached
+                  disallowEmptySelection
+                  selectedKeys={new Set([orderFocus])}
+                  onSelectionChange={(keys) => {
+                    const next = [...keys][0];
+                    if (next === "review" || next === "export") setOrderFocus(next);
+                  }}
+                  className="shrink-0 gap-0.5 rounded-lg bg-black/[0.035] p-0.5"
+                  aria-label="Order panel"
+                >
+                  <ToggleButton id="review" className="min-h-8 px-2.5 text-[11px]">Review</ToggleButton>
+                  <ToggleButton id="export" className="min-h-8 px-2.5 text-[11px]">Files</ToggleButton>
+                </ToggleButtonGroup>
+              ) : null}
+            </div>
 
-              <div
-                ref={panelRef}
-                className="px-4 py-4 md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:px-3 md:py-3 md:[scrollbar-width:thin]"
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={`${step}-${step === "order" ? orderFocus : "default"}`}
-                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={reduceMotion ? undefined : { opacity: 0, y: -5 }}
-                    transition={{ duration: reduceMotion ? 0 : 0.2, ease }}
-                  >
-                    <StepDetail step={step} orderFocus={orderFocus} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+            <div
+              ref={panelRef}
+              className="min-h-0 px-4 pb-4 md:flex-1 md:overflow-y-auto md:overscroll-contain md:px-5 md:[scrollbar-width:thin]"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`${step}-${step === "order" ? orderFocus : "default"}`}
+                  initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.18, ease }}
+                >
+                  <StepDetail step={step} orderFocus={orderFocus} />
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-              <motion.div
-                className="border-t border-border/70 bg-white px-4 py-3 md:shrink-0 md:px-3 md:py-2.5"
-                layout
-                transition={{ duration: reduceMotion ? 0 : 0.18, ease }}
-              >
-                {stepDef.nextLabel ? (
-                  <div className="grid grid-cols-[auto_1fr] gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      isDisabled={stepIndex === 0}
-                      onPress={goBack}
-                      className="min-h-11 px-4"
-                    >
+            <div className="shrink-0 bg-[#fcfcfa] px-4 pb-[max(14px,env(safe-area-inset-bottom,0px))] pt-1 md:px-5 md:pb-5 md:pt-3">
+              {stepDef.nextLabel ? (
+                stepIndex === 0 ? (
+                  <Button fullWidth size="sm" onPress={goNext} className="min-h-11 rounded-xl font-semibold">
+                    Continue
+                  </Button>
+                ) : (
+                  <div className="grid grid-cols-[84px_1fr] gap-2">
+                    <Button variant="ghost" size="sm" onPress={goBack} className="min-h-11 rounded-xl text-muted">
                       Back
                     </Button>
                     <Button
                       size="sm"
                       onPress={goNext}
                       isDisabled={step === "concepts" && !store.selectedConceptId}
-                      className="min-h-11 font-semibold"
+                      className="min-h-11 rounded-xl font-semibold"
                     >
                       Continue
                     </Button>
                   </div>
-                ) : (
-                  <Button variant="outline" size="sm" fullWidth onPress={goBack} className="min-h-11">
-                    Back
-                  </Button>
-                )}
-              </motion.div>
-            </Card.Content>
-          </Card>
+                )
+              ) : (
+                <Button variant="ghost" size="sm" fullWidth onPress={goBack} className="min-h-11 rounded-xl text-muted">
+                  Back
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
-      </Surface>
+      </aside>
 
       <motion.section
-        className="relative order-2 h-[clamp(230px,38svh,340px)] shrink-0 bg-[#f4f4f2] p-3 md:order-none md:h-full md:min-h-0 md:flex-1 md:p-0"
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.995 }}
+        className="relative order-2 h-[clamp(245px,40svh,360px)] shrink-0 bg-[#efeee9] p-2 md:order-none md:h-full md:min-h-0 md:flex-1 md:p-4"
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.997 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: reduceMotion ? 0 : 0.26, ease }}
+        transition={{ duration: reduceMotion ? 0 : 0.24, ease }}
       >
         <GarmentCanvas />
         <motion.button
@@ -251,23 +237,23 @@ export function DesignerPage() {
           onClick={() => setResetOpen(true)}
           whileHover={reduceMotion ? undefined : { y: -1 }}
           whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-          className="absolute right-4 top-4 hidden min-h-9 rounded-lg bg-white/90 px-3 text-[11px] font-medium text-muted ring-1 ring-border/60 md:block"
+          className="absolute right-7 top-7 hidden min-h-8 rounded-full bg-white/80 px-3 text-[10px] font-medium text-muted ring-1 ring-black/[0.06] backdrop-blur-md md:block"
         >
-          Reset
+          New
         </motion.button>
       </motion.section>
 
       <Modal>
         <Modal.Backdrop isOpen={resetOpen} onOpenChange={setResetOpen}>
           <Modal.Container>
-            <Modal.Dialog className="max-md:mx-3 max-md:w-[calc(100%-1.5rem)] sm:max-w-[340px]">
+            <Modal.Dialog className="max-md:mx-3 max-md:w-[calc(100%-1.5rem)] sm:max-w-[320px]">
               <Modal.CloseTrigger />
               <Modal.Header>
-                <Modal.Heading className="font-semibold">New design?</Modal.Heading>
+                <Modal.Heading className="font-semibold">Start over?</Modal.Heading>
               </Modal.Header>
               <Modal.Footer className="gap-2">
-                <Button variant="outline" slot="close" className="min-h-11">Cancel</Button>
-                <Button className="min-h-11" onPress={resetDesign}>Reset</Button>
+                <Button variant="ghost" slot="close" className="min-h-10">Cancel</Button>
+                <Button className="min-h-10" onPress={resetDesign}>Start new</Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
