@@ -91,20 +91,9 @@ export function DesignerPage() {
 
   return (
     <main
-      data-designer-shell="v14-minimal"
+      data-designer-shell="v15-minimal-no-mobile-header"
       className="flex min-h-dvh w-full flex-col bg-[#f7f7f5] text-foreground md:h-dvh md:min-h-0 md:flex-row md:overflow-hidden md:bg-white"
     >
-      <header className="order-1 flex items-center justify-between border-b border-border/70 bg-white px-4 pb-3 pt-[max(12px,env(safe-area-inset-top,0px))] md:hidden">
-        <strong className="text-[15px] tracking-tight">BESU</strong>
-        <button
-          type="button"
-          onClick={() => setResetOpen(true)}
-          className="min-h-9 rounded-lg px-2 text-[12px] font-medium text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
-        >
-          Reset
-        </button>
-      </header>
-
       <Surface
         ref={controlsRef}
         variant="default"
