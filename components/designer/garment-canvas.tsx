@@ -37,13 +37,7 @@ export function GarmentCanvas() {
               height="832"
               preserveAspectRatio="xMidYMid meet"
             />
-          ) : (
-            <g fill="none" stroke="#c9c7c0" strokeWidth="3" opacity="0.48">
-              <path d="M360 274 430 228h92l45 50 45-50h92l70 46-43 101-55-24v292H458V351l-55 24-43-101Z" />
-              <path d="M490 642h220l34 146H456l34-146Z" />
-              <path d="M535 228c8 38 37 59 65 59s57-21 65-59" />
-            </g>
-          )}
+          ) : null}
         </svg>
       </motion.div>
     </section>
