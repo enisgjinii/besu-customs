@@ -40,76 +40,11 @@ function stepIdFromIndex(index: DesignerStep): DesignerStepId {
   return DESIGNER_STEPS[index]?.id ?? "product";
 }
 
-function StepTabs({
-  step,
-  stepIndex,
-  selectedConceptId,
-  onStep,
-  mobile = false,
-}: {
-  step: DesignerStepId;
-  stepIndex: number;
-  selectedConceptId?: string;
-  onStep: (step: DesignerStepId) => void;
-  mobile?: boolean;
-}) {
-  return (
-    <nav
-      aria-label="Designer sections"
-      className={cn(
-        mobile
-          ? "flex gap-1.5 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          : "flex border-b border-separator/70",
-      )}
-    >
-      {DESIGNER_STEPS.map((item, index) => {
-        const Icon = item.icon;
-        const active = item.id === step;
-        const complete = index < stepIndex;
-        const locked =
-          (item.id === "refine" || item.id === "roster" || item.id === "order") &&
-          !selectedConceptId;
-
-        return (
-          <button
-            key={item.id}
-            type="button"
-            aria-current={active ? "page" : undefined}
-            aria-disabled={locked}
-            disabled={locked}
-            onClick={() => onStep(item.id)}
-            className={cn(
-              mobile
-                ? "flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold ring-1 transition-colors"
-                : "flex min-h-0 flex-1 items-center justify-center gap-1 border-b-2 border-transparent px-0.5 py-2.5 text-[10px] font-medium transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25 disabled:cursor-not-allowed disabled:opacity-35",
-              mobile
-                ? active
-                  ? "bg-foreground text-white ring-foreground"
-                  : complete
-                    ? "bg-white text-foreground ring-foreground/20"
-                    : "bg-white text-muted ring-border/70"
-                : active
-                  ? "border-foreground text-foreground"
-                  : complete
-                    ? "text-foreground/80 hover:border-foreground/25 hover:text-foreground"
-                    : "text-muted hover:border-foreground/20 hover:text-foreground",
-            )}
-          >
-            <Icon className="size-3.5 shrink-0" strokeWidth={1.7} aria-hidden />
-            <span>{mobile ? `${index + 1}. ${item.label}` : item.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
 export function DesignerPage() {
   const [orderFocus, setOrderFocus] = useState<OrderFocus>("review");
   const [resetOpen, setResetOpen] = useState(false);
-  const desktopPanelRef = useRef<HTMLDivElement>(null);
-  const mobileContentRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLElement>(null);
 
   const store = useDesignerStore();
   const stepIndex = store.activeStep;
@@ -117,21 +52,21 @@ export function DesignerPage() {
   const stepDef = DESIGNER_STEPS[stepIndex] || DESIGNER_STEPS[0];
 
   function canOpenStep(next: DesignerStepId) {
-    if ((next === "refine" || next === "roster" || next === "order") && !store.selectedConceptId) {
-      return false;
-    }
-    return true;
+    return !(
+      (next === "refine" || next === "roster" || next === "order") &&
+      !store.selectedConceptId
+    );
   }
 
   function goToStep(next: DesignerStepId) {
     const resolved = canOpenStep(next) ? next : "concepts";
     store.setStep(STEP_INDEX[resolved] as DesignerStep);
-    desktopPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    panelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     if (resolved === "order") setOrderFocus("review");
 
     if (window.matchMedia("(max-width: 767px)").matches) {
       requestAnimationFrame(() => {
-        mobileContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        controlsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
   }
@@ -155,93 +90,132 @@ export function DesignerPage() {
     setResetOpen(false);
   }
 
-  const orderToggle = step === "order" ? (
-    <ToggleButtonGroup
-      size="sm"
-      selectionMode="single"
-      isDetached
-      disallowEmptySelection
-      selectedKeys={new Set([orderFocus])}
-      onSelectionChange={(keys) => {
-        const next = [...keys][0];
-        if (next === "review" || next === "export") setOrderFocus(next);
-      }}
-      className="shrink-0 gap-0.5 rounded-full"
-      aria-label="Order panel"
-    >
-      <ToggleButton id="review" className="min-h-9 rounded-full px-2.5 text-[11px] font-medium">
-        Review
-      </ToggleButton>
-      <ToggleButton id="export" className="min-h-9 rounded-full px-2.5 text-[11px] font-medium">
-        Export
-      </ToggleButton>
-    </ToggleButtonGroup>
-  ) : null;
-
   return (
-    <main data-designer-shell="v12-simple-mobile" className="w-full bg-[#f7f7f5] text-foreground">
-      {/* Mobile: simple document flow. No bottom sheet, no expand/collapse, no fixed-height controls. */}
-      <div className="min-h-dvh md:hidden">
-        <header className="flex items-center justify-between gap-3 border-b border-border/70 bg-white px-4 pb-3 pt-[max(12px,env(safe-area-inset-top,0px))]">
-          <div className="min-w-0">
-            <p className="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Besu Customs</p>
-            <h1 className="m-0 mt-0.5 truncate text-[16px] font-semibold tracking-tight">AI Uniform Designer</h1>
-          </div>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="outline"
-            aria-label="Reset design"
-            className="size-10 shrink-0 rounded-full bg-white"
-            onPress={() => setResetOpen(true)}
-          >
-            <RotateCcw className="size-4" strokeWidth={1.75} />
-          </Button>
-        </header>
-
-        <section className="h-[clamp(230px,38svh,340px)] bg-[#f4f4f2] p-3">
-          <GarmentCanvas />
-        </section>
-
-        <div className="sticky top-0 z-40 border-y border-border/70 bg-[#f7f7f5]/95 backdrop-blur-sm">
-          <StepTabs
-            mobile
-            step={step}
-            stepIndex={stepIndex}
-            selectedConceptId={store.selectedConceptId}
-            onStep={goToStep}
-          />
+    <main
+      data-designer-shell="v13-simple-responsive"
+      className="flex min-h-dvh w-full flex-col bg-[#f7f7f5] text-foreground md:h-dvh md:min-h-0 md:flex-row md:overflow-hidden md:bg-white"
+    >
+      {/* Simple mobile header. Desktop keeps the existing sidebar + canvas composition. */}
+      <header className="order-1 flex items-center justify-between gap-3 border-b border-border/70 bg-white px-4 pb-3 pt-[max(12px,env(safe-area-inset-top,0px))] md:hidden">
+        <div className="min-w-0">
+          <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">Besu Customs</p>
+          <h1 className="m-0 mt-0.5 truncate text-[16px] font-semibold tracking-tight">AI Uniform Designer</h1>
         </div>
+        <Button
+          isIconOnly
+          size="sm"
+          variant="outline"
+          aria-label="Reset design"
+          className="size-10 shrink-0 rounded-full bg-white"
+          onPress={() => setResetOpen(true)}
+        >
+          <RotateCcw className="size-4" strokeWidth={1.75} />
+        </Button>
+      </header>
 
-        <div ref={mobileContentRef} className="scroll-mt-16 px-3 pb-[max(24px,env(safe-area-inset-bottom,0px))] pt-3">
-          <Card className="overflow-hidden rounded-2xl border border-border/70 bg-white shadow-none">
-            <Card.Content className="p-0">
-              <div className="border-b border-border/70 px-4 py-3">
-                <div className="flex items-start justify-between gap-3">
+      {/* Controls: normal page content on mobile, fixed sidebar on desktop. */}
+      <Surface
+        ref={controlsRef}
+        variant="default"
+        className={cn(
+          "order-3 w-full rounded-none border-0 bg-white md:order-none md:relative md:z-30 md:flex md:h-full md:w-1/4 md:min-w-[340px] md:max-w-[460px] md:shrink-0 md:overflow-hidden md:border-r md:border-separator md:px-3",
+          "md:pb-[max(12px,env(safe-area-inset-bottom,0px))] md:pt-[max(12px,env(safe-area-inset-top,0px))] md:shadow-[8px_0_24px_rgba(15,23,42,0.03)]",
+        )}
+      >
+        <div className="flex w-full min-w-0 flex-col md:h-full md:min-h-0">
+          <nav
+            aria-label="Designer sections"
+            className="sticky top-0 z-40 flex gap-1.5 overflow-x-auto border-y border-border/70 bg-[#f7f7f5]/95 px-3 py-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:static md:z-auto md:gap-0 md:overflow-visible md:border-x-0 md:border-t-0 md:bg-white md:px-0 md:py-0 md:backdrop-blur-none"
+          >
+            {DESIGNER_STEPS.map((item, index) => {
+              const Icon = item.icon;
+              const active = item.id === step;
+              const complete = index < stepIndex;
+              const locked =
+                (item.id === "refine" || item.id === "roster" || item.id === "order") &&
+                !store.selectedConceptId;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-current={active ? "page" : undefined}
+                  aria-disabled={locked}
+                  disabled={locked}
+                  onClick={() => goToStep(item.id)}
+                  className={cn(
+                    "flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold ring-1 transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25 disabled:cursor-not-allowed disabled:opacity-35",
+                    "md:min-h-0 md:min-w-0 md:flex-1 md:justify-center md:gap-1 md:rounded-none md:border-b-2 md:border-transparent md:px-0.5 md:py-2.5 md:text-[10px] md:font-medium md:ring-0",
+                    active
+                      ? "bg-foreground text-white ring-foreground md:border-foreground md:bg-white md:text-foreground"
+                      : complete
+                        ? "bg-white text-foreground ring-foreground/20 md:text-foreground/80"
+                        : "bg-white text-muted ring-border/70 md:text-muted",
+                  )}
+                >
+                  <Icon className="size-3.5 shrink-0" strokeWidth={1.7} aria-hidden />
+                  <span className="md:hidden">{index + 1}. </span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <Card
+            className="m-3 overflow-hidden rounded-2xl border border-border/70 bg-white shadow-none md:m-0 md:mt-2 md:min-h-0 md:flex-1 md:border-0 md:ring-1 md:ring-border/55"
+          >
+            <Card.Content className="flex p-0 md:h-full md:min-h-0 md:flex-col">
+              <div className="border-b border-border/70 px-4 py-3 md:flex md:shrink-0 md:items-start md:justify-between md:gap-2 md:px-3 md:py-2.5">
+                <div className="flex items-start justify-between gap-3 md:contents">
                   <div className="min-w-0">
-                    <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+                    <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted md:hidden">
                       Step {stepIndex + 1} of {DESIGNER_STEPS.length}
                     </p>
-                    <h2 className="m-0 mt-0.5 text-[17px] font-semibold tracking-tight">{stepDef.header}</h2>
+                    <h2 className="m-0 mt-0.5 text-[17px] font-semibold tracking-tight md:mt-0 md:text-[1.05rem]">{stepDef.header}</h2>
                   </div>
-                  {orderToggle}
+
+                  {step === "order" ? (
+                    <ToggleButtonGroup
+                      size="sm"
+                      selectionMode="single"
+                      isDetached
+                      disallowEmptySelection
+                      selectedKeys={new Set([orderFocus])}
+                      onSelectionChange={(keys) => {
+                        const next = [...keys][0];
+                        if (next === "review" || next === "export") setOrderFocus(next);
+                      }}
+                      className="shrink-0 gap-0.5 rounded-full"
+                      aria-label="Order panel"
+                    >
+                      <ToggleButton id="review" className="min-h-9 rounded-full px-2.5 text-[11px] font-medium">Review</ToggleButton>
+                      <ToggleButton id="export" className="min-h-9 rounded-full px-2.5 text-[11px] font-medium">Export</ToggleButton>
+                    </ToggleButtonGroup>
+                  ) : null}
                 </div>
-                <p className="m-0 mt-1.5 text-[12px] leading-relaxed text-muted">{stepDef.hint}</p>
+
+                <p className="m-0 mt-1.5 text-[12px] leading-relaxed text-muted md:mt-0.5 md:line-clamp-2 md:text-[11px] md:leading-snug">
+                  {stepDef.hint}
+                </p>
               </div>
 
-              <div className="px-4 py-4">
+              <div
+                ref={panelRef}
+                className="px-4 py-4 md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:px-3 md:py-3 md:[scrollbar-width:thin]"
+              >
                 <StepDetail step={step} orderFocus={orderFocus} />
               </div>
 
-              <div className="border-t border-border/70 bg-[#fafaf9] px-4 py-3">
+              <div className="border-t border-border/70 bg-[#fafaf9] px-4 py-3 md:shrink-0 md:bg-white md:px-3 md:py-2.5">
                 {stepDef.nextLabel ? (
-                  <div className="grid grid-cols-[auto_1fr] gap-2">
+                  <div className="grid grid-cols-[auto_1fr] gap-2 md:flex">
                     <Button
                       variant="outline"
                       size="sm"
                       isDisabled={stepIndex === 0}
                       onPress={goBack}
-                      className="min-h-11 px-3"
+                      className="min-h-11 px-3 md:min-w-11"
                       aria-label="Previous step"
                     >
                       <ChevronLeft className="size-4" />
@@ -251,7 +225,7 @@ export function DesignerPage() {
                       size="sm"
                       onPress={goNext}
                       isDisabled={step === "concepts" && !store.selectedConceptId}
-                      className="min-h-11 min-w-0 font-semibold"
+                      className="min-h-11 min-w-0 font-semibold md:flex-1"
                     >
                       <span className="truncate">Continue to {stepDef.nextLabel}</span>
                       <ChevronRight className="size-4 shrink-0" />
@@ -266,80 +240,31 @@ export function DesignerPage() {
             </Card.Content>
           </Card>
         </div>
-      </div>
+      </Surface>
 
-      {/* Desktop: keep the proven two-panel layout. */}
-      <div className="hidden h-dvh w-full overflow-hidden bg-white md:flex">
-        <Surface
-          variant="default"
-          className="relative z-30 flex h-full w-1/4 min-w-[340px] max-w-[460px] shrink-0 overflow-hidden rounded-none border-0 border-r border-separator bg-white px-3 pb-[max(12px,env(safe-area-inset-bottom,0px))] pt-[max(12px,env(safe-area-inset-top,0px))] shadow-[8px_0_24px_rgba(15,23,42,0.03)]"
+      {/* Preview is simply above controls on mobile and right of the sidebar on desktop. */}
+      <section className="order-2 h-[clamp(230px,38svh,340px)] shrink-0 bg-[#f4f4f2] p-3 md:order-none md:h-full md:min-h-0 md:flex-1 md:p-0">
+        <GarmentCanvas />
+
+        <div
+          className="absolute z-30 hidden md:block"
+          style={{
+            top: "max(10px, env(safe-area-inset-top, 0px))",
+            right: "max(10px, env(safe-area-inset-right, 0px))",
+          }}
         >
-          <div className="flex h-full w-full min-h-0 flex-col">
-            <StepTabs
-              step={step}
-              stepIndex={stepIndex}
-              selectedConceptId={store.selectedConceptId}
-              onStep={goToStep}
-            />
-
-            <Card variant="secondary" className="mt-2 min-h-0 flex-1 overflow-hidden rounded-2xl border-0 bg-white shadow-none ring-1 ring-border/55">
-              <Card.Content className="flex h-full min-h-0 flex-col p-0">
-                <div className="flex shrink-0 items-start justify-between gap-2 border-b border-separator/70 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <h2 className="m-0 text-[1.05rem] font-semibold tracking-tight">{stepDef.header}</h2>
-                    <p className="m-0 mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted">{stepDef.hint}</p>
-                  </div>
-                  {orderToggle}
-                </div>
-
-                <div ref={desktopPanelRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
-                  <StepDetail step={step} orderFocus={orderFocus} />
-                </div>
-
-                <div className="shrink-0 border-t border-separator/70 bg-white px-3 py-2.5">
-                  {stepDef.nextLabel ? (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" isDisabled={stepIndex === 0} onPress={goBack} className="min-h-11 min-w-11 px-3">
-                        <ChevronLeft className="size-4" /> Back
-                      </Button>
-                      <Button size="sm" onPress={goNext} isDisabled={step === "concepts" && !store.selectedConceptId} className="min-h-11 min-w-0 flex-1 font-semibold">
-                        <span className="truncate">Continue to {stepDef.nextLabel}</span>
-                        <ChevronRight className="size-4 shrink-0" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" fullWidth onPress={goBack} className="min-h-11">
-                      <ChevronLeft className="size-4" /> Back to Roster
-                    </Button>
-                  )}
-                </div>
-              </Card.Content>
-            </Card>
-          </div>
-        </Surface>
-
-        <div className="relative min-h-0 flex-1 bg-[#f4f4f2]">
-          <GarmentCanvas />
-          <div
-            className="absolute z-30"
-            style={{
-              top: "max(10px, env(safe-area-inset-top, 0px))",
-              right: "max(10px, env(safe-area-inset-right, 0px))",
-            }}
+          <Button
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            aria-label="Reset design"
+            className="size-10 rounded-full bg-white/95 text-muted shadow-sm ring-1 ring-border/50 backdrop-blur-sm"
+            onPress={() => setResetOpen(true)}
           >
-            <Button
-              isIconOnly
-              size="sm"
-              variant="ghost"
-              aria-label="Reset design"
-              className="size-10 rounded-full bg-white/95 text-muted shadow-sm ring-1 ring-border/50 backdrop-blur-sm"
-              onPress={() => setResetOpen(true)}
-            >
-              <RotateCcw className="size-3.5" strokeWidth={1.75} />
-            </Button>
-          </div>
+            <RotateCcw className="size-3.5" strokeWidth={1.75} />
+          </Button>
         </div>
-      </div>
+      </section>
 
       <Modal>
         <Modal.Backdrop isOpen={resetOpen} onOpenChange={setResetOpen}>
