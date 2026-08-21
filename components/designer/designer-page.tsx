@@ -9,6 +9,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@heroui/react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { GarmentCanvas } from "./garment-canvas";
 import { ProductPanel } from "./product-panel";
 import { PromptPanel } from "./prompt-panel";
@@ -25,6 +26,8 @@ import type { DesignerStep } from "@/lib/designer/types";
 import { cn } from "@/lib/utils";
 
 type OrderFocus = "review" | "export";
+
+const ease = [0.22, 1, 0.36, 1] as const;
 
 function StepDetail({ step, orderFocus }: { step: DesignerStepId; orderFocus: OrderFocus }) {
   if (step === "product") return <ProductPanel />;
@@ -44,6 +47,7 @@ export function DesignerPage() {
   const [resetOpen, setResetOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   const store = useDesignerStore();
   const stepIndex = store.activeStep;
@@ -60,12 +64,12 @@ export function DesignerPage() {
   function goToStep(next: DesignerStepId) {
     const resolved = canOpenStep(next) ? next : "concepts";
     store.setStep(STEP_INDEX[resolved] as DesignerStep);
-    panelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    panelRef.current?.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     if (resolved === "order") setOrderFocus("review");
 
     if (window.matchMedia("(max-width: 767px)").matches) {
       requestAnimationFrame(() => {
-        controlsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        controlsRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
       });
     }
   }
@@ -90,9 +94,12 @@ export function DesignerPage() {
   }
 
   return (
-    <main
-      data-designer-shell="v15-minimal-no-mobile-header"
+    <motion.main
+      data-designer-shell="v16-framer-motion"
       className="flex min-h-dvh w-full flex-col bg-[#f7f7f5] text-foreground md:h-dvh md:min-h-0 md:flex-row md:overflow-hidden md:bg-white"
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: reduceMotion ? 0 : 0.2 }}
     >
       <Surface
         ref={controlsRef}
@@ -114,22 +121,31 @@ export function DesignerPage() {
                 !store.selectedConceptId;
 
               return (
-                <button
+                <motion.button
                   key={item.id}
                   type="button"
                   aria-current={active ? "page" : undefined}
                   aria-disabled={locked}
                   disabled={locked}
                   onClick={() => goToStep(item.id)}
+                  whileTap={reduceMotion || locked ? undefined : { scale: 0.97 }}
+                  transition={{ duration: 0.14, ease }}
                   className={cn(
-                    "min-h-11 shrink-0 border-b-2 px-3 text-[11px] font-medium transition-colors focus-visible:outline-none disabled:opacity-30 md:min-w-0 md:flex-1 md:px-1 md:text-[10px]",
+                    "relative min-h-11 shrink-0 border-b-2 px-3 text-[11px] font-medium transition-colors focus-visible:outline-none disabled:opacity-30 md:min-w-0 md:flex-1 md:px-1 md:text-[10px]",
                     active
-                      ? "border-foreground text-foreground"
+                      ? "border-transparent text-foreground"
                       : "border-transparent text-muted hover:text-foreground",
                   )}
                 >
                   {item.label}
-                </button>
+                  {active ? (
+                    <motion.span
+                      layoutId="designer-active-tab"
+                      className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground"
+                      transition={{ duration: reduceMotion ? 0 : 0.22, ease }}
+                    />
+                  ) : null}
+                </motion.button>
               );
             })}
           </nav>
@@ -137,7 +153,18 @@ export function DesignerPage() {
           <Card className="m-3 overflow-hidden rounded-2xl border border-border/70 bg-white shadow-none md:m-0 md:mt-2 md:min-h-0 md:flex-1 md:border-0 md:ring-1 md:ring-border/55">
             <Card.Content className="flex p-0 md:h-full md:min-h-0 md:flex-col">
               <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3 md:px-3">
-                <h2 className="m-0 text-[17px] font-semibold tracking-tight md:text-[1rem]">{stepDef.header}</h2>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.h2
+                    key={stepDef.header}
+                    className="m-0 text-[17px] font-semibold tracking-tight md:text-[1rem]"
+                    initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={reduceMotion ? undefined : { opacity: 0, y: -2 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.16, ease }}
+                  >
+                    {stepDef.header}
+                  </motion.h2>
+                </AnimatePresence>
 
                 {step === "order" ? (
                   <ToggleButtonGroup
@@ -163,10 +190,24 @@ export function DesignerPage() {
                 ref={panelRef}
                 className="px-4 py-4 md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:px-3 md:py-3 md:[scrollbar-width:thin]"
               >
-                <StepDetail step={step} orderFocus={orderFocus} />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={`${step}-${step === "order" ? orderFocus : "default"}`}
+                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={reduceMotion ? undefined : { opacity: 0, y: -5 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.2, ease }}
+                  >
+                    <StepDetail step={step} orderFocus={orderFocus} />
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
-              <div className="border-t border-border/70 bg-white px-4 py-3 md:shrink-0 md:px-3 md:py-2.5">
+              <motion.div
+                className="border-t border-border/70 bg-white px-4 py-3 md:shrink-0 md:px-3 md:py-2.5"
+                layout
+                transition={{ duration: reduceMotion ? 0 : 0.18, ease }}
+              >
                 {stepDef.nextLabel ? (
                   <div className="grid grid-cols-[auto_1fr] gap-2">
                     <Button
@@ -192,22 +233,29 @@ export function DesignerPage() {
                     Back
                   </Button>
                 )}
-              </div>
+              </motion.div>
             </Card.Content>
           </Card>
         </div>
       </Surface>
 
-      <section className="relative order-2 h-[clamp(230px,38svh,340px)] shrink-0 bg-[#f4f4f2] p-3 md:order-none md:h-full md:min-h-0 md:flex-1 md:p-0">
+      <motion.section
+        className="relative order-2 h-[clamp(230px,38svh,340px)] shrink-0 bg-[#f4f4f2] p-3 md:order-none md:h-full md:min-h-0 md:flex-1 md:p-0"
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.995 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: reduceMotion ? 0 : 0.26, ease }}
+      >
         <GarmentCanvas />
-        <button
+        <motion.button
           type="button"
           onClick={() => setResetOpen(true)}
+          whileHover={reduceMotion ? undefined : { y: -1 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.97 }}
           className="absolute right-4 top-4 hidden min-h-9 rounded-lg bg-white/90 px-3 text-[11px] font-medium text-muted ring-1 ring-border/60 md:block"
         >
           Reset
-        </button>
-      </section>
+        </motion.button>
+      </motion.section>
 
       <Modal>
         <Modal.Backdrop isOpen={resetOpen} onOpenChange={setResetOpen}>
@@ -225,6 +273,6 @@ export function DesignerPage() {
           </Modal.Container>
         </Modal.Backdrop>
       </Modal>
-    </main>
+    </motion.main>
   );
 }
