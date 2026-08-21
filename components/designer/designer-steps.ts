@@ -1,13 +1,3 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  Images,
-  Package,
-  ShoppingBag,
-  Sparkles,
-  Users,
-  WandSparkles,
-} from "lucide-react";
-
 export type DesignerStepId =
   | "product"
   | "design"
@@ -31,70 +21,15 @@ export type DesignerStepDef = {
   nextLabel: string | null;
   hint: string;
   expandsDetail: boolean;
-  icon: LucideIcon;
 };
 
 export const DESIGNER_STEPS: DesignerStepDef[] = [
-  {
-    id: "product",
-    label: "Product",
-    header: "Choose product",
-    chooseTitle: "Select your uniform",
-    nextLabel: "AI Brief",
-    hint: "Choose the garment type AI should design.",
-    expandsDetail: true,
-    icon: Package,
-  },
-  {
-    id: "design",
-    label: "AI Brief",
-    header: "Describe the uniform",
-    chooseTitle: "Generate direct AI uniforms",
-    nextLabel: "Concepts",
-    hint: "Describe the finished uniform. AI renders four complete visual directions directly.",
-    expandsDetail: true,
-    icon: Sparkles,
-  },
-  {
-    id: "concepts",
-    label: "Concepts",
-    header: "Choose an AI uniform",
-    chooseTitle: "Pick one of four direct renders",
-    nextLabel: "Refine",
-    hint: "Compare four finished AI uniform renders and choose the one to continue with.",
-    expandsDetail: true,
-    icon: Images,
-  },
-  {
-    id: "refine",
-    label: "Refine AI",
-    header: "Refine with AI",
-    chooseTitle: "Edit the selected uniform with AI",
-    nextLabel: "Roster",
-    hint: "Tell AI what to change or recolor while preserving the selected uniform identity.",
-    expandsDetail: true,
-    icon: WandSparkles,
-  },
-  {
-    id: "roster",
-    label: "Roster",
-    header: "Roster",
-    chooseTitle: "Build your roster",
-    nextLabel: "Order",
-    hint: "Add player names, numbers, sizes, and quantities to the selected AI design.",
-    expandsDetail: true,
-    icon: Users,
-  },
-  {
-    id: "order",
-    label: "Order",
-    header: "Order",
-    chooseTitle: "Review your order",
-    nextLabel: null,
-    hint: "Confirm the AI design, roster, exports, and Shopify handoff.",
-    expandsDetail: true,
-    icon: ShoppingBag,
-  },
+  { id: "product", label: "Product", header: "Product", chooseTitle: "Product", nextLabel: "Brief", hint: "Choose a uniform.", expandsDetail: true },
+  { id: "design", label: "Brief", header: "Brief", chooseTitle: "Brief", nextLabel: "Choose", hint: "Describe the design.", expandsDetail: true },
+  { id: "concepts", label: "Choose", header: "Choose", chooseTitle: "Choose", nextLabel: "Refine", hint: "Pick one concept.", expandsDetail: true },
+  { id: "refine", label: "Refine", header: "Refine", chooseTitle: "Refine", nextLabel: "Roster", hint: "Make changes.", expandsDetail: true },
+  { id: "roster", label: "Roster", header: "Roster", chooseTitle: "Roster", nextLabel: "Order", hint: "Add players.", expandsDetail: true },
+  { id: "order", label: "Order", header: "Order", chooseTitle: "Order", nextLabel: null, hint: "Review and order.", expandsDetail: true },
 ];
 
 export const STEP_INDEX: Record<DesignerStepId, number> = {
