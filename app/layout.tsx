@@ -9,6 +9,7 @@ import { ErrorLoggerInit } from "@/app/error-logger-init";
 import { ServiceWorkerInit } from "@/components/service-worker-init";
 import { ConnectionIndicator } from "@/components/connection-indicator";
 import { LegacyGlobalUi } from "@/components/legacy-global-ui";
+import { AppMotion } from "@/components/app-motion";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -61,7 +62,9 @@ export default function RootLayout({
         >
           <ErrorBoundary>
             <AuthProvider>
-              <QueryProvider>{children}</QueryProvider>
+              <QueryProvider>
+                <AppMotion>{children}</AppMotion>
+              </QueryProvider>
               <LegacyGlobalUi />
             </AuthProvider>
           </ErrorBoundary>
