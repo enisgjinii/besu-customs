@@ -44,7 +44,7 @@ export function DesignerPage() {
   const [orderFocus, setOrderFocus] = useState<OrderFocus>("review");
   const [resetOpen, setResetOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const controlsRef = useRef<HTMLElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
 
   const store = useDesignerStore();
   const stepIndex = store.activeStep;
