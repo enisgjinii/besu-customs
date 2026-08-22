@@ -66,8 +66,49 @@ export function GarmentCanvas() {
             />
           </svg>
         ) : (
-          <div className="absolute inset-0 flex flex-col bg-white">
-            <div className="relative min-h-0 flex-1">
+          <div className="absolute inset-0 flex bg-white">
+            <aside className="relative z-10 flex w-[92px] shrink-0 flex-col items-stretch gap-3 self-center py-4 pl-3 md:w-[108px] md:gap-3.5 md:pl-4">
+              {PLACEHOLDERS.map((item, index) => {
+                const active = index === activePlaceholder;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActivePlaceholder(index)}
+                    aria-pressed={active}
+                    className="flex w-full flex-col items-center gap-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
+                  >
+                    <span
+                      className={cn(
+                        "relative block h-14 w-full overflow-hidden rounded-lg bg-white ring-1 transition-shadow md:h-16",
+                        active ? "ring-2 ring-[#181816]" : "ring-black/10 hover:ring-black/25",
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.src}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        draggable={false}
+                      />
+                    </span>
+                    <span
+                      className={cn(
+                        "w-full truncate text-center text-[10px] font-semibold leading-tight tracking-[-0.01em] md:text-[11px]",
+                        active ? "text-foreground" : "text-muted",
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </aside>
+
+            <div className="relative min-h-0 min-w-0 flex-1">
+              <p className="absolute right-3 top-3 z-10 max-w-[200px] text-right text-[10px] font-medium leading-snug text-muted md:right-5 md:top-4 md:max-w-[240px] md:text-[11px]">
+                Type below to generate your own board
+              </p>
               <AnimatePresence mode="wait" initial={false}>
                 <motion.img
                   key={current.id}
@@ -77,42 +118,11 @@ export function GarmentCanvas() {
                   animate={{ opacity: 1 }}
                   exit={reduceMotion ? undefined : { opacity: 0 }}
                   transition={{ duration: reduceMotion ? 0 : 0.25, ease }}
-                  className="absolute inset-0 h-full w-full object-contain object-center p-3 pb-20 md:p-5 md:pb-24"
+                  className="absolute inset-0 h-full w-full object-contain object-center p-3 pb-24 md:p-5 md:pb-28"
                   draggable={false}
                 />
               </AnimatePresence>
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent md:h-32" />
-            </div>
-
-            <div className="absolute inset-x-0 bottom-[76px] z-10 px-3 md:bottom-[84px] md:px-5">
-              <div className="mx-auto flex max-w-[640px] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {PLACEHOLDERS.map((item, index) => {
-                  const active = index === activePlaceholder;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setActivePlaceholder(index)}
-                      aria-pressed={active}
-                      className={cn(
-                        "relative h-12 w-[72px] shrink-0 overflow-hidden rounded-lg bg-white ring-1 transition-shadow md:h-14 md:w-[88px]",
-                        active ? "ring-2 ring-[#181816]" : "ring-black/10 hover:ring-black/25",
-                      )}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.src}
-                        alt={item.label}
-                        className="h-full w-full object-cover"
-                        draggable={false}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mx-auto mt-2 max-w-[640px] text-[11px] font-medium text-muted md:text-[12px]">
-                Example · {current.label}. Type below to generate your own board.
-              </p>
             </div>
           </div>
         )}

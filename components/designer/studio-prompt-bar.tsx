@@ -6,6 +6,7 @@ import { ImagePlus, Plus, SendHorizontal, Sparkles, X } from "lucide-react";
 import { Spinner } from "@heroui/react";
 import { useDesignerGeneration } from "@/hooks/use-designer-generation";
 import { useDesignerStore } from "@/lib/designer/store";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const SUGGESTIONS = [
@@ -13,6 +14,27 @@ const SUGGESTIONS = [
   "Fireballs basketball kit, orange and black flames, NBA look, number 24",
   "Make it sleeveless with a cleaner NBA cut",
 ];
+
+const liquidGlass =
+  "relative overflow-hidden border-0 bg-white/35 shadow-[0_8px_32px_rgba(24,24,22,0.1),inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/25";
+
+const liquidGlassChip =
+  "relative overflow-hidden border-0 bg-white/35 shadow-[0_4px_16px_rgba(24,24,22,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/25";
+
+function GlassSheen() {
+  return (
+    <>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -left-1/4 top-0 h-1/2 w-1/2 rounded-full bg-white/40 blur-2xl"
+      />
+    </>
+  );
+}
 
 export function StudioPromptBar() {
   const s = useDesignerStore();
@@ -47,17 +69,35 @@ export function StudioPromptBar() {
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom,0px))] md:px-6 md:pb-5">
       <div className="pointer-events-auto w-full max-w-[720px]">
         {!hasArtwork && !busy ? (
-          <div className="mb-2 hidden gap-1.5 overflow-x-auto [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">
-            {SUGGESTIONS.slice(0, 2).map((suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                onClick={() => void send(suggestion)}
-                className="shrink-0 rounded-full bg-white/80 px-3 py-1.5 text-[11px] font-medium text-muted ring-1 ring-black/[0.06] backdrop-blur-md hover:text-foreground"
-              >
-                {suggestion.length > 52 ? `${suggestion.slice(0, 52)}…` : suggestion}
-              </button>
-            ))}
+          <div className="mb-2.5 hidden gap-1.5 overflow-x-auto [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">
+            {SUGGESTIONS.slice(0, 2).map((suggestion) => {
+              const truncated = suggestion.length > 52 ? `${suggestion.slice(0, 52)}…` : suggestion;
+              return (
+                <Tooltip key={suggestion} delayDuration={120}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => void send(suggestion)}
+                      aria-label={suggestion}
+                      className={cn(
+                        liquidGlassChip,
+                        "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-foreground/70 hover:text-foreground",
+                      )}
+                    >
+                      <GlassSheen />
+                      <span className="relative z-10">{truncated}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="top"
+                    sideOffset={8}
+                    className="max-w-[min(360px,70vw)] rounded-xl border-0 bg-[#181816]/92 px-3.5 py-2.5 text-[12px] font-medium leading-snug text-white shadow-[0_12px_32px_rgba(24,24,22,0.22)] backdrop-blur-md"
+                  >
+                    {suggestion}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
         ) : null}
 
@@ -67,8 +107,9 @@ export function StudioPromptBar() {
               initial={reduceMotion ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={reduceMotion ? undefined : { opacity: 0, y: 6 }}
-              className="mb-2 flex items-center gap-2 rounded-2xl bg-white/90 p-2 ring-1 ring-black/[0.06] backdrop-blur-md"
+              className={cn(liquidGlass, "mb-2.5 flex items-center gap-2 rounded-[20px] p-2")}
             >
+              <GlassSheen />
               <input
                 ref={fileRef}
                 type="file"
@@ -84,7 +125,7 @@ export function StudioPromptBar() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-[12px] font-medium hover:bg-black/[0.04]"
+                className="relative z-10 flex min-h-10 items-center gap-2 rounded-xl px-3 text-[12px] font-medium hover:bg-white/35"
               >
                 <ImagePlus className="size-4" />
                 {s.logoUrl ? "Replace logo" : "Add logo"}
@@ -93,7 +134,7 @@ export function StudioPromptBar() {
                 <button
                   type="button"
                   onClick={() => s.setLogo(undefined)}
-                  className="min-h-10 rounded-xl px-3 text-[12px] font-medium text-muted hover:text-foreground"
+                  className="relative z-10 min-h-10 rounded-xl px-3 text-[12px] font-medium text-muted hover:text-foreground"
                 >
                   Remove
                 </button>
@@ -102,7 +143,7 @@ export function StudioPromptBar() {
                 type="button"
                 aria-label="Close attachments"
                 onClick={() => setAttachOpen(false)}
-                className="ml-auto flex size-8 items-center justify-center rounded-full text-muted hover:bg-black/[0.05]"
+                className="relative z-10 ml-auto flex size-8 items-center justify-center rounded-full text-muted hover:bg-white/40"
               >
                 <X className="size-4" />
               </button>
@@ -115,13 +156,14 @@ export function StudioPromptBar() {
             event.preventDefault();
             void send();
           }}
-          className="flex items-end gap-1.5 rounded-[22px] bg-white/92 p-1.5 shadow-[0_12px_40px_rgba(24,24,22,0.12)] ring-1 ring-black/[0.08] backdrop-blur-xl"
+          className={cn(liquidGlass, "flex items-end gap-1.5 rounded-[26px] p-1.5")}
         >
+          <GlassSheen />
           <button
             type="button"
             aria-label="Add logo"
             onClick={() => setAttachOpen((open) => !open)}
-            className="mb-0.5 flex size-10 shrink-0 items-center justify-center rounded-full text-muted hover:bg-black/[0.05] hover:text-foreground"
+            className="relative z-10 mb-0.5 flex size-10 shrink-0 items-center justify-center rounded-full text-foreground/55 hover:bg-white/40 hover:text-foreground"
           >
             <Plus className="size-5" />
           </button>
@@ -131,6 +173,7 @@ export function StudioPromptBar() {
           </label>
           <textarea
             id="studio-prompt"
+            data-studio-prompt
             ref={areaRef}
             rows={1}
             value={draft}
@@ -153,7 +196,7 @@ export function StudioPromptBar() {
                 void send();
               }
             }}
-            className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2.5 text-[14px] leading-5 text-foreground outline-none placeholder:text-muted disabled:opacity-70"
+            className="relative z-10 max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent p-0 py-2.5 text-[14px] leading-5 text-foreground shadow-none outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none placeholder:text-foreground/40 disabled:opacity-70"
           />
 
           <button
@@ -161,8 +204,10 @@ export function StudioPromptBar() {
             disabled={!canSend}
             aria-label={hasArtwork ? "Update design" : "Generate design"}
             className={cn(
-              "mb-0.5 flex size-10 shrink-0 items-center justify-center rounded-full transition-colors",
-              canSend ? "bg-[#181816] text-white" : "bg-black/[0.06] text-muted",
+              "relative z-10 mb-0.5 flex size-10 shrink-0 items-center justify-center rounded-full transition-colors",
+              canSend
+                ? "bg-[#181816]/90 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-md"
+                : "bg-white/40 text-foreground/35",
             )}
           >
             {busy ? <Spinner size="sm" color="current" /> : hasArtwork ? <Sparkles className="size-4" /> : <SendHorizontal className="size-4" />}
