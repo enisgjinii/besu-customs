@@ -1,0 +1,73 @@
+import type { DesignerColors } from "./types";
+
+const NAMED_COLORS: Record<string, string> = {
+  black: "#0D0D0D",
+  white: "#FFFFFF",
+  gray: "#6B6B6B",
+  grey: "#6B6B6B",
+  silver: "#C0C0C0",
+  purple: "#6B2D8B",
+  violet: "#5A189A",
+  orange: "#FF6600",
+  red: "#C8102E",
+  blue: "#0033A0",
+  navy: "#0A1628",
+  gold: "#D4AF37",
+  yellow: "#F5C518",
+  green: "#006341",
+  teal: "#0D9488",
+  pink: "#E11D8F",
+  maroon: "#6B1E2A",
+};
+
+const EDIT_PREFIX =
+  /^(make|add|remove|change|update|edit|give|turn|recolor|replace|move|darken|lighten|keep|use only|show only|without|swap|tweak|fix)\b/i;
+
+const FRESH_REQUEST =
+  /\b(show me|create|generate|design me|new (uniform|design|kit)|three different|3 different|four different|4 different)\b/i;
+
+export function extractTeamName(prompt: string, existing?: string): string {
+  const current = existing?.trim();
+  if (current) return current.slice(0, 60).toUpperCase();
+
+  const patterns = [
+    /team called\s+["']?([A-Za-z0-9][A-Za-z0-9 .'-]{0,40})/i,
+    /team name[:\s]+["']?([A-Za-z0-9][A-Za-z0-9 .'-]{0,40})/i,
+    /\bfor the\s+([A-Z][A-Za-z0-9]{1,24})\b/,
+    /\bteam\s+["']([A-Za-z0-9][A-Za-z0-9 .'-]{0,40})["']/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern);
+    const name = match?.[1]?.replace(/[.,!?:;]+$/, "").trim();
+    if (name && name.length >= 2) return name.slice(0, 60).toUpperCase();
+  }
+
+  return "CUSTOM";
+}
+
+export function extractColors(prompt: string): DesignerColors | undefined {
+  const found: string[] = [];
+  const lower = prompt.toLowerCase();
+  for (const [name, hex] of Object.entries(NAMED_COLORS)) {
+    if (new RegExp(`\\b${name}\\b`).test(lower) && !found.includes(hex)) found.push(hex);
+    if (found.length >= 3) break;
+  }
+  if (found.length < 2) return undefined;
+  return {
+    primary: found[0],
+    secondary: found[1],
+    accent: found[2] || "#FFFFFF",
+  };
+}
+
+export function isFreshGenerateRequest(prompt: string, hasArtwork: boolean): boolean {
+  if (!hasArtwork) return true;
+  const trimmed = prompt.trim();
+  if (EDIT_PREFIX.test(trimmed)) return false;
+  return FRESH_REQUEST.test(trimmed);
+}
+
+export function wantsConceptBoard(prompt: string): boolean {
+  return /\b(three|3|four|4|several|multiple|different uniforms|colorways|variations|designs)\b/i.test(prompt);
+}

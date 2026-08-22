@@ -50,6 +50,7 @@ function createInitialState(): DesignerState {
     roster: [],
     previewPlayerId: undefined,
     customer: { name: "", email: "", phone: "", notes: "" },
+    layout: "board",
   };
 }
 
@@ -178,7 +179,7 @@ export const useDesignerStore = create<DesignerState & Actions>()(
     {
       // Deliberately new key: direct AI renders are incompatible with legacy flat-2D persisted artwork.
       name: "besu-direct-ai-designer-v1",
-      version: 1,
+      version: 2,
       migrate: (persisted) => {
         const source = (persisted || {}) as Partial<DesignerState>;
         const fresh = createInitialState();
@@ -194,6 +195,7 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           customer: { ...fresh.customer, ...(source.customer || {}) },
           colors: { ...fresh.colors, ...(source.colors || {}) },
           font: DESIGNER_FONT_FAMILY,
+          layout: source.layout === "kit" || source.layout === "board" ? source.layout : "board",
         } as DesignerState;
       },
       partialize: (s) =>

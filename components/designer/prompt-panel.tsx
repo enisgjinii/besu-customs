@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ColorControl } from "./color-control";
-import { generateConceptSet, isGenerationInFlight } from "@/lib/designer/generation-client";
+import { useDesignerGeneration } from "@/hooks/use-designer-generation";
+import { isGenerationInFlight } from "@/lib/designer/generation-client";
 import { useDesignerStore } from "@/lib/designer/store";
 import type { DesignStyle } from "@/lib/designer/types";
 import { cn } from "@/lib/utils";
@@ -16,106 +17,19 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useRef, useState } from "react";
 
 const STYLES = ["modern", "minimal", "geometric", "retro", "aggressive"] as const;
-const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const ease = [0.22, 1, 0.36, 1] as const;
 
 export function PromptPanel() {
   const s = useDesignerStore();
-  const [busy, setBusy] = useState(false);
-  const [stage, setStage] = useState("");
-  const [error, setError] = useState("");
-  const [mockMode, setMockMode] = useState(false);
+  const { busy, stage, error, mockMode, generateBoard, uploadLogo } = useDesignerGeneration();
   const [logoBusy, setLogoBusy] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
   const reduceMotion = useReducedMotion();
-
-  useEffect(() => () => abortRef.current?.abort(), []);
-
-  async function readLogoLocally(file: File) {
-    const reader = new FileReader();
-    return new Promise<string>((resolve, reject) => {
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("Could not read logo file."));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  async function uploadLogo(file: File) {
-    setError("");
-
-    if (!LOGO_TYPES.has(file.type)) {
-      const message = "Use PNG, JPG or WebP.";
-      setError(message);
-      toast.error(message);
-      return;
-    }
-
-    setLogoBusy(true);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const response = await fetch("/api/designer/logo", { method: "POST", body: form });
-      const data = (await response.json().catch(() => ({}))) as { assetUrl?: string; error?: string };
-      if (!response.ok || !data.assetUrl) throw new Error(data.error || "Logo upload failed.");
-      s.setLogo(data.assetUrl);
-    } catch (uploadError) {
-      if (file.size <= 2 * 1024 * 1024) {
-        try {
-          s.setLogo(await readLogoLocally(file));
-          toast.message("Logo saved.");
-        } catch (readError) {
-          const message = readError instanceof Error ? readError.message : "Logo upload failed.";
-          setError(message);
-          toast.error(message);
-        }
-      } else {
-        const message = uploadError instanceof Error ? uploadError.message : "Logo upload failed.";
-        setError(message);
-        toast.error(message);
-      }
-    } finally {
-      setLogoBusy(false);
-    }
-  }
-
-  async function generate() {
-    if (busy || isGenerationInFlight()) return;
-    setError("");
-    setBusy(true);
-    setStage("Generating…");
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
-
-    try {
-      const result = await generateConceptSet({
-        state: useDesignerStore.getState(),
-        signal: abortRef.current.signal,
-        onProgress: ({ conceptIndex, conceptCount }) => {
-          if (conceptIndex && conceptCount) setStage(`${conceptIndex}/${conceptCount}`);
-        },
-      });
-      setMockMode(result.mock);
-      s.setConcepts(result.concepts);
-      s.setStep(2);
-    } catch (generationError) {
-      if (generationError instanceof Error && generationError.name === "AbortError") return;
-      const message = generationError instanceof Error ? generationError.message : "Generation failed.";
-      setError(message);
-      toast.error(message);
-    } finally {
-      abortRef.current = null;
-      setBusy(false);
-      setStage("");
-    }
-  }
-
-  const canGenerate = !busy && Boolean(s.teamName.trim()) && s.prompt.trim().length >= 8;
+  const canGenerate = !busy && !isGenerationInFlight() && Boolean(s.teamName.trim()) && s.prompt.trim().length >= 8;
 
   return (
     <section className="flex w-full min-w-0 flex-col gap-3">
@@ -208,7 +122,9 @@ export function PromptPanel() {
                   className="sr-only"
                   onChange={(event) => {
                     const file = event.target.files?.[0];
-                    if (file) void uploadLogo(file);
+                    if (!file) return;
+                    setLogoBusy(true);
+                    void uploadLogo(file).finally(() => setLogoBusy(false));
                     event.target.value = "";
                   }}
                 />
@@ -233,7 +149,14 @@ export function PromptPanel() {
 
       {error ? <p role="alert" className="m-0 text-[11px] font-medium text-danger">{error}</p> : null}
 
-      <Button fullWidth size="sm" isPending={busy} isDisabled={!canGenerate} onPress={generate} className="min-h-12 rounded-xl font-semibold">
+      <Button
+        fullWidth
+        size="sm"
+        isPending={busy}
+        isDisabled={!canGenerate}
+        onPress={() => void generateBoard(s.prompt, "board")}
+        className="min-h-12 rounded-xl font-semibold"
+      >
         {({ isPending }) => (
           <>
             {isPending ? <Spinner size="sm" color="current" /> : null}

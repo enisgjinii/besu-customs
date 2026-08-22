@@ -14,7 +14,7 @@ export function ConceptPanel() {
   if (!s.concepts.length) {
     return (
       <section className="py-6 text-center">
-        <p className="m-0 text-[12px] font-medium text-muted">Nothing yet</p>
+        <p className="m-0 text-[12px] font-medium text-muted">Generate a design first</p>
         <Button size="sm" variant="ghost" className="mt-2 min-h-9" onPress={() => s.setStep(1)}>
           Back
         </Button>

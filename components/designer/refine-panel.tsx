@@ -2,65 +2,25 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { ColorControl } from "./color-control";
-import { LOADING_STAGES } from "./designer-steps";
-import { generateUniformKit, isGenerationInFlight } from "@/lib/designer/generation-client";
+import { useDesignerGeneration } from "@/hooks/use-designer-generation";
 import { COLOR_VARIATION_PRESETS } from "@/lib/designer/openai-service";
 import { useDesignerStore } from "@/lib/designer/store";
-import type { DesignerColors } from "@/lib/designer/types";
 import { cn } from "@/lib/utils";
 import { Button, Spinner, TextArea, TextField, Label } from "@heroui/react";
-import { useState } from "react";
-import { toast } from "sonner";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
 export function RefinePanel() {
   const s = useDesignerStore();
-  const [busy, setBusy] = useState(false);
-  const [stage, setStage] = useState<(typeof LOADING_STAGES)[number] | "">("");
-  const [error, setError] = useState("");
+  const { busy, stage, error, refineCurrent } = useDesignerGeneration();
   const reduceMotion = useReducedMotion();
   const hasArtwork = Boolean(s.artwork.front || s.artwork.back);
-
-  async function runMode(mode: "refine" | "color_variation", colors?: DesignerColors) {
-    if (busy || isGenerationInFlight() || !hasArtwork) return;
-    setError("");
-    setBusy(true);
-    setStage(LOADING_STAGES[0]);
-    const previousArtwork = { ...s.artwork };
-    const previousColors = { ...s.colors };
-
-    try {
-      const nextColors = colors || s.colors;
-      if (colors) s.patch({ colors: nextColors, colorsEnabled: true });
-
-      const result = await generateUniformKit({
-        state: { ...useDesignerStore.getState(), colors: nextColors, colorsEnabled: true },
-        mode,
-        colors: nextColors,
-        correction: mode === "refine" ? s.correction : undefined,
-        views: ["front", "back"],
-        onProgress: ({ stage: next }) => setStage(next),
-      });
-
-      for (const version of result.versions) s.addVersion(version);
-      s.patch({ colors: result.colors, colorsEnabled: true });
-    } catch (generationError) {
-      s.patch({ artwork: previousArtwork, colors: previousColors });
-      const message = generationError instanceof Error ? generationError.message : "Update failed.";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setBusy(false);
-      setStage("");
-    }
-  }
 
   if (!hasArtwork) {
     return (
       <section className="py-6 text-center">
-        <p className="m-0 text-[12px] font-medium text-muted">Choose a concept</p>
-        <Button size="sm" variant="ghost" className="mt-2 min-h-9" onPress={() => s.setStep(2)}>Back</Button>
+        <p className="m-0 text-[12px] font-medium text-muted">Generate a design first</p>
+        <Button size="sm" variant="ghost" className="mt-2 min-h-9" onPress={() => s.setStep(1)}>Back</Button>
       </section>
     );
   }
@@ -75,7 +35,7 @@ export function RefinePanel() {
               key={preset.id}
               type="button"
               disabled={busy}
-              onClick={() => void runMode("color_variation", preset.colors)}
+              onClick={() => void refineCurrent("Apply this palette.", preset.colors)}
               whileTap={reduceMotion || busy ? undefined : { scale: 0.98 }}
               transition={{ duration: reduceMotion ? 0 : 0.15, ease }}
               className="flex min-h-9 shrink-0 items-center gap-2 rounded-full bg-black/[0.035] px-2.5 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:opacity-40"
@@ -103,7 +63,7 @@ export function RefinePanel() {
           className="mt-2 min-h-10 rounded-xl"
           isDisabled={busy}
           isPending={busy}
-          onPress={() => void runMode("color_variation", s.colors)}
+          onPress={() => void refineCurrent("Apply this palette.", s.colors)}
         >
           {busy ? <Spinner size="sm" /> : null}
           Apply
@@ -122,7 +82,7 @@ export function RefinePanel() {
           className="mt-2 min-h-11 rounded-xl font-semibold"
           isDisabled={busy || s.correction.trim().length < 4}
           isPending={busy}
-          onPress={() => void runMode("refine")}
+          onPress={() => void refineCurrent(s.correction)}
         >
           {busy ? <Spinner size="sm" color="current" /> : null}
           <span>{busy ? stage || "Updating…" : "Update"}</span>

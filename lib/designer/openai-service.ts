@@ -1,4 +1,4 @@
-import type { DesignerColors, GarmentType, GarmentView } from "./types";
+import type { ArtworkLayout, DesignerColors, GarmentType, GarmentView } from "./types";
 
 export type GenerationMode = "generate" | "refine" | "color_variation";
 
@@ -15,6 +15,7 @@ export interface GenerateDesignInput {
   previousAssetUrl?: string;
   inspiration?: string;
   hasLogo?: boolean;
+  layout?: ArtworkLayout;
 }
 
 const DIRECT_RENDER_RULE =
@@ -33,8 +34,21 @@ function paletteClause(colors?: DesignerColors) {
   return `Use this palette as the dominant color system: primary ${colors.primary}, secondary ${colors.secondary}, accent ${colors.accent}.`;
 }
 
-function kitClause(garmentType: GarmentType, sport?: string) {
+function kitClause(garmentType: GarmentType, sport?: string, layout?: ArtworkLayout) {
   const sportLabel = sport || "sports";
+  if (layout === "board") {
+    return [
+      "CONCEPT BOARD MODE: Create one landscape custom-sportswear presentation, like a professional jersey design pitch.",
+      `Show THREE distinct labeled designs side by side (Design 1, Design 2, Design 3).`,
+      garmentType === "shorts"
+        ? `Each column shows finished ${sportLabel} shorts as a product flat.`
+        : garmentType === "jersey"
+          ? `Each column shows a finished sleeveless ${sportLabel} jersey as a product flat, with a small back view if space allows.`
+          : `Each column is a complete coordinated ${sportLabel} uniform: sleeveless jersey plus matching shorts as product flats. Include a small back-of-jersey view in each column when space allows.`,
+      "Same team identity on every design, but clearly different graphic concepts, paneling, motifs, and color emphasis.",
+      "Label each column with a short design name that fits the brief. No person, mannequin, hanger, or stadium.",
+    ].join(" ");
+  }
   if (garmentType === "uniform") {
     return `Render a complete coordinated ${sportLabel} uniform: sleeveless jersey plus matching shorts. Show FRONT and BACK presentations in the same image, clearly separated, with the jersey and shorts visible in both presentations. The front and back must be unmistakably the same design system.`;
   }
@@ -44,11 +58,13 @@ function kitClause(garmentType: GarmentType, sport?: string) {
   return `Render a finished sleeveless ${sportLabel} jersey as a product concept, showing front and back views in the same image.`;
 }
 
-function typographyClause(teamName: string) {
+function typographyClause(teamName: string, layout?: ArtworkLayout) {
   return [
     `Team name: ${teamName}.`,
     `Render the exact team name \"${teamName}\" prominently on the FRONT jersey chest when a jersey is present.`,
-    "Keep the BACK visually clean with a clear player-name and number zone. Do not invent player names or numbers during initial concept generation.",
+    layout === "board"
+      ? "Use a single clear player number (23 unless the brief specifies another number) on each jersey. Do not invent player names."
+      : "Keep the BACK visually clean with a clear player-name and number zone. Do not invent player names or numbers during initial concept generation.",
     "Do not add any other words, slogans, fake brands, sponsor marks, watermarks, or random typography.",
   ].join(" ");
 }
@@ -78,12 +94,12 @@ export function buildArtworkPrompt(input: GenerateDesignInput): string {
   const mode = input.mode || (input.correction ? "refine" : "generate");
   return [
     DIRECT_RENDER_RULE,
-    kitClause(input.garmentType, input.sport),
+    kitClause(input.garmentType, input.sport, input.layout),
     `Design brief: ${input.designDescription.trim()}`,
     input.inspiration?.trim() ? `Visual inspiration: ${input.inspiration.trim()}.` : "",
     `Style direction: ${input.style}.`,
     paletteClause(input.colors),
-    typographyClause(input.teamName),
+    typographyClause(input.teamName, input.layout),
     input.hasLogo
       ? "Reserve a tasteful crest/logo position on the front chest, but do not invent a logo; the real uploaded logo is handled separately by the application."
       : "",
@@ -91,7 +107,9 @@ export function buildArtworkPrompt(input: GenerateDesignInput): string {
     QUALITY_RULE,
     PRESENTATION_RULE,
     "For basketball, the jersey must be sleeveless with authentic basketball proportions. Avoid soccer sleeves, T-shirt sleeves, hoodies, warmups, or fashion-model styling unless explicitly requested.",
-    "Return one direct AI product-render image of the uniform concept.",
+    input.layout === "board"
+      ? "Return one landscape concept-board image containing the labeled uniform designs."
+      : "Return one direct AI product-render image of the uniform concept.",
   ].filter(Boolean).join(" ");
 }
 

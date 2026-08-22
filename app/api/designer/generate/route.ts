@@ -28,6 +28,7 @@ const schema = z
     previousAssetUrl: z.string().url().max(2000).optional(),
     inspiration: z.string().trim().max(400).optional(),
     hasLogo: z.boolean().optional(),
+    layout: z.enum(["kit", "board"]).default("kit"),
     requestId: z.string().uuid(),
   })
   .superRefine((value, ctx) => {
@@ -126,12 +127,15 @@ async function requestOpenAiImage(
     previousAssetUrl: input.previousAssetUrl,
     inspiration: input.inspiration,
     hasLogo: input.hasLogo,
+    layout: input.layout,
   });
+
+  const size = input.layout === "board" ? "1536x1024" : "1024x1024";
 
   const base = {
     model: imageModel,
     prompt,
-    size: "1024x1024",
+    size,
     quality: "medium",
     background: "transparent",
     output_format: "png",

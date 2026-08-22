@@ -1,7 +1,7 @@
 "use client";
 
 import { buildColorVariationCorrection, type GenerationMode } from "@/lib/designer/openai-service";
-import type { DesignConcept, DesignerColors, DesignerState, GarmentView, GenerationVersion } from "@/lib/designer/types";
+import type { ArtworkLayout, DesignConcept, DesignerColors, DesignerState, GarmentView, GenerationVersion } from "@/lib/designer/types";
 
 export const LOADING_STAGES = ["Preparing AI edit…", "Rendering uniform…", "Saving AI render…"] as const;
 const MAX_CONCEPT_BASE_BRIEF = 460;
@@ -28,6 +28,7 @@ type GenerateOptions = {
   views?: GarmentView[];
   colors?: DesignerColors;
   correction?: string;
+  layout?: ArtworkLayout;
   onProgress?: (progress: GenerateProgress) => void;
   signal?: AbortSignal;
 };
@@ -59,6 +60,7 @@ async function generateOne(
   correction: string | undefined,
   requestId: string,
   signal?: AbortSignal,
+  layout?: ArtworkLayout,
 ) {
   const response = await fetch("/api/designer/generate", {
     method: "POST",
@@ -77,6 +79,7 @@ async function generateOne(
       previousAssetUrl: mode === "generate" && !correction ? undefined : state.artwork.front || state.artwork.back || undefined,
       inspiration: state.inspiration || undefined,
       hasLogo: Boolean(state.logoUrl),
+      layout: layout || state.layout || "kit",
       requestId,
     }),
   });
@@ -102,6 +105,7 @@ async function generateKitUnlocked(options: GenerateOptions): Promise<GenerateRe
     correction,
     crypto.randomUUID(),
     options.signal,
+    options.layout || options.state.layout,
   );
   if (data.colors) resolvedColors = data.colors;
 
@@ -165,6 +169,7 @@ export async function generateConceptSet(options: {
         state: conceptState,
         mode: "generate",
         views: ["front"],
+        layout: "kit",
         signal: options.signal,
       });
       mock = mock || result.mock;
@@ -186,3 +191,36 @@ export async function generateConceptSet(options: {
     if (inFlightRequestId === batchId) inFlightRequestId = null;
   }
 }
+
+export async function generateStudioBoard(options: {
+  state: DesignerState;
+  layout?: ArtworkLayout;
+  onProgress?: (progress: GenerateProgress) => void;
+  signal?: AbortSignal;
+}): Promise<{ concept: DesignConcept; mock: boolean }> {
+  const layout = options.layout || options.state.layout || "board";
+  const result = await generateUniformKit({
+    ...options,
+    mode: "generate",
+    views: ["front"],
+    layout,
+  });
+  const primary = result.versions[0];
+  return {
+    mock: result.mock,
+    concept: {
+      id: "studio-board",
+      label: layout === "board" ? "Concept board" : "Uniform",
+      direction: layout === "board"
+        ? "Three labeled uniform designs in one presentation."
+        : "Finished wearable uniform visualization.",
+      prompt: options.state.prompt,
+      assetUrl: primary.assetUrl,
+      colors: result.colors,
+      colorsEnabled: options.state.colorsEnabled,
+      createdAt: primary.createdAt,
+      designId: primary.id,
+    },
+  };
+}
+

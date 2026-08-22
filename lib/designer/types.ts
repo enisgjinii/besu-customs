@@ -3,6 +3,7 @@ export type GarmentView = "front" | "back";
 export type DesignerStep = 0 | 1 | 2 | 3 | 4 | 5;
 export type DesignStyle = "modern" | "minimal" | "geometric" | "retro" | "aggressive";
 export type ActivePiece = "jersey" | "shorts";
+export type ArtworkLayout = "kit" | "board";
 
 export interface ArtworkTransform {
   scale: number;
@@ -96,4 +97,5 @@ export interface DesignerState {
   previewPlayerId?: string;
   customer: CustomerDetails;
   designId?: string;
+  layout: ArtworkLayout;
 }

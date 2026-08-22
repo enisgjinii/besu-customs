@@ -9,12 +9,14 @@ import { PromptPanel } from "./prompt-panel";
 import { ConceptPanel } from "./concept-panel";
 import { RefinePanel } from "./refine-panel";
 import { OrderPanel } from "./order-panel";
+import { StudioPromptBar } from "./studio-prompt-bar";
 import {
   DESIGNER_STEPS,
   STEP_INDEX,
   type DesignerStepId,
 } from "./designer-steps";
 import { useDesignerStore } from "@/lib/designer/store";
+import { useGenerationSession } from "@/lib/designer/generation-session";
 import type { DesignerStep } from "@/lib/designer/types";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +86,7 @@ export function DesignerPage() {
 
   function resetDesign() {
     store.reset();
+    useGenerationSession.getState().reset();
     store.setStep(0);
     setOrderFocus("review");
     setResetOpen(false);
@@ -226,12 +229,13 @@ export function DesignerPage() {
       </aside>
 
       <motion.section
-        className="relative order-2 h-[clamp(245px,40svh,360px)] shrink-0 bg-[#efeee9] p-2 md:order-none md:h-full md:min-h-0 md:flex-1 md:p-4"
+        className="relative order-2 h-[clamp(280px,46svh,420px)] shrink-0 bg-[#efeee9] p-2 md:order-none md:h-full md:min-h-0 md:flex-1 md:p-4"
         initial={reduceMotion ? false : { opacity: 0, scale: 0.997 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: reduceMotion ? 0 : 0.24, ease }}
       >
         <GarmentCanvas />
+        <StudioPromptBar />
         <motion.button
           type="button"
           onClick={() => setResetOpen(true)}

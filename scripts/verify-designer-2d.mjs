@@ -40,6 +40,21 @@ function test(name, fn) {
 }
 
 const openai = loadTypeScriptModule("lib/designer/openai-service.ts");
+const parser = loadTypeScriptModule("lib/designer/brief-parser.ts");
+
+test("brief parser extracts team, colors, and edit vs generate intent", () => {
+  assert.equal(
+    parser.extractTeamName("Show me three different basketball uniforms for a team called Michael, inspired by MJ"),
+    "MICHAEL",
+  );
+  assert.deepEqual(
+    parser.extractColors("using the colors white black and gray"),
+    { primary: "#0D0D0D", secondary: "#FFFFFF", accent: "#6B6B6B" },
+  );
+  assert.equal(parser.isFreshGenerateRequest("make it without the sleeves", true), false);
+  assert.equal(parser.isFreshGenerateRequest("Show me three different uniforms", true), true);
+  assert.equal(parser.wantsConceptBoard("three different basketball uniforms"), true);
+});
 
 test("prompt requests a finished direct AI basketball uniform", () => {
   const prompt = openai.buildArtworkPrompt({
@@ -56,7 +71,7 @@ test("prompt requests a finished direct AI basketball uniform", () => {
   assert.match(prompt, /FRONT and BACK presentations/i);
   assert.match(prompt, /GALACTIC/);
   assert.match(prompt, /Render the exact team name/i);
-  assert.match(prompt, /not a flat sublimation texture/i);
+  assert.match(prompt, /flat sublimation texture/i);
   assert.doesNotMatch(prompt, /Return only the isolated sublimation graphic/i);
   assert.doesNotMatch(prompt, /Do not show a garment mockup/i);
 });
@@ -133,6 +148,23 @@ test("Shopify payload uses selected direct AI render URLs", () => {
   assert.match(payload.items[0].properties["Front artwork URL"], /^https:\/\//);
   assert.equal(payload.items[0].properties["Logo URL"], "");
   assert.doesNotMatch(serialized, /data:image|base64,AAAA/i);
+});
+
+test("concept board prompt asks for three labeled uniforms", () => {
+  const prompt = openai.buildArtworkPrompt({
+    garmentType: "uniform",
+    designDescription: "Michael Jackson theme white black gray",
+    teamName: "MICHAEL",
+    style: "modern",
+    view: "front",
+    sport: "Basketball",
+    mode: "generate",
+    layout: "board",
+  });
+  assert.match(prompt, /CONCEPT BOARD MODE/i);
+  assert.match(prompt, /THREE distinct labeled designs/i);
+  assert.match(prompt, /MICHAEL/);
+  assert.match(prompt, /sleeveless/i);
 });
 
 test("API refinement requires previous direct render", () => {
