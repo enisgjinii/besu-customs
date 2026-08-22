@@ -17,16 +17,17 @@ const PLACEHOLDERS = [
     prompt: "St. Agnes boys and girls uniforms, black and light blue, front and back jersey views",
   },
   {
-    id: "custom-flames",
-    src: "/designer/placeholders/custom-flames.png",
-    label: "Custom flames",
-    prompt: "Three Custom basketball jerseys, black and orange flame designs, number 24",
+    id: "fireballs-kit",
+    src: "/designer/placeholders/fireballs-kit.jpg",
+    label: "Fireballs kit",
+    prompt: "Fireballs basketball uniform, black and orange flames, front and back jersey and shorts, number 24",
   },
   {
-    id: "fireballs-board",
-    src: "/designer/placeholders/fireballs-board.jpg",
-    label: "Fireballs",
-    prompt: "Fireballs basketball kit, orange and black flames, NBA look, number 24",
+    id: "galactic-pack",
+    src: "/designer/placeholders/galactic-pack.jpg",
+    thumb: "/designer/placeholders/galactic-1.jpg",
+    label: "Galactic pack",
+    prompt: "Three Galactic basketball uniforms, space theme, moon and comets, black purple white, number 24",
   },
 ] as const;
 
@@ -86,7 +87,7 @@ export function GarmentCanvas() {
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={item.src}
+                        src={"thumb" in item && item.thumb ? item.thumb : item.src}
                         alt=""
                         className="h-full w-full object-cover"
                         draggable={false}
@@ -106,9 +107,6 @@ export function GarmentCanvas() {
             </aside>
 
             <div className="relative min-h-0 min-w-0 flex-1">
-              <p className="absolute right-3 top-3 z-10 max-w-[200px] text-right text-[10px] font-medium leading-snug text-muted md:right-5 md:top-4 md:max-w-[240px] md:text-[11px]">
-                Type below to generate your own board
-              </p>
               <AnimatePresence mode="wait" initial={false}>
                 <motion.img
                   key={current.id}
