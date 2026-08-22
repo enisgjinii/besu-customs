@@ -90,6 +90,32 @@ function modeClause(input: GenerateDesignInput) {
   return "Generate a new finished uniform concept from scratch based on the brief.";
 }
 
+function garmentFitClause(sport?: string) {
+  const label = (sport || "Basketball").toLowerCase();
+  if (label === "basketball") {
+    return "For basketball, the jersey must be sleeveless with authentic basketball proportions. Avoid soccer sleeves, T-shirt sleeves, hoodies, warmups, or fashion-model styling unless explicitly requested.";
+  }
+  if (label === "soccer") {
+    return "For soccer, use short sleeves and authentic soccer jersey proportions unless the brief asks otherwise.";
+  }
+  if (label === "volleyball") {
+    return "For volleyball, use short sleeves and athletic volleyball proportions unless the brief asks otherwise.";
+  }
+  if (label === "baseball") {
+    return "For baseball, use a button-front or classic baseball jersey silhouette unless the brief asks otherwise.";
+  }
+  if (label === "track") {
+    return "For track and field, use a racing tank or short-sleeve race top with athletic proportions unless the brief asks otherwise.";
+  }
+  if (label === "training") {
+    return "For training apparel, match the requested garment (hoodie or polo) with clean team branding and wearable proportions.";
+  }
+  if (label === "flag football") {
+    return "For flag football, use a hooded or athletic jersey silhouette suited to flag football kits unless the brief asks otherwise.";
+  }
+  return `Match authentic ${sport || "sports"} garment proportions for the selected product.`;
+}
+
 export function buildArtworkPrompt(input: GenerateDesignInput): string {
   const mode = input.mode || (input.correction ? "refine" : "generate");
   return [
@@ -106,7 +132,7 @@ export function buildArtworkPrompt(input: GenerateDesignInput): string {
     modeClause({ ...input, mode }),
     QUALITY_RULE,
     PRESENTATION_RULE,
-    "For basketball, the jersey must be sleeveless with authentic basketball proportions. Avoid soccer sleeves, T-shirt sleeves, hoodies, warmups, or fashion-model styling unless explicitly requested.",
+    garmentFitClause(input.sport),
     input.layout === "board"
       ? "Return one landscape concept-board image containing the labeled uniform designs."
       : "Return one direct AI product-render image of the uniform concept.",

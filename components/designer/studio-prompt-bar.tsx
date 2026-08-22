@@ -5,15 +5,11 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ImagePlus, Plus, SendHorizontal, Sparkles, X } from "lucide-react";
 import { Spinner } from "@heroui/react";
 import { useDesignerGeneration } from "@/hooks/use-designer-generation";
+import { getDesignerProduct } from "@/lib/designer/products";
+import { getPrePrompts } from "@/lib/designer/pre-prompts";
 import { useDesignerStore } from "@/lib/designer/store";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-
-const SUGGESTIONS = [
-  "Three Galactic uniforms, space theme, moon and comets, black purple white",
-  "Fireballs basketball kit, orange and black flames, NBA look, number 24",
-  "Make it sleeveless with a cleaner NBA cut",
-];
 
 const liquidGlass =
   "relative overflow-hidden border-0 bg-white/35 shadow-[0_8px_32px_rgba(24,24,22,0.1),inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/25";
@@ -46,6 +42,8 @@ export function StudioPromptBar() {
   const reduceMotion = useReducedMotion();
   const hasArtwork = Boolean(s.artwork.front || s.artwork.back);
   const canSend = !busy && draft.trim().length >= 8;
+  const product = getDesignerProduct(s.productId);
+  const suggestions = getPrePrompts(product, hasArtwork ? 3 : 4);
 
   function resize() {
     const el = areaRef.current;
@@ -68,24 +66,23 @@ export function StudioPromptBar() {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom,0px))] md:px-6 md:pb-5">
       <div className="pointer-events-auto w-full max-w-[720px]">
-        {!hasArtwork && !busy ? (
-          <div className="mb-2.5 hidden gap-1.5 overflow-x-auto [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">
-            {SUGGESTIONS.slice(0, 2).map((suggestion) => {
-              const truncated = suggestion.length > 52 ? `${suggestion.slice(0, 52)}…` : suggestion;
+        {!busy ? (
+          <div className="mb-2.5 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {suggestions.map((suggestion) => {
               return (
-                <Tooltip key={suggestion} delayDuration={120}>
+                <Tooltip key={suggestion.id} delayDuration={120}>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      onClick={() => void send(suggestion)}
-                      aria-label={suggestion}
+                      onClick={() => void send(suggestion.prompt)}
+                      aria-label={suggestion.prompt}
                       className={cn(
                         liquidGlassChip,
                         "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-foreground/70 hover:text-foreground",
                       )}
                     >
                       <GlassSheen />
-                      <span className="relative z-10">{truncated}</span>
+                      <span className="relative z-10">{suggestion.label}</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent
@@ -93,7 +90,7 @@ export function StudioPromptBar() {
                     sideOffset={8}
                     className="max-w-[min(360px,70vw)] rounded-xl border-0 bg-[#181816]/92 px-3.5 py-2.5 text-[12px] font-medium leading-snug text-white shadow-[0_12px_32px_rgba(24,24,22,0.22)] backdrop-blur-md"
                   >
-                    {suggestion}
+                    {suggestion.prompt}
                   </TooltipContent>
                 </Tooltip>
               );

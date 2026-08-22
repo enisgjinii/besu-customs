@@ -20,10 +20,12 @@ const SIZE_LABELS: Record<(typeof DESIGNER_SIZES)[number], string> = {
 
 const SPORT_PRODUCT: Record<string, { jersey: string; shorts: string; uniform: string; title: string }> = {
   Basketball: { jersey: "basketball-jersey", shorts: "half-short", uniform: "basketball-jersey", title: "Basketball Custom Uniform" },
-  Soccer: { jersey: "soccer-vneck", shorts: "standard-bottom", uniform: "soccer-vneck", title: "Soccer Custom Uniform" },
-  Volleyball: { jersey: "volleyball-short", shorts: "volleyball-spandex", uniform: "volleyball-short", title: "Volleyball Custom Uniform" },
-  Baseball: { jersey: "baseball-jersey", shorts: "standard-bottom", uniform: "baseball-jersey", title: "Baseball Custom Uniform" },
-  "Flag Football": { jersey: "flag-football-hoodie", shorts: "standard-bottom", uniform: "flag-football-hoodie", title: "Flag Football Custom Uniform" },
+  Soccer: { jersey: "soccer-vneck", shorts: "standard-bottom", uniform: "soccer-jersey-shorts", title: "Soccer Custom Uniform" },
+  Volleyball: { jersey: "volleyball-short", shorts: "volleyball-spandex", uniform: "volleyball-jersey-shorts", title: "Volleyball Custom Uniform" },
+  Baseball: { jersey: "baseball-jersey", shorts: "baseball-pants", uniform: "baseball-jersey-pants", title: "Baseball Custom Uniform" },
+  "Flag Football": { jersey: "flag-football-hoodie", shorts: "standard-bottom", uniform: "flag-football-jersey-shorts", title: "Flag Football Custom Uniform" },
+  Track: { jersey: "track-tank", shorts: "track-mid-shorts", uniform: "track-mid-shorts", title: "Track Custom Kit" },
+  Training: { jersey: "hoodie", shorts: "half-short", uniform: "hoodie", title: "Training Custom Apparel" },
 };
 
 function isDesignerSize(value: string): value is (typeof DESIGNER_SIZES)[number] {
