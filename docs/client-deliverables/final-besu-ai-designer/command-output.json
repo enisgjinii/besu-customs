@@ -1,0 +1,25 @@
+{
+  "ranAt": "2026-08-29T03:11:14.315Z",
+  "results": [
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "summary": "tsc --noEmit completed with no type errors."
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "summary": "ESLint over the designer app, components, lib and API routes with --max-warnings=0: no errors, no warnings."
+    },
+    {
+      "command": "npm run test:designer",
+      "exitCode": 0,
+      "summary": "3 verification suites passed: 25 named assertions (0 failed) plus the Shopify checkout payload generator, which asserts by throwing on any invalid payload."
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "summary": "Next.js production build compiled successfully and generated the full route manifest."
+    }
+  ]
+}

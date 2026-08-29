@@ -1,0 +1,22 @@
+{
+  "blocked": false,
+  "designId": "1d8f6ec3-491f-4988-8b2d-624de6b1de3f",
+  "frontArtwork": "http://localhost:3200/api/designer/mock?primary=%230A0A0A&secondary=%2300A3FF&accent=%23FFFFFF&view=front&seed=1xletiv&variant=0&rev=664199ff&team=GALACTIC",
+  "items": 2,
+  "variantIds": [
+    51354887192854,
+    51354887127318
+  ],
+  "quantities": [
+    2,
+    3
+  ],
+  "players": [
+    "Bryant#24",
+    "Carter#8"
+  ],
+  "hasBase64": false,
+  "designIdOnItems": true,
+  "note": "Design: 1d8f6ec3-491f-4988-8b2d-624de6b1de3f | Team: GALACTIC | Garment: Basketball uniform | Qty: 5 | Customer: Michael Bryant <michael@besucustoms.com>",
+  "capturedAt": "2026-08-29T03:26:26.504Z"
+}
