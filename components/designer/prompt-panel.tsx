@@ -24,7 +24,7 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export function PromptPanel() {
   const s = useDesignerStore();
-  const { busy, stage, error, mockMode, generateBoard, uploadLogo } = useDesignerGeneration();
+  const { busy, stage, error, mockMode, generateConcepts, uploadLogo } = useDesignerGeneration();
   const [logoBusy, setLogoBusy] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -154,13 +154,13 @@ export function PromptPanel() {
         size="sm"
         isPending={busy}
         isDisabled={!canGenerate}
-        onPress={() => void generateBoard(s.prompt, "board")}
+        onPress={() => void generateConcepts(s.prompt)}
         className="min-h-12 rounded-xl font-semibold"
       >
         {({ isPending }) => (
           <>
             {isPending ? <Spinner size="sm" color="current" /> : null}
-            <span>{isPending ? stage || "Generating…" : "Generate"}</span>
+            <span>{isPending ? stage || "Generating…" : "Generate 4 concepts"}</span>
           </>
         )}
       </Button>

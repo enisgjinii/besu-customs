@@ -83,7 +83,18 @@ export async function downloadDesignerSvg(state: DesignerState, captures?: Produ
   downloadSvg(await serializeDesignerSvg({ embedImages: true }), state);
 }
 
-async function svgToPngBlob(xml: string, state: DesignerState) {
+const EXPORT_WIDTH = 2400;
+
+/** Production rasters must keep the preview's proportions, otherwise the uniform is stretched. */
+function exportHeight(xml: string) {
+  const viewBox = xml.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+  const width = Number(viewBox?.[1]);
+  const height = Number(viewBox?.[2]);
+  if (!width || !height) return EXPORT_WIDTH;
+  return Math.round((EXPORT_WIDTH * height) / width);
+}
+
+async function svgToPngBlob(xml: string) {
   const objectUrl = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml" }));
   try {
     const image = new Image();
@@ -94,8 +105,8 @@ async function svgToPngBlob(xml: string, state: DesignerState) {
       image.src = objectUrl;
     });
     const canvas = document.createElement("canvas");
-    canvas.width = 2400;
-    canvas.height = state.garmentType === "uniform" ? 3840 : 2700;
+    canvas.width = EXPORT_WIDTH;
+    canvas.height = exportHeight(xml);
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Canvas export is unavailable.");
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -116,14 +127,14 @@ function downloadPng(blob: Blob, state: DesignerState, view = state.view) {
 export async function downloadDesignerPng(state: DesignerState, captures?: ProductionCaptures) {
   if (captures) {
     const [front, back] = await Promise.all([
-      svgToPngBlob(captures.front, state),
-      svgToPngBlob(captures.back, state),
+      svgToPngBlob(captures.front),
+      svgToPngBlob(captures.back),
     ]);
     downloadPng(front, state, "front");
     downloadPng(back, state, "back");
     return;
   }
-  downloadPng(await svgToPngBlob(await serializeDesignerSvg({ embedImages: true }), state), state);
+  downloadPng(await svgToPngBlob(await serializeDesignerSvg({ embedImages: true })), state);
 }
 
 function productionPdf(state: DesignerState, previewData?: { front: string; back: string }) {
@@ -162,19 +173,22 @@ function productionPdf(state: DesignerState, previewData?: { front: string; back
   doc.text(state.customer.notes || "No notes", 18, Math.min(258, 120 + rows.length * 5), { maxWidth: 174 });
   if (previewData) {
     doc.addPage();
+    // The renders are landscape (3:2), so they are stacked full width to avoid distortion.
+    const width = 174;
+    const height = Math.round((width * 1024) / 1536);
     doc.setFontSize(15);
     doc.text("Front", 18, 18);
-    doc.addImage(previewData.front, "PNG", 18, 26, 78, 120, undefined, "FAST");
-    doc.text("Back", 114, 18);
-    doc.addImage(previewData.back, "PNG", 114, 26, 78, 120, undefined, "FAST");
+    doc.addImage(previewData.front, "PNG", 18, 24, width, height, undefined, "FAST");
+    doc.text("Back", 18, 40 + height);
+    doc.addImage(previewData.back, "PNG", 18, 46 + height, width, height, undefined, "FAST");
   }
   return doc.output("blob");
 }
 
 async function createProductionFiles(state: DesignerState, captures: ProductionCaptures) {
   const [frontPng, backPng] = await Promise.all([
-    svgToPngBlob(captures.front, state),
-    svgToPngBlob(captures.back, state),
+    svgToPngBlob(captures.front),
+    svgToPngBlob(captures.back),
   ]);
   const [frontData, backData] = await Promise.all([blobToDataUrl(frontPng), blobToDataUrl(backPng)]);
   const pdf = productionPdf(state, { front: frontData, back: backData });

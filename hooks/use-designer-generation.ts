@@ -5,16 +5,17 @@ import {
   extractColors,
   extractTeamName,
   isFreshGenerateRequest,
-  wantsConceptBoard,
 } from "@/lib/designer/brief-parser";
 import {
-  generateStudioBoard,
+  CONCEPT_COUNT,
+  generateConceptSet,
   generateUniformKit,
   isGenerationInFlight,
 } from "@/lib/designer/generation-client";
 import { useGenerationSession } from "@/lib/designer/generation-session";
 import { useDesignerStore } from "@/lib/designer/store";
-import type { ArtworkLayout, DesignerColors } from "@/lib/designer/types";
+import { STEP_INDEX } from "@/components/designer/designer-steps";
+import type { DesignerColors, DesignerStep } from "@/lib/designer/types";
 
 const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 let abortController: AbortController | null = null;
@@ -68,7 +69,14 @@ export async function uploadDesignerLogo(file: File) {
   }
 }
 
-export async function generateBoard(prompt: string, layout: ArtworkLayout) {
+/**
+ * The single canonical entry point for a fresh customer generation.
+ *
+ * Every public surface (brief panel and studio prompt bar) routes through this so there is
+ * exactly one fresh-generation behaviour: four distinct finished uniform concepts, no
+ * automatic selection, and the customer is taken to the Choose step to pick one.
+ */
+export async function generateConcepts(prompt: string) {
   const session = useGenerationSession.getState();
   if (session.busy || isGenerationInFlight()) return;
   const trimmed = prompt.trim();
@@ -82,30 +90,30 @@ export async function generateBoard(prompt: string, layout: ArtworkLayout) {
   useDesignerStore.getState().patch({
     prompt: trimmed,
     teamName: parsedTeam,
-    layout,
+    layout: "kit",
     ...(parsedColors && !useDesignerStore.getState().colorsEnabled
       ? { colors: parsedColors, colorsEnabled: true }
       : {}),
   });
 
-  session.start("generate", "Rendering uniform…");
+  session.start("generate", `Rendering concept 1/${CONCEPT_COUNT}…`);
   const signal = nextAbort().signal;
 
   try {
-    const result = await generateStudioBoard({
+    const result = await generateConceptSet({
       state: useDesignerStore.getState(),
-      layout,
       signal,
       onProgress: ({ stage, conceptIndex, conceptCount }) => {
-        if (conceptIndex && conceptCount) session.setStage(`${conceptIndex}/${conceptCount}`);
+        if (conceptIndex && conceptCount) session.setStage(`Rendering concept ${conceptIndex}/${conceptCount}…`);
         else session.setStage(stage);
       },
     });
+
     const store = useDesignerStore.getState();
-    store.setConcepts([result.concept]);
-    store.selectConcept(result.concept.id);
-    store.patch({ layout });
-    store.setStep(3);
+    // setConcepts clears selectedConceptId, artwork, history and designId, so Refine,
+    // Roster and Order stay locked until the customer explicitly chooses a direction.
+    store.setConcepts(result.concepts);
+    store.setStep(STEP_INDEX.concepts as DesignerStep);
     session.succeed(result.mock);
   } catch (generationError) {
     if (generationError instanceof Error && generationError.name === "AbortError") return;
@@ -120,8 +128,8 @@ export async function refineCurrent(correction: string, colors?: DesignerColors)
   if (session.busy || isGenerationInFlight()) return;
   const store = useDesignerStore.getState();
   const hasArtwork = Boolean(store.artwork.front || store.artwork.back);
-  if (!hasArtwork) {
-    toast.error("Generate a uniform first, then describe what to change.");
+  if (!store.selectedConceptId || !hasArtwork) {
+    toast.error("Choose one of the concepts first, then describe what to change.");
     return;
   }
 
@@ -167,10 +175,11 @@ export async function submitStudioPrompt(raw: string) {
   }
 
   const store = useDesignerStore.getState();
-  const hasArtwork = Boolean(store.artwork.front || store.artwork.back);
-  if (isFreshGenerateRequest(prompt, hasArtwork)) {
-    const layout: ArtworkLayout = wantsConceptBoard(prompt) || !hasArtwork ? "board" : store.layout || "board";
-    await generateBoard(prompt, layout);
+  // A concept must be selected before a prompt is treated as an edit; otherwise there is
+  // no single design to refine and the prompt starts a fresh set.
+  const hasSelection = Boolean(store.selectedConceptId) && Boolean(store.artwork.front || store.artwork.back);
+  if (isFreshGenerateRequest(prompt, hasSelection)) {
+    await generateConcepts(prompt);
     return;
   }
   await refineCurrent(prompt);
@@ -185,7 +194,7 @@ export function useDesignerGeneration() {
     mockMode: session.mockMode,
     kind: session.kind,
     submitPrompt: submitStudioPrompt,
-    generateBoard,
+    generateConcepts,
     refineCurrent,
     uploadLogo: uploadDesignerLogo,
   };

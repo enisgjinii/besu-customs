@@ -28,7 +28,9 @@ const schema = z
     previousAssetUrl: z.string().url().max(2000).optional(),
     inspiration: z.string().trim().max(400).optional(),
     hasLogo: z.boolean().optional(),
-    layout: z.enum(["kit", "board"]).default("kit"),
+    layout: z.enum(["kit"]).default("kit"),
+    // Position of this render inside a four-direction concept set, when applicable.
+    conceptIndex: z.number().int().min(0).max(3).optional(),
     requestId: z.string().uuid(),
   })
   .superRefine((value, ctx) => {
@@ -104,6 +106,27 @@ function isAllowedMockAssetUrl(value: string, origin: string) {
   }
 }
 
+function mockSeed(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function mockIdentity(previousAssetUrl?: string) {
+  if (!previousAssetUrl) return null;
+  try {
+    const params = new URL(previousAssetUrl).searchParams;
+    const seed = params.get("seed");
+    if (!seed) return null;
+    return { seed, variant: params.get("variant") || "" };
+  } catch {
+    return null;
+  }
+}
+
 function toError(code: string, message: string, status = 500) {
   return Object.assign(new Error(message), { code, status });
 }
@@ -130,7 +153,8 @@ async function requestOpenAiImage(
     layout: input.layout,
   });
 
-  const size = input.layout === "board" ? "1536x1024" : "1024x1024";
+  // Landscape: every concept render shows the front and back presentation side by side.
+  const size = "1536x1024";
 
   const base = {
     model: imageModel,
@@ -226,9 +250,16 @@ export async function POST(req: NextRequest) {
         throw toError("invalid_previous_asset", "The previous mock artwork URL is not valid.", 400);
       }
       const colors = input.colors || { primary: "#101820", secondary: "#00A3FF", accent: "#FFFFFF" };
+      // An edit inherits the garment identity of the render it is editing, so refinements and
+      // recolours visibly keep the selected concept instead of becoming a new design.
+      const inherited = mockIdentity(input.previousAssetUrl);
+      const identity = inherited || {
+        seed: mockSeed(input.designDescription),
+        variant: String(input.conceptIndex ?? ""),
+      };
       const mock = {
         id,
-        assetUrl: `${req.nextUrl.origin}/api/designer/mock?primary=${encodeURIComponent(colors.primary)}&secondary=${encodeURIComponent(colors.secondary)}&accent=${encodeURIComponent(colors.accent)}&view=${input.view}`,
+        assetUrl: `${req.nextUrl.origin}/api/designer/mock?primary=${encodeURIComponent(colors.primary)}&secondary=${encodeURIComponent(colors.secondary)}&accent=${encodeURIComponent(colors.accent)}&view=${input.view}&seed=${identity.seed}&variant=${identity.variant}&rev=${id.slice(0, 8)}&team=${encodeURIComponent(input.teamName.slice(0, 18))}`,
         createdAt: new Date().toISOString(),
         mock: true,
         mode: input.mode,

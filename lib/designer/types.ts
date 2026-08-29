@@ -3,7 +3,13 @@ export type GarmentView = "front" | "back";
 export type DesignerStep = 0 | 1 | 2 | 3 | 4 | 5;
 export type DesignStyle = "modern" | "minimal" | "geometric" | "retro" | "aggressive";
 export type ActivePiece = "jersey" | "shorts";
-export type ArtworkLayout = "kit" | "board";
+/**
+ * The public customer flow renders one finished wearable uniform per concept.
+ * The legacy multi-design collage ("board") layout was retired: it conflicted with the
+ * four-selectable-concept requirement because a collage cannot be individually selected,
+ * refined or ordered.
+ */
+export type ArtworkLayout = "kit";
 
 export interface ArtworkTransform {
   scale: number;

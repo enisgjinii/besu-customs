@@ -50,7 +50,7 @@ function createInitialState(): DesignerState {
     roster: [],
     previewPlayerId: undefined,
     customer: { name: "", email: "", phone: "", notes: "" },
-    layout: "board",
+    layout: "kit",
   };
 }
 
@@ -179,10 +179,22 @@ export const useDesignerStore = create<DesignerState & Actions>()(
     {
       // Deliberately new key: direct AI renders are incompatible with legacy flat-2D persisted artwork.
       name: "besu-direct-ai-designer-v1",
-      version: 2,
+      // v3 retires the single collage "board" render: any persisted session from that path
+      // is dropped so returning customers start from a real four-concept set.
+      version: 3,
       migrate: (persisted) => {
         const source = (persisted || {}) as Partial<DesignerState>;
         const fresh = createInitialState();
+        const legacyBoard = (source.concepts || []).some((concept) => concept?.id === "studio-board");
+        if (legacyBoard) {
+          return {
+            ...fresh,
+            roster: Array.isArray(source.roster) ? source.roster : [],
+            customer: { ...fresh.customer, ...(source.customer || {}) },
+            teamName: source.teamName || "",
+            prompt: source.prompt || "",
+          } as DesignerState;
+        }
         return {
           ...fresh,
           ...source,
@@ -195,7 +207,7 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           customer: { ...fresh.customer, ...(source.customer || {}) },
           colors: { ...fresh.colors, ...(source.colors || {}) },
           font: DESIGNER_FONT_FAMILY,
-          layout: source.layout === "kit" || source.layout === "board" ? source.layout : "board",
+          layout: "kit",
         } as DesignerState;
       },
       partialize: (s) =>

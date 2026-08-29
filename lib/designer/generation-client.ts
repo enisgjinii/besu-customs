@@ -29,6 +29,7 @@ type GenerateOptions = {
   colors?: DesignerColors;
   correction?: string;
   layout?: ArtworkLayout;
+  conceptIndex?: number;
   onProgress?: (progress: GenerateProgress) => void;
   signal?: AbortSignal;
 };
@@ -61,6 +62,7 @@ async function generateOne(
   requestId: string,
   signal?: AbortSignal,
   layout?: ArtworkLayout,
+  conceptIndex?: number,
 ) {
   const response = await fetch("/api/designer/generate", {
     method: "POST",
@@ -80,6 +82,7 @@ async function generateOne(
       inspiration: state.inspiration || undefined,
       hasLogo: Boolean(state.logoUrl),
       layout: layout || state.layout || "kit",
+      conceptIndex,
       requestId,
     }),
   });
@@ -106,6 +109,7 @@ async function generateKitUnlocked(options: GenerateOptions): Promise<GenerateRe
     crypto.randomUUID(),
     options.signal,
     options.layout || options.state.layout,
+    options.conceptIndex,
   );
   if (data.colors) resolvedColors = data.colors;
 
@@ -170,6 +174,7 @@ export async function generateConceptSet(options: {
         mode: "generate",
         views: ["front"],
         layout: "kit",
+        conceptIndex: index,
         signal: options.signal,
       });
       mock = mock || result.mock;
@@ -192,35 +197,5 @@ export async function generateConceptSet(options: {
   }
 }
 
-export async function generateStudioBoard(options: {
-  state: DesignerState;
-  layout?: ArtworkLayout;
-  onProgress?: (progress: GenerateProgress) => void;
-  signal?: AbortSignal;
-}): Promise<{ concept: DesignConcept; mock: boolean }> {
-  const layout = options.layout || options.state.layout || "board";
-  const result = await generateUniformKit({
-    ...options,
-    mode: "generate",
-    views: ["front"],
-    layout,
-  });
-  const primary = result.versions[0];
-  return {
-    mock: result.mock,
-    concept: {
-      id: "studio-board",
-      label: layout === "board" ? "Concept board" : "Uniform",
-      direction: layout === "board"
-        ? "Three labeled uniform designs in one presentation."
-        : "Finished wearable uniform visualization.",
-      prompt: options.state.prompt,
-      assetUrl: primary.assetUrl,
-      colors: result.colors,
-      colorsEnabled: options.state.colorsEnabled,
-      createdAt: primary.createdAt,
-      designId: primary.id,
-    },
-  };
-}
+export const CONCEPT_COUNT = CONCEPT_DIRECTIONS.length;
 

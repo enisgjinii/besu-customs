@@ -53,7 +53,8 @@ test("brief parser extracts team, colors, and edit vs generate intent", () => {
   );
   assert.equal(parser.isFreshGenerateRequest("make it without the sleeves", true), false);
   assert.equal(parser.isFreshGenerateRequest("Show me three different uniforms", true), true);
-  assert.equal(parser.wantsConceptBoard("three different basketball uniforms"), true);
+  // Without a selected concept there is nothing to edit, so any prompt starts a new set.
+  assert.equal(parser.isFreshGenerateRequest("make it without the sleeves", false), true);
 });
 
 test("prompt requests a finished direct AI basketball uniform", () => {
@@ -150,7 +151,7 @@ test("Shopify payload uses selected direct AI render URLs", () => {
   assert.doesNotMatch(serialized, /data:image|base64,AAAA/i);
 });
 
-test("concept board prompt asks for three labeled uniforms", () => {
+test("every concept render asks for one finished uniform, never a multi-design collage", () => {
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
     designDescription: "Michael Jackson theme white black gray",
@@ -159,12 +160,14 @@ test("concept board prompt asks for three labeled uniforms", () => {
     view: "front",
     sport: "Basketball",
     mode: "generate",
-    layout: "board",
+    layout: "kit",
   });
-  assert.match(prompt, /CONCEPT BOARD MODE/i);
-  assert.match(prompt, /THREE distinct labeled designs/i);
   assert.match(prompt, /MICHAEL/);
   assert.match(prompt, /sleeveless/i);
+  assert.match(prompt, /Return one direct AI product-render image/i);
+  // A collage cannot be individually selected, refined or ordered, so it must not be requested.
+  assert.doesNotMatch(prompt, /CONCEPT BOARD MODE/i);
+  assert.doesNotMatch(prompt, /THREE distinct labeled designs/i);
 });
 
 test("API refinement requires previous direct render", () => {

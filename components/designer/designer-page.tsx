@@ -109,7 +109,9 @@ export function DesignerPage() {
             aria-label="Designer sections"
             className="sticky top-0 z-40 bg-[#fcfcfa]/95 px-3 py-2 backdrop-blur-md md:static md:shrink-0"
           >
-            <div className="flex min-w-max gap-0.5 overflow-x-auto rounded-xl bg-black/[0.035] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:min-w-0">
+            {/* The scroll container must not size to its content, or narrow phones overflow. */}
+            <div className="overflow-x-auto rounded-xl bg-black/[0.035] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex min-w-max gap-0.5 md:min-w-0">
               {DESIGNER_STEPS.map((item) => {
                 const active = item.id === step;
                 const locked =
@@ -142,6 +144,7 @@ export function DesignerPage() {
                   </motion.button>
                 );
               })}
+              </div>
             </div>
           </nav>
 

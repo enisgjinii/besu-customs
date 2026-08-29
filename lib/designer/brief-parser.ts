@@ -61,13 +61,13 @@ export function extractColors(prompt: string): DesignerColors | undefined {
   };
 }
 
-export function isFreshGenerateRequest(prompt: string, hasArtwork: boolean): boolean {
-  if (!hasArtwork) return true;
+/**
+ * Decides whether a studio prompt starts a fresh four-concept set or refines the selection.
+ * With nothing selected there is no design to edit, so the prompt always starts a new set.
+ */
+export function isFreshGenerateRequest(prompt: string, hasSelection: boolean): boolean {
+  if (!hasSelection) return true;
   const trimmed = prompt.trim();
   if (EDIT_PREFIX.test(trimmed)) return false;
   return FRESH_REQUEST.test(trimmed);
-}
-
-export function wantsConceptBoard(prompt: string): boolean {
-  return /\b(three|3|four|4|several|multiple|different uniforms|colorways|variations|designs)\b/i.test(prompt);
 }
