@@ -25,12 +25,18 @@ generation and refinement flow, colour variations, the roster, production export
 handoff. Everything in the report was verified by driving the actual application in a browser
 rather than by reading the code.
 
+The report includes real generated uniforms from the live AI so you can see exactly what a customer
+receives. One brief produced four genuinely different finished designs — a flowing comet sweep,
+sharp multi-blade cuts, full traditional flames, and a restrained minimal treatment — each with the
+jersey and shorts shown front and back, the team wordmark and number on the chest, and a clean
+number on the back.
+
 Two things worth flagging so nothing is a surprise:
 
-- The screenshots were produced using our internal preview renderer rather than live AI image
-  generation, so the same journey could be re-run repeatedly without burning image credits. That
-  verifies the workflow, state handling, exports and order data end to end. It does not judge the
-  artistic quality of the live model output, which is unchanged.
+- The repeatable regression testing used our internal preview renderer rather than live AI, so the
+  same journey could be re-run many times without burning image credits. The live AI run above
+  confirms the generation and selection experience on real output; the mocked run is what let me
+  verify every downstream step, the responsive layouts and the order data exhaustively.
 
 - The Shopify order handoff was captured and verified from a real browser, including the design ID,
   artwork links, roster line items and mapped variant IDs. I did not place a live order against the

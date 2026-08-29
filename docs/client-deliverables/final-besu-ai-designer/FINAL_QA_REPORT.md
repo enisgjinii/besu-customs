@@ -61,7 +61,9 @@ Raw command summaries are recorded in `command-output.json`.
 - Harness: `scripts/qa-designer-flow.mjs` (dependency-free Chrome DevTools Protocol driver in `scripts/lib/cdp.mjs`)
 - Browser: HeadlessChrome 152
 - Mode: `DESIGNER_MOCK_AI=true` — the deterministic preview renderer, so the full journey could be
-  repeated without consuming image-model credits
+  repeated without consuming image-model credits. The four-concept generation and selection
+  behaviour was then confirmed a second time on **live production image-model output** (evidence
+  `22`–`26`).
 - Result: **32 passed, 0 failed**
 - Generation requests issued across the whole run: 10 (one fresh set of 4, plus refinement and
   colour variation) — no duplicate or runaway requests
@@ -119,23 +121,60 @@ expose `aria-pressed` alongside a visible selected badge.
 
 This was a release-blocker check, not a full accessibility audit.
 
+## Live production image-model confirmation
+
+Separately from the mocked regression run, the delivered build was run against the live production
+image model on a black-and-orange flame brief. Confirmed on real model output:
+
+- One brief produced four independent finished uniform renders.
+- The four directions are genuinely different — a flowing comet sweep, sharp multi-blade cuts, full
+  traditional flames, and a restrained single-flame minimal treatment — not four near-duplicates.
+- All four appeared together in the Choose step, and explicit selection promoted one render to the
+  full preview with no trace of the previously viewed concept.
+- Each render satisfies the generation contract: sleeveless jersey with matching shorts, front and
+  back in one render, realistic construction with visible fabric, panel seams and ribbed neckline and
+  armhole trims, team wordmark and number on the chest, large clean number on the back, and no
+  models, mannequins, hangers, backgrounds, watermarks or invented sponsor marks.
+
+Evidence: `22-live-ai-concept-1-cosmic-energy.png`, `23-live-ai-concept-2-velocity-cut.png`,
+`24-live-ai-concept-3-heritage-court.png`, `25-live-ai-concept-4-elite-minimal.png`,
+`26-live-ai-concept-choice-grid.png`.
+
+This live confirmation covers generation, the four directions and selection. It was not re-run for
+every downstream step, and image-model output naturally varies between briefs.
+
 ## Evidence
 
-`evidence/` — 22 PNG screenshots captured from the final build:
+`evidence/` — 27 PNG screenshots captured from the final build:
 
 ```
-01-desktop-initial-product.png        12-tablet-selected-concept.png
-02-desktop-ai-brief.png               13-mobile-initial.png
-03-desktop-four-concepts.png          14-mobile-four-concepts.png
-03a-desktop-four-concepts-detail.png  15-mobile-selected-concept.png
-04-desktop-concepts-no-selection-locked.png  16-mobile-roster.png
-05-desktop-selected-concept.png       17-mobile-order.png
-06-desktop-refinement.png             18-mobile-375-four-concepts.png
-07-desktop-color-variation.png        19-laptop-four-concepts.png
-08-desktop-roster.png                 20-tablet-landscape-four-concepts.png
-09-desktop-order-review.png           21-mobile-small-four-concepts.png
+01-desktop-initial-product.png
+02-desktop-ai-brief.png
+03-desktop-four-concepts.png
+03a-desktop-four-concepts-detail.png
+04-desktop-concepts-no-selection-locked.png
+05-desktop-selected-concept.png
+06-desktop-refinement.png
+07-desktop-color-variation.png
+08-desktop-roster.png
+09-desktop-order-review.png
 10-desktop-export-options.png
 11-tablet-four-concepts.png
+12-tablet-selected-concept.png
+13-mobile-initial.png
+14-mobile-four-concepts.png
+15-mobile-selected-concept.png
+16-mobile-roster.png
+17-mobile-order.png
+18-mobile-375-four-concepts.png
+19-laptop-four-concepts.png
+20-tablet-landscape-four-concepts.png
+21-mobile-small-four-concepts.png
+22-live-ai-concept-1-cosmic-energy.png      (live production image model)
+23-live-ai-concept-2-velocity-cut.png       (live production image model)
+24-live-ai-concept-3-heritage-court.png     (live production image model)
+25-live-ai-concept-4-elite-minimal.png      (live production image model)
+26-live-ai-concept-choice-grid.png          (live production image model)
 ```
 
 ## External blockers
@@ -144,9 +183,10 @@ This was a release-blocker check, not a full accessibility audit.
    real browser and a real parent frame using the production code path. Creating an actual cart
    requires the production storefront and its credentials, so the storefront listener still needs to
    be confirmed against this payload before go-live.
-2. **Image generation exercised via the deterministic preview renderer.** This verifies the
-   workflow, state handling, gating, exports and order payloads. It does not assess the artistic
-   quality of live image-model output, which is unchanged.
+2. **The repeatable regression run used the deterministic preview renderer.** It verifies the
+   workflow, state handling, gating, exports and order payloads. Live image-model output was
+   confirmed separately for generation, the four directions and selection, but was not re-run for
+   every downstream step, and model output naturally varies between briefs.
 3. **Image-model billing must be active** in the deployment environment for production generation.
    The endpoint returns a clear customer-facing message if it is not.
 4. **SVG export is a raster image in an SVG wrapper**, because the designer produces direct raster

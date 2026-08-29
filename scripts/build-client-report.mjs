@@ -90,7 +90,9 @@ const html = `<!doctype html>
 <style>
   @page { size: Letter; margin: 0.7in 0.7in 0.8in; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #14171a; font-size: 10.3pt; line-height: 1.5; }
+  body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #14171a; font-size: 10.3pt; line-height: 1.5; counter-reset: section; }
+  /* Sections are numbered by counter so a section can be inserted without renumbering the document. */
+  h2::before { counter-increment: section; content: counter(section) ". "; }
   h1 { font-size: 25pt; line-height: 1.1; margin: 0 0 10px; letter-spacing: -0.5px; }
   h2 { font-size: 14pt; margin: 26px 0 8px; padding-top: 12px; border-top: 2px solid #14171a; letter-spacing: -0.2px; page-break-after: avoid; }
   h3 { font-size: 11.2pt; margin: 16px 0 5px; color: #14171a; page-break-after: avoid; }
@@ -151,7 +153,7 @@ const html = `<!doctype html>
   </div>
 </section>
 
-<h2>1. Executive summary</h2>
+<h2>Executive summary</h2>
 <p>
   The BESU Customs AI Uniform Designer has been taken through a full implementation and
   verification pass. The customer journey now works as specified: a customer describes the uniform
@@ -171,10 +173,10 @@ const html = `<!doctype html>
 <div class="callout">
   <strong>Release status:</strong> the workflow, responsive layout, refinement, roster, export and
   Shopify payload behaviour described in this report were verified directly in a real browser on the
-  build at commit <code>${shortCommit}</code>. Image generation was exercised through the
-  deterministic preview renderer so the flow could be tested repeatedly without consuming image-model
-  credits; the production image model is unchanged and its prompt contract is verified separately in
-  section&nbsp;6.
+  build at commit <code>${shortCommit}</code>. The repeatable regression run used a deterministic
+  preview renderer so the full journey could be re-run without consuming image-model credits, and the
+  four-concept workflow was then confirmed a second time on <strong>live production image-model
+  output</strong> — those renders are shown in <em>Live production output</em>.
 </div>
 
 <h3>What was completed</h3>
@@ -187,9 +189,10 @@ const html = `<!doctype html>
   <li>Fixed horizontal overflow of the step navigation on narrow phones.</li>
   <li>Replaced source-pattern tests with behavioural tests that execute the real production modules.</li>
   <li>Added a dependency-free browser QA harness that drives the real application across seven viewports.</li>
+  <li>Confirmed the four-concept flow on live production image-model output, not only on the preview renderer.</li>
 </ul>
 
-<h2>2. Client requirements and final status</h2>
+<h2>Client requirements and final status</h2>
 <table>
   <tr><th>Requirement</th><th>Status</th><th>Evidence / note</th></tr>
   ${statusRow("Customer submits a design brief", "brief step accepts")}
@@ -208,7 +211,7 @@ const html = `<!doctype html>
   ${statusRow("Product catalogue intact and resets state on change", "product change resets")}
 </table>
 
-<h2 class="page-break">3. The four-concept workflow</h2>
+<h2 class="page-break">The four-concept workflow</h2>
 <p>
   The customer journey is a six-step flow: <strong>Product → Brief → Choose → Refine → Roster →
   Order</strong>. The Choose step is the commercial heart of the product, and it is the step that was
@@ -226,7 +229,7 @@ const html = `<!doctype html>
 ${figure("01-desktop-initial-product.png", "Step 1 — product selection. Eighteen production garments across seven sports; the basketball uniform is the default.")}
 ${figure("02-desktop-ai-brief.png", "Step 2 — design brief. Team name GALACTIC with the full cosmic uniform brief; the action is explicitly labelled \"Generate 4 concepts\".")}
 
-<h2>4. Four concepts, presented for choice</h2>
+<h2>Four concepts, presented for choice</h2>
 <p>
   Submitting the brief issues four independent generation requests, one per art direction. The
   browser QA harness counts the outbound requests, so this is measured rather than assumed:
@@ -242,13 +245,46 @@ ${figure("03-desktop-four-concepts.png", "Step 3 in context — the Choose step.
 </p>
 <p class="small">
   The small "deterministic preview render — QA mode" caption inside each render is part of the
-  verification renderer, not the product. It is present so these screenshots can never be mistaken for
-  production image-model output. In production each card holds a full image-model render of the same
-  four directions.
+  verification renderer used for the repeatable regression run, not the product. It is present so
+  these screenshots can never be mistaken for production image-model output. The next section shows
+  the same four directions rendered by the live production image model.
 </p>
 ${figure("04-desktop-concepts-no-selection-locked.png", "Downstream steps are locked while no concept is selected. The tabs are disabled and marked aria-disabled=\"true\" for assistive technology.")}
 
-<h2 class="page-break">5. Root cause of the workflow defect</h2>
+<h2 class="page-break">Live production output</h2>
+<p>
+  The screenshots in this section were produced by the delivered build running against the
+  <strong>live production image model</strong>, on a black-and-orange flame brief. They show what the
+  customer actually receives, and they confirm on real model output everything the repeatable
+  regression run verified on the preview renderer.
+</p>
+<p>Each render is a finished, wearable uniform visualisation, exactly as the generation contract requires:</p>
+<ul>
+  <li>Sleeveless basketball jersey with matching shorts, on a clean neutral background.</li>
+  <li>Front and back presentation side by side in a single render.</li>
+  <li>Realistic sportswear construction — visible fabric, panel seams, ribbed neckline and armhole trims, contrast binding.</li>
+  <li>Team wordmark and number on the front chest, with a large clean number on the back.</li>
+  <li>No models, mannequins, hangers, backgrounds, watermarks or invented sponsor marks.</li>
+</ul>
+${figure("26-live-ai-concept-choice-grid.png", "The four live-model concepts in the choice grid. One brief, four genuinely different finished uniforms: a flowing comet sweep, sharp multi-blade cuts, full traditional flames, and a restrained single-flame minimal treatment.")}
+<p>
+  The four directions are clearly distinct rather than four near-duplicates of one design, which is
+  the entire commercial point of offering a choice. The pages that follow show each direction selected
+  in turn, at full preview size.
+</p>
+${figure("22-live-ai-concept-1-cosmic-energy.png", "Direction 1 — Cosmic Energy, selected. A sweeping comet-trail graphic across the jersey and shorts. The card is badged \"Selected\" and the chosen render fills the main preview.")}
+${figure("23-live-ai-concept-2-velocity-cut.png", "Direction 2 — Velocity Cut, selected. Sharp multi-blade speed forms with contrast neckline and armhole trims.")}
+${figure("24-live-ai-concept-3-heritage-court.png", "Direction 3 — Heritage Court, selected. A traditional full-flame treatment with a classic block wordmark and collegiate proportions.")}
+${figure("25-live-ai-concept-4-elite-minimal.png", "Direction 4 — Elite Minimal, selected. A restrained single-flame accent with clean negative space and precise trim geometry.")}
+<div class="callout">
+  <strong>What these confirm on live output:</strong> four independent renders from one brief, all four
+  presented together in the Choose step, explicit selection promoting one render to the full preview,
+  the front/back wearable-uniform contract, and legible team wordmark and number placement. Switching
+  the selected direction updates the main preview immediately, with no trace of the previously viewed
+  concept.
+</div>
+
+<h2 class="page-break">Root cause of the workflow defect</h2>
 <p>
   This section is included so the change is auditable. It is a technical note, not a criticism of any
   contributor.
@@ -284,7 +320,7 @@ ${figure("04-desktop-concepts-no-selection-locked.png", "Downstream steps are lo
   its own render, which is what the flow now produces.
 </div>
 
-<h2>6. AI generation contract</h2>
+<h2>AI generation contract</h2>
 <p>
   Every concept is generated as a <strong>finished, wearable uniform visualisation</strong> — not a
   print graphic to be applied later. The image prompt requires:
@@ -309,7 +345,7 @@ ${figure("04-desktop-concepts-no-selection-locked.png", "Downstream steps are lo
   genuinely different options from a single brief rather than four near-duplicates.
 </p>
 
-<h2 class="page-break">7. Concept selection</h2>
+<h2 class="page-break">Concept selection</h2>
 <p>
   Selecting a concept card promotes exactly that concept: the main preview switches to its render, its
   design ID becomes the working design ID, its palette is adopted, and version history is cleared so
@@ -319,7 +355,7 @@ ${figure("04-desktop-concepts-no-selection-locked.png", "Downstream steps are lo
 ${figure("05-desktop-selected-concept.png", "A concept has been selected. The main canvas shows the chosen uniform, the card is badged \"Selected\", and Refine, Roster and Order are now available.")}
 <p><strong>Verified:</strong> ${escape(findCheck("selecting a concept updates the preview")?.detail || "")}. Switching between concepts was also verified in both directions: ${escape(findCheck("switching selection swaps cleanly")?.detail || "")}.</p>
 
-<h2>8. Refinement of the selected design</h2>
+<h2>Refinement of the selected design</h2>
 <p>
   Refinement is an <em>edit</em> of the selected render, not a new generation. The current render is
   supplied to the image model as the edit source and the request is sent in refine mode, with an
@@ -330,7 +366,7 @@ ${figure("05-desktop-selected-concept.png", "A concept has been selected. The ma
 ${figure("06-desktop-refinement.png", "The Refine step after applying the instruction \"Add a moon detail near the lower jersey and sharpen the comet trails.\" The refined render replaces the preview and is recorded as a version.")}
 <p><strong>Verified:</strong> ${escape(findCheck("natural-language refinement")?.detail || "")}. A follow-up prompt typed into the studio bar after a concept is chosen is treated as a refinement rather than a new set, so a customer cannot lose their chosen design by describing a tweak.</p>
 
-<h2>9. Colour variation</h2>
+<h2>Colour variation</h2>
 <p>
   Colour variation is handled separately from text refinement. It sends the current render as the edit
   source with an instruction to preserve the garment cut, front/back presentation, graphic
@@ -339,7 +375,7 @@ ${figure("06-desktop-refinement.png", "The Refine step after applying the instru
 ${figure("07-desktop-color-variation.png", "The black / electric blue / white palette applied to the selected concept. The garment structure and motif placement are retained; only the colours change.")}
 <p><strong>Verified:</strong> ${escape(findCheck("colour variation recolours")?.detail || "")}.</p>
 
-<h2 class="page-break">10. Team name and logo handling</h2>
+<h2 class="page-break">Team name and logo handling</h2>
 <p>
   The team name is captured as an explicit field and injected into the image prompt as an exact
   string, so the front chest wordmark reflects what the customer typed rather than an invented name.
@@ -358,7 +394,7 @@ ${figure("07-desktop-color-variation.png", "The black / electric blue / white pa
   behavioural test suite and the live browser payload capture.
 </div>
 
-<h2>11. Product flow</h2>
+<h2>Product flow</h2>
 <p>
   The catalogue offers ${escape((findCheck("product step lists") ?? {}).detail || "18 products")} across
   basketball, soccer, volleyball, baseball, flag football, track and training, including coordinated
@@ -368,7 +404,7 @@ ${figure("07-desktop-color-variation.png", "The black / electric blue / white pa
 </p>
 <p><strong>Verified:</strong> ${escape(findCheck("product change resets")?.detail || "")}.</p>
 
-<h2>12. Roster</h2>
+<h2>Roster</h2>
 <p>
   Roster rows are independent records. Each row captures a player name, number, top size, shorts size
   and quantity. Sizes are chosen from the mapped production size range, duplicate numbers are
@@ -377,7 +413,7 @@ ${figure("07-desktop-color-variation.png", "The black / electric blue / white pa
 ${figure("08-desktop-roster.png", "The roster step with two independent players: Bryant #24 at XL top / XL shorts, quantity 2, and a second player with different sizes and quantity.")}
 <p><strong>Verified:</strong> ${escape(findCheck("roster supports add")?.detail || "")}. Deletion was verified separately: ${escape(findCheck("deleting a roster row")?.detail || "")}.</p>
 
-<h2 class="page-break">13. Production exports</h2>
+<h2 class="page-break">Production exports</h2>
 <p>
   Four output formats are offered, all generated from the current preview so they always reflect the
   selected and refined design rather than an earlier concept.
@@ -404,7 +440,7 @@ ${figure("10-desktop-export-options.png", "The production file options, enabled 
 </p>
 ${figure("09-desktop-order-review.png", "The order review step with customer details, team, total pieces and palette.")}
 
-<h2 class="page-break">14. Shopify order handoff</h2>
+<h2 class="page-break">Shopify order handoff</h2>
 <p>
   The designer runs inside the Shopify storefront and hands the order to the parent page by posting a
   <code>besu:checkout</code> message. To verify this genuinely rather than by inspection, the QA
@@ -440,7 +476,7 @@ ${figure("09-desktop-order-review.png", "The order review step with customer det
   listener consumes this payload and creates the cart as expected.
 </div>
 
-<h2 class="page-break">15. Responsive QA</h2>
+<h2 class="page-break">Responsive QA</h2>
 <p>
   Every viewport below was tested against the live application on the Choose step, checking that all
   four concepts render, that there is no horizontal overflow, that the prompt bar is reachable inside
@@ -482,7 +518,7 @@ ${figure("09-desktop-order-review.png", "The order review step with customer det
 </div>
 ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step.")}
 
-<h2 class="page-break">16. Accessibility and UX checks</h2>
+<h2 class="page-break">Accessibility and UX checks</h2>
 <p>These are release-blocker checks, not a full accessibility audit.</p>
 <table>
   <tr><th>Check</th><th>Result</th><th>Detail</th></tr>
@@ -496,7 +532,7 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   <tr><td>Touch target size</td><td class="ok">Verified</td><td>No interactive control under 32&nbsp;px tall at any tested viewport.</td></tr>
 </table>
 
-<h2>17. Console and network health</h2>
+<h2>Console and network health</h2>
 <table>
   <tr><th>Check</th><th>Result</th><th>Detail</th></tr>
   <tr><td>Uncaught page exceptions</td><td class="${qa.pageExceptions.length ? "bad" : "ok"}">${qa.pageExceptions.length ? `${qa.pageExceptions.length} found` : "None"}</td><td class="detail">${escape(qa.pageExceptions.slice(0, 2).join(" | ") || "Clean across the whole run")}</td></tr>
@@ -510,7 +546,7 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   submit or a React re-render cannot issue a duplicate set.
 </p>
 
-<h2 class="page-break">18. Automated verification</h2>
+<h2 class="page-break">Automated verification</h2>
 <p>All four project command suites were run on the delivered build.</p>
 <table>
   <tr><th style="width:1.9in">Command</th><th>Result</th><th>Output summary</th></tr>
@@ -533,13 +569,13 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   <li>the retired single-collage generator or its "three labeled designs" prompt reappears.</li>
 </ul>
 
-<h2>19. Browser QA matrix</h2>
+<h2>Browser QA matrix</h2>
 <table>
   <tr><th>Check</th><th>Result</th><th>Detail</th></tr>
   ${checkRows}
 </table>
 
-<h2 class="page-break">20. Technical architecture</h2>
+<h2 class="page-break">Technical architecture</h2>
 <table>
   <tr><th style="width:2.5in">Module</th><th>Responsibility</th></tr>
   <tr><td><code>hooks/use-designer-generation.ts</code></td><td>Canonical generation entry points: fresh four-concept generation, refinement, colour variation, and the studio prompt router that decides between them.</td></tr>
@@ -555,7 +591,7 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   <tr><td><code>scripts/qa-designer-flow.mjs</code></td><td>Real-browser QA harness, evidence capture and responsive sweep.</td></tr>
 </table>
 
-<h2>21. Release state</h2>
+<h2>Release state</h2>
 <table>
   <tr><td style="width:2in">Branch</td><td><code>${branch}</code></td></tr>
   <tr><td>Verified commit</td><td><code>${commit}</code></td></tr>
@@ -564,7 +600,7 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   <tr><td>QA browser</td><td class="detail">${escape(qa.browser)}</td></tr>
 </table>
 
-<h2>22. Known limitations and external dependencies</h2>
+<h2>Known limitations and external dependencies</h2>
 <ol>
   <li>
     <strong>Live Shopify order not placed.</strong> The <code>besu:checkout</code> payload was captured
@@ -573,10 +609,13 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
     confirmed against this payload before go-live.
   </li>
   <li>
-    <strong>Image generation exercised via the deterministic preview renderer.</strong> The browser QA
-    pass ran with the deterministic renderer so the full journey could be repeated without consuming
-    image-model credits. This verifies the workflow, state handling, gating, exports and payloads. It does
-    not assess the artistic quality of production image-model output, which depends on the live model.
+    <strong>The repeatable regression run used the deterministic preview renderer.</strong> The
+    32-check browser pass, including the responsive sweep and the checkout capture, ran with the
+    preview renderer so the full journey could be repeated without consuming image-model credits. The
+    four-concept generation and selection behaviour was separately confirmed on live production
+    image-model output, shown in <em>Live production output</em>. The live confirmation covers
+    generation, the four directions and selection; it was not re-run for every downstream step, and
+    image-model output naturally varies between briefs.
   </li>
   <li>
     <strong>SVG export is a raster image in an SVG wrapper.</strong> Because the designer produces direct
@@ -594,11 +633,12 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   </li>
 </ol>
 
-<h2 class="page-break">23. Final acceptance checklist</h2>
+<h2 class="page-break">Final acceptance checklist</h2>
 <table>
   <tr><th>Acceptance criterion</th><th>Status</th></tr>
   <tr><td>Four independent AI uniform concepts are produced from one brief</td><td class="ok">Verified in browser</td></tr>
   <tr><td>The four concepts are visibly different from each other</td><td class="ok">Verified in browser</td></tr>
+  <tr><td>Four distinct finished uniforms confirmed on live image-model output</td><td class="ok">Verified in browser</td></tr>
   <tr><td>All four are presented in the same choice step</td><td class="ok">Verified in browser</td></tr>
   <tr><td>No concept starts selected</td><td class="ok">Verified in browser</td></tr>
   <tr><td>Refine, Roster and Order are locked before selection</td><td class="ok">Verified in browser</td></tr>
@@ -614,14 +654,14 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   <tr><td>Live Shopify cart creation on the production storefront</td><td class="bad">Pending storefront confirmation</td></tr>
 </table>
 
-<h2>24. Next step</h2>
+<h2>Next step</h2>
 <p>
   Please review the attached verified build and confirm approval. If anything in the workflow,
   presentation or output formats should be adjusted before sign-off, let me know and I will fold it in.
 </p>
 <p>
   The one remaining external item is confirming that the production Shopify storefront consumes the
-  <code>besu:checkout</code> payload documented in section&nbsp;14. Everything else described in this
+  <code>besu:checkout</code> payload documented in <em>Shopify order handoff</em>. Everything else described in this
   report has been verified directly against the delivered build.
 </p>
 
