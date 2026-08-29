@@ -34,6 +34,7 @@ const PLACEHOLDERS = [
 export function GarmentCanvas() {
   const s = useDesignerStore();
   const artwork = s.artwork.front || s.artwork.back;
+  const awaitingChoice = s.concepts.length > 0 && !s.selectedConceptId;
   const { busy, stage, kind } = useGenerationSession();
   const reduceMotion = useReducedMotion();
   const [activePlaceholder, setActivePlaceholder] = useState(0);
@@ -66,6 +67,17 @@ export function GarmentCanvas() {
               preserveAspectRatio="xMidYMid meet"
             />
           </svg>
+        ) : awaitingChoice ? (
+          // Concepts exist but none is chosen yet. Showing the inspiration gallery here would read as
+          // the customer's own result, so the canvas asks for the choice instead.
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white px-6 text-center">
+            <p className="m-0 text-[13px] font-semibold tracking-[-0.01em] md:text-[15px]">
+              {s.concepts.length} concepts ready
+            </p>
+            <p className="m-0 max-w-[22rem] text-[11.5px] leading-snug text-muted md:text-[12.5px]">
+              Pick the direction you like best and it will open here at full size, ready to refine.
+            </p>
+          </div>
         ) : (
           <div className="absolute inset-0 flex bg-white">
             <aside className="relative z-10 flex w-[92px] shrink-0 flex-col items-stretch gap-3 self-center py-4 pl-3 md:w-[108px] md:gap-3.5 md:pl-4">
