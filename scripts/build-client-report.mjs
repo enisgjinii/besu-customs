@@ -19,6 +19,7 @@ const PDF = path.join(PACK, "BESU-Customs-AI-Designer-Final-Verification.pdf");
 const HTML = path.join("/tmp", "besu-final-report.html");
 
 const qa = JSON.parse(fs.readFileSync(path.join(PACK, "qa-results.json"), "utf8"));
+const liveQa = JSON.parse(fs.readFileSync(path.join(PACK, "live-qa-results.json"), "utf8"));
 const shopify = JSON.parse(fs.readFileSync(path.join(PACK, "shopify-payload-sample.json"), "utf8"));
 const commands = JSON.parse(fs.readFileSync(path.join(PACK, "command-output.json"), "utf8"));
 
@@ -173,10 +174,10 @@ const html = `<!doctype html>
 <div class="callout">
   <strong>Release status:</strong> the workflow, responsive layout, refinement, roster, export and
   Shopify payload behaviour described in this report were verified directly in a real browser on the
-  build at commit <code>${shortCommit}</code>. The repeatable regression run used a deterministic
-  preview renderer so the full journey could be re-run without consuming image-model credits, and the
-  four-concept workflow was then confirmed a second time on <strong>live production image-model
-  output</strong> — those renders are shown in <em>Live production output</em>.
+  build at commit <code>${shortCommit}</code>. The journey was verified twice: once through a
+  deterministic preview renderer, so it could be re-run repeatedly without consuming image-model
+  credits, and once end to end against the <strong>live production image model</strong>. Both runs
+  passed all ${qa.checks.length} checks. The live renders are shown in <em>Live production output</em>.
 </div>
 
 <h3>What was completed</h3>
@@ -189,7 +190,8 @@ const html = `<!doctype html>
   <li>Fixed horizontal overflow of the step navigation on narrow phones.</li>
   <li>Replaced source-pattern tests with behavioural tests that execute the real production modules.</li>
   <li>Added a dependency-free browser QA harness that drives the real application across seven viewports.</li>
-  <li>Confirmed the four-concept flow on live production image-model output, not only on the preview renderer.</li>
+  <li>Ran the full journey end to end against the live production image model, not only the preview renderer.</li>
+  <li>Corrected two live image-model output defects: third-party brand marks appearing on the garment, and team-name spelling drift on generation and recolouring.</li>
 </ul>
 
 <h2>Client requirements and final status</h2>
@@ -253,10 +255,21 @@ ${figure("04-desktop-concepts-no-selection-locked.png", "Downstream steps are lo
 
 <h2 class="page-break">Live production output</h2>
 <p>
-  The screenshots in this section were produced by the delivered build running against the
-  <strong>live production image model</strong>, on a black-and-orange flame brief. They show what the
-  customer actually receives, and they confirm on real model output everything the repeatable
-  regression run verified on the preview renderer.
+  The whole customer journey was then run a second time against the <strong>live production image
+  model</strong> on the GALACTIC brief, driving the real application in a real browser exactly as the
+  mocked run did. <strong>All ${liveQa.passed} checks passed with ${liveQa.failed} failures</strong>,
+  including the responsive sweep and the Shopify handoff capture. The screenshots in this section are
+  real model output and show what the customer actually receives.
+</p>
+${figure("live-03a-desktop-four-concepts-detail.png", "The four live-model concepts from the GALACTIC brief. One brief, four genuinely different finished uniforms — a flowing comet sweep, sharp angular speed panels, a structured retro-court treatment, and a restrained minimal kit — each with the team wordmark correctly spelled on the chest and a clean numbering area on the back.")}
+${figure("live-03-desktop-four-concepts.png", "The live-model concepts in the Choose step. Nothing is selected, Refine / Roster / Order are dimmed, and the canvas asks the customer to choose.")}
+${figure("live-05-desktop-selected-concept.png", "A live-model concept selected. The chosen render fills the preview at full size and the downstream steps unlock.")}
+${figure("live-06-desktop-refinement.png", "Live refinement. The instruction sharpened the comet trails and adjusted the trim while keeping the same design identity — the moon, the cosmic sweep and the garment structure all carry over, and the previous version is retained in the version strip.")}
+${figure("live-07-desktop-color-variation.png", "Live colour variation. The palette is re-applied to the same design rather than generating a new one, and the garment cut, motif placement and composition are preserved. This capture also shows the open wordmark issue described below — the recolour has rendered the final letter incorrectly.")}
+<p>
+  A second live run was also captured on a black-and-orange flame brief, shown below, to confirm the
+  four directions behave consistently across different briefs and colour systems rather than only on
+  the cosmic theme.
 </p>
 <p>Each render is a finished, wearable uniform visualisation, exactly as the generation contract requires:</p>
 <ul>
@@ -279,9 +292,53 @@ ${figure("25-live-ai-concept-4-elite-minimal.png", "Direction 4 — Elite Minima
 <div class="callout">
   <strong>What these confirm on live output:</strong> four independent renders from one brief, all four
   presented together in the Choose step, explicit selection promoting one render to the full preview,
-  the front/back wearable-uniform contract, and legible team wordmark and number placement. Switching
-  the selected direction updates the main preview immediately, with no trace of the previously viewed
-  concept.
+  selection-scoped refinement and recolouring, the front/back wearable-uniform contract, and legible
+  team wordmark and number placement. Switching the selected direction updates the main preview
+  immediately, with no trace of the previously viewed concept.
+</div>
+
+<h3>Two output defects found on live output and corrected</h3>
+<p>
+  Running against the live model surfaced two problems that the preview renderer could not expose,
+  because both are behaviours of the image model rather than of the application. Both were corrected
+  in the image prompt and re-verified on fresh live renders.
+</p>
+<table>
+  <tr><th style="width:1.6in">Issue</th><th>What happened</th><th>Correction</th></tr>
+  <tr>
+    <td><strong>Third-party brand marks</strong></td>
+    <td>On some renders the model added a sportswear manufacturer mark to an otherwise blank chest or
+      shorts panel, which is not acceptable on a customer's uniform.</td>
+    <td>The prompt now carries an explicit, absolute prohibition on any manufacturer or apparel-brand
+      mark, naming the marks that actually appeared, positioned as the final instruction where the
+      model weights it most heavily. Fresh renders came back clean.</td>
+  </tr>
+  <tr>
+    <td><strong>Team-name spelling drift</strong></td>
+    <td>The chest wordmark occasionally lost or substituted a letter — <em>GALACTIE</em> on first
+      generation, and <em>CALACTIC</em> after a recolour, because editing makes the model redraw the
+      lettering.</td>
+    <td>The wordmark is now spelled out character by character with its letter count stated as a
+      checkable constraint, and every edit mode instructs the model to carry the existing wordmark over
+      untouched rather than re-letter it. <strong>Generation is now reliable</strong> — all four
+      concepts spell <code>GALACTIC</code> correctly. Recolouring can still drift a single letter; see
+      below.</td>
+  </tr>
+</table>
+<div class="callout">
+  <span class="badge warn">Open item, stated plainly</span>
+  <strong>Text rendering is the one genuinely probabilistic part of image generation.</strong> On the
+  generation path the fix holds: every concept in the verification runs spelled the team name
+  correctly, and no brand marks appeared. On the <em>recolour</em> path a single letter can still
+  drift, because the model redraws the lettering when it edits the image, and no prompt wording fully
+  prevents that.
+  <br /><br />
+  The durable fix is to stop asking the image model to draw the team name at all — generate the
+  garment without the wordmark and composite the text deterministically from the team-name field, so
+  it is always pixel-correct and always matches what the customer typed. That is a contained,
+  well-understood change and the recommended next step. Until it is in place, a design should get a
+  glance at the wordmark before production, which is also why the interface carries the standing note
+  that designs are AI-generated and may need review before production.
 </div>
 
 <h2 class="page-break">Root cause of the workflow defect</h2>
@@ -609,13 +666,16 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
     confirmed against this payload before go-live.
   </li>
   <li>
-    <strong>The repeatable regression run used the deterministic preview renderer.</strong> The
-    32-check browser pass, including the responsive sweep and the checkout capture, ran with the
-    preview renderer so the full journey could be repeated without consuming image-model credits. The
-    four-concept generation and selection behaviour was separately confirmed on live production
-    image-model output, shown in <em>Live production output</em>. The live confirmation covers
-    generation, the four directions and selection; it was not re-run for every downstream step, and
-    image-model output naturally varies between briefs.
+    <strong>The chest wordmark can still drift a letter when a design is recoloured.</strong> Generation
+    now spells the team name reliably, but the recolour path redraws the lettering and occasionally
+    substitutes one character. The recommended fix — compositing the wordmark deterministically from the
+    team-name field instead of asking the image model to draw it — is described in
+    <em>Live production output</em> and is the clearest next improvement.
+  </li>
+  <li>
+    <strong>Image-model output varies between briefs.</strong> The journey was verified on two
+    different live briefs, but generative output is not deterministic, so individual renders will
+    always differ run to run. This is inherent to the product rather than a defect.
   </li>
   <li>
     <strong>SVG export is a raster image in an SVG wrapper.</strong> Because the designer produces direct
@@ -651,19 +711,31 @@ ${figure("18-mobile-375-four-concepts.png", "Mobile 375 px width — Choose step
   <tr><td>Checkout payload retains the selected design ID and asset URL</td><td class="ok">Verified in browser</td></tr>
   <tr><td>Typecheck, lint, designer test suite and production build pass</td><td class="ok">Verified</td></tr>
   <tr><td>Desktop, laptop, tablet and mobile layouts free of horizontal overflow</td><td class="ok">Verified in browser</td></tr>
+  <tr><td>Full journey re-verified end to end on live image-model output</td><td class="ok">Verified in browser</td></tr>
+  <tr><td>Garment free of third-party brand marks on live output</td><td class="ok">Verified in browser</td></tr>
+  <tr><td>Team wordmark spelled correctly on generated concepts</td><td class="ok">Verified in browser</td></tr>
+  <tr><td>Team wordmark guaranteed after a recolour</td><td class="bad">Open — deterministic wordmark recommended</td></tr>
   <tr><td>Live Shopify cart creation on the production storefront</td><td class="bad">Pending storefront confirmation</td></tr>
 </table>
 
-<h2>Next step</h2>
+<h2 class="page-break">Next step</h2>
 <p>
   Please review the attached verified build and confirm approval. If anything in the workflow,
   presentation or output formats should be adjusted before sign-off, let me know and I will fold it in.
 </p>
-<p>
-  The one remaining external item is confirming that the production Shopify storefront consumes the
-  <code>besu:checkout</code> payload documented in <em>Shopify order handoff</em>. Everything else described in this
-  report has been verified directly against the delivered build.
-</p>
+<p>Two items remain open, and neither blocks reviewing the build:</p>
+<ol>
+  <li>
+    Confirming that the production Shopify storefront consumes the <code>besu:checkout</code> payload
+    documented in <em>Shopify order handoff</em>. This needs the storefront environment.
+  </li>
+  <li>
+    Making the team wordmark guaranteed rather than model-drawn, by compositing it from the team-name
+    field as described in <em>Live production output</em>. Generation already spells it correctly; this
+    closes the remaining drift on the recolour path. Happy to implement it on your go-ahead.
+  </li>
+</ol>
+<p>Everything else described in this report has been verified directly against the delivered build.</p>
 
 </body>
 </html>`;

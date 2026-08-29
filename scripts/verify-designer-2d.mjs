@@ -77,6 +77,32 @@ test("prompt requests a finished direct AI basketball uniform", () => {
   assert.doesNotMatch(prompt, /Do not show a garment mockup/i);
 });
 
+test("prompt bars third-party brand marks and pins the exact team-name spelling", () => {
+  const prompt = openai.buildArtworkPrompt({
+    garmentType: "uniform",
+    designDescription: "basketball uniform, outer space moon and comets",
+    teamName: "GALACTIC",
+    style: "aggressive",
+    view: "front",
+    sport: "Basketball",
+    mode: "generate",
+  });
+  // A manufacturer mark on a customer's uniform is a trademark problem, so the ban is explicit
+  // and must be the last instruction, where the model weights it most heavily.
+  assert.match(prompt, /NO manufacturer or third-party brand mark/i);
+  assert.match(prompt, /swoosh/i);
+  assert.match(prompt, /three stripes/i);
+  assert.match(prompt, /jumpman/i);
+  const marksAt = prompt.indexOf("ABSOLUTE REQUIREMENT");
+  const brandAt = prompt.indexOf("Style direction");
+  assert.ok(marksAt > brandAt, "the brand-mark ban must come late in the prompt");
+  // Image models drop letters, so the wordmark is spelled out and the letter count asserted.
+  assert.match(prompt, /G-A-L-A-C-T-I-C/);
+  assert.match(prompt, /8 letters/);
+  assert.match(prompt, /SPELLING IS CRITICAL/i);
+  assert.match(prompt, /Do not print any player name or number/i);
+});
+
 test("color variation preserves direct uniform composition", () => {
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
@@ -92,6 +118,11 @@ test("color variation preserves direct uniform composition", () => {
   assert.match(prompt, /Preserve the exact garment cut/i);
   assert.match(prompt, /#00A3FF/);
   assert.match(prompt, /Do not redesign the kit/i);
+  // Recolouring made the model redraw the chest lettering and drop a letter, so edits must carry
+  // the wordmark over rather than re-letter it.
+  assert.match(prompt, /Carry the existing front chest wordmark over unchanged/i);
+  assert.match(prompt, /G-A-L-A-C-T-I-C/);
+  assert.match(prompt, /Do not re-letter/i);
 });
 
 test("refinement edits the previous direct render", () => {
@@ -107,6 +138,7 @@ test("refinement edits the previous direct render", () => {
   assert.match(prompt, /REFINEMENT MODE/i);
   assert.match(prompt, /previous direct uniform render/i);
   assert.match(prompt, /sharper comets/i);
+  assert.match(prompt, /Carry the existing front chest wordmark over unchanged/i);
 });
 
 const templates = loadTypeScriptModule("lib/designer/templates.ts", {

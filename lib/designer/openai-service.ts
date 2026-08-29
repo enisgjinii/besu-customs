@@ -27,6 +27,14 @@ const PRESENTATION_RULE =
 const QUALITY_RULE =
   "Use realistic sportswear construction, believable fabric, professional cut-and-sew details, crisp trims, clean seams, premium sublimation graphics, balanced proportions, and polished commercial product-design rendering.";
 
+/**
+ * Image models trained on retail sportswear tend to add a manufacturer mark on a blank jersey.
+ * Any third-party mark on a customer's uniform is a trademark problem, so this is stated last,
+ * where instructions carry the most weight, and names the marks that actually show up.
+ */
+const NO_THIRD_PARTY_MARKS_RULE =
+  "ABSOLUTE REQUIREMENT: the garment must carry NO manufacturer or third-party brand mark of any kind. Do not add a Nike swoosh, Adidas three stripes, Jordan jumpman, Under Armour, Puma, New Balance, Champion, Reebok or any other real or invented apparel-brand logo, wordmark, monogram, chest tag, sleeve badge, hem tab or shorts-leg mark. The only permitted graphics are the requested team wordmark and the described design artwork. Leave every other area of the garment free of marks.";
+
 function paletteClause(colors?: DesignerColors) {
   if (!colors) {
     return "Invent a cohesive professional team-uniform palette matching the brief, with three dominant colors and strong contrast.";
@@ -46,12 +54,28 @@ function kitClause(garmentType: GarmentType, sport?: string) {
 }
 
 function typographyClause(teamName: string) {
+  // Image models routinely drop or swap letters in rendered text, so the wordmark is spelled out
+  // character by character and the exact letter count is stated as a checkable constraint.
+  const spelled = teamName.trim().split("").join("-");
+  const letters = teamName.replace(/\s/g, "").length;
   return [
     `Team name: ${teamName}.`,
     `Render the exact team name \"${teamName}\" prominently on the FRONT jersey chest when a jersey is present.`,
-    "Keep the BACK visually clean with a clear player-name and number zone. Do not invent player names or numbers during initial concept generation.",
+    `SPELLING IS CRITICAL: the wordmark must read exactly ${spelled} — ${letters} letters, correctly spelled, no missing, extra, substituted or reversed letters. Proofread the lettering before finishing.`,
+    "Keep the BACK visually clean with a clear player-name and number zone. Do not print any player name or number on the front or the back during initial concept generation.",
     "Do not add any other words, slogans, fake brands, sponsor marks, watermarks, or random typography.",
   ].join(" ");
+}
+
+/**
+ * Editing an existing render makes the model redraw the chest lettering, which is where team names
+ * drift a letter at a time (GALACTIC -> CALACTIC). Every edit mode therefore restates the wordmark
+ * as something to carry over untouched rather than to re-letter.
+ */
+function wordmarkLockClause(teamName: string) {
+  const name = teamName.trim();
+  if (!name) return "";
+  return `Carry the existing front chest wordmark over unchanged: it must still read exactly "${name}" (${name.split("").join("-")}) with identical spelling, letterforms and placement. Do not re-letter, re-spell, translate, restyle or nudge the wordmark.`;
 }
 
 function modeClause(input: GenerateDesignInput) {
@@ -61,6 +85,7 @@ function modeClause(input: GenerateDesignInput) {
       "COLOR VARIATION MODE: Edit the previous direct uniform render.",
       "Preserve the exact garment cut, front/back presentation, graphic composition, motifs, panel layout, trims, and visual identity.",
       "Only change the uniform colors to the requested palette. Do not redesign the kit.",
+      wordmarkLockClause(input.teamName),
       input.correction ? `Palette direction: ${input.correction}.` : "",
     ].filter(Boolean).join(" ");
   }
@@ -70,7 +95,8 @@ function modeClause(input: GenerateDesignInput) {
       input.correction
         ? `Requested visual revision: ${input.correction}. Keep all unmentioned parts of the uniform and presentation consistent.`
         : "Improve the selected uniform render while preserving its identity and layout.",
-    ].join(" ");
+      wordmarkLockClause(input.teamName),
+    ].filter(Boolean).join(" ");
   }
   return "Generate a new finished uniform concept from scratch based on the brief.";
 }
@@ -118,6 +144,7 @@ export function buildArtworkPrompt(input: GenerateDesignInput): string {
     QUALITY_RULE,
     PRESENTATION_RULE,
     garmentFitClause(input.sport),
+    NO_THIRD_PARTY_MARKS_RULE,
     "Return one direct AI product-render image of the uniform concept.",
   ].filter(Boolean).join(" ");
 }

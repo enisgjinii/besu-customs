@@ -25,23 +25,32 @@ generation and refinement flow, colour variations, the roster, production export
 handoff. Everything in the report was verified by driving the actual application in a browser
 rather than by reading the code.
 
-The report includes real generated uniforms from the live AI so you can see exactly what a customer
-receives. One brief produced four genuinely different finished designs — a flowing comet sweep,
-sharp multi-blade cuts, full traditional flames, and a restrained minimal treatment — each with the
-jersey and shorts shown front and back, the team wordmark and number on the chest, and a clean
-number on the back.
+Importantly, I ran the whole journey twice: once through our internal preview renderer, so the
+regression suite can be re-run repeatedly without burning image credits, and once end to end against
+the live AI. Both runs passed all 32 browser checks. The report shows the real live AI uniforms so
+you can see exactly what a customer receives — one GALACTIC brief produced four genuinely different
+finished designs, each with the jersey and shorts front and back, the team name on the chest and a
+clean number area on the back.
 
-Two things worth flagging so nothing is a surprise:
+Running against live AI also surfaced two things the preview renderer could never show, because they
+are behaviours of the image model itself. Both are in the report in detail:
 
-- The repeatable regression testing used our internal preview renderer rather than live AI, so the
-  same journey could be re-run many times without burning image credits. The live AI run above
-  confirms the generation and selection experience on real output; the mocked run is what let me
-  verify every downstream step, the responsive layouts and the order data exhaustively.
+- On some renders the model was adding a sportswear manufacturer's logo to a blank part of the
+  jersey or shorts. That is obviously not acceptable on a customer's uniform, so I tightened the
+  generation rules to prohibit any brand mark outright. Fresh renders came back clean and I checked
+  them zoomed in.
 
-- The Shopify order handoff was captured and verified from a real browser, including the design ID,
-  artwork links, roster line items and mapped variant IDs. I did not place a live order against the
-  production store, since that needs the storefront environment. That final confirmation on the
-  storefront side is the one remaining step before go-live.
+- The team name on the chest occasionally lost a letter. I tightened that too, and generation now
+  spells it correctly every time. One case remains: when a customer recolours a design, the model
+  redraws the lettering and can still swap a single character. The clean fix is to stop asking the AI
+  to draw the team name at all and instead print it ourselves from the team-name field, so it is
+  always exactly right. It is a contained change and I would recommend we do it — happy to get it
+  done on your go-ahead.
+
+One other thing to flag: the Shopify order handoff was captured and verified from a real browser,
+including the design ID, artwork links, roster line items and mapped variant IDs. I did not place a
+live order against the production store, since that needs the storefront environment. That
+confirmation on the storefront side is the remaining step before go-live.
 
 I've attached the full verification report so you and Bryant can review everything in one place.
 

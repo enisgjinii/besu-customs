@@ -1,7 +1,7 @@
 {
   "blocked": false,
-  "designId": "1d8f6ec3-491f-4988-8b2d-624de6b1de3f",
-  "frontArtwork": "http://localhost:3200/api/designer/mock?primary=%230A0A0A&secondary=%2300A3FF&accent=%23FFFFFF&view=front&seed=1xletiv&variant=0&rev=664199ff&team=GALACTIC",
+  "designId": "b08e6d57-e4bd-47a9-a4d5-37a582d6e558",
+  "frontArtwork": "http://localhost:3300/api/designer/asset/2026-08-29/4079dd49-1393-44e1-a7b6-65a0ffff8615.png",
   "items": 2,
   "variantIds": [
     51354887192854,
@@ -17,6 +17,6 @@
   ],
   "hasBase64": false,
   "designIdOnItems": true,
-  "note": "Design: 1d8f6ec3-491f-4988-8b2d-624de6b1de3f | Team: GALACTIC | Garment: Basketball uniform | Qty: 5 | Customer: Michael Bryant <michael@besucustoms.com>",
-  "capturedAt": "2026-08-29T03:26:26.504Z"
+  "note": "Design: b08e6d57-e4bd-47a9-a4d5-37a582d6e558 | Team: GALACTIC | Garment: Basketball uniform | Qty: 5 | Customer: Michael Bryant <michael@besucustoms.com>",
+  "capturedAt": "2026-08-29T10:07:21.986Z"
 }

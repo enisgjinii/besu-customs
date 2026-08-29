@@ -1,0 +1,263 @@
+{
+  "ranAt": "2026-08-29T10:09:32.979Z",
+  "baseUrl": "http://localhost:3300",
+  "mode": "live production image model (DESIGNER_MOCK_AI=false)",
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36",
+  "passed": 32,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "designer shell renders on the public route",
+      "ok": true,
+      "detail": "v17-studio-minimal"
+    },
+    {
+      "name": "product step lists production products and basketball uniform is selected",
+      "ok": true,
+      "detail": "18 products, default \"Basketball Uniform\""
+    },
+    {
+      "name": "product change resets any prior design state",
+      "ok": true,
+      "detail": "jersey <-> uniform switch clears concepts"
+    },
+    {
+      "name": "brief step accepts the team name and design brief",
+      "ok": true,
+      "detail": "team GALACTIC, 217 char brief"
+    },
+    {
+      "name": "generating produces four separate AI concept requests",
+      "ok": true,
+      "detail": "4 requests issued"
+    },
+    {
+      "name": "four visually distinct concepts are shown together in the Choose step",
+      "ok": true,
+      "detail": "4 cards (4 visible), 4 unique renders"
+    },
+    {
+      "name": "no concept is auto-selected and Refine/Roster/Order are locked",
+      "ok": true,
+      "detail": "Refine, Roster and Order disabled with aria-disabled=true"
+    },
+    {
+      "name": "selecting a concept updates the preview, designId and unlocks downstream steps",
+      "ok": true,
+      "detail": "Cosmic Energy selected, preview + designId updated, downstream unlocked"
+    },
+    {
+      "name": "switching selection swaps cleanly with no stale state",
+      "ok": true,
+      "detail": "selection switches both directions without leaking artwork or history"
+    },
+    {
+      "name": "natural-language refinement edits the selected render",
+      "ok": true,
+      "detail": "history 1, designId preserved, 5 total generation calls"
+    },
+    {
+      "name": "colour variation recolours the current design without restarting it",
+      "ok": true,
+      "detail": "palette #0A0A0A / #00A3FF / #FFFFFF, garment identity preserved"
+    },
+    {
+      "name": "roster supports add, edit, second player and delete",
+      "ok": true,
+      "detail": "Bryant #24 XL/XL x2, Carter #8 L/M x1"
+    },
+    {
+      "name": "deleting a roster row removes only that row",
+      "ok": true,
+      "detail": "deleted one row, roster now 2"
+    },
+    {
+      "name": "order review captures customer details and validates the order",
+      "ok": true,
+      "detail": "Product | Brief | Choose | Refine | Roster | Order | Order | Review | Files | Team | GALACTIC | Qty | 5 | Colors | Name "
+    },
+    {
+      "name": "export panel offers PNG, SVG, PDF and ZIP for the current design",
+      "ok": true,
+      "detail": "PNG, SVG, PDF, ZIP"
+    },
+    {
+      "name": "PNG export renders the current design at the preview's aspect ratio",
+      "ok": true,
+      "detail": "2400x1600 raster from the current render"
+    },
+    {
+      "name": "Shopify checkout posts a besu:checkout payload carrying the current design",
+      "ok": true,
+      "detail": "designId b08e6d57-e4bd-47a9-a4d5-37a582d6e558, 2 items [2,3], variants 51354887192854, 51354887127318"
+    },
+    {
+      "name": "keyboard focus reaches the concept cards and prompt input",
+      "ok": true,
+      "detail": "19 focusable controls, prompt focusable"
+    },
+    {
+      "name": "interactive controls expose labels and state",
+      "ok": true,
+      "detail": "15 buttons and 5 inputs all labelled"
+    },
+    {
+      "name": "reduced motion is honoured",
+      "ok": true,
+      "detail": "shell renders with prefers-reduced-motion: reduce"
+    },
+    {
+      "name": "Desktop (1440x900) renders the Choose step correctly",
+      "ok": true,
+      "detail": "4 cards, no overflow, 6 tabs reachable"
+    },
+    {
+      "name": "Laptop (1280x800) renders the Choose step correctly",
+      "ok": true,
+      "detail": "4 cards, no overflow, 6 tabs reachable"
+    },
+    {
+      "name": "Tablet portrait (820x1180) renders the Choose step correctly",
+      "ok": true,
+      "detail": "4 cards, no overflow, 6 tabs reachable"
+    },
+    {
+      "name": "Tablet landscape (1180x820) renders the Choose step correctly",
+      "ok": true,
+      "detail": "4 cards, no overflow, 6 tabs reachable"
+    },
+    {
+      "name": "Mobile (390x844) renders the Choose step correctly",
+      "ok": true,
+      "detail": "4 cards, no overflow, 6 tabs reachable"
+    },
+    {
+      "name": "Small mobile (360x800) renders the Choose step correctly",
+      "ok": true,
+      "detail": "4 cards, no overflow, 6 tabs reachable"
+    },
+    {
+      "name": "Mobile 375 (375x812) renders the Choose step correctly",
+      "ok": true,
+      "detail": "4 cards, no overflow, 6 tabs reachable"
+    },
+    {
+      "name": "mobile roster form is usable",
+      "ok": true,
+      "detail": "3 inputs, min height 44px, no overflow"
+    },
+    {
+      "name": "mobile order step is usable",
+      "ok": true,
+      "detail": "no overflow at 390px"
+    },
+    {
+      "name": "no uncaught page exceptions",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no unexpected console errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no failed network requests",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "responsive": [
+    {
+      "viewport": "Desktop 1440x900",
+      "concepts": 4,
+      "overflow": 0,
+      "promptVisible": true,
+      "canvasVisible": true,
+      "cardsReadable": true,
+      "smallTouchTargets": 0
+    },
+    {
+      "viewport": "Laptop 1280x800",
+      "concepts": 4,
+      "overflow": 0,
+      "promptVisible": true,
+      "canvasVisible": true,
+      "cardsReadable": true,
+      "smallTouchTargets": 0
+    },
+    {
+      "viewport": "Tablet portrait 820x1180",
+      "concepts": 4,
+      "overflow": 0,
+      "promptVisible": true,
+      "canvasVisible": true,
+      "cardsReadable": true,
+      "smallTouchTargets": 0
+    },
+    {
+      "viewport": "Tablet landscape 1180x820",
+      "concepts": 4,
+      "overflow": 0,
+      "promptVisible": true,
+      "canvasVisible": true,
+      "cardsReadable": true,
+      "smallTouchTargets": 0
+    },
+    {
+      "viewport": "Mobile 390x844",
+      "concepts": 4,
+      "overflow": 0,
+      "promptVisible": true,
+      "canvasVisible": true,
+      "cardsReadable": true,
+      "smallTouchTargets": 0
+    },
+    {
+      "viewport": "Small mobile 360x800",
+      "concepts": 4,
+      "overflow": 0,
+      "promptVisible": true,
+      "canvasVisible": true,
+      "cardsReadable": true,
+      "smallTouchTargets": 0
+    },
+    {
+      "viewport": "Mobile 375 375x812",
+      "concepts": 4,
+      "overflow": 0,
+      "promptVisible": true,
+      "canvasVisible": true,
+      "cardsReadable": true,
+      "smallTouchTargets": 0
+    }
+  ],
+  "screenshots": [
+    "live-01-desktop-initial-product.png",
+    "live-02-desktop-ai-brief.png",
+    "live-03-desktop-four-concepts.png",
+    "live-03a-desktop-four-concepts-detail.png",
+    "live-04-desktop-concepts-no-selection-locked.png",
+    "live-05-desktop-selected-concept.png",
+    "live-06-desktop-refinement.png",
+    "live-07-desktop-color-variation.png",
+    "live-08-desktop-roster.png",
+    "live-09-desktop-order-review.png",
+    "live-10-desktop-export-options.png",
+    "live-19-laptop-four-concepts.png",
+    "live-11-tablet-four-concepts.png",
+    "live-12-tablet-selected-concept.png",
+    "live-20-tablet-landscape-four-concepts.png",
+    "live-14-mobile-four-concepts.png",
+    "live-15-mobile-selected-concept.png",
+    "live-21-mobile-small-four-concepts.png",
+    "live-18-mobile-375-four-concepts.png",
+    "live-13-mobile-initial.png",
+    "live-16-mobile-roster.png",
+    "live-17-mobile-order.png"
+  ],
+  "totalGenerationRequests": 10,
+  "consoleErrors": [],
+  "failedRequests": [],
+  "pageExceptions": []
+}

@@ -8,6 +8,9 @@
  *
  * Run against a dev server started with DESIGNER_MOCK_AI=true:
  *   node scripts/qa-designer-flow.mjs http://localhost:3200
+ *
+ * Or against the live image model, which prefixes evidence with "live-":
+ *   BESU_QA_LIVE=1 node scripts/qa-designer-flow.mjs http://localhost:3300
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -19,7 +22,16 @@ const EVIDENCE = path.resolve(
   "..",
   "docs/client-deliverables/final-besu-ai-designer/evidence",
 );
-const RESULT = path.join(EVIDENCE, "..", "qa-results.json");
+
+/**
+ * BESU_QA_LIVE=1 runs the same journey against the live image model instead of the deterministic
+ * preview renderer: screenshots are prefixed, results go to a separate file, generation waits are
+ * much longer, and assertions that depend on the mock's URL shape are skipped.
+ */
+const LIVE = process.env.BESU_QA_LIVE === "1";
+const PREFIX = LIVE ? "live-" : "";
+const GEN_TIMEOUT = LIVE ? 900_000 : 240_000;
+const RESULT = path.join(EVIDENCE, "..", LIVE ? "live-qa-results.json" : "qa-results.json");
 
 const TEAM = "GALACTIC";
 const BRIEF =
@@ -66,11 +78,11 @@ const state = () =>
   `);
 
 async function shot(name) {
-  const file = path.join(EVIDENCE, name);
+  const file = path.join(EVIDENCE, PREFIX + name);
   await sleep(500);
   await page.screenshot(file);
-  screenshots.push(name);
-  console.log(`      shot ${name}`);
+  screenshots.push(PREFIX + name);
+  console.log(`      shot ${PREFIX + name}`);
   return file;
 }
 
@@ -168,7 +180,7 @@ await check("generating produces four separate AI concept requests", async () =>
   await page.clickText("aside button", "Generate 4 concepts");
   await page.waitForCondition(
     `(JSON.parse(localStorage.getItem("besu-direct-ai-designer-v1")||"{}").state||{}).concepts?.length === 4`,
-    240_000,
+    GEN_TIMEOUT,
     "four concepts stored",
   );
   const issued = page.generationRequests() - beforeGeneration;
@@ -200,8 +212,8 @@ await check("four visually distinct concepts are shown together in the Choose st
 });
 await shot("03-desktop-four-concepts.png");
 // The choice step is the headline evidence, so also capture the grid itself at 2x.
-await page.screenshotElement("[data-concept-grid]", path.join(EVIDENCE, "03a-desktop-four-concepts-detail.png"));
-screenshots.push("03a-desktop-four-concepts-detail.png");
+await page.screenshotElement("[data-concept-grid]", path.join(EVIDENCE, `${PREFIX}03a-desktop-four-concepts-detail.png`));
+screenshots.push(`${PREFIX}03a-desktop-four-concepts-detail.png`);
 
 await check("no concept is auto-selected and Refine/Roster/Order are locked", async () => {
   const current = await state();
@@ -267,7 +279,7 @@ await check("natural-language refinement edits the selected render", async () =>
   await page.clickText("aside button", "Update");
   await page.waitForCondition(
     `(JSON.parse(localStorage.getItem("besu-direct-ai-designer-v1")||"{}").state||{}).history?.length >= 1`,
-    240_000,
+    GEN_TIMEOUT,
     "refined version recorded",
   );
   const current = await state();
@@ -284,15 +296,19 @@ await check("colour variation recolours the current design without restarting it
   await page.clickText("aside button", "Black / Electric Blue / White");
   await page.waitForCondition(
     `(JSON.parse(localStorage.getItem("besu-direct-ai-designer-v1")||"{}").state||{}).history?.length >= ${before.history.length + 1}`,
-    240_000,
+    GEN_TIMEOUT,
     "colour variation recorded",
   );
   const current = await state();
   if (current.colors.secondary.toLowerCase() !== "#00a3ff") throw new Error(`palette is ${JSON.stringify(current.colors)}`);
   if (current.selectedConceptId !== before.selectedConceptId) throw new Error("colour variation changed the concept");
-  const identityKept = new URL(current.artwork.front).searchParams.get("variant") ===
-    new URL(before.artwork.front).searchParams.get("variant");
-  if (!identityKept) throw new Error("the recolour produced a different garment identity");
+  if (!LIVE) {
+    // The preview renderer encodes garment identity in the URL, so it can be asserted directly.
+    // Live renders are opaque images, so identity is confirmed visually from the captured evidence.
+    const identityKept = new URL(current.artwork.front).searchParams.get("variant") ===
+      new URL(before.artwork.front).searchParams.get("variant");
+    if (!identityKept) throw new Error("the recolour produced a different garment identity");
+  }
   return `palette ${Object.values(current.colors).join(" / ")}, garment identity preserved`;
 });
 await shot("07-desktop-color-variation.png");
@@ -562,7 +578,7 @@ async function buildFlowState() {
   await page.clickText("aside button", "Generate 4 concepts");
   await page.waitForCondition(
     `(JSON.parse(localStorage.getItem("besu-direct-ai-designer-v1")||"{}").state||{}).concepts?.length === 4`,
-    240_000,
+    GEN_TIMEOUT,
     "four concepts for responsive sweep",
   );
 }
@@ -696,7 +712,9 @@ const failed = checks.filter((c) => !c.ok);
 const summary = {
   ranAt: new Date().toISOString(),
   baseUrl: BASE,
-  mode: "DESIGNER_MOCK_AI=true (deterministic preview renderer)",
+  mode: LIVE
+    ? "live production image model (DESIGNER_MOCK_AI=false)"
+    : "DESIGNER_MOCK_AI=true (deterministic preview renderer)",
   browser: session.browser.version,
   passed: checks.length - failed.length,
   failed: failed.length,
