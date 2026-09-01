@@ -36,8 +36,8 @@ const state = {
   teamName: "BESU ELITE",
   colors: { primary: "#101820", secondary: "#D4AF37", accent: "#FFFFFF" },
   artwork: {
-    front: "https://example.public.blob.vercel-storage.com/designer/generated/front.png",
-    back: "https://example.public.blob.vercel-storage.com/designer/generated/back.png",
+    front: "https://app.example.com/api/designer/asset/2026-09-01/front.png",
+    back: "https://app.example.com/api/designer/asset/2026-09-01/back.png",
   },
   roster: [
     { name: "Jordan", number: "23", topSize: "M", shortsSize: "L", quantity: 1 },

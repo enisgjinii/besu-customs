@@ -41,9 +41,11 @@ function test(name, fn) {
 
 const openai = loadTypeScriptModule("lib/designer/openai-service.ts");
 const parser = loadTypeScriptModule("lib/designer/brief-parser.ts");
+const pathMock = Object.assign(path, { default: path });
 const storage = loadTypeScriptModule("lib/designer/storage-service.ts", {
+  path: pathMock,
+  "node:path": pathMock,
   "node:fs/promises": { mkdir: async () => {}, writeFile: async () => {} },
-  "node:path": path,
 });
 
 test("brief parser extracts team, colors, and edit vs generate intent", () => {
@@ -172,8 +174,8 @@ test("Shopify payload uses selected direct AI render URLs", () => {
     teamName: "GALACTIC",
     colors: { primary: "#0A0A0A", secondary: "#00A3FF", accent: "#FFFFFF" },
     artwork: {
-      front: "https://example.public.blob.vercel-storage.com/designer/generated/direct-ai.png",
-      back: "https://example.public.blob.vercel-storage.com/designer/generated/direct-ai.png",
+      front: "https://app.example.com/api/designer/asset/2026-09-01/direct-ai.png",
+      back: "https://app.example.com/api/designer/asset/2026-09-01/direct-ai.png",
     },
     logoUrl: "data:image/png;base64,AAAA",
     roster: [{ name: "Bryant", number: "24", topSize: "M", shortsSize: "L", quantity: 1 }],
@@ -213,18 +215,7 @@ test("API refinement requires previous direct render", () => {
   assert.equal(needsPrevious("generate", undefined), false);
 });
 
-test("designer asset URLs accept Vercel Blob and same-origin local assets", () => {
-  assert.equal(
-    storage.isBlobDesignerAssetUrl("https://abc.public.blob.vercel-storage.com/designer/generated/x.png"),
-    true,
-  );
-  assert.equal(
-    storage.isAllowedDesignerAssetUrl(
-      "https://abc.public.blob.vercel-storage.com/designer/generated/x.png",
-      "https://app.example.com",
-    ),
-    true,
-  );
+test("designer asset URLs must be same-origin app assets", () => {
   assert.equal(
     storage.isAllowedDesignerAssetUrl(
       "https://app.example.com/api/designer/asset/2026-09-01/test.png",
@@ -232,43 +223,31 @@ test("designer asset URLs accept Vercel Blob and same-origin local assets", () =
     ),
     true,
   );
+  assert.equal(
+    storage.isLocalDesignerAssetUrl(
+      "https://app.example.com/api/designer/asset/2026-09-01/test.png",
+      "https://app.example.com",
+    ),
+    true,
+  );
   assert.equal(storage.isAllowedDesignerAssetUrl("https://evil.example.com/asset.png", "https://app.example.com"), false);
+  assert.equal(
+    storage.isAllowedDesignerAssetUrl("https://cdn.example.com/designer/x.png", "https://app.example.com"),
+    false,
+  );
 });
 
-test("local asset storage is disabled on serverless even when DESIGNER_LOCAL_ASSETS=true", () => {
-  const saved = {
-    DESIGNER_LOCAL_ASSETS: process.env.DESIGNER_LOCAL_ASSETS,
-    VERCEL: process.env.VERCEL,
-  };
+test("asset storage uses /tmp on serverless and project dir locally", () => {
+  const saved = { VERCEL: process.env.VERCEL };
   try {
-    process.env.DESIGNER_LOCAL_ASSETS = "true";
     process.env.VERCEL = "1";
     assert.equal(storage.isServerlessRuntime(), true);
-    assert.equal(storage.prefersLocalAssetStorage(), false);
-  } finally {
-    for (const [key, value] of Object.entries(saved)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  }
-});
-
-test("local asset storage can be enabled on a writable machine", () => {
-  const saved = {
-    DESIGNER_LOCAL_ASSETS: process.env.DESIGNER_LOCAL_ASSETS,
-    VERCEL: process.env.VERCEL,
-    AWS_LAMBDA_FUNCTION_NAME: process.env.AWS_LAMBDA_FUNCTION_NAME,
-  };
-  try {
-    process.env.DESIGNER_LOCAL_ASSETS = "true";
+    assert.match(storage.assetStorageRoot(), /^\/tmp\/designer-assets$/);
     delete process.env.VERCEL;
-    delete process.env.AWS_LAMBDA_FUNCTION_NAME;
-    assert.equal(storage.prefersLocalAssetStorage(), true);
+    assert.match(storage.assetStorageRoot(), /\.designer-assets$/);
   } finally {
-    for (const [key, value] of Object.entries(saved)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
+    if (saved.VERCEL === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = saved.VERCEL;
   }
 });
 

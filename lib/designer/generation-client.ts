@@ -40,7 +40,7 @@ export function isGenerationInFlight() { return Boolean(inFlightRequestId); }
 function friendlyError(code?: string, fallback?: string) {
   const messages: Record<string, string> = {
     missing_openai_key: "AI generation is not configured yet. Add the production OpenAI key, or enable mock mode for local testing.",
-    storage_not_configured: "AI render storage is not configured yet. Add the Supabase URL, service key, and assets bucket.",
+    storage_not_configured: "AI render storage failed. Try generating again.",
     invalid_previous_asset: "This AI uniform render is no longer available. Generate or select a uniform again before requesting an edit.",
     rate_limited: "Direct AI generation is temporarily busy. Wait a moment and try again.",
     duplicate: "An AI uniform is already rendering. Please wait for it to finish.",

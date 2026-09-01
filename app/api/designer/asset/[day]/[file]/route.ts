@@ -1,4 +1,4 @@
-import { localAssetRoot } from "@/lib/designer/storage-service";
+import { assetStorageRoot } from "@/lib/designer/storage-service";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,8 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 /**
- * Serve locally stored designer PNGs (dev fallback when Supabase is unreachable).
- * Path shape: /api/designer/asset/YYYY-MM-DD/<id>.png
+ * Serve designer PNGs written by the generate/logo routes.
+ * Local dev: .designer-assets/  ·  Vercel: /tmp/designer-assets/
  */
 export async function GET(
   _req: NextRequest,
@@ -18,8 +18,8 @@ export async function GET(
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
-  const absolute = path.join(localAssetRoot(), "generated", day, file);
-  const root = path.resolve(localAssetRoot());
+  const absolute = path.join(assetStorageRoot(), "generated", day, file);
+  const root = path.resolve(assetStorageRoot());
   if (!path.resolve(absolute).startsWith(root + path.sep)) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
