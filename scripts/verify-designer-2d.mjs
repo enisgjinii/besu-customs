@@ -215,7 +215,7 @@ test("API refinement requires previous direct render", () => {
   assert.equal(needsPrevious("generate", undefined), false);
 });
 
-test("designer asset URLs must be same-origin app assets", () => {
+test("designer asset URLs must be same-origin app assets or inline PNG data URLs", () => {
   assert.equal(
     storage.isAllowedDesignerAssetUrl(
       "https://app.example.com/api/designer/asset/2026-09-01/test.png",
@@ -230,11 +230,32 @@ test("designer asset URLs must be same-origin app assets", () => {
     ),
     true,
   );
+  assert.equal(
+    storage.isAllowedDesignerAssetUrl("data:image/png;base64,iVBORw0KGgo=", "https://app.example.com"),
+    true,
+  );
   assert.equal(storage.isAllowedDesignerAssetUrl("https://evil.example.com/asset.png", "https://app.example.com"), false);
   assert.equal(
     storage.isAllowedDesignerAssetUrl("https://cdn.example.com/designer/x.png", "https://app.example.com"),
     false,
   );
+});
+
+test("serverless storage returns inline PNG data URLs instead of disk paths", async () => {
+  const saved = { VERCEL: process.env.VERCEL };
+  const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13]);
+  try {
+    process.env.VERCEL = "1";
+    const stored = await storage.storeGeneratedAsset(png, "test-inline-asset", {
+      publicOrigin: "https://app.example.com",
+    });
+    assert.equal(stored.inline, true);
+    assert.match(stored.url, /^data:image\/png;base64,/);
+    assert.equal(stored.bucket, "inline");
+  } finally {
+    if (saved.VERCEL === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = saved.VERCEL;
+  }
 });
 
 test("asset storage uses /tmp on serverless and project dir locally", () => {

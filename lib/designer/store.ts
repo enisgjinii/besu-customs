@@ -56,6 +56,10 @@ function createInitialState(): DesignerState {
 
 const initial = createInitialState();
 
+function stripInlineAssetUrl(url: string | undefined) {
+  return url?.startsWith("data:") ? undefined : url;
+}
+
 type Actions = {
   patch: (value: Partial<DesignerState>) => void;
   setStep: (step: DesignerStep) => void;
@@ -210,8 +214,27 @@ export const useDesignerStore = create<DesignerState & Actions>()(
           layout: "kit",
         } as DesignerState;
       },
-      partialize: (s) =>
-        Object.fromEntries(Object.entries(s).filter(([, v]) => typeof v !== "function")) as DesignerState,
+      partialize: (s) => {
+        const entries = Object.fromEntries(
+          Object.entries(s).filter(([, v]) => typeof v !== "function"),
+        ) as DesignerState;
+        return {
+          ...entries,
+          concepts: s.concepts.map((concept) => ({
+            ...concept,
+            assetUrl: stripInlineAssetUrl(concept.assetUrl) || "",
+          })),
+          artwork: {
+            front: stripInlineAssetUrl(s.artwork.front),
+            back: stripInlineAssetUrl(s.artwork.back),
+          },
+          history: s.history.map((version) => ({
+            ...version,
+            assetUrl: stripInlineAssetUrl(version.assetUrl) || "",
+          })),
+          logoUrl: stripInlineAssetUrl(s.logoUrl),
+        };
+      },
     },
   ),
 );

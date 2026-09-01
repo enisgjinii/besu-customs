@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { assertOpenAiConfigured, getOpenAiConfig } from "@/lib/designer/config";
 import { buildArtworkPrompt, type GenerationMode } from "@/lib/designer/openai-service";
-import { isAllowedDesignerAssetUrl, storeGeneratedAsset } from "@/lib/designer/storage-service";
+import { isAllowedDesignerAssetUrl, decodeInlineDesignerAsset, isInlineDesignerAssetUrl, storeGeneratedAsset } from "@/lib/designer/storage-service";
 
 export const maxDuration = 120;
-const MAX_BODY_BYTES = 24_576;
+const MAX_BODY_BYTES = 12_000_000;
 const MAX_GENERATIONS_PER_MINUTE = 12;
 
 const colorsSchema = z.object({
@@ -25,7 +25,7 @@ const schema = z
     sport: z.string().trim().max(40).optional(),
     mode: z.enum(["generate", "refine", "color_variation"]).default("generate"),
     correction: z.string().trim().max(400).optional(),
-    previousAssetUrl: z.string().url().max(2000).optional(),
+    previousAssetUrl: z.string().max(12_000_000).optional(),
     inspiration: z.string().trim().max(400).optional(),
     hasLogo: z.boolean().optional(),
     layout: z.enum(["kit"]).default("kit"),
@@ -114,6 +114,27 @@ function toError(code: string, message: string, status = 500) {
   return Object.assign(new Error(message), { code, status });
 }
 
+async function loadPreviousAssetBytes(url: string, signal: AbortSignal): Promise<ArrayBuffer> {
+  if (isInlineDesignerAssetUrl(url)) {
+    const bytes = decodeInlineDesignerAsset(url);
+    if (bytes.byteLength > 10 * 1024 * 1024) {
+      throw toError("invalid_previous_asset", "The previous design is too large to edit.", 400);
+    }
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  }
+
+  const previous = await fetch(url, { signal, cache: "no-store" });
+  if (!previous.ok) throw toError("invalid_previous_asset", "The previous design could not be loaded for correction.", 400);
+  const bytes = await previous.arrayBuffer();
+  if (bytes.byteLength > 10 * 1024 * 1024) {
+    throw toError("invalid_previous_asset", "The previous design is too large to edit.", 400);
+  }
+  if (!previous.headers.get("content-type")?.toLowerCase().startsWith("image/png")) {
+    throw toError("invalid_previous_asset", "The previous design is not a PNG asset.", 400);
+  }
+  return bytes;
+}
+
 async function requestOpenAiImage(
   input: z.infer<typeof schema>,
   signal: AbortSignal,
@@ -156,15 +177,7 @@ async function requestOpenAiImage(
     if (!isAllowedAssetUrl(input.previousAssetUrl, origin)) {
       throw toError("invalid_previous_asset", "The previous artwork URL is not a permitted storage asset.", 400);
     }
-    const previous = await fetch(input.previousAssetUrl, { signal, cache: "no-store" });
-    if (!previous.ok) throw toError("invalid_previous_asset", "The previous design could not be loaded for correction.", 400);
-    const bytes = await previous.arrayBuffer();
-    if (bytes.byteLength > 10 * 1024 * 1024) {
-      throw toError("invalid_previous_asset", "The previous design is too large to edit.", 400);
-    }
-    if (!previous.headers.get("content-type")?.toLowerCase().startsWith("image/png")) {
-      throw toError("invalid_previous_asset", "The previous design is not a PNG asset.", 400);
-    }
+    const bytes = await loadPreviousAssetBytes(input.previousAssetUrl, signal);
     const form = new FormData();
     form.append("model", base.model);
     form.append("prompt", prompt);
@@ -172,11 +185,7 @@ async function requestOpenAiImage(
     form.append("quality", base.quality);
     form.append("background", base.background);
     form.append("output_format", base.output_format);
-    form.append(
-      "image",
-      new Blob([bytes], { type: previous.headers.get("content-type") || "image/png" }),
-      "previous-design.png",
-    );
+    form.append("image", new Blob([bytes], { type: "image/png" }), "previous-design.png");
     return fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
@@ -309,6 +318,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
       mock: false,
       localAsset: Boolean(stored.local),
+      inlineAsset: Boolean(stored.inline),
       mode: input.mode,
       colors: input.colors || null,
     };

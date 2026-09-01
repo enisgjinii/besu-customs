@@ -20,7 +20,28 @@ export type StoredAsset = {
   path: string;
   bucket: string;
   local?: boolean;
+  inline?: boolean;
 };
+
+const inlinePngPrefix = "data:image/png;base64,";
+
+export function isInlineDesignerAssetUrl(value: string) {
+  return value.startsWith(inlinePngPrefix);
+}
+
+export function decodeInlineDesignerAsset(value: string): Uint8Array {
+  if (!isInlineDesignerAssetUrl(value)) {
+    throw new DesignerStorageError("The inline artwork reference is not a PNG data URL.", "invalid_asset", 400);
+  }
+  const bytes = Uint8Array.from(Buffer.from(value.slice(inlinePngPrefix.length), "base64"));
+  if (!bytes.byteLength || bytes.byteLength > 20 * 1024 * 1024) {
+    throw new DesignerStorageError("Inline artwork is empty or exceeds the 20 MB limit.", "invalid_asset", 400);
+  }
+  if (!pngSignature.every((signature, index) => bytes[index] === signature)) {
+    throw new DesignerStorageError("Inline artwork is not a valid PNG.", "invalid_asset", 400);
+  }
+  return bytes;
+}
 
 /** Vercel/Lambda runtimes only allow writes under /tmp. */
 export function isServerlessRuntime() {
@@ -64,8 +85,9 @@ export function isLocalDesignerAssetUrl(value: string, origin: string) {
   }
 }
 
-/** URLs the generate route may fetch for refinement / recolour edits. */
+/** URLs the generate route may use for refinement / recolour edits. */
 export function isAllowedDesignerAssetUrl(value: string, origin?: string) {
+  if (isInlineDesignerAssetUrl(value)) return true;
   return Boolean(origin && isLocalDesignerAssetUrl(value, origin));
 }
 
@@ -95,6 +117,18 @@ export async function storeGeneratedAsset(
   }
 
   const { day, relative } = storagePathFor(id);
+  const normalizedPath = relative.replaceAll("\\", "/");
+
+  // Serverless disks are per-instance and ephemeral — inline PNGs keep renders visible in the browser.
+  if (isServerlessRuntime()) {
+    return {
+      url: `${inlinePngPrefix}${Buffer.from(bytes).toString("base64")}`,
+      path: normalizedPath,
+      bucket: "inline",
+      inline: true,
+    };
+  }
+
   const absolute = path.join(assetStorageRoot(), relative);
   await mkdir(path.dirname(absolute), { recursive: true });
   await writeFile(absolute, bytes);
@@ -102,8 +136,8 @@ export async function storeGeneratedAsset(
   const urlPath = `/api/designer/asset/${day}/${id}.png`;
   return {
     url: `${options.publicOrigin.replace(/\/$/, "")}${urlPath}`,
-    path: relative.replaceAll("\\", "/"),
-    bucket: isServerlessRuntime() ? "vercel-tmp" : "local",
+    path: normalizedPath,
+    bucket: "local",
     local: true,
   };
 }
