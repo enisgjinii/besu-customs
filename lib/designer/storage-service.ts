@@ -23,7 +23,23 @@ export type StoredAsset = {
   local?: boolean;
 };
 
-/** Directory for local/dev PNG assets (gitignored). */
+/** Vercel, Lambda and similar runtimes deploy to a read-only directory (/var/task). */
+export function isServerlessRuntime() {
+  return Boolean(
+    process.env.VERCEL ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.NETLIFY ||
+      process.env.CF_PAGES,
+  );
+}
+
+/** True when the app should persist generated PNGs on local disk instead of Supabase. */
+export function prefersLocalAssetStorage() {
+  if (isServerlessRuntime()) return false;
+  return process.env.DESIGNER_LOCAL_ASSETS === "true";
+}
+
+/** Directory for local/dev PNG assets (gitignored). Never used on serverless runtimes. */
 export function localAssetRoot() {
   return path.join(process.cwd(), ".designer-assets");
 }
@@ -60,6 +76,7 @@ export function assertStorageConfiguration() {
 }
 
 function allowLocalAssets() {
+  if (isServerlessRuntime()) return false;
   return (
     process.env.DESIGNER_LOCAL_ASSETS === "true" ||
     process.env.NODE_ENV === "development"
@@ -112,9 +129,15 @@ export async function storeGeneratedAsset(
     throw new DesignerStorageError("Generated artwork has an invalid asset ID.", "invalid_asset", 500);
   }
 
-  const forceLocal = process.env.DESIGNER_LOCAL_ASSETS === "true";
+  const forceLocal = prefersLocalAssetStorage();
   if (forceLocal) {
     return storeLocalAsset(bytes, id, options?.publicOrigin);
+  }
+
+  if (isServerlessRuntime() && process.env.DESIGNER_LOCAL_ASSETS === "true") {
+    console.warn(
+      "DESIGNER_LOCAL_ASSETS is set but ignored on serverless — using Supabase storage instead.",
+    );
   }
 
   try {

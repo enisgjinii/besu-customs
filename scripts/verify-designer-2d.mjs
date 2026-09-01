@@ -41,6 +41,11 @@ function test(name, fn) {
 
 const openai = loadTypeScriptModule("lib/designer/openai-service.ts");
 const parser = loadTypeScriptModule("lib/designer/brief-parser.ts");
+const storage = loadTypeScriptModule("lib/designer/storage-service.ts", {
+  "@supabase/supabase-js": { createClient: () => ({ storage: { from: () => ({}) } }) },
+  "node:fs/promises": { mkdir: async () => {}, writeFile: async () => {} },
+  "node:path": path,
+});
 
 test("brief parser extracts team, colors, and edit vs generate intent", () => {
   assert.equal(
@@ -207,6 +212,43 @@ test("API refinement requires previous direct render", () => {
   assert.equal(needsPrevious("refine", undefined), true);
   assert.equal(needsPrevious("color_variation", "https://x"), false);
   assert.equal(needsPrevious("generate", undefined), false);
+});
+
+test("local asset storage is disabled on serverless even when DESIGNER_LOCAL_ASSETS=true", () => {
+  const saved = {
+    DESIGNER_LOCAL_ASSETS: process.env.DESIGNER_LOCAL_ASSETS,
+    VERCEL: process.env.VERCEL,
+  };
+  try {
+    process.env.DESIGNER_LOCAL_ASSETS = "true";
+    process.env.VERCEL = "1";
+    assert.equal(storage.isServerlessRuntime(), true);
+    assert.equal(storage.prefersLocalAssetStorage(), false);
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test("local asset storage can be enabled on a writable machine", () => {
+  const saved = {
+    DESIGNER_LOCAL_ASSETS: process.env.DESIGNER_LOCAL_ASSETS,
+    VERCEL: process.env.VERCEL,
+    AWS_LAMBDA_FUNCTION_NAME: process.env.AWS_LAMBDA_FUNCTION_NAME,
+  };
+  try {
+    process.env.DESIGNER_LOCAL_ASSETS = "true";
+    delete process.env.VERCEL;
+    delete process.env.AWS_LAMBDA_FUNCTION_NAME;
+    assert.equal(storage.prefersLocalAssetStorage(), true);
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 const failed = results.filter((r) => !r.ok);

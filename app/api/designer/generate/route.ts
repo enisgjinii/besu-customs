@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { assertOpenAiConfigured, getOpenAiConfig } from "@/lib/designer/config";
 import { buildArtworkPrompt, type GenerationMode } from "@/lib/designer/openai-service";
-import { assertStorageConfiguration, isLocalDesignerAssetUrl, storeGeneratedAsset } from "@/lib/designer/storage-service";
+import { assertStorageConfiguration, isLocalDesignerAssetUrl, prefersLocalAssetStorage, storeGeneratedAsset } from "@/lib/designer/storage-service";
 
 export const maxDuration = 120;
 const MAX_BODY_BYTES = 24_576;
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(mock);
     }
 
-    if (process.env.DESIGNER_LOCAL_ASSETS !== "true") {
+    if (!prefersLocalAssetStorage()) {
       try {
         assertStorageConfiguration();
       } catch (error) {
