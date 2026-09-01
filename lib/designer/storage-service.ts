@@ -1,8 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const pngSignature = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+const BLOB_API = "https://blob.vercel-storage.com";
 
 export class DesignerStorageError extends Error {
   code: string;
@@ -33,10 +33,14 @@ export function isServerlessRuntime() {
   );
 }
 
-/** True when the app should persist generated PNGs on local disk instead of Supabase. */
+/** True when the app should persist generated PNGs on local disk instead of Vercel Blob. */
 export function prefersLocalAssetStorage() {
   if (isServerlessRuntime()) return false;
   return process.env.DESIGNER_LOCAL_ASSETS === "true";
+}
+
+function hasBlobToken() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 
 /** Directory for local/dev PNG assets (gitignored). Never used on serverless runtimes. */
@@ -44,62 +48,14 @@ export function localAssetRoot() {
   return path.join(process.cwd(), ".designer-assets");
 }
 
-export function assertStorageConfiguration() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/^["']|["']$/g, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim().replace(/^["']|["']$/g, "");
-  if (!url || !key) {
-    throw new DesignerStorageError(
-      "Asset storage is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
-      "storage_not_configured",
-    );
-  }
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    throw new DesignerStorageError(
-      "Asset storage is not configured. NEXT_PUBLIC_SUPABASE_URL must be a valid HTTPS URL.",
-      "storage_not_configured",
-    );
-  }
-  if (parsed.protocol !== "https:") {
-    throw new DesignerStorageError(
-      "Asset storage is not configured. NEXT_PUBLIC_SUPABASE_URL must use HTTPS.",
-      "storage_not_configured",
-    );
-  }
-  return {
-    url: parsed.toString().replace(/\/$/, ""),
-    key,
-    bucket: process.env.DESIGNER_ASSETS_BUCKET?.trim().replace(/^["']|["']$/g, "") || "designer-assets",
-  };
-}
-
 function allowLocalAssets() {
   if (isServerlessRuntime()) return false;
-  return (
-    process.env.DESIGNER_LOCAL_ASSETS === "true" ||
-    process.env.NODE_ENV === "development"
-  );
+  return process.env.DESIGNER_LOCAL_ASSETS === "true" || process.env.NODE_ENV === "development";
 }
 
-function isNetworkStorageFailure(message: string) {
-  return /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|network|getaddrinfo|nodename|DNS|Could not resolve/i.test(
-    message,
-  );
-}
-
-function humanizeStorageFailure(message: string, supabaseUrl?: string) {
-  if (!isNetworkStorageFailure(message)) return message;
-  let host = "your Supabase project";
-  if (supabaseUrl) {
-    try {
-      host = new URL(supabaseUrl).host;
-    } catch {
-      host = supabaseUrl;
-    }
-  }
-  return `Could not reach Supabase storage at ${host}. The URL may be wrong, the project may be paused or deleted, or the service role key may not match that project. In Vercel, set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from Supabase → Project Settings → API.`;
+function storagePathFor(id: string) {
+  const day = new Date().toISOString().slice(0, 10);
+  return { day, relative: `generated/${day}/${id}.png`, key: `designer/generated/${day}/${id}.png` };
 }
 
 async function storeLocalAsset(bytes: Uint8Array, id: string, publicOrigin?: string): Promise<StoredAsset> {
@@ -109,8 +65,7 @@ async function storeLocalAsset(bytes: Uint8Array, id: string, publicOrigin?: str
       "storage_not_configured",
     );
   }
-  const day = new Date().toISOString().slice(0, 10);
-  const relative = path.join("generated", day, `${id}.png`);
+  const { day, relative } = storagePathFor(id);
   const absolute = path.join(localAssetRoot(), relative);
   await mkdir(path.dirname(absolute), { recursive: true });
   await writeFile(absolute, bytes);
@@ -121,6 +76,74 @@ async function storeLocalAsset(bytes: Uint8Array, id: string, publicOrigin?: str
     bucket: "local",
     local: true,
   };
+}
+
+async function storeBlobAsset(bytes: Uint8Array, id: string): Promise<StoredAsset> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) {
+    throw new DesignerStorageError(
+      "Asset storage is not configured. Link a Vercel Blob store to this project or set BLOB_READ_WRITE_TOKEN.",
+      "storage_not_configured",
+    );
+  }
+  const { relative, key } = storagePathFor(id);
+  const response = await fetch(`${BLOB_API}/${key}`, {
+    method: "PUT",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "image/png",
+      "x-api-version": "7",
+      "x-add-random-suffix": "0",
+      "x-allow-overwrite": "1",
+    },
+    body: Buffer.from(bytes),
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new DesignerStorageError(
+      `Asset upload failed: ${detail || response.statusText}`.slice(0, 240),
+      "storage_upload_failed",
+    );
+  }
+  const payload = (await response.json()) as { url?: string };
+  if (!payload.url?.startsWith("https://")) {
+    throw new DesignerStorageError("Asset storage returned an unexpected public URL.", "storage_url_invalid");
+  }
+  return { url: payload.url, path: relative, bucket: "vercel-blob" };
+}
+
+/** True when a URL is a same-origin local designer asset. */
+export function isLocalDesignerAssetUrl(value: string, origin: string) {
+  try {
+    const asset = new URL(value);
+    const base = new URL(origin);
+    return (
+      asset.origin === base.origin &&
+      /^\/api\/designer\/asset\/\d{4}-\d{2}-\d{2}\/[a-zA-Z0-9_-]+\.png$/.test(asset.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** True when a URL is a public Vercel Blob designer asset. */
+export function isBlobDesignerAssetUrl(value: string) {
+  try {
+    const asset = new URL(value);
+    return (
+      asset.protocol === "https:" &&
+      (asset.hostname.endsWith(".public.blob.vercel-storage.com") ||
+        asset.hostname === "public.blob.vercel-storage.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** URLs the generate route may fetch for refinement / recolour edits. */
+export function isAllowedDesignerAssetUrl(value: string, origin?: string) {
+  if (origin && isLocalDesignerAssetUrl(value, origin)) return true;
+  return isBlobDesignerAssetUrl(value);
 }
 
 export async function storeGeneratedAsset(
@@ -142,76 +165,23 @@ export async function storeGeneratedAsset(
     throw new DesignerStorageError("Generated artwork has an invalid asset ID.", "invalid_asset", 500);
   }
 
-  const forceLocal = prefersLocalAssetStorage();
-  if (forceLocal) {
+  if (prefersLocalAssetStorage()) {
     return storeLocalAsset(bytes, id, options?.publicOrigin);
   }
 
-  if (isServerlessRuntime() && process.env.DESIGNER_LOCAL_ASSETS === "true") {
-    console.warn(
-      "DESIGNER_LOCAL_ASSETS is set but ignored on serverless — using Supabase storage instead.",
-    );
-  }
-
   try {
-    const { url, key, bucket } = assertStorageConfiguration();
-    const client = createClient(url, key, { auth: { persistSession: false } });
-    const storagePath = `generated/${new Date().toISOString().slice(0, 10)}/${id}.png`;
-    const { error } = await client.storage.from(bucket).upload(storagePath, bytes, {
-      contentType: "image/png",
-      upsert: false,
-      cacheControl: "31536000",
-    });
-    if (error) {
-      if (/bucket|not found/i.test(error.message)) {
-        throw new DesignerStorageError(
-          `Asset bucket "${bucket}" is missing or inaccessible. Create it with public read enabled.`,
-          "storage_not_configured",
-        );
-      }
-      throw new DesignerStorageError(
-        humanizeStorageFailure(`Asset upload failed: ${error.message}`, url),
-        "storage_upload_failed",
-      );
+    if (hasBlobToken() || isServerlessRuntime()) {
+      return await storeBlobAsset(bytes, id);
     }
-    const { data } = client.storage.from(bucket).getPublicUrl(storagePath);
-    const expectedPrefix = `${url}/storage/v1/object/public/${encodeURIComponent(bucket)}/`;
-    if (!data.publicUrl.startsWith(expectedPrefix)) {
-      throw new DesignerStorageError("Asset storage returned an unexpected public URL.", "storage_url_invalid");
-    }
-    return { url: data.publicUrl, path: storagePath, bucket };
+    return storeLocalAsset(bytes, id, options?.publicOrigin);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/^["']|["']$/g, "");
-    if (allowLocalAssets() && (isNetworkStorageFailure(message) || error instanceof DesignerStorageError)) {
-      if (
-        error instanceof DesignerStorageError &&
-        error.code === "storage_not_configured" &&
-        !isNetworkStorageFailure(message) &&
-        !/fetch failed/i.test(message)
-      ) {
-        // Missing env in production-like setups should still throw; in development fall through.
-        if (process.env.NODE_ENV !== "development") throw error;
-      }
+    if (allowLocalAssets() && options?.publicOrigin) {
       console.warn("Designer storage falling back to local assets", { message });
-      return storeLocalAsset(bytes, id, options?.publicOrigin);
+      return storeLocalAsset(bytes, id, options.publicOrigin);
     }
     throw error instanceof DesignerStorageError
       ? error
-      : new DesignerStorageError(humanizeStorageFailure(message, configuredUrl), "storage_upload_failed");
-  }
-}
-
-/** True when a URL is a same-origin local designer asset. */
-export function isLocalDesignerAssetUrl(value: string, origin: string) {
-  try {
-    const asset = new URL(value);
-    const base = new URL(origin);
-    return (
-      asset.origin === base.origin &&
-      /^\/api\/designer\/asset\/\d{4}-\d{2}-\d{2}\/[a-zA-Z0-9_-]+\.png$/.test(asset.pathname)
-    );
-  } catch {
-    return false;
+      : new DesignerStorageError(message || "Asset upload failed.", "storage_upload_failed");
   }
 }

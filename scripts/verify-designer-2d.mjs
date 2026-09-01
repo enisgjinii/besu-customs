@@ -42,7 +42,6 @@ function test(name, fn) {
 const openai = loadTypeScriptModule("lib/designer/openai-service.ts");
 const parser = loadTypeScriptModule("lib/designer/brief-parser.ts");
 const storage = loadTypeScriptModule("lib/designer/storage-service.ts", {
-  "@supabase/supabase-js": { createClient: () => ({ storage: { from: () => ({}) } }) },
   "node:fs/promises": { mkdir: async () => {}, writeFile: async () => {} },
   "node:path": path,
 });
@@ -173,8 +172,8 @@ test("Shopify payload uses selected direct AI render URLs", () => {
     teamName: "GALACTIC",
     colors: { primary: "#0A0A0A", secondary: "#00A3FF", accent: "#FFFFFF" },
     artwork: {
-      front: "https://example.supabase.co/storage/v1/object/public/designer-assets/generated/direct-ai.png",
-      back: "https://example.supabase.co/storage/v1/object/public/designer-assets/generated/direct-ai.png",
+      front: "https://example.public.blob.vercel-storage.com/designer/generated/direct-ai.png",
+      back: "https://example.public.blob.vercel-storage.com/designer/generated/direct-ai.png",
     },
     logoUrl: "data:image/png;base64,AAAA",
     roster: [{ name: "Bryant", number: "24", topSize: "M", shortsSize: "L", quantity: 1 }],
@@ -212,6 +211,28 @@ test("API refinement requires previous direct render", () => {
   assert.equal(needsPrevious("refine", undefined), true);
   assert.equal(needsPrevious("color_variation", "https://x"), false);
   assert.equal(needsPrevious("generate", undefined), false);
+});
+
+test("designer asset URLs accept Vercel Blob and same-origin local assets", () => {
+  assert.equal(
+    storage.isBlobDesignerAssetUrl("https://abc.public.blob.vercel-storage.com/designer/generated/x.png"),
+    true,
+  );
+  assert.equal(
+    storage.isAllowedDesignerAssetUrl(
+      "https://abc.public.blob.vercel-storage.com/designer/generated/x.png",
+      "https://app.example.com",
+    ),
+    true,
+  );
+  assert.equal(
+    storage.isAllowedDesignerAssetUrl(
+      "https://app.example.com/api/designer/asset/2026-09-01/test.png",
+      "https://app.example.com",
+    ),
+    true,
+  );
+  assert.equal(storage.isAllowedDesignerAssetUrl("https://evil.example.com/asset.png", "https://app.example.com"), false);
 });
 
 test("local asset storage is disabled on serverless even when DESIGNER_LOCAL_ASSETS=true", () => {

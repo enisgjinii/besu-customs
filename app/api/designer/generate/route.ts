@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { assertOpenAiConfigured, getOpenAiConfig } from "@/lib/designer/config";
 import { buildArtworkPrompt, type GenerationMode } from "@/lib/designer/openai-service";
-import { assertStorageConfiguration, isLocalDesignerAssetUrl, prefersLocalAssetStorage, storeGeneratedAsset } from "@/lib/designer/storage-service";
+import { isAllowedDesignerAssetUrl, storeGeneratedAsset } from "@/lib/designer/storage-service";
 
 export const maxDuration = 120;
 const MAX_BODY_BYTES = 24_576;
@@ -77,24 +77,7 @@ function cleanup(now: number) {
 }
 
 function isAllowedAssetUrl(value: string, origin?: string) {
-  try {
-    const asset = new URL(value);
-    if (origin && isLocalDesignerAssetUrl(value, origin)) return true;
-    const storage = process.env.NEXT_PUBLIC_SUPABASE_URL
-      ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL.trim().replace(/^["']|["']$/g, ""))
-      : null;
-    return (
-      asset.protocol === "https:" &&
-      Boolean(
-        storage &&
-          asset.hostname === storage.hostname &&
-          asset.port === storage.port &&
-          asset.pathname.startsWith("/storage/v1/object/public/"),
-      )
-    );
-  } catch {
-    return false;
-  }
+  return isAllowedDesignerAssetUrl(value, origin);
 }
 
 function isAllowedMockAssetUrl(value: string, origin: string) {
@@ -270,13 +253,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(mock);
     }
 
-    if (!prefersLocalAssetStorage()) {
-      try {
-        assertStorageConfiguration();
-      } catch (error) {
-        if (process.env.NODE_ENV !== "development") throw error;
-      }
-    }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 110_000);
     let upstream: Response;

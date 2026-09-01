@@ -12,7 +12,7 @@ function toError(code: string, message: string, status = 400) {
 
 /**
  * Upload a customer logo for deterministic overlay (not AI-generated text).
- * Returns a public Supabase URL — never embed giant base64 in Shopify props.
+ * Returns a public asset URL — never embed giant base64 in Shopify props.
  */
 export async function POST(req: NextRequest) {
   try {
