@@ -84,9 +84,22 @@ function allowLocalAssets() {
 }
 
 function isNetworkStorageFailure(message: string) {
-  return /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|network|getaddrinfo|nodename|DNS/i.test(
+  return /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|network|getaddrinfo|nodename|DNS|Could not resolve/i.test(
     message,
   );
+}
+
+function humanizeStorageFailure(message: string, supabaseUrl?: string) {
+  if (!isNetworkStorageFailure(message)) return message;
+  let host = "your Supabase project";
+  if (supabaseUrl) {
+    try {
+      host = new URL(supabaseUrl).host;
+    } catch {
+      host = supabaseUrl;
+    }
+  }
+  return `Could not reach Supabase storage at ${host}. The URL may be wrong, the project may be paused or deleted, or the service role key may not match that project. In Vercel, set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from Supabase → Project Settings → API.`;
 }
 
 async function storeLocalAsset(bytes: Uint8Array, id: string, publicOrigin?: string): Promise<StoredAsset> {
@@ -156,7 +169,10 @@ export async function storeGeneratedAsset(
           "storage_not_configured",
         );
       }
-      throw new DesignerStorageError(`Asset upload failed: ${error.message}`, "storage_upload_failed");
+      throw new DesignerStorageError(
+        humanizeStorageFailure(`Asset upload failed: ${error.message}`, url),
+        "storage_upload_failed",
+      );
     }
     const { data } = client.storage.from(bucket).getPublicUrl(storagePath);
     const expectedPrefix = `${url}/storage/v1/object/public/${encodeURIComponent(bucket)}/`;
@@ -166,6 +182,7 @@ export async function storeGeneratedAsset(
     return { url: data.publicUrl, path: storagePath, bucket };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/^["']|["']$/g, "");
     if (allowLocalAssets() && (isNetworkStorageFailure(message) || error instanceof DesignerStorageError)) {
       if (
         error instanceof DesignerStorageError &&
@@ -179,7 +196,9 @@ export async function storeGeneratedAsset(
       console.warn("Designer storage falling back to local assets", { message });
       return storeLocalAsset(bytes, id, options?.publicOrigin);
     }
-    throw error;
+    throw error instanceof DesignerStorageError
+      ? error
+      : new DesignerStorageError(humanizeStorageFailure(message, configuredUrl), "storage_upload_failed");
   }
 }
 
