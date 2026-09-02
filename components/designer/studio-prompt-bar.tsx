@@ -5,32 +5,19 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ImagePlus, Plus, SendHorizontal, Sparkles, X } from "lucide-react";
 import { Spinner } from "@heroui/react";
 import { useDesignerGeneration } from "@/hooks/use-designer-generation";
+import { CONCEPT_COUNT_OPTIONS, type ConceptCount } from "@/lib/designer/generation-client";
 import { getDesignerProduct } from "@/lib/designer/products";
 import { getPrePrompts } from "@/lib/designer/pre-prompts";
 import { useDesignerStore } from "@/lib/designer/store";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PromptChipSlider } from "./prompt-chip-slider";
 import { cn } from "@/lib/utils";
 
-const liquidGlass =
-  "relative overflow-hidden border-0 bg-white/35 shadow-[0_8px_32px_rgba(24,24,22,0.1),inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/25";
+const surface =
+  "relative border border-black/[0.08] bg-white";
 
-const liquidGlassChip =
-  "relative overflow-hidden border-0 bg-white/35 shadow-[0_4px_16px_rgba(24,24,22,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/25";
-
-function GlassSheen() {
-  return (
-    <>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -left-1/4 top-0 h-1/2 w-1/2 rounded-full bg-white/40 blur-2xl"
-      />
-    </>
-  );
-}
+const chip =
+  "relative border border-black/[0.08] bg-white";
 
 export function StudioPromptBar() {
   const s = useDesignerStore();
@@ -49,7 +36,7 @@ export function StudioPromptBar() {
     const el = areaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 112)}px`;
   }
 
   async function send(value = draft) {
@@ -63,50 +50,79 @@ export function StudioPromptBar() {
     await submitPrompt(next);
   }
 
+  function setCount(count: ConceptCount) {
+    s.patch({ conceptCount: count });
+  }
+
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom,0px))] md:px-6 md:pb-5">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-2.5 pb-[max(10px,env(safe-area-inset-bottom,0px))] sm:px-3 md:px-6 md:pb-5">
       <div className="pointer-events-auto w-full max-w-[720px]">
         {!busy ? (
-          <div className="mb-2.5 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {suggestions.map((suggestion) => {
-              return (
+          <div className="mb-2 flex items-center gap-1.5">
+            <div
+              role="radiogroup"
+              aria-label="Concept count"
+              className={cn(chip, "flex shrink-0 gap-0.5 rounded-full p-0.5")}
+            >
+              {CONCEPT_COUNT_OPTIONS.map((count) => {
+                const active = s.conceptCount === count;
+                return (
+                  <button
+                    key={count}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={`${count} concept${count === 1 ? "" : "s"}`}
+                    onClick={() => setCount(count)}
+                    className={cn(
+                      "min-h-7 min-w-7 rounded-full px-2 text-[11px] font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15",
+                      active ? "bg-[#181816] text-white" : "text-muted hover:text-foreground",
+                    )}
+                  >
+                    {count}
+                  </button>
+                );
+              })}
+            </div>
+
+            <PromptChipSlider enhancedFrom="sm" ariaLabel="Quick prompt suggestions">
+              {suggestions.map((suggestion) => (
                 <Tooltip key={suggestion.id} delayDuration={120}>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
+                      role="listitem"
                       onClick={() => void send(suggestion.prompt)}
                       aria-label={suggestion.prompt}
                       className={cn(
-                        liquidGlassChip,
-                        "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-medium text-foreground/70 hover:text-foreground",
+                        chip,
+                        "shrink-0 snap-start rounded-full px-3 py-1.5 text-[11px] font-medium text-foreground/70 hover:border-black/[0.14] hover:text-foreground",
                       )}
                     >
-                      <GlassSheen />
-                      <span className="relative z-10">{suggestion.label}</span>
+                      {suggestion.label}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent
                     side="top"
                     sideOffset={8}
-                    className="max-w-[min(360px,70vw)] rounded-xl border-0 bg-[#181816]/92 px-3.5 py-2.5 text-[12px] font-medium leading-snug text-white shadow-[0_12px_32px_rgba(24,24,22,0.22)] backdrop-blur-md"
+                    className="max-w-[min(360px,70vw)] rounded-xl border border-white/10 bg-[#181816] px-3.5 py-2.5 text-[12px] font-medium leading-snug text-white"
                   >
                     {suggestion.prompt}
                   </TooltipContent>
                 </Tooltip>
-              );
-            })}
+              ))}
+            </PromptChipSlider>
           </div>
         ) : null}
 
         <AnimatePresence>
           {attachOpen ? (
             <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: 6 }}
-              className={cn(liquidGlass, "mb-2.5 flex items-center gap-2 rounded-[20px] p-2")}
+              exit={reduceMotion ? undefined : { opacity: 0, y: 4 }}
+              className={cn(surface, "mb-2 flex items-center gap-1.5 rounded-2xl p-1.5")}
             >
-              <GlassSheen />
               <input
                 ref={fileRef}
                 type="file"
@@ -122,7 +138,7 @@ export function StudioPromptBar() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="relative z-10 flex min-h-10 items-center gap-2 rounded-xl px-3 text-[12px] font-medium hover:bg-white/35"
+                className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-[12px] font-medium hover:bg-black/[0.03]"
               >
                 <ImagePlus className="size-4" />
                 {s.logoUrl ? "Replace logo" : "Add logo"}
@@ -131,7 +147,7 @@ export function StudioPromptBar() {
                 <button
                   type="button"
                   onClick={() => s.setLogo(undefined)}
-                  className="relative z-10 min-h-10 rounded-xl px-3 text-[12px] font-medium text-muted hover:text-foreground"
+                  className="min-h-10 rounded-xl px-3 text-[12px] font-medium text-muted hover:text-foreground"
                 >
                   Remove
                 </button>
@@ -140,7 +156,7 @@ export function StudioPromptBar() {
                 type="button"
                 aria-label="Close attachments"
                 onClick={() => setAttachOpen(false)}
-                className="relative z-10 ml-auto flex size-8 items-center justify-center rounded-full text-muted hover:bg-white/40"
+                className="ml-auto flex size-8 items-center justify-center rounded-full text-muted hover:bg-black/[0.04]"
               >
                 <X className="size-4" />
               </button>
@@ -153,14 +169,13 @@ export function StudioPromptBar() {
             event.preventDefault();
             void send();
           }}
-          className={cn(liquidGlass, "flex items-end gap-1.5 rounded-[26px] p-1.5")}
+          className={cn(surface, "flex items-end gap-1 rounded-[22px] p-1 sm:gap-1.5 sm:rounded-[26px] sm:p-1.5")}
         >
-          <GlassSheen />
           <button
             type="button"
             aria-label="Add logo"
             onClick={() => setAttachOpen((open) => !open)}
-            className="relative z-10 mb-0.5 flex size-10 shrink-0 items-center justify-center rounded-full text-foreground/55 hover:bg-white/40 hover:text-foreground"
+            className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-foreground/55 hover:bg-black/[0.04] hover:text-foreground sm:size-10"
           >
             <Plus className="size-5" />
           </button>
@@ -180,8 +195,8 @@ export function StudioPromptBar() {
               busy
                 ? stage || "Generating…"
                 : hasArtwork
-                  ? "Add a moon, change colors, or edit this design…"
-                  : "Describe a basketball uniform… team, colors, theme"
+                  ? "Edit this design…"
+                  : "Describe a uniform… team, colors, theme"
             }
             onChange={(event) => {
               setDraft(event.target.value);
@@ -193,7 +208,7 @@ export function StudioPromptBar() {
                 void send();
               }
             }}
-            className="relative z-10 max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent p-0 py-2.5 text-[14px] leading-5 text-foreground shadow-none outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none placeholder:text-foreground/40 disabled:opacity-70"
+            className="max-h-28 min-h-9 flex-1 resize-none border-0 bg-transparent p-0 py-2 text-[14px] leading-5 text-foreground outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none placeholder:text-foreground/40 disabled:opacity-70 sm:min-h-10 sm:py-2.5"
           />
 
           <button
@@ -201,18 +216,18 @@ export function StudioPromptBar() {
             disabled={!canSend}
             aria-label={hasArtwork ? "Update design" : "Generate design"}
             className={cn(
-              "relative z-10 mb-0.5 flex size-10 shrink-0 items-center justify-center rounded-full transition-colors",
+              "mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors sm:size-10",
               canSend
-                ? "bg-[#181816]/90 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-md"
-                : "bg-white/40 text-foreground/35",
+                ? "border-[#181816] bg-[#181816] text-white"
+                : "border-black/[0.08] bg-transparent text-foreground/30",
             )}
           >
             {busy ? <Spinner size="sm" color="current" /> : hasArtwork ? <Sparkles className="size-4" /> : <SendHorizontal className="size-4" />}
           </button>
         </form>
 
-        <p className="mt-2 text-center text-[10px] font-medium tracking-wide text-foreground/40 md:text-[11px]">
-          All designs are generated by AI and may need review before production.
+        <p className="mt-1.5 text-center text-[9px] font-medium tracking-wide text-foreground/35 sm:mt-2 sm:text-[10px] md:text-[11px]">
+          AI designs may need review before production.
         </p>
       </div>
     </div>

@@ -27,11 +27,11 @@ export function ColorControl({ label, value, onChange }: { label: string; value:
       <Button
         variant="outline"
         size="sm"
-        className="min-h-11 min-w-0 w-full justify-start rounded-xl border-border bg-white px-2 text-foreground shadow-none ring-1 ring-border/50 hover:bg-[#f7f7f5] sm:px-2.5"
+        className="min-h-11 min-w-0 w-full justify-start rounded-xl border border-black/[0.08] bg-white px-2 text-foreground hover:bg-[#f7f7f5] sm:px-2.5"
         onPress={() => setDraft(value.toUpperCase())}
       >
         <span
-          className="size-4 shrink-0 rounded-full border border-border shadow-inner"
+          className="size-4 shrink-0 rounded-full border border-border"
           style={{ backgroundColor: value }}
         />
         <span className="min-w-0 truncate text-[10px] font-medium capitalize min-[380px]:text-[11px] sm:text-[12px]">{label}</span>

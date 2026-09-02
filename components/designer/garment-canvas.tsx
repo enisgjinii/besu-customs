@@ -93,8 +93,8 @@ export function GarmentCanvas() {
                   >
                     <span
                       className={cn(
-                        "relative block h-14 w-full overflow-hidden rounded-lg bg-white ring-1 transition-shadow md:h-16",
-                        active ? "ring-2 ring-[#181816]" : "ring-black/10 hover:ring-black/25",
+                        "relative block h-14 w-full overflow-hidden rounded-lg border bg-white md:h-16",
+                        active ? "border-[#181816]" : "border-black/[0.08] hover:border-black/[0.18]",
                       )}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -148,7 +148,7 @@ export function GarmentCanvas() {
             role="status"
             aria-live="polite"
           >
-            <div className="flex flex-col items-center gap-3 rounded-2xl bg-white/90 px-6 py-5 shadow-[0_12px_40px_rgba(24,24,22,0.08)] ring-1 ring-black/[0.06]">
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-black/[0.08] bg-white px-6 py-5">
               <Spinner size="sm" />
               <p className="m-0 text-[13px] font-semibold tracking-[-0.01em]">
                 {stage || (kind === "refine" ? "Updating uniform…" : "Generating uniform…")}

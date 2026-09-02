@@ -218,7 +218,7 @@ export function DesignerPage() {
           onClick={() => setResetOpen(true)}
           whileHover={reduceMotion ? undefined : { y: -1 }}
           whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-          className="absolute right-7 top-7 hidden min-h-8 rounded-full bg-white/80 px-3 text-[10px] font-medium text-muted ring-1 ring-black/[0.06] backdrop-blur-md md:block"
+          className="absolute right-7 top-7 hidden min-h-8 rounded-full border border-black/[0.08] bg-white px-3 text-[10px] font-medium text-muted md:block"
         >
           New
         </motion.button>
