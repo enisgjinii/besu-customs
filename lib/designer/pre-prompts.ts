@@ -79,9 +79,49 @@ const SHARED: PrePrompt[] = [
     prompt: "Coach staff polo for Academy, clean navy and white with subtle side panels",
     sports: ["Training"],
   },
+  {
+    id: "neon-night",
+    label: "Neon night",
+    prompt: "Neon night basketball uniform, electric green and black with glow accents, bold chest wordmark, premium sleeveless cut",
+    sports: ["Basketball"],
+  },
+  {
+    id: "marble-luxe",
+    label: "Marble luxe",
+    prompt: "Luxury marble texture basketball kit, white gold and charcoal, subtle veining panels, clean modern pro look",
+    sports: ["Basketball"],
+  },
+  {
+    id: "camo-stealth",
+    label: "Camo stealth",
+    prompt: "Stealth camo basketball uniform, olive black and tan, angular panel breaks, aggressive modern styling",
+    sports: ["Basketball", "Flag Football"],
+  },
+  {
+    id: "gradient-wave",
+    label: "Gradient wave",
+    prompt: "Gradient wave volleyball kit, ocean blue to teal fade, white trim, dynamic side panels on jersey and spandex",
+    sports: ["Volleyball"],
+  },
+  {
+    id: "retro-stripes",
+    label: "Retro stripes",
+    prompt: "Retro striped soccer kit, classic horizontal bands, navy crimson and cream, vintage club identity",
+    sports: ["Soccer"],
+  },
+  {
+    id: "school-pride",
+    label: "School pride",
+    prompt: "School pride uniform, bold mascot-inspired chest graphic, primary school colors, clean athletic typography",
+  },
+  {
+    id: "monochrome-pro",
+    label: "Monochrome pro",
+    prompt: "Monochrome pro look, all black with subtle tonal panels, minimal branding, premium fabric texture",
+  },
 ];
 
-export function getPrePrompts(product?: Pick<DesignerProduct, "sport" | "garmentType" | "name"> | null, limit = 4): PrePrompt[] {
+export function getPrePrompts(product?: Pick<DesignerProduct, "sport" | "garmentType" | "name"> | null, limit = 6): PrePrompt[] {
   const sport = product?.sport || "Basketball";
   const matched = SHARED.filter((item) => !item.sports || item.sports.includes(sport));
   const fallback = SHARED.filter((item) => !item.sports);

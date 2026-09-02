@@ -35,6 +35,7 @@ function createInitialState(): DesignerState {
     colorsEnabled: false,
     artwork: {},
     concepts: [],
+    conceptCount: 4,
     selectedConceptId: undefined,
     transforms: {
       front: { scale: 1, x: 0, y: 0, rotation: 0 },
@@ -183,9 +184,8 @@ export const useDesignerStore = create<DesignerState & Actions>()(
     {
       // Deliberately new key: direct AI renders are incompatible with legacy flat-2D persisted artwork.
       name: "besu-direct-ai-designer-v1",
-      // v3 retires the single collage "board" render: any persisted session from that path
-      // is dropped so returning customers start from a real four-concept set.
-      version: 3,
+      // v4 adds selectable conceptCount (1–4) for faster single-design or multi-concept runs.
+      version: 4,
       migrate: (persisted) => {
         const source = (persisted || {}) as Partial<DesignerState>;
         const fresh = createInitialState();
@@ -202,10 +202,18 @@ export const useDesignerStore = create<DesignerState & Actions>()(
         return {
           ...fresh,
           ...source,
-          activeStep: ([0, 1, 2, 3, 4, 5] as const).includes(source.activeStep as DesignerStep)
-            ? (source.activeStep as DesignerStep)
-            : 0,
+          activeStep: (() => {
+            const saved = Number(source.activeStep);
+            if (saved >= 4) return 4 as DesignerStep;
+            if (saved === 3) return 3 as DesignerStep;
+            if (saved === 2) return 2 as DesignerStep;
+            if (saved === 1) return 1 as DesignerStep;
+            return 0 as DesignerStep;
+          })(),
           concepts: Array.isArray(source.concepts) ? source.concepts.slice(0, 4) : [],
+          conceptCount: ([1, 2, 3, 4] as const).includes(Number(source.conceptCount) as 1 | 2 | 3 | 4)
+            ? (Number(source.conceptCount) as 1 | 2 | 3 | 4)
+            : 4,
           history: Array.isArray(source.history) ? source.history.slice(0, 12) : [],
           roster: Array.isArray(source.roster) ? source.roster : [],
           customer: { ...fresh.customer, ...(source.customer || {}) },

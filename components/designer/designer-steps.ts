@@ -3,7 +3,6 @@ export type DesignerStepId =
   | "design"
   | "concepts"
   | "refine"
-  | "roster"
   | "order";
 
 export type StepOption = {
@@ -27,9 +26,8 @@ export const DESIGNER_STEPS: DesignerStepDef[] = [
   { id: "product", label: "Product", header: "Product", chooseTitle: "Product", nextLabel: "Brief", hint: "Choose a uniform.", expandsDetail: true },
   { id: "design", label: "Brief", header: "Brief", chooseTitle: "Brief", nextLabel: "Choose", hint: "Describe the design.", expandsDetail: true },
   { id: "concepts", label: "Choose", header: "Choose", chooseTitle: "Choose", nextLabel: "Refine", hint: "Pick one concept.", expandsDetail: true },
-  { id: "refine", label: "Refine", header: "Refine", chooseTitle: "Refine", nextLabel: "Roster", hint: "Make changes.", expandsDetail: true },
-  { id: "roster", label: "Roster", header: "Roster", chooseTitle: "Roster", nextLabel: "Order", hint: "Add players.", expandsDetail: true },
-  { id: "order", label: "Order", header: "Order", chooseTitle: "Order", nextLabel: null, hint: "Review and order.", expandsDetail: true },
+  { id: "refine", label: "Refine", header: "Refine", chooseTitle: "Refine", nextLabel: "Order", hint: "Make changes.", expandsDetail: true },
+  { id: "order", label: "Order", header: "Order", chooseTitle: "Order", nextLabel: null, hint: "Roster, details, checkout.", expandsDetail: true },
 ];
 
 export const STEP_INDEX: Record<DesignerStepId, number> = {
@@ -37,8 +35,7 @@ export const STEP_INDEX: Record<DesignerStepId, number> = {
   design: 1,
   concepts: 2,
   refine: 3,
-  roster: 4,
-  order: 5,
+  order: 4,
 };
 
 export const LOADING_STAGES = [

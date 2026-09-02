@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button, Modal, ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import { Button, Modal } from "@heroui/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { GarmentCanvas } from "./garment-canvas";
 import { ProductPanel } from "./product-panel";
@@ -20,17 +20,14 @@ import { useGenerationSession } from "@/lib/designer/generation-session";
 import type { DesignerStep } from "@/lib/designer/types";
 import { cn } from "@/lib/utils";
 
-type OrderFocus = "review" | "export";
-
 const ease = [0.22, 1, 0.36, 1] as const;
 
-function StepDetail({ step, orderFocus }: { step: DesignerStepId; orderFocus: OrderFocus }) {
+function StepDetail({ step }: { step: DesignerStepId }) {
   if (step === "product") return <ProductPanel />;
   if (step === "design") return <PromptPanel />;
   if (step === "concepts") return <ConceptPanel />;
   if (step === "refine") return <RefinePanel />;
-  if (step === "roster") return <OrderPanel mode="roster" />;
-  return <OrderPanel mode="review" focus={orderFocus} />;
+  return <OrderPanel />;
 }
 
 function stepIdFromIndex(index: DesignerStep): DesignerStepId {
@@ -38,7 +35,6 @@ function stepIdFromIndex(index: DesignerStep): DesignerStepId {
 }
 
 export function DesignerPage() {
-  const [orderFocus, setOrderFocus] = useState<OrderFocus>("review");
   const [resetOpen, setResetOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLElement>(null);
@@ -51,7 +47,7 @@ export function DesignerPage() {
 
   function canOpenStep(next: DesignerStepId) {
     return !(
-      (next === "refine" || next === "roster" || next === "order") &&
+      (next === "refine" || next === "order") &&
       !store.selectedConceptId
     );
   }
@@ -60,7 +56,6 @@ export function DesignerPage() {
     const resolved = canOpenStep(next) ? next : "concepts";
     store.setStep(STEP_INDEX[resolved] as DesignerStep);
     panelRef.current?.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-    if (resolved === "order") setOrderFocus("review");
 
     if (window.matchMedia("(max-width: 767px)").matches) {
       requestAnimationFrame(() => {
@@ -88,13 +83,12 @@ export function DesignerPage() {
     store.reset();
     useGenerationSession.getState().reset();
     store.setStep(0);
-    setOrderFocus("review");
     setResetOpen(false);
   }
 
   return (
     <motion.main
-      data-designer-shell="v17-studio-minimal"
+      data-designer-shell="v18-unified-order"
       className="flex min-h-dvh w-full flex-col bg-[#efeee9] text-foreground md:h-dvh md:min-h-0 md:flex-row md:overflow-hidden"
       initial={reduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -109,13 +103,12 @@ export function DesignerPage() {
             aria-label="Designer sections"
             className="sticky top-0 z-40 bg-[#fcfcfa]/95 px-3 py-2 backdrop-blur-md md:static md:shrink-0"
           >
-            {/* The scroll container must not size to its content, or narrow phones overflow. */}
             <div className="overflow-x-auto rounded-xl bg-black/[0.035] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max gap-0.5 md:min-w-0">
               {DESIGNER_STEPS.map((item) => {
                 const active = item.id === step;
                 const locked =
-                  (item.id === "refine" || item.id === "roster" || item.id === "order") &&
+                  (item.id === "refine" || item.id === "order") &&
                   !store.selectedConceptId;
 
                 return (
@@ -162,25 +155,6 @@ export function DesignerPage() {
                   {stepDef.header}
                 </motion.h2>
               </AnimatePresence>
-
-              {step === "order" ? (
-                <ToggleButtonGroup
-                  size="sm"
-                  selectionMode="single"
-                  isDetached
-                  disallowEmptySelection
-                  selectedKeys={new Set([orderFocus])}
-                  onSelectionChange={(keys) => {
-                    const next = [...keys][0];
-                    if (next === "review" || next === "export") setOrderFocus(next);
-                  }}
-                  className="shrink-0 gap-0.5 rounded-lg bg-black/[0.035] p-0.5"
-                  aria-label="Order panel"
-                >
-                  <ToggleButton id="review" className="min-h-8 px-2.5 text-[11px]">Review</ToggleButton>
-                  <ToggleButton id="export" className="min-h-8 px-2.5 text-[11px]">Files</ToggleButton>
-                </ToggleButtonGroup>
-              ) : null}
             </div>
 
             <div
@@ -189,13 +163,13 @@ export function DesignerPage() {
             >
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
-                  key={`${step}-${step === "order" ? orderFocus : "default"}`}
+                  key={step}
                   initial={reduceMotion ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
                   transition={{ duration: reduceMotion ? 0 : 0.18, ease }}
                 >
-                  <StepDetail step={step} orderFocus={orderFocus} />
+                  <StepDetail step={step} />
                 </motion.div>
               </AnimatePresence>
             </div>

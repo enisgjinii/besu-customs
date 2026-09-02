@@ -1,6 +1,6 @@
 export type GarmentType = "jersey" | "shorts" | "uniform";
 export type GarmentView = "front" | "back";
-export type DesignerStep = 0 | 1 | 2 | 3 | 4 | 5;
+export type DesignerStep = 0 | 1 | 2 | 3 | 4;
 export type DesignStyle = "modern" | "minimal" | "geometric" | "retro" | "aggressive";
 export type ActivePiece = "jersey" | "shorts";
 /**
@@ -93,6 +93,8 @@ export interface DesignerState {
   colorsEnabled: boolean;
   artwork: Partial<Record<GarmentView, string>>;
   concepts: DesignConcept[];
+  /** How many concepts to render on the next fresh generate (1–4). */
+  conceptCount: 1 | 2 | 3 | 4;
   selectedConceptId?: string;
   transforms: Record<GarmentView, ArtworkTransform>;
   history: GenerationVersion[];

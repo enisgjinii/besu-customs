@@ -8,9 +8,11 @@ import {
 } from "@/lib/designer/brief-parser";
 import {
   CONCEPT_COUNT,
+  clampConceptCount,
   generateConceptSet,
   generateUniformKit,
   isGenerationInFlight,
+  type ConceptCount,
 } from "@/lib/designer/generation-client";
 import { useGenerationSession } from "@/lib/designer/generation-session";
 import { useDesignerStore } from "@/lib/designer/store";
@@ -73,10 +75,10 @@ export async function uploadDesignerLogo(file: File) {
  * The single canonical entry point for a fresh customer generation.
  *
  * Every public surface (brief panel and studio prompt bar) routes through this so there is
- * exactly one fresh-generation behaviour: four distinct finished uniform concepts, no
- * automatic selection, and the customer is taken to the Choose step to pick one.
+ * exactly one fresh-generation behaviour: N distinct finished uniform concepts (1–4),
+ * then the customer is taken to Choose — or, for a single design, auto-selected into Refine.
  */
-export async function generateConcepts(prompt: string) {
+export async function generateConcepts(prompt: string, countOverride?: ConceptCount) {
   const session = useGenerationSession.getState();
   if (session.busy || isGenerationInFlight()) return;
   const trimmed = prompt.trim();
@@ -87,33 +89,52 @@ export async function generateConcepts(prompt: string) {
 
   const parsedTeam = extractTeamName(trimmed, useDesignerStore.getState().teamName);
   const parsedColors = extractColors(trimmed);
+  const count = clampConceptCount(
+    countOverride ?? useDesignerStore.getState().conceptCount ?? CONCEPT_COUNT,
+  );
   useDesignerStore.getState().patch({
     prompt: trimmed,
     teamName: parsedTeam,
     layout: "kit",
+    conceptCount: count,
     ...(parsedColors && !useDesignerStore.getState().colorsEnabled
       ? { colors: parsedColors, colorsEnabled: true }
       : {}),
   });
 
-  session.start("generate", `Rendering concept 1/${CONCEPT_COUNT}…`);
+  session.start(
+    "generate",
+    count === 1 ? "Rendering design…" : `Rendering concept 1/${count}…`,
+  );
   const signal = nextAbort().signal;
 
   try {
     const result = await generateConceptSet({
       state: useDesignerStore.getState(),
+      count,
       signal,
       onProgress: ({ stage, conceptIndex, conceptCount }) => {
-        if (conceptIndex && conceptCount) session.setStage(`Rendering concept ${conceptIndex}/${conceptCount}…`);
-        else session.setStage(stage);
+        if (conceptIndex && conceptCount) {
+          session.setStage(
+            conceptCount === 1
+              ? "Rendering design…"
+              : `Rendering concept ${conceptIndex}/${conceptCount}…`,
+          );
+        } else session.setStage(stage);
       },
     });
 
     const store = useDesignerStore.getState();
-    // setConcepts clears selectedConceptId, artwork, history and designId, so Refine,
-    // Roster and Order stay locked until the customer explicitly chooses a direction.
+    // setConcepts clears selectedConceptId, artwork, history and designId, so Refine
+    // and Order stay locked until the customer explicitly chooses a direction —
+    // except a single-concept run, which we auto-select for speed.
     store.setConcepts(result.concepts);
-    store.setStep(STEP_INDEX.concepts as DesignerStep);
+    if (result.concepts.length === 1) {
+      store.selectConcept(result.concepts[0].id);
+      store.setStep(STEP_INDEX.refine as DesignerStep);
+    } else {
+      store.setStep(STEP_INDEX.concepts as DesignerStep);
+    }
     session.succeed(result.mock);
   } catch (generationError) {
     if (generationError instanceof Error && generationError.name === "AbortError") return;

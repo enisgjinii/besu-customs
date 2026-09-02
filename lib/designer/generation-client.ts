@@ -140,8 +140,19 @@ export async function generateUniformKit(options: GenerateOptions): Promise<Gene
   }
 }
 
+export type ConceptCount = 1 | 2 | 3 | 4;
+export const CONCEPT_COUNT = CONCEPT_DIRECTIONS.length as ConceptCount;
+export const CONCEPT_COUNT_OPTIONS = [1, 2, 3, 4] as const satisfies readonly ConceptCount[];
+
+export function clampConceptCount(value: unknown): ConceptCount {
+  const n = Number(value);
+  if (n === 1 || n === 2 || n === 3 || n === 4) return n;
+  return CONCEPT_COUNT;
+}
+
 export async function generateConceptSet(options: {
   state: DesignerState;
+  count?: ConceptCount;
   onProgress?: (progress: GenerateProgress) => void;
   signal?: AbortSignal;
 }): Promise<{ concepts: DesignConcept[]; mock: boolean }> {
@@ -150,21 +161,26 @@ export async function generateConceptSet(options: {
   inFlightRequestId = batchId;
   const concepts: DesignConcept[] = [];
   let mock = false;
+  const count = clampConceptCount(options.count ?? options.state.conceptCount ?? CONCEPT_COUNT);
+  const directions = CONCEPT_DIRECTIONS.slice(0, count);
 
   try {
     const baseBrief = options.state.prompt.trim().slice(0, MAX_CONCEPT_BASE_BRIEF);
-    for (let index = 0; index < CONCEPT_DIRECTIONS.length; index += 1) {
-      const preset = CONCEPT_DIRECTIONS[index];
+    for (let index = 0; index < directions.length; index += 1) {
+      const preset = directions[index];
       options.onProgress?.({
         stage: LOADING_STAGES[1],
         conceptIndex: index + 1,
-        conceptCount: CONCEPT_DIRECTIONS.length,
-        conceptLabel: preset.label,
+        conceptCount: count,
+        conceptLabel: count === 1 ? "Design" : preset.label,
       });
 
       const conceptState: DesignerState = {
         ...options.state,
-        prompt: `${baseBrief}\n\nART DIRECTION ${index + 1}/4 — ${preset.label}: ${preset.direction}\nRender a finished wearable uniform concept. Make this composition clearly different from the other proposed directions.`,
+        prompt:
+          count === 1
+            ? `${baseBrief}\n\nRender one finished wearable uniform concept from this brief.`
+            : `${baseBrief}\n\nART DIRECTION ${index + 1}/${count} — ${preset.label}: ${preset.direction}\nRender a finished wearable uniform concept. Make this composition clearly different from the other proposed directions.`,
         artwork: {},
         designId: undefined,
       };
@@ -180,9 +196,9 @@ export async function generateConceptSet(options: {
       mock = mock || result.mock;
       const primary = result.versions[0];
       concepts.push({
-        id: preset.id,
-        label: preset.label,
-        direction: preset.direction,
+        id: count === 1 ? "single-design" : preset.id,
+        label: count === 1 ? "Your design" : preset.label,
+        direction: count === 1 ? "Client brief" : preset.direction,
         prompt: conceptState.prompt,
         assetUrl: primary.assetUrl,
         colors: result.colors,
@@ -196,6 +212,4 @@ export async function generateConceptSet(options: {
     if (inFlightRequestId === batchId) inFlightRequestId = null;
   }
 }
-
-export const CONCEPT_COUNT = CONCEPT_DIRECTIONS.length;
 

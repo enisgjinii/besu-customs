@@ -43,7 +43,7 @@ export function StudioPromptBar() {
   const hasArtwork = Boolean(s.artwork.front || s.artwork.back);
   const canSend = !busy && draft.trim().length >= 8;
   const product = getDesignerProduct(s.productId);
-  const suggestions = getPrePrompts(product, hasArtwork ? 3 : 4);
+  const suggestions = getPrePrompts(product, hasArtwork ? 4 : 6);
 
   function resize() {
     const el = areaRef.current;
