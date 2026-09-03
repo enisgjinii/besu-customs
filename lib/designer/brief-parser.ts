@@ -34,9 +34,13 @@ const TEAM_PATTERNS = [
   /\bteam\s+["']([A-Za-z0-9][A-Za-z0-9 &.'-]{0,58})["']/,
 ] as const;
 
+const VISUAL_EDIT_TAIL =
+  /\s+(?:and\s+(?:add|make|remove|change|update|recolor|replace|move|give|use)|then|also)\b.*$/i;
+
 function cleanTeamName(value: string | undefined) {
   return value
-    ?.replace(/[.,!?:;]+$/, "")
+    ?.replace(VISUAL_EDIT_TAIL, "")
+    .replace(/[.,!?:;]+$/, "")
     .replace(/[\u0000-\u001F\u007F]/g, "")
     .trim()
     .slice(0, 60);
@@ -63,9 +67,7 @@ export function isTeamNameOnlyEdit(prompt: string): boolean {
   const trimmed = prompt.trim();
   // Do not accidentally classify a combined visual request as a free typography-only update.
   // Names such as "Rock and Roll" remain valid because only concrete edit continuations are rejected.
-  if (/\b(?:and\s+(?:add|make|remove|change|update|recolor|replace|move|give|use)|then|also)\b/i.test(trimmed)) {
-    return false;
-  }
+  if (VISUAL_EDIT_TAIL.test(trimmed)) return false;
   return /^\s*(?:please\s+)?(?:change|update|set|rename)(?:\s+the)?\s+team(?:\s+name)?\s+(?:to|:)\s+["']?[A-Za-z0-9][A-Za-z0-9 &.'-]{1,58}["']?[.!]?\s*$/i.test(trimmed);
 }
 
