@@ -221,8 +221,9 @@ await test("desktop/mobile presentation uses responsive fixed-view UI without pa
   assert.match(canvas, /md:/, "canvas must retain responsive desktop breakpoints");
   assert.match(canvas, /\["front", "back"\]/, "front/back must be one-click controls");
   assert.doesNotMatch(canvas, /onWheel|onPointerMove|dragBoundFunc|zoom/i);
-  assert.match(concepts, /grid-cols-2/, "concept choices must use a compact responsive grid");
-  assert.match(concepts, /md:/, "concept UI must retain desktop responsive styling");
+  assert.match(concepts, /grid-cols-2/, "concept choices must stay compact on mobile and desktop");
+  assert.match(concepts, /aspect-\[3\/2\]/, "concept cards must preserve the standardized master-board aspect ratio");
+  assert.match(concepts, /w-full/, "concept cards must fit the available viewport width");
 });
 
 const failed = results.filter((result) => !result.ok);
