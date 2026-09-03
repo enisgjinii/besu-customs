@@ -16,6 +16,7 @@ on:
       - "scripts/verify-designer-2d.mjs"
       - "scripts/verify-designer-checkout-payload.mjs"
       - "scripts/verify-four-concepts.mjs"
+      - "scripts/verify-hybrid-designer-flow.mjs"
       - "package.json"
       - "pnpm-lock.yaml"
   pull_request:
@@ -27,6 +28,7 @@ on:
       - "scripts/verify-designer-2d.mjs"
       - "scripts/verify-designer-checkout-payload.mjs"
       - "scripts/verify-four-concepts.mjs"
+      - "scripts/verify-hybrid-designer-flow.mjs"
       - "package.json"
       - "pnpm-lock.yaml"
 
