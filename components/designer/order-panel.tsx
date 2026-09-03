@@ -23,6 +23,9 @@ import {
   type ProductionCaptures,
 } from "@/lib/designer/export-service";
 import { DESIGNER_SIZES, sendDesignerCheckout, validateCheckout, validateRoster } from "@/lib/designer/shopify-service";
+import { sendOrderConfirmation } from "@/lib/designer/order-confirmation-service";
+import { PriceEstimator } from "./price-estimator";
+import { DesignActions } from "./design-actions";
 import { cn } from "@/lib/utils";
 
 function waitForPreview() {
@@ -80,9 +83,16 @@ export function OrderPanel() {
   }
 
   function checkout() {
-    const result = sendDesignerCheckout(useDesignerStore.getState());
-    if (result.ok) toast.success("Sent to Shopify.");
-    else toast.error(result.errors[0] || "Checkout failed.");
+    const state = useDesignerStore.getState();
+    const result = sendDesignerCheckout(state);
+    if (result.ok) {
+      toast.success("Sent to Shopify.");
+      void sendOrderConfirmation(state).then((res) => {
+        if (!res.ok) toast.error(res.error || "Could not send the confirmation email.");
+      });
+    } else {
+      toast.error(result.errors[0] || "Checkout failed.");
+    }
   }
 
   function addSamplePlayer() {
@@ -120,6 +130,10 @@ export function OrderPanel() {
           </div>
         </div>
       </div>
+
+      <DesignActions />
+
+      <PriceEstimator />
 
       <div className="flex min-w-0 flex-col gap-2">
         <div className="flex items-center justify-between gap-2">

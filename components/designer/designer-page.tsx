@@ -17,6 +17,7 @@ import {
 } from "./designer-steps";
 import { useDesignerStore } from "@/lib/designer/store";
 import { useGenerationSession } from "@/lib/designer/generation-session";
+import { useSharedDesign } from "@/hooks/use-shared-design";
 import type { DesignerStep } from "@/lib/designer/types";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ export function DesignerPage() {
   const stepIndex = store.activeStep;
   const step = stepIdFromIndex(stepIndex);
   const stepDef = DESIGNER_STEPS[stepIndex] || DESIGNER_STEPS[0];
+  useSharedDesign();
 
   function canOpenStep(next: DesignerStepId) {
     return !(

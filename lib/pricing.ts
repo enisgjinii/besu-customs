@@ -133,6 +133,23 @@ export function calculateTotalPrice(
   return unitPrice * quantity;
 }
 
+// Map a designer sport/garment to a PRICING_RULES product key.
+// Mirrors SPORT_PRODUCT in shopify-service so the estimator matches checkout.
+const SPORT_PRICING_PRODUCT: Record<string, Record<string, string>> = {
+  Basketball: { jersey: "basketball-jersey", shorts: "half-short", uniform: "basketball-jersey" },
+  Soccer: { jersey: "soccer-vneck", shorts: "standard-bottom", uniform: "soccer-jersey-shorts" },
+  Volleyball: { jersey: "volleyball-short", shorts: "volleyball-spandex", uniform: "volleyball-jersey-shorts" },
+  Baseball: { jersey: "baseball-jersey", shorts: "baseball-pants", uniform: "baseball-jersey-pants" },
+  "Flag Football": { jersey: "flag-football-hoodie", shorts: "standard-bottom", uniform: "flag-football-jersey-shorts" },
+  Track: { jersey: "track-tank", shorts: "track-mid-shorts", uniform: "track-mid-shorts" },
+  Training: { jersey: "hoodie", shorts: "half-short", uniform: "hoodie" },
+};
+
+export function resolvePricingProductId(sport: string | null, garmentType: string): string {
+  const bySport = (sport && SPORT_PRICING_PRODUCT[sport]) || SPORT_PRICING_PRODUCT.Basketball;
+  return bySport[garmentType] || bySport.jersey || "default";
+}
+
 // Helper to check if a product supports embroidery
 export function supportsEmbroidery(productId: string | null): boolean {
   if (!productId) return false;
