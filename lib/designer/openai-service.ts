@@ -21,23 +21,41 @@ export interface GenerateDesignInput {
 const DIRECT_RENDER_RULE =
   "Create the FINISHED UNIFORM VISUALIZATION directly. Do not return a flat sublimation texture, UV map, isolated print graphic, pattern sheet, fabric swatch, template, or technical artwork. The result must visibly show the actual wearable uniform product.";
 
+const MASTER_BOARD_RULE =
+  "MASTER CONCEPT LAYOUT: output exactly one 1536x1024 landscape master board. The LEFT half is the FRONT presentation and the RIGHT half is the BACK presentation. Keep both garments at the same scale, camera height, lighting, cut, material, trim widths and proportions. Front and back must unmistakably be the same physical uniform and the same design system: continue matching colors, patterns, gradients, piping, side panels, motifs and seam logic around the garment instead of inventing a separate back design. Keep the front centered near x=384 and the back centered near x=1152, with neither view crossing the center line or being cropped.";
+
+const TYPOGRAPHY_SAFE_RULE =
+  "TYPOGRAPHY-SAFE ARTWORK ONLY: draw NO customer typography. Do not draw any team name, player name, player number, slogan, sponsor, label, caption, wordmark, letters, numbers, pseudo-letters, fake writing, glyph-like marks or random text anywhere on the garment or background. On the FRONT jersey reserve a calm, low-detail chest area centered around the upper-middle chest for the app to place the exact team name later. On the BACK jersey reserve a calm player-name zone across the upper back and a larger low-detail number zone below it. These reserved regions are intentional parts of the composition and must remain free of lettering in generation and every edit.";
+
 const PRESENTATION_RULE =
-  "Present the uniform as a premium ecommerce concept board on a clean transparent or neutral studio background. No person, body, mannequin, hanger, stadium, crowd, hands, props, watermark, brand logo, or unrelated scenery. Show the garment large, centered, clean, and easy to compare.";
+  "Present the master board as a premium ecommerce uniform design sheet on a clean transparent or neutral studio background. No person, body, mannequin, hanger, stadium, crowd, hands, props, labels, callouts, watermark, border titles or unrelated scenery. Use the same neutral presentation standard for every concept so concepts differ by art direction, never by render quality or garment proportions.";
 
 const QUALITY_RULE =
-  "Use realistic sportswear construction, believable fabric, professional cut-and-sew details, crisp trims, clean seams, premium sublimation graphics, balanced proportions, and polished commercial product-design rendering.";
+  "PRODUCTION-READY STANDARD: use realistic sportswear construction, believable performance fabric, crisp cut-and-sew details, intentional trim geometry, clean seams, premium sublimation graphics, balanced negative space, controlled gradients, coherent piping and polished commercial product-design rendering. Avoid unfinished sketches, noisy AI texture, warped seams, asymmetrical accidents, muddy details, impossible panels or arbitrary decorative clutter.";
+
+const NO_THIRD_PARTY_MARKS_RULE =
+  "ABSOLUTE FINAL REQUIREMENT: draw NO manufacturer, sponsor or third-party brand mark of any kind. Do not add a Nike swoosh, Adidas stripes, Jordan jumpman, Under Armour, Puma, New Balance, Champion, Reebok, league badge, invented apparel logo, monogram, chest tag, sleeve badge, hem tab or shorts-leg mark. Do not invent a team crest either. The application composites approved logos and all exact typography separately. The AI output must contain only non-text garment artwork.";
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 /**
- * Image models trained on retail sportswear tend to add a manufacturer mark on a blank jersey.
- * Any third-party mark on a customer's uniform is a trademark problem, so this is stated last,
- * where instructions carry the most weight, and names the marks that actually show up.
+ * The image model must never receive the exact customer wordmark as something it could paint.
+ * We still keep the team name in application state for deterministic SVG typography, but replace
+ * that literal when it appears inside the visual brief/inspiration/correction.
  */
-const NO_THIRD_PARTY_MARKS_RULE =
-  "ABSOLUTE REQUIREMENT: the garment must carry NO manufacturer or third-party brand mark of any kind. Do not add a Nike swoosh, Adidas three stripes, Jordan jumpman, Under Armour, Puma, New Balance, Champion, Reebok or any other real or invented apparel-brand logo, wordmark, monogram, chest tag, sleeve badge, hem tab or shorts-leg mark. The only permitted graphics are the requested team wordmark and the described design artwork. Leave every other area of the garment free of marks.";
+export function sanitizeArtworkInstruction(value: string | undefined, teamName: string): string {
+  const source = (value || "").trim();
+  if (!source) return "";
+  const literal = teamName.trim();
+  if (!literal || literal.toUpperCase() === "CUSTOM") return source;
+  return source.replace(new RegExp(escapeRegex(literal), "gi"), "the team");
+}
 
 function paletteClause(colors?: DesignerColors) {
   if (!colors) {
-    return "Invent a cohesive professional team-uniform palette matching the brief, with three dominant colors and strong contrast.";
+    return "Invent one cohesive professional team-uniform palette matching the visual brief, with three dominant colors and strong usable contrast.";
   }
   return `Use this palette as the dominant color system: primary ${colors.primary}, secondary ${colors.secondary}, accent ${colors.accent}.`;
 }
@@ -45,72 +63,53 @@ function paletteClause(colors?: DesignerColors) {
 function kitClause(garmentType: GarmentType, sport?: string) {
   const sportLabel = sport || "sports";
   if (garmentType === "uniform") {
-    return `Render a complete coordinated ${sportLabel} uniform: sleeveless jersey plus matching shorts. Show FRONT and BACK presentations in the same image, clearly separated, with the jersey and shorts visible in both presentations. The front and back must be unmistakably the same design system.`;
+    return `Render a complete coordinated ${sportLabel} uniform in BOTH halves: jersey plus matching shorts in the front presentation and the same jersey plus matching shorts in the back presentation. Keep jersey and shorts fully visible, vertically aligned, and identically scaled across both halves.`;
   }
   if (garmentType === "shorts") {
-    return `Render finished ${sportLabel} shorts as a product concept, showing front and back views in the same image.`;
+    return `Render finished ${sportLabel} shorts only, front on the left and back on the right, with matched cut, panel geometry and scale.`;
   }
-  return `Render a finished sleeveless ${sportLabel} jersey as a product concept, showing front and back views in the same image.`;
+  return `Render a finished ${sportLabel} jersey only, front on the left and back on the right, with matched cut, panel geometry and scale.`;
 }
 
-function typographyClause(teamName: string) {
-  // Image models routinely drop or swap letters in rendered text, so the wordmark is spelled out
-  // character by character and the exact letter count is stated as a checkable constraint.
-  const spelled = teamName.trim().split("").join("-");
-  const letters = teamName.replace(/\s/g, "").length;
-  return [
-    `Team name: ${teamName}.`,
-    `Render the exact team name \"${teamName}\" prominently on the FRONT jersey chest when a jersey is present.`,
-    `SPELLING IS CRITICAL: the wordmark must read exactly ${spelled} — ${letters} letters, correctly spelled, no missing, extra, substituted or reversed letters. Proofread the lettering before finishing.`,
-    "Keep the BACK visually clean with a clear player-name and number zone. Do not print any player name or number on the front or the back during initial concept generation.",
-    "Do not add any other words, slogans, fake brands, sponsor marks, watermarks, or random typography.",
-  ].join(" ");
-}
-
-/**
- * Editing an existing render makes the model redraw the chest lettering, which is where team names
- * drift a letter at a time (GALACTIC -> CALACTIC). Every edit mode therefore restates the wordmark
- * as something to carry over untouched rather than to re-letter.
- */
-function wordmarkLockClause(teamName: string) {
-  const name = teamName.trim();
-  if (!name) return "";
-  return `Carry the existing front chest wordmark over unchanged: it must still read exactly "${name}" (${name.split("").join("-")}) with identical spelling, letterforms and placement. Do not re-letter, re-spell, translate, restyle or nudge the wordmark.`;
+function typographyZoneLockClause() {
+  return "Preserve the blank front chest typography zone and the blank back player-name/number zones exactly as functional negative space. Never fill those zones with text-like detail during an edit.";
 }
 
 function modeClause(input: GenerateDesignInput) {
   const mode = input.mode || (input.correction ? "refine" : "generate");
+  const correction = sanitizeArtworkInstruction(input.correction, input.teamName);
   if (mode === "color_variation") {
     return [
-      "COLOR VARIATION MODE: Edit the previous direct uniform render.",
-      "Preserve the exact garment cut, front/back presentation, graphic composition, motifs, panel layout, trims, and visual identity.",
-      "Only change the uniform colors to the requested palette. Do not redesign the kit.",
-      wordmarkLockClause(input.teamName),
-      input.correction ? `Palette direction: ${input.correction}.` : "",
+      "COLOR VARIATION MODE: edit the supplied master uniform board; do not regenerate a new concept.",
+      "LOCK THE DESIGN GEOMETRY. Preserve the exact garment cut, front/back positions, camera, motif shapes, motif locations, panel boundaries, gradient boundaries, piping paths, trim widths, seam logic, negative space and overall visual identity.",
+      "Only remap the existing design to the requested palette. Do not add, remove, move, rotate, resize or reinterpret design elements.",
+      typographyZoneLockClause(),
+      correction ? `Palette direction: ${correction}.` : "",
     ].filter(Boolean).join(" ");
   }
   if (mode === "refine") {
     return [
-      "REFINEMENT MODE: Edit the previous direct uniform render, not a flat texture.",
-      input.correction
-        ? `Requested visual revision: ${input.correction}. Keep all unmentioned parts of the uniform and presentation consistent.`
-        : "Improve the selected uniform render while preserving its identity and layout.",
-      wordmarkLockClause(input.teamName),
+      "REFINEMENT MODE: edit the supplied master uniform board instead of starting over.",
+      correction
+        ? `Requested visual revision: ${correction}. Change only what this instruction requires and keep every unmentioned part of the master concept stable.`
+        : "Polish the selected concept while preserving its identity, composition and front/back correspondence.",
+      "Keep front and back synchronized: if a requested visual change affects a shared panel, trim, gradient, piping path or motif language, apply the corresponding change coherently to both views.",
+      typographyZoneLockClause(),
     ].filter(Boolean).join(" ");
   }
-  return "Generate a new finished uniform concept from scratch based on the brief.";
+  return "Generate one new master uniform concept from scratch. Treat this as a single coherent product system, not two unrelated garment ideas.";
 }
 
 function garmentFitClause(sport?: string) {
   const label = (sport || "Basketball").toLowerCase();
   if (label === "basketball") {
-    return "For basketball, the jersey must be sleeveless with authentic basketball proportions. Avoid soccer sleeves, T-shirt sleeves, hoodies, warmups, or fashion-model styling unless explicitly requested.";
+    return "For basketball, use a sleeveless jersey with authentic basketball proportions and coordinated basketball shorts. Avoid soccer sleeves, T-shirt sleeves, hoodies, warmups or fashion-model styling unless explicitly requested.";
   }
   if (label === "soccer") {
     return "For soccer, use short sleeves and authentic soccer jersey proportions unless the brief asks otherwise.";
   }
   if (label === "volleyball") {
-    return "For volleyball, use short sleeves and athletic volleyball proportions unless the brief asks otherwise.";
+    return "For volleyball, use athletic volleyball proportions appropriate to the selected product unless the brief asks otherwise.";
   }
   if (label === "baseball") {
     return "For baseball, use a button-front or classic baseball jersey silhouette unless the brief asks otherwise.";
@@ -119,38 +118,41 @@ function garmentFitClause(sport?: string) {
     return "For track and field, use a racing tank or short-sleeve race top with athletic proportions unless the brief asks otherwise.";
   }
   if (label === "training") {
-    return "For training apparel, match the requested garment (hoodie or polo) with clean team branding and wearable proportions.";
+    return "For training apparel, match the selected garment with clean teamwear construction and wearable proportions.";
   }
   if (label === "flag football") {
-    return "For flag football, use a hooded or athletic jersey silhouette suited to flag football kits unless the brief asks otherwise.";
+    return "For flag football, use an athletic silhouette suited to flag football kits unless the brief asks otherwise.";
   }
   return `Match authentic ${sport || "sports"} garment proportions for the selected product.`;
 }
 
 export function buildArtworkPrompt(input: GenerateDesignInput): string {
   const mode = input.mode || (input.correction ? "refine" : "generate");
+  const artworkBrief = sanitizeArtworkInstruction(input.designDescription, input.teamName);
+  const inspiration = sanitizeArtworkInstruction(input.inspiration, input.teamName);
   return [
     DIRECT_RENDER_RULE,
+    MASTER_BOARD_RULE,
     kitClause(input.garmentType, input.sport),
-    `Design brief: ${input.designDescription.trim()}`,
-    input.inspiration?.trim() ? `Visual inspiration: ${input.inspiration.trim()}.` : "",
+    `Visual design brief (artwork only): ${artworkBrief}`,
+    inspiration ? `Visual inspiration (art direction only, never copy typography): ${inspiration}.` : "",
     `Style direction: ${input.style}.`,
     paletteClause(input.colors),
-    typographyClause(input.teamName),
+    TYPOGRAPHY_SAFE_RULE,
     input.hasLogo
-      ? "Reserve a tasteful crest/logo position on the front chest, but do not invent a logo; the real uploaded logo is handled separately by the application."
+      ? "Reserve one small clean crest/logo placement on the upper FRONT chest, but leave it empty; the approved uploaded logo is composited by the application after AI generation."
       : "",
     modeClause({ ...input, mode }),
     QUALITY_RULE,
     PRESENTATION_RULE,
     garmentFitClause(input.sport),
     NO_THIRD_PARTY_MARKS_RULE,
-    "Return one direct AI product-render image of the uniform concept.",
+    "Return exactly one 1536x1024 master product-render board with front-left/back-right and zero rendered typography.",
   ].filter(Boolean).join(" ");
 }
 
 export function buildColorVariationCorrection(colors: DesignerColors): string {
-  return `Same direct uniform render and same design, recolored to primary ${colors.primary}, secondary ${colors.secondary}, accent ${colors.accent}.`;
+  return `Keep the same master uniform board and exact design geometry; only recolor the existing artwork to primary ${colors.primary}, secondary ${colors.secondary}, accent ${colors.accent}.`;
 }
 
 export const COLOR_VARIATION_PRESETS: { id: string; label: string; colors: DesignerColors }[] = [

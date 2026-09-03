@@ -21,29 +21,46 @@ const NAMED_COLORS: Record<string, string> = {
 };
 
 const EDIT_PREFIX =
-  /^(make|add|remove|change|update|edit|give|turn|recolor|replace|move|darken|lighten|keep|use only|show only|without|swap|tweak|fix)\b/i;
+  /^(make|add|remove|change|update|edit|give|turn|recolor|replace|move|darken|lighten|keep|use only|show only|without|swap|tweak|fix|rename|set)\b/i;
 
 const FRESH_REQUEST =
   /\b(show me|create|generate|design me|new (uniform|design|kit)|three different|3 different|four different|4 different)\b/i;
 
-export function extractTeamName(prompt: string, existing?: string): string {
-  const current = existing?.trim();
-  if (current) return current.slice(0, 60).toUpperCase();
+const TEAM_PATTERNS = [
+  /(?:change|update|set|rename)(?: the)? team(?: name)?(?: to|:)\s+["']?([A-Za-z0-9][A-Za-z0-9 &.'-]{0,58})/i,
+  /team called\s+["']?([A-Za-z0-9][A-Za-z0-9 &.'-]{0,58})/i,
+  /team name[:\s]+["']?([A-Za-z0-9][A-Za-z0-9 &.'-]{0,58})/i,
+  /\bfor the\s+([A-Z][A-Za-z0-9&.'-]{1,28})\b/,
+  /\bteam\s+["']([A-Za-z0-9][A-Za-z0-9 &.'-]{0,58})["']/,
+] as const;
 
-  const patterns = [
-    /team called\s+["']?([A-Za-z0-9][A-Za-z0-9 .'-]{0,40})/i,
-    /team name[:\s]+["']?([A-Za-z0-9][A-Za-z0-9 .'-]{0,40})/i,
-    /\bfor the\s+([A-Z][A-Za-z0-9]{1,24})\b/,
-    /\bteam\s+["']([A-Za-z0-9][A-Za-z0-9 .'-]{0,40})["']/,
-  ];
+function cleanTeamName(value: string | undefined) {
+  return value
+    ?.replace(/[.,!?:;]+$/, "")
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, 60);
+}
 
-  for (const pattern of patterns) {
-    const match = prompt.match(pattern);
-    const name = match?.[1]?.replace(/[.,!?:;]+$/, "").trim();
-    if (name && name.length >= 2) return name.slice(0, 60).toUpperCase();
+export function extractExplicitTeamName(prompt: string): string | undefined {
+  for (const pattern of TEAM_PATTERNS) {
+    const name = cleanTeamName(prompt.match(pattern)?.[1]);
+    if (name && name.length >= 2) return name;
   }
+  return undefined;
+}
 
+export function extractTeamName(prompt: string, existing?: string): string {
+  const explicit = extractExplicitTeamName(prompt);
+  if (explicit) return explicit;
+  const current = cleanTeamName(existing);
+  if (current) return current;
   return "CUSTOM";
+}
+
+/** A pure wording change is handled instantly by the SVG layer and should not spend an AI edit. */
+export function isTeamNameOnlyEdit(prompt: string): boolean {
+  return /^\s*(?:please\s+)?(?:change|update|set|rename)(?:\s+the)?\s+team(?:\s+name)?\s+(?:to|:)\s+["']?[A-Za-z0-9][A-Za-z0-9 &.'-]{1,58}["']?[.!]?\s*$/i.test(prompt);
 }
 
 export function extractColors(prompt: string): DesignerColors | undefined {
@@ -62,7 +79,7 @@ export function extractColors(prompt: string): DesignerColors | undefined {
 }
 
 /**
- * Decides whether a studio prompt starts a fresh four-concept set or refines the selection.
+ * Decides whether a studio prompt starts a fresh concept set or refines the selection.
  * With nothing selected there is no design to edit, so the prompt always starts a new set.
  */
 export function isFreshGenerateRequest(prompt: string, hasSelection: boolean): boolean {

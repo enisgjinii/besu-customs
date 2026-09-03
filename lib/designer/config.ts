@@ -6,7 +6,8 @@
 export function getOpenAiConfig() {
   // Strip accidental wrapping quotes from .env / .env.local values.
   const apiKey = (process.env.OPENAI_API_KEY || "").trim().replace(/^["']|["']$/g, "");
-  const imageModel = (process.env.OPENAI_IMAGE_MODEL || "gpt-image-1").trim().replace(/^["']|["']$/g, "");
+  // GPT-Image-2 is the current API image model. Keep an env override for controlled rollouts/snapshots.
+  const imageModel = (process.env.OPENAI_IMAGE_MODEL || "gpt-image-2").trim().replace(/^["']|["']$/g, "");
   const mockAi = process.env.DESIGNER_MOCK_AI === "true";
   return { apiKey, imageModel, mockAi };
 }

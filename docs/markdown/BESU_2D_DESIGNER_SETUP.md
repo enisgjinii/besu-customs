@@ -1,86 +1,76 @@
-# BESU Direct AI Uniform Designer
+# BESU Hybrid AI Uniform Designer
 
-Production customer flow for Besu Customs: the customer describes a uniform and AI renders the finished sportswear concept directly. There is no public flat 2D texture-placement workflow. Four distinct direct AI renders are generated, one is selected, then the selected render can be refined/recolored before roster, export, and Shopify checkout.
+Production customer flow for Besu Customs: AI creates the garment artwork/design system, while BESU renders exact customer typography and approved logos deterministically in SVG. Four distinct master concepts are generated, one is selected, then that same master render can be refined or recolored before roster, export, and Shopify checkout.
 
 ## Customer journey
 
 1. **Product** — choose jersey, shorts, or coordinated uniform.
-2. **AI Brief** — Team Name + uniform description (+ optional inspiration, logo reference, guide colors). CTA: **Generate 4 Direct AI Uniforms**.
-3. **Concepts** — compare four finished AI-rendered uniform concepts: Cosmic Energy, Velocity Cut, Heritage Court, and Elite Minimal. A concept must be selected before continuing.
-4. **Refine AI** — ask AI to modify the selected finished uniform or recolor it while preserving the design identity.
-5. **Roster** — players, sizes, numbers, quantities.
+2. **AI Brief** — team name + visual uniform description (+ optional inspiration, logo reference, guide colors).
+3. **Concepts** — compare 1–4 finished master concepts. Four-concept mode uses Cosmic Energy, Velocity Cut, Heritage Court, and Elite Minimal as creative directions only; all use the same quality/presentation contract.
+4. **Refine AI** — edit the selected master image instead of regenerating from scratch.
+5. **Roster** — player names, sizes, numbers, quantities. Back typography is rendered separately from AI artwork.
 6. **Order** — customer details, PNG/SVG/PDF/ZIP export, Shopify `besu:checkout`.
 
-Refine, Roster, and Order are locked until `selectedConceptId` exists. Selecting a concept stores its direct AI render URL and design ID for downstream refinement/export/checkout.
+Refine, Roster, and Order are locked until `selectedConceptId` exists. Selecting a concept keeps one master render URL/design ID for downstream edit/reference workflows.
 
-## Direct AI generation contract
+## Hybrid generation contract
 
-`lib/designer/openai-service.ts` explicitly requires the image model to create a **finished wearable uniform visualization**, not a flat sublimation graphic, UV map, print sheet, template, pattern swatch, or isolated artwork.
+`lib/designer/openai-service.ts` requires one **1536×1024 master uniform board**:
 
-For a basketball uniform the AI must render:
+- FRONT is fixed in the left half; BACK is fixed in the right half;
+- both views use the same garment cut, scale, camera, lighting, colors, trims, piping, gradients, panels, motifs and seam logic;
+- basketball uses sleeveless jersey + matching shorts;
+- the render is a professional ecommerce/product presentation, not a flat texture, UV map, sketch or random sample;
+- the image model renders **no team name, player name, player number, labels, pseudo-text, fake letters, sponsors or invented logos**;
+- calm typography-safe regions are reserved on the front chest and back name/number areas;
+- an uploaded approved logo is composited by BESU, not hallucinated by the image model.
 
-- sleeveless basketball jersey + matching shorts;
-- front and back product presentations in the same image;
-- realistic sportswear construction, seams, trims, and fabric;
-- the supplied team name on the front jersey chest;
-- a clean player-name/number area on the back;
-- no person, mannequin, hanger, stadium, watermark, fake sponsor, or random branding.
+The exact team-name literal is removed from the visual prompt before it reaches the image model. `components/designer/uniform-typography-overlay.tsx` then renders customer wording as deterministic SVG using fixed front/back placement rules from `lib/designer/typography.ts`.
 
-The four concept directions are intentionally different:
+## Front/back presentation
 
-- **Cosmic Energy** — galactic motion, nebula/comet energy and angular premium basketball styling.
-- **Velocity Cut** — aggressive diagonals, speed lines and modern pro-court geometry.
-- **Heritage Court** — retro-modern championship structure and classic basketball proportions.
-- **Elite Minimal** — luxury negative space, precise trim geometry and restrained pro-team styling.
+`components/designer/garment-canvas.tsx` crops the same master concept into a true FRONT or BACK view. The user switches views with one click; no manual pan/zoom is required. The same SVG typography layer is used in previews and production exports, so the visible customer wording matches the order data.
 
-The generation endpoint permits up to 12 generation requests per minute per IP. A fresh four-concept set consumes four requests, leaving bounded capacity for regeneration and AI refinement/color variations.
+## AI modes
+
+- `generate` — create a new master concept from the visual brief.
+- `refine` — edit the selected master render and keep every unmentioned element stable.
+- `color_variation` — edit the selected master render with a geometry lock; only the palette should change.
+- team-name-only edits — update the deterministic SVG instantly without another AI image call.
 
 ## Architecture
 
 | Area | Location |
 | --- | --- |
 | UI shell | `components/designer/` |
-| Direct AI preview | `components/designer/garment-canvas.tsx` |
+| Master preview + front/back crop | `components/designer/garment-canvas.tsx` |
+| Deterministic typography/logo layer | `components/designer/uniform-typography-overlay.tsx` |
+| Typography placement | `lib/designer/typography.ts` |
 | Concept selection | `components/designer/concept-panel.tsx` |
 | State | `lib/designer/store.ts` |
-| Four-concept generation | `lib/designer/generation-client.ts` |
-| Direct AI prompt contract | `lib/designer/openai-service.ts` |
+| 1–4 concept generation | `lib/designer/generation-client.ts` |
+| AI prompt contract | `lib/designer/openai-service.ts` |
 | Generate/edit API | `app/api/designer/generate/route.ts` |
 | Storage | `lib/designer/storage-service.ts` |
 | Shopify | `lib/designer/shopify-service.ts` |
 | Export | `lib/designer/export-service.ts` |
 
-Legacy 3D/template utilities remain in the repository for older/admin routes, but the public AI designer no longer composes generated artwork into an SVG garment silhouette.
+## Shopify and exports
 
-## AI modes
+The existing checkout handoff remains `{ type: "besu:checkout", payload }`. Team name, player name and player number continue to be separate structured order properties; AI artwork URLs remain the master image references.
 
-- `generate` — create a new finished uniform product render.
-- `refine` — edit the selected previous direct uniform render according to a natural-language correction.
-- `color_variation` — keep garment cut, composition, motifs, panels, trims, and visual identity while recoloring the finished render.
-
-## Logo reference
-
-The uploaded logo is retained with the design/order. During direct generation the AI is instructed to reserve a clean crest location rather than inventing a fake logo. The source logo file remains available for production handoff.
-
-## Shopify
-
-Checkout posts `{ type: "besu:checkout", payload }` to the parent iframe. The payload includes the selected direct AI design ID, render URLs, roster metadata, product handles, and variant IDs. Base64 logo data is not sent in Shopify properties.
-
-## Exports
-
-PNG / SVG / PDF / ZIP remain available. The SVG export is a wrapper around the raster AI render and is not represented as editable vector uniform artwork.
+PNG/SVG/PDF/ZIP remain available. Production capture now exports true front/back crops and includes deterministic SVG typography. The base AI art is still raster content inside the SVG wrapper.
 
 ## Environment
 
 ```text
 OPENAI_API_KEY=
-OPENAI_IMAGE_MODEL=gpt-image-1
-NEXT_PUBLIC_SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-DESIGNER_ASSETS_BUCKET=designer-assets
+OPENAI_IMAGE_MODEL=gpt-image-2
 DESIGNER_MOCK_AI=false
 NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN=
 ```
+
+`OPENAI_API_KEY` remains server-only. `OPENAI_IMAGE_MODEL` can be pinned to a model snapshot for controlled rollout if needed.
 
 ## Verification
 
@@ -91,18 +81,20 @@ pnpm test:designer
 pnpm build
 ```
 
-`pnpm test:designer` verifies both the direct-AI prompt contract and the four-selectable-concepts flow.
+`pnpm test:designer` verifies the no-AI-typography prompt contract, fixed master-board front/back rules, exact SVG typography, edit-based color preservation, four-concept selection flow, Shopify payload integrity and storage rules. `.github/workflows/designer-quality.yml` runs the same lint/type/test/build gate for designer changes.
 
-### Bryant acceptance scenario
+The repository also keeps `scripts/qa-designer-flow.mjs` for browser-level desktop/tablet/mobile flow verification.
 
-1. Select **Basketball Uniform**.
-2. Team: **GALACTIC**.
-3. Brief: *sleeveless basketball uniform jersey + shorts, outer space with moon and comets, premium NBA-style presentation*.
-4. Generate exactly **4 visually different finished AI uniform renders**.
-5. Each render must visibly show the actual uniform product rather than a flat print graphic.
-6. Each uniform must show jersey + shorts with front/back presentation.
-7. Confirm Refine / Roster / Order remain locked until one AI uniform is selected.
-8. Select one render and confirm the full AI image becomes the main preview.
-9. Apply black / electric blue / white and confirm AI keeps the selected uniform composition while recoloring it.
-10. Ask AI for a targeted refinement and confirm it edits the previous render rather than starting from a flat template.
-11. Confirm roster/order/export/Shopify retain the selected design ID and render URL.
+### Bryant / Michael acceptance scenario
+
+1. Select **Basketball Uniform** and enter the team wording exactly as it should print.
+2. Describe the visual theme without relying on AI to spell customer text.
+3. Generate four concepts and confirm all four use the same professional presentation, proportions and front-left/back-right layout.
+4. Confirm no concept contains AI-generated fake words, numbers, sponsor marks or invented logos.
+5. Confirm the team name is crisp and exact on the front chest because it is SVG, not AI pixels.
+6. Select a concept and switch Front/Back without dragging or zooming.
+7. Add a roster player and confirm player name/number render only on the back.
+8. Apply a new palette and confirm the edit uses the selected master render as reference and preserves design geometry.
+9. Apply a targeted visual refinement and confirm front/back remain one synchronized design system.
+10. Export front/back and confirm exact typography is present in the production SVG/PNG/PDF/ZIP.
+11. Confirm Shopify retains the selected design ID, master artwork URL, team name, player name and player number as separate structured data.

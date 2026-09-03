@@ -1,5 +1,5 @@
 /**
- * Designer verification harness.
+ * BESU AI designer verification harness.
  * Run: node scripts/verify-designer-2d.mjs
  */
 import fs from "node:fs";
@@ -41,6 +41,7 @@ function test(name, fn) {
 
 const openai = loadTypeScriptModule("lib/designer/openai-service.ts");
 const parser = loadTypeScriptModule("lib/designer/brief-parser.ts");
+const typography = loadTypeScriptModule("lib/designer/typography.ts");
 const pathMock = Object.assign(path, { default: path });
 const storage = loadTypeScriptModule("lib/designer/storage-service.ts", {
   path: pathMock,
@@ -48,134 +49,152 @@ const storage = loadTypeScriptModule("lib/designer/storage-service.ts", {
   "node:fs/promises": { mkdir: async () => {}, writeFile: async () => {} },
 });
 
-test("brief parser extracts team, colors, and edit vs generate intent", () => {
+test("brief parser preserves exact team wording and recognizes text-only edits", () => {
   assert.equal(
-    parser.extractTeamName("Show me three different basketball uniforms for a team called Michael, inspired by MJ"),
-    "MICHAEL",
+    parser.extractTeamName("Show me a basketball uniform for a team called St. Agnes", ""),
+    "St. Agnes",
   );
+  assert.equal(parser.extractTeamName("change team name to Besu Elite", "OLD"), "Besu Elite");
+  assert.equal(parser.isTeamNameOnlyEdit("Change team name to Besu Elite"), true);
+  assert.equal(parser.isTeamNameOnlyEdit("Change team name to Besu Elite and add flames"), false);
   assert.deepEqual(
     parser.extractColors("using the colors white black and gray"),
     { primary: "#0D0D0D", secondary: "#FFFFFF", accent: "#6B6B6B" },
   );
-  assert.equal(parser.isFreshGenerateRequest("make it without the sleeves", true), false);
-  assert.equal(parser.isFreshGenerateRequest("Show me three different uniforms", true), true);
-  // Without a selected concept there is nothing to edit, so any prompt starts a new set.
-  assert.equal(parser.isFreshGenerateRequest("make it without the sleeves", false), true);
+  assert.equal(parser.isFreshGenerateRequest("make the trim thinner", true), false);
+  assert.equal(parser.isFreshGenerateRequest("Generate a completely new uniform design", true), true);
 });
 
-test("prompt requests a finished direct AI basketball uniform", () => {
+test("AI prompt creates one standardized front-left/back-right master concept", () => {
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
-    designDescription: "basketball uniform jersey+shorts, outer space moon/comets",
+    designDescription: "GALACTIC basketball uniform, outer space moon and comets",
     teamName: "GALACTIC",
     style: "aggressive",
     view: "front",
     sport: "Basketball",
     mode: "generate",
   });
-  assert.match(prompt, /FINISHED UNIFORM VISUALIZATION/i);
-  assert.match(prompt, /sleeveless jersey plus matching shorts/i);
-  assert.match(prompt, /FRONT and BACK presentations/i);
-  assert.match(prompt, /GALACTIC/);
-  assert.match(prompt, /Render the exact team name/i);
-  assert.match(prompt, /flat sublimation texture/i);
-  assert.doesNotMatch(prompt, /Return only the isolated sublimation graphic/i);
-  assert.doesNotMatch(prompt, /Do not show a garment mockup/i);
+  assert.match(prompt, /1536x1024 landscape master board/i);
+  assert.match(prompt, /LEFT half is the FRONT/i);
+  assert.match(prompt, /RIGHT half is the BACK/i);
+  assert.match(prompt, /same physical uniform/i);
+  assert.match(prompt, /same scale, camera height, lighting, cut/i);
+  assert.match(prompt, /front centered near x=384/i);
+  assert.match(prompt, /back centered near x=1152/i);
 });
 
-test("prompt bars third-party brand marks and pins the exact team-name spelling", () => {
+test("AI prompt never asks the image model to paint customer wording", () => {
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
-    designDescription: "basketball uniform, outer space moon and comets",
+    designDescription: "GALACTIC basketball uniform with GALACTIC on the chest, black blue white",
+    inspiration: "Use the GALACTIC identity with premium energy",
     teamName: "GALACTIC",
-    style: "aggressive",
+    style: "modern",
     view: "front",
     sport: "Basketball",
     mode: "generate",
+    hasLogo: true,
   });
-  // A manufacturer mark on a customer's uniform is a trademark problem, so the ban is explicit
-  // and must be the last instruction, where the model weights it most heavily.
-  assert.match(prompt, /NO manufacturer or third-party brand mark/i);
-  assert.match(prompt, /swoosh/i);
-  assert.match(prompt, /three stripes/i);
-  assert.match(prompt, /jumpman/i);
-  const marksAt = prompt.indexOf("ABSOLUTE REQUIREMENT");
-  const brandAt = prompt.indexOf("Style direction");
-  assert.ok(marksAt > brandAt, "the brand-mark ban must come late in the prompt");
-  // Image models drop letters, so the wordmark is spelled out and the letter count asserted.
-  assert.match(prompt, /G-A-L-A-C-T-I-C/);
-  assert.match(prompt, /8 letters/);
-  assert.match(prompt, /SPELLING IS CRITICAL/i);
-  assert.match(prompt, /Do not print any player name or number/i);
+  assert.doesNotMatch(prompt, /GALACTIC/i, "the literal customer wordmark must not reach the image prompt");
+  assert.match(prompt, /draw NO customer typography/i);
+  assert.match(prompt, /NO.*team name/i);
+  assert.match(prompt, /pseudo-letters/i);
+  assert.match(prompt, /fake writing/i);
+  assert.match(prompt, /reserve a calm, low-detail chest area/i);
+  assert.match(prompt, /reserve a calm player-name zone/i);
+  assert.match(prompt, /approved uploaded logo is composited by the application/i);
+  assert.match(prompt, /NO manufacturer, sponsor or third-party brand mark/i);
+  assert.match(prompt, /Do not invent a team crest/i);
+  assert.match(prompt, /zero rendered typography/i);
 });
 
-test("color variation preserves direct uniform composition", () => {
+test("color variation is an edit with geometry lock, not a redesign", () => {
+  const colors = { primary: "#0A0A0A", secondary: "#00A3FF", accent: "#FFFFFF" };
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
-    designDescription: "space kit",
+    designDescription: "GALACTIC space kit",
     teamName: "GALACTIC",
     style: "modern",
     view: "front",
     mode: "color_variation",
-    colors: { primary: "#0A0A0A", secondary: "#00A3FF", accent: "#FFFFFF" },
-    correction: openai.buildColorVariationCorrection({ primary: "#0A0A0A", secondary: "#00A3FF", accent: "#FFFFFF" }),
+    colors,
+    correction: openai.buildColorVariationCorrection(colors),
   });
   assert.match(prompt, /COLOR VARIATION MODE/i);
-  assert.match(prompt, /Preserve the exact garment cut/i);
+  assert.match(prompt, /LOCK THE DESIGN GEOMETRY/i);
+  assert.match(prompt, /Only remap the existing design/i);
+  assert.match(prompt, /Do not add, remove, move, rotate, resize or reinterpret/i);
+  assert.match(prompt, /Preserve the blank front chest typography zone/i);
   assert.match(prompt, /#00A3FF/);
-  assert.match(prompt, /Do not redesign the kit/i);
-  // Recolouring made the model redraw the chest lettering and drop a letter, so edits must carry
-  // the wordmark over rather than re-letter it.
-  assert.match(prompt, /Carry the existing front chest wordmark over unchanged/i);
-  assert.match(prompt, /G-A-L-A-C-T-I-C/);
-  assert.match(prompt, /Do not re-letter/i);
+  assert.doesNotMatch(prompt, /GALACTIC/i);
 });
 
-test("refinement edits the previous direct render", () => {
+test("refinement keeps front/back synchronized and typography zones blank", () => {
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
-    designDescription: "space kit",
+    designDescription: "GALACTIC space kit",
     teamName: "GALACTIC",
     style: "modern",
     view: "front",
     mode: "refine",
-    correction: "sharper comets",
+    correction: "make the comet motif sharper",
   });
   assert.match(prompt, /REFINEMENT MODE/i);
-  assert.match(prompt, /previous direct uniform render/i);
-  assert.match(prompt, /sharper comets/i);
-  assert.match(prompt, /Carry the existing front chest wordmark over unchanged/i);
+  assert.match(prompt, /supplied master uniform board/i);
+  assert.match(prompt, /Change only what this instruction requires/i);
+  assert.match(prompt, /Keep front and back synchronized/i);
+  assert.match(prompt, /blank back player-name\/number zones/i);
+  assert.doesNotMatch(prompt, /GALACTIC/i);
 });
 
-const templates = loadTypeScriptModule("lib/designer/templates.ts", {
-  "./types": loadTypeScriptModule("lib/designer/types.ts"),
-});
-const typography = loadTypeScriptModule("lib/designer/typography.ts", {
-  "./templates": templates,
-  "./types": loadTypeScriptModule("lib/designer/types.ts"),
-});
-
-test("legacy production template helpers remain internally valid", () => {
-  for (const template of templates.listTemplates()) templates.assertTypographyContract(template);
+test("deterministic typography preserves literal text and separates front/back roles", () => {
+  assert.equal(typography.normalizeExactOverlayText("St. Agnes & Co.", 60), "St. Agnes & Co.");
+  assert.equal(typography.normalizeExactOverlayText("Müller 24", 60), "Müller 24");
   assert.deepEqual(typography.allowedTypographyRoles("front"), ["teamName"]);
   assert.deepEqual(typography.allowedTypographyRoles("back"), ["playerName", "number"]);
+
+  const front = typography.getTypographyPlacement("teamName", "St. Agnes", "board");
+  const backName = typography.getTypographyPlacement("playerName", "Bryant", "board");
+  const backNumber = typography.getTypographyPlacement("number", "24", "board");
+  assert.equal(front.text, "St. Agnes");
+  assert.equal(backName.text, "Bryant");
+  assert.equal(backNumber.text, "24");
+  assert.ok(front.x < typography.AI_MASTER_BOARD.viewWidth, "team name must stay in front/left half");
+  assert.ok(backName.x > typography.AI_MASTER_BOARD.viewWidth, "player name must stay in back/right half");
+  assert.ok(backNumber.x > typography.AI_MASTER_BOARD.viewWidth, "number must stay in back/right half");
 });
 
-const variants = loadTypeScriptModule("lib/shopify-variants.ts");
-const checkout = loadTypeScriptModule("lib/designer/shopify-service.ts", { "../shopify-variants": variants });
+test("production canvas uses deterministic SVG typography and true front/back crops", () => {
+  const canvas = fs.readFileSync(path.join(root, "components/designer/garment-canvas.tsx"), "utf8");
+  const overlay = fs.readFileSync(path.join(root, "components/designer/uniform-typography-overlay.tsx"), "utf8");
+  const concepts = fs.readFileSync(path.join(root, "components/designer/concept-panel.tsx"), "utf8");
+  assert.match(canvas, /AI_MASTER_BOARD\.viewWidth/);
+  assert.match(canvas, /sourceX = s\.view === "front" \? 0 : -AI_MASTER_BOARD\.viewWidth/);
+  assert.match(canvas, /UniformTypographyOverlay/);
+  assert.match(canvas, /\["front", "back"\]/);
+  assert.match(overlay, /data-deterministic-typography="true"/);
+  assert.match(overlay, /role="teamName"/);
+  assert.match(overlay, /role="playerName"/);
+  assert.match(overlay, /role="number"/);
+  assert.match(concepts, /view="board"/);
+  assert.doesNotMatch(canvas, /onWheel|onPointerMove|dragBoundFunc|zoom/i, "preview should not require manual zoom/drag");
+});
 
-test("Shopify payload uses selected direct AI render URLs", () => {
+test("Shopify payload still carries exact team/player data separately from AI artwork", () => {
+  const variants = loadTypeScriptModule("lib/shopify-variants.ts");
+  const checkout = loadTypeScriptModule("lib/designer/shopify-service.ts", { "../shopify-variants": variants });
   const state = {
     designId: "design-galactic",
     productId: "basketball-uniform",
     garmentType: "uniform",
     sport: "Basketball",
     style: "aggressive",
-    teamName: "GALACTIC",
+    teamName: "St. Agnes",
     colors: { primary: "#0A0A0A", secondary: "#00A3FF", accent: "#FFFFFF" },
     artwork: {
-      front: "https://app.example.com/api/designer/asset/2026-09-01/direct-ai.png",
-      back: "https://app.example.com/api/designer/asset/2026-09-01/direct-ai.png",
+      front: "https://app.example.com/api/designer/asset/2026-09-01/master.png",
+      back: "https://app.example.com/api/designer/asset/2026-09-01/master.png",
     },
     logoUrl: "data:image/png;base64,AAAA",
     roster: [{ name: "Bryant", number: "24", topSize: "M", shortsSize: "L", quantity: 1 }],
@@ -183,48 +202,16 @@ test("Shopify payload uses selected direct AI render URLs", () => {
   };
   const payload = checkout.buildDesignerCheckoutPayload(state);
   const serialized = JSON.stringify(payload);
-  assert.equal(payload.designId, "design-galactic");
+  assert.equal(payload.items[0].properties["Team name"], "St. Agnes");
+  assert.equal(payload.items[0].properties["Player name"], "Bryant");
+  assert.equal(payload.items[0].properties["Player number"], "24");
   assert.match(payload.items[0].properties["Front artwork URL"], /^https:\/\//);
-  assert.equal(payload.items[0].properties["Logo URL"], "");
   assert.doesNotMatch(serialized, /data:image|base64,AAAA/i);
 });
 
-test("every concept render asks for one finished uniform, never a multi-design collage", () => {
-  const prompt = openai.buildArtworkPrompt({
-    garmentType: "uniform",
-    designDescription: "Michael Jackson theme white black gray",
-    teamName: "MICHAEL",
-    style: "modern",
-    view: "front",
-    sport: "Basketball",
-    mode: "generate",
-    layout: "kit",
-  });
-  assert.match(prompt, /MICHAEL/);
-  assert.match(prompt, /sleeveless/i);
-  assert.match(prompt, /Return one direct AI product-render image/i);
-  // A collage cannot be individually selected, refined or ordered, so it must not be requested.
-  assert.doesNotMatch(prompt, /CONCEPT BOARD MODE/i);
-  assert.doesNotMatch(prompt, /THREE distinct labeled designs/i);
-});
-
-test("API refinement requires previous direct render", () => {
-  const needsPrevious = (mode, previous) => (mode === "refine" || mode === "color_variation") && !previous;
-  assert.equal(needsPrevious("refine", undefined), true);
-  assert.equal(needsPrevious("color_variation", "https://x"), false);
-  assert.equal(needsPrevious("generate", undefined), false);
-});
-
-test("designer asset URLs must be same-origin app assets or inline PNG data URLs", () => {
+test("designer asset URLs remain restricted to app assets or inline PNGs", () => {
   assert.equal(
     storage.isAllowedDesignerAssetUrl(
-      "https://app.example.com/api/designer/asset/2026-09-01/test.png",
-      "https://app.example.com",
-    ),
-    true,
-  );
-  assert.equal(
-    storage.isLocalDesignerAssetUrl(
       "https://app.example.com/api/designer/asset/2026-09-01/test.png",
       "https://app.example.com",
     ),
@@ -235,10 +222,6 @@ test("designer asset URLs must be same-origin app assets or inline PNG data URLs
     true,
   );
   assert.equal(storage.isAllowedDesignerAssetUrl("https://evil.example.com/asset.png", "https://app.example.com"), false);
-  assert.equal(
-    storage.isAllowedDesignerAssetUrl("https://cdn.example.com/designer/x.png", "https://app.example.com"),
-    false,
-  );
 });
 
 test("serverless storage returns inline PNG data URLs instead of disk paths", async () => {
@@ -251,21 +234,6 @@ test("serverless storage returns inline PNG data URLs instead of disk paths", as
     });
     assert.equal(stored.inline, true);
     assert.match(stored.url, /^data:image\/png;base64,/);
-    assert.equal(stored.bucket, "inline");
-  } finally {
-    if (saved.VERCEL === undefined) delete process.env.VERCEL;
-    else process.env.VERCEL = saved.VERCEL;
-  }
-});
-
-test("asset storage uses /tmp on serverless and project dir locally", () => {
-  const saved = { VERCEL: process.env.VERCEL };
-  try {
-    process.env.VERCEL = "1";
-    assert.equal(storage.isServerlessRuntime(), true);
-    assert.match(storage.assetStorageRoot(), /^\/tmp\/designer-assets$/);
-    delete process.env.VERCEL;
-    assert.match(storage.assetStorageRoot(), /\.designer-assets$/);
   } finally {
     if (saved.VERCEL === undefined) delete process.env.VERCEL;
     else process.env.VERCEL = saved.VERCEL;

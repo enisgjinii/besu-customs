@@ -4,6 +4,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@heroui/react";
 import { Check } from "lucide-react";
 import { useDesignerStore } from "@/lib/designer/store";
+import { AI_MASTER_BOARD } from "@/lib/designer/typography";
+import { UniformTypographyOverlay } from "./uniform-typography-overlay";
 import { cn } from "@/lib/utils";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -50,16 +52,32 @@ export function ConceptPanel() {
                 active ? "ring-2 ring-[#181816]" : "hover:bg-black/[0.04]",
               )}
             >
-              <div className="aspect-[4/3] w-full overflow-hidden bg-[#f4f3ef]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={concept.assetUrl}
-                  alt={`Concept ${index + 1} of ${s.concepts.length}: ${concept.label} uniform for ${s.teamName || "your team"}`}
-                  loading={index > 0 ? "lazy" : "eager"}
-                  decoding="async"
-                  draggable={false}
-                  className="h-full w-full object-contain p-1.5"
-                />
+              <div className="aspect-[3/2] w-full overflow-hidden bg-[#f4f3ef]">
+                <svg
+                  viewBox={`0 0 ${AI_MASTER_BOARD.width} ${AI_MASTER_BOARD.height}`}
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  aria-label={`Concept ${index + 1} of ${s.concepts.length}: ${concept.label} uniform for ${s.teamName || "your team"}`}
+                  className="h-full w-full"
+                >
+                  <rect width={AI_MASTER_BOARD.width} height={AI_MASTER_BOARD.height} fill="#f4f3ef" />
+                  <image
+                    href={concept.assetUrl}
+                    x="0"
+                    y="0"
+                    width={AI_MASTER_BOARD.width}
+                    height={AI_MASTER_BOARD.height}
+                    preserveAspectRatio="none"
+                  />
+                  <UniformTypographyOverlay
+                    view="board"
+                    garmentType={s.garmentType}
+                    teamName={s.teamName}
+                    fontFamily={s.font}
+                    colors={concept.colors}
+                    logoUrl={s.logoUrl}
+                  />
+                </svg>
               </div>
               <div className={cn("flex items-center gap-1.5 px-2.5 py-2", active && "bg-white")}>
                 <span className="shrink-0 text-[11px] font-semibold tabular-nums text-muted">{index + 1}</span>

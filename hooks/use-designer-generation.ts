@@ -3,8 +3,10 @@
 import { toast } from "sonner";
 import {
   extractColors,
+  extractExplicitTeamName,
   extractTeamName,
   isFreshGenerateRequest,
+  isTeamNameOnlyEdit,
 } from "@/lib/designer/brief-parser";
 import {
   CONCEPT_COUNT,
@@ -74,9 +76,8 @@ export async function uploadDesignerLogo(file: File) {
 /**
  * The single canonical entry point for a fresh customer generation.
  *
- * Every public surface (brief panel and studio prompt bar) routes through this so there is
- * exactly one fresh-generation behaviour: N distinct finished uniform concepts (1–4),
- * then the customer is taken to Choose — or, for a single design, auto-selected into Refine.
+ * Every public surface routes through this so there is exactly one fresh-generation behaviour:
+ * N distinct finished uniform concepts (1–4), then Choose — or, for a single design, Refine.
  */
 export async function generateConcepts(prompt: string, countOverride?: ConceptCount) {
   const session = useGenerationSession.getState();
@@ -125,9 +126,6 @@ export async function generateConcepts(prompt: string, countOverride?: ConceptCo
     });
 
     const store = useDesignerStore.getState();
-    // setConcepts clears selectedConceptId, artwork, history and designId, so Refine
-    // and Order stay locked until the customer explicitly chooses a direction —
-    // except a single-concept run, which we auto-select for speed.
     store.setConcepts(result.concepts);
     if (result.concepts.length === 1) {
       store.selectConcept(result.concepts[0].id);
@@ -195,9 +193,19 @@ export async function submitStudioPrompt(raw: string) {
     return;
   }
 
-  const store = useDesignerStore.getState();
+  let store = useDesignerStore.getState();
+  const explicitTeam = extractExplicitTeamName(prompt);
+  if (explicitTeam && explicitTeam !== store.teamName) {
+    store.patch({ teamName: explicitTeam });
+    store = useDesignerStore.getState();
+    if (store.selectedConceptId && isTeamNameOnlyEdit(prompt)) {
+      toast.success("Team name updated — no AI regeneration needed.");
+      return;
+    }
+  }
+
   // A concept must be selected before a prompt is treated as an edit; otherwise there is
-  // no single design to refine and the prompt starts a fresh set.
+  // no single master design to refine and the prompt starts a fresh set.
   const hasSelection = Boolean(store.selectedConceptId) && Boolean(store.artwork.front || store.artwork.back);
   if (isFreshGenerateRequest(prompt, hasSelection)) {
     await generateConcepts(prompt);

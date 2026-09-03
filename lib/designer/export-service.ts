@@ -68,7 +68,7 @@ export async function serializeDesignerSvg(options: { embedImages?: boolean } = 
 }
 
 function downloadSvg(xml: string, state: DesignerState, view = state.view) {
-  const note = "<!-- AI artwork may be embedded raster content; this SVG is not guaranteed to be fully editable. -->\n";
+  const note = "<!-- AI base artwork may be embedded raster content; customer typography is deterministic SVG. -->\n";
   const url = URL.createObjectURL(new Blob([note, xml], { type: "image/svg+xml" }));
   clickDownload(url, `${filePrefix(state, view)}.svg`);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -85,7 +85,7 @@ export async function downloadDesignerSvg(state: DesignerState, captures?: Produ
 
 const EXPORT_WIDTH = 2400;
 
-/** Production rasters must keep the preview's proportions, otherwise the uniform is stretched. */
+/** Production rasters keep the SVG preview proportions, so front/back are never stretched. */
 function exportHeight(xml: string) {
   const viewBox = xml.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
   const width = Number(viewBox?.[1]);
@@ -172,15 +172,16 @@ function productionPdf(state: DesignerState, previewData?: { front: string; back
   doc.setFontSize(9);
   doc.text(state.customer.notes || "No notes", 18, Math.min(258, 120 + rows.length * 5), { maxWidth: 174 });
   if (previewData) {
-    doc.addPage();
-    // The renders are landscape (3:2), so they are stacked full width to avoid distortion.
-    const width = 174;
-    const height = Math.round((width * 1024) / 1536);
-    doc.setFontSize(15);
-    doc.text("Front", 18, 18);
-    doc.addImage(previewData.front, "PNG", 18, 24, width, height, undefined, "FAST");
-    doc.text("Back", 18, 40 + height);
-    doc.addImage(previewData.back, "PNG", 18, 46 + height, width, height, undefined, "FAST");
+    // The application now exports true 3:4 front/back crops from the 3:2 AI master board.
+    // Give each production view its own page so nothing is stretched or made unreadably small.
+    const width = 126;
+    const height = 168;
+    for (const [label, data] of [["Front", previewData.front], ["Back", previewData.back]] as const) {
+      doc.addPage();
+      doc.setFontSize(15);
+      doc.text(label, 18, 18);
+      doc.addImage(data, "PNG", 42, 26, width, height, undefined, "FAST");
+    }
   }
   return doc.output("blob");
 }
@@ -206,7 +207,7 @@ export async function downloadProductionBundle(state: DesignerState, captures: P
   const { frontPng, backPng, pdf } = await createProductionFiles(state, captures);
   const zip = new JSZip();
   const prefix = designPrefix(state);
-  const note = "<!-- AI artwork may be embedded raster content; this SVG is not guaranteed to be fully editable. -->\n";
+  const note = "<!-- AI base artwork may be embedded raster content; customer typography is deterministic SVG. -->\n";
   zip.file(`${prefix}-FRONT.svg`, note + captures.front);
   zip.file(`${prefix}-BACK.svg`, note + captures.back);
   zip.file(`${prefix}-FRONT.png`, frontPng);

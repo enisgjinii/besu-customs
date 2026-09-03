@@ -3,14 +3,35 @@
 import { buildColorVariationCorrection, type GenerationMode } from "@/lib/designer/openai-service";
 import type { ArtworkLayout, DesignConcept, DesignerColors, DesignerState, GarmentView, GenerationVersion } from "@/lib/designer/types";
 
-export const LOADING_STAGES = ["Preparing AI edit…", "Rendering uniform…", "Saving AI render…"] as const;
+export const LOADING_STAGES = ["Preparing AI reference…", "Rendering uniform…", "Saving AI render…"] as const;
 const MAX_CONCEPT_BASE_BRIEF = 460;
 
+/**
+ * The four options change composition language only. Render quality, product cut, proportions,
+ * camera and front/back presentation are standardized server-side for every direction.
+ * IDs and labels are retained for compatibility with saved/shareable designer state.
+ */
 export const CONCEPT_DIRECTIONS = [
-  { id: "cosmic-energy", label: "Cosmic Energy", direction: "Bold galactic basketball graphics, sweeping nebula motion, comet trails, star fields, dramatic angular panels, premium NBA-inspired energy." },
-  { id: "velocity-cut", label: "Velocity Cut", direction: "Fast aggressive court aesthetic with sharp diagonal cuts, speed lines, layered geometric panels, high-energy modern professional basketball styling." },
-  { id: "heritage-court", label: "Heritage Court", direction: "Retro-modern basketball identity with structured side panels, vintage court geometry, restrained texture, classic championship uniform proportions." },
-  { id: "elite-minimal", label: "Elite Minimal", direction: "Luxury minimal basketball kit with clean negative space, precise trim geometry, premium tonal panels, subtle asymmetry and modern pro-team sophistication." },
+  {
+    id: "cosmic-energy",
+    label: "Cosmic Energy",
+    direction: "Translate only the user's requested theme into sweeping directional movement, layered visual rhythm and one strong focal motif. Do not introduce a new theme that was not requested.",
+  },
+  {
+    id: "velocity-cut",
+    label: "Velocity Cut",
+    direction: "Use precise angular panel relationships, controlled diagonal cuts, disciplined piping and geometric structure derived from the requested theme. Keep it intentional rather than busy.",
+  },
+  {
+    id: "heritage-court",
+    label: "Heritage Court",
+    direction: "Use a restrained retro-sport composition with confident symmetry, classic side-panel logic and modernized trim proportions while expressing the requested theme through subtle graphic treatment.",
+  },
+  {
+    id: "elite-minimal",
+    label: "Elite Minimal",
+    direction: "Use premium negative space, tonal layering, precise trim geometry and a small number of high-impact details. Keep the requested theme recognizable through elegant abstraction rather than extra decoration.",
+  },
 ] as const;
 
 export type GenerateResult = { versions: GenerationVersion[]; mock: boolean; colors: DesignerColors };
@@ -71,6 +92,8 @@ async function generateOne(
     body: JSON.stringify({
       garmentType: state.garmentType,
       designDescription: state.prompt,
+      // The server uses teamName only to remove the literal from visual instructions. It is never
+      // painted by the image model; the deterministic SVG renderer owns customer typography.
       teamName: state.teamName,
       colors: state.colorsEnabled || mode === "color_variation" ? colors || state.colors : undefined,
       style: state.style,
@@ -93,6 +116,8 @@ async function generateOne(
 
 async function generateKitUnlocked(options: GenerateOptions): Promise<GenerateResult> {
   const mode = options.mode || "generate";
+  // One master image always contains both standardized views. `view` remains in the API/state for
+  // backward compatibility and for production preview/export focus.
   const primaryView: GarmentView = options.views?.[0] || "front";
   let resolvedColors = options.colors || options.state.colors;
 
@@ -179,8 +204,8 @@ export async function generateConceptSet(options: {
         ...options.state,
         prompt:
           count === 1
-            ? `${baseBrief}\n\nRender one finished wearable uniform concept from this brief.`
-            : `${baseBrief}\n\nART DIRECTION ${index + 1}/${count} — ${preset.label}: ${preset.direction}\nRender a finished wearable uniform concept. Make this composition clearly different from the other proposed directions.`,
+            ? `${baseBrief}\n\nRender one finished wearable master uniform concept from this brief.`
+            : `${baseBrief}\n\nCREATIVE DIRECTION ${index + 1}/${count} — ${preset.label}: ${preset.direction}\nThis direction changes design language only. Keep the same professional render standard, garment proportions and front/back master-board layout used by every concept in the set.`,
         artwork: {},
         designId: undefined,
       };
@@ -212,4 +237,3 @@ export async function generateConceptSet(options: {
     if (inFlightRequestId === batchId) inFlightRequestId = null;
   }
 }
-

@@ -1,0 +1,54 @@
+name: Designer quality
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+      - "fix/**"
+    paths:
+      - ".github/workflows/designer-quality.yml"
+      - ".env.example"
+      - "app/api/designer/**"
+      - "components/designer/**"
+      - "hooks/use-designer-generation.ts"
+      - "lib/designer/**"
+      - "scripts/verify-designer-2d.mjs"
+      - "scripts/verify-designer-checkout-payload.mjs"
+      - "scripts/verify-four-concepts.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  pull_request:
+    paths:
+      - "app/api/designer/**"
+      - "components/designer/**"
+      - "hooks/use-designer-generation.ts"
+      - "lib/designer/**"
+      - "scripts/verify-designer-2d.mjs"
+      - "scripts/verify-designer-checkout-payload.mjs"
+      - "scripts/verify-four-concepts.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:designer
+      - run: pnpm build
+        env:
+          OPENAI_API_KEY: ci-placeholder
+          NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN: https://example.com

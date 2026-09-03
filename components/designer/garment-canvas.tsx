@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Spinner } from "@heroui/react";
-import { useDesignerStore } from "@/lib/designer/store";
+import { getPreviewPlayer, useDesignerStore } from "@/lib/designer/store";
 import { useGenerationSession } from "@/lib/designer/generation-session";
+import { AI_MASTER_BOARD } from "@/lib/designer/typography";
+import { UniformTypographyOverlay } from "./uniform-typography-overlay";
 import { cn } from "@/lib/utils";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -33,12 +35,14 @@ const PLACEHOLDERS = [
 
 export function GarmentCanvas() {
   const s = useDesignerStore();
-  const artwork = s.artwork.front || s.artwork.back;
+  const artwork = s.artwork[s.view] || s.artwork.front || s.artwork.back;
+  const player = getPreviewPlayer(s);
   const awaitingChoice = s.concepts.length > 0 && !s.selectedConceptId;
   const { busy, stage, kind } = useGenerationSession();
   const reduceMotion = useReducedMotion();
   const [activePlaceholder, setActivePlaceholder] = useState(0);
   const current = PLACEHOLDERS[activePlaceholder] || PLACEHOLDERS[0];
+  const sourceX = s.view === "front" ? 0 : -AI_MASTER_BOARD.viewWidth;
 
   return (
     <section className="relative h-full w-full overflow-hidden rounded-[20px] bg-[#f8f8f5] ring-1 ring-black/[0.05] md:rounded-[28px]">
@@ -51,20 +55,31 @@ export function GarmentCanvas() {
       >
         {artwork ? (
           <svg
-            viewBox="0 0 1536 1024"
+            viewBox={`0 0 ${AI_MASTER_BOARD.viewWidth} ${AI_MASTER_BOARD.height}`}
             preserveAspectRatio="xMidYMid meet"
             role="img"
-            aria-label="Uniform preview"
+            aria-label={`${s.view === "front" ? "Front" : "Back"} uniform preview with deterministic customer typography`}
             className="h-full w-full"
+            data-production-view={s.view}
           >
-            <rect x="0" y="0" width="1536" height="1024" fill="#f8f8f5" />
+            <rect x="0" y="0" width={AI_MASTER_BOARD.viewWidth} height={AI_MASTER_BOARD.height} fill="#f8f8f5" />
             <image
               href={artwork}
-              x="48"
-              y="36"
-              width="1440"
-              height="860"
-              preserveAspectRatio="xMidYMid meet"
+              x={sourceX}
+              y="0"
+              width={AI_MASTER_BOARD.width}
+              height={AI_MASTER_BOARD.height}
+              preserveAspectRatio="none"
+            />
+            <UniformTypographyOverlay
+              view={s.view}
+              garmentType={s.garmentType}
+              teamName={s.teamName}
+              playerName={player?.name}
+              playerNumber={player?.number}
+              fontFamily={s.font}
+              colors={s.colors}
+              logoUrl={s.logoUrl}
             />
           </svg>
         ) : awaitingChoice ? (
@@ -138,6 +153,25 @@ export function GarmentCanvas() {
         )}
       </motion.div>
 
+      {artwork ? (
+        <div className="absolute right-3 top-3 z-10 flex rounded-full border border-black/[0.08] bg-white/92 p-1 shadow-sm backdrop-blur md:right-4 md:top-4">
+          {(["front", "back"] as const).map((view) => (
+            <button
+              key={view}
+              type="button"
+              aria-pressed={s.view === view}
+              onClick={() => s.setView(view)}
+              className={cn(
+                "min-h-8 rounded-full px-3 text-[10px] font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 md:text-[11px]",
+                s.view === view ? "bg-[#181816] text-white" : "text-muted hover:text-foreground",
+              )}
+            >
+              {view}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <AnimatePresence>
         {busy ? (
           <motion.div
@@ -153,7 +187,7 @@ export function GarmentCanvas() {
               <p className="m-0 text-[13px] font-semibold tracking-[-0.01em]">
                 {stage || (kind === "refine" ? "Updating uniform…" : "Generating uniform…")}
               </p>
-              <p className="m-0 text-[11px] text-muted">This usually takes a little while.</p>
+              <p className="m-0 text-[11px] text-muted">Using the selected design as the visual reference.</p>
             </div>
           </motion.div>
         ) : null}
