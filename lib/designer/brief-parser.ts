@@ -60,7 +60,13 @@ export function extractTeamName(prompt: string, existing?: string): string {
 
 /** A pure wording change is handled instantly by the SVG layer and should not spend an AI edit. */
 export function isTeamNameOnlyEdit(prompt: string): boolean {
-  return /^\s*(?:please\s+)?(?:change|update|set|rename)(?:\s+the)?\s+team(?:\s+name)?\s+(?:to|:)\s+["']?[A-Za-z0-9][A-Za-z0-9 &.'-]{1,58}["']?[.!]?\s*$/i.test(prompt);
+  const trimmed = prompt.trim();
+  // Do not accidentally classify a combined visual request as a free typography-only update.
+  // Names such as "Rock and Roll" remain valid because only concrete edit continuations are rejected.
+  if (/\b(?:and\s+(?:add|make|remove|change|update|recolor|replace|move|give|use)|then|also)\b/i.test(trimmed)) {
+    return false;
+  }
+  return /^\s*(?:please\s+)?(?:change|update|set|rename)(?:\s+the)?\s+team(?:\s+name)?\s+(?:to|:)\s+["']?[A-Za-z0-9][A-Za-z0-9 &.'-]{1,58}["']?[.!]?\s*$/i.test(trimmed);
 }
 
 export function extractColors(prompt: string): DesignerColors | undefined {
