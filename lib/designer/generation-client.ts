@@ -5,6 +5,7 @@ import type { ArtworkLayout, DesignConcept, DesignerColors, DesignerState, Garme
 
 export const LOADING_STAGES = ["Preparing AI reference…", "Rendering uniform…", "Saving AI render…"] as const;
 const MAX_CONCEPT_BASE_BRIEF = 460;
+export const CONCEPT_GENERATION_CONCURRENCY = 2 as const;
 
 /**
  * The four options change composition language only. Render quality, product cut, proportions,
@@ -184,53 +185,60 @@ export async function generateConceptSet(options: {
   if (inFlightRequestId) throw new Error(friendlyError("duplicate"));
   const batchId = crypto.randomUUID();
   inFlightRequestId = batchId;
-  const concepts: DesignConcept[] = [];
-  let mock = false;
   const count = clampConceptCount(options.count ?? options.state.conceptCount ?? CONCEPT_COUNT);
   const directions = CONCEPT_DIRECTIONS.slice(0, count);
+  const concepts = new Array<DesignConcept>(count);
+  let mock = false;
 
   try {
     const baseBrief = options.state.prompt.trim().slice(0, MAX_CONCEPT_BASE_BRIEF);
-    for (let index = 0; index < directions.length; index += 1) {
-      const preset = directions[index];
-      options.onProgress?.({
-        stage: LOADING_STAGES[1],
-        conceptIndex: index + 1,
-        conceptCount: count,
-        conceptLabel: count === 1 ? "Design" : preset.label,
-      });
+    // Render at most two directions at once. This noticeably reduces a four-concept wait while
+    // staying conservative with GPT Image rate limits and preserving deterministic concept order.
+    for (let offset = 0; offset < directions.length; offset += CONCEPT_GENERATION_CONCURRENCY) {
+      const batch = directions.slice(offset, offset + CONCEPT_GENERATION_CONCURRENCY);
+      await Promise.all(
+        batch.map(async (preset, batchIndex) => {
+          const index = offset + batchIndex;
+          options.onProgress?.({
+            stage: LOADING_STAGES[1],
+            conceptIndex: index + 1,
+            conceptCount: count,
+            conceptLabel: count === 1 ? "Design" : preset.label,
+          });
 
-      const conceptState: DesignerState = {
-        ...options.state,
-        prompt:
-          count === 1
-            ? `${baseBrief}\n\nRender one finished wearable master uniform concept from this brief.`
-            : `${baseBrief}\n\nCREATIVE DIRECTION ${index + 1}/${count} — ${preset.label}: ${preset.direction}\nThis direction changes design language only. Keep the same professional render standard, garment proportions and front/back master-board layout used by every concept in the set.`,
-        artwork: {},
-        designId: undefined,
-      };
+          const conceptState: DesignerState = {
+            ...options.state,
+            prompt:
+              count === 1
+                ? `${baseBrief}\n\nRender one finished wearable master uniform concept from this brief.`
+                : `${baseBrief}\n\nCREATIVE DIRECTION ${index + 1}/${count} — ${preset.label}: ${preset.direction}\nThis direction changes design language only. Keep the same professional render standard, garment proportions and front/back master-board layout used by every concept in the set.`,
+            artwork: {},
+            designId: undefined,
+          };
 
-      const result = await generateKitUnlocked({
-        state: conceptState,
-        mode: "generate",
-        views: ["front"],
-        layout: "kit",
-        conceptIndex: index,
-        signal: options.signal,
-      });
-      mock = mock || result.mock;
-      const primary = result.versions[0];
-      concepts.push({
-        id: count === 1 ? "single-design" : preset.id,
-        label: count === 1 ? "Your design" : preset.label,
-        direction: count === 1 ? "Client brief" : preset.direction,
-        prompt: conceptState.prompt,
-        assetUrl: primary.assetUrl,
-        colors: result.colors,
-        colorsEnabled: options.state.colorsEnabled,
-        createdAt: primary.createdAt,
-        designId: primary.id,
-      });
+          const result = await generateKitUnlocked({
+            state: conceptState,
+            mode: "generate",
+            views: ["front"],
+            layout: "kit",
+            conceptIndex: index,
+            signal: options.signal,
+          });
+          mock = mock || result.mock;
+          const primary = result.versions[0];
+          concepts[index] = {
+            id: count === 1 ? "single-design" : preset.id,
+            label: count === 1 ? "Your design" : preset.label,
+            direction: count === 1 ? "Client brief" : preset.direction,
+            prompt: conceptState.prompt,
+            assetUrl: primary.assetUrl,
+            colors: result.colors,
+            colorsEnabled: options.state.colorsEnabled,
+            createdAt: primary.createdAt,
+            designId: primary.id,
+          };
+        }),
+      );
     }
     return { concepts, mock };
   } finally {

@@ -65,12 +65,11 @@ PNG/SVG/PDF/ZIP remain available. Production capture now exports true front/back
 
 ```text
 OPENAI_API_KEY=
-OPENAI_IMAGE_MODEL=gpt-image-2
 DESIGNER_MOCK_AI=false
 NEXT_PUBLIC_SHOPIFY_PARENT_ORIGIN=
 ```
 
-`OPENAI_API_KEY` remains server-only. `OPENAI_IMAGE_MODEL` can be pinned to a model snapshot for controlled rollout if needed.
+`OPENAI_API_KEY` remains server-only. The image model is deliberately hard-pinned in server code to `gpt-image-2`; there is no environment override or fallback model.
 
 ## Verification
 

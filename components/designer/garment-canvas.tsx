@@ -43,6 +43,7 @@ export function GarmentCanvas() {
   const [activePlaceholder, setActivePlaceholder] = useState(0);
   const current = PLACEHOLDERS[activePlaceholder] || PLACEHOLDERS[0];
   const sourceX = s.view === "front" ? 0 : -AI_MASTER_BOARD.viewWidth;
+  const selectedConcept = s.concepts.find((concept) => concept.id === s.selectedConceptId);
 
   return (
     <section className="relative h-full w-full overflow-hidden rounded-[20px] bg-[#f8f8f5] ring-1 ring-black/[0.05] md:rounded-[28px]">
@@ -154,6 +155,23 @@ export function GarmentCanvas() {
       </motion.div>
 
       {artwork ? (
+        <div className="absolute left-3 top-3 z-10 flex max-w-[calc(100%-150px)] items-center gap-1.5 md:left-4 md:top-4 md:max-w-[60%]">
+          <span className="flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border border-black/[0.07] bg-white/92 px-2.5 text-[9px] font-bold text-foreground/75 shadow-sm backdrop-blur md:text-[10px]">
+            <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+            GPT IMAGE 2
+          </span>
+          <span className="hidden min-h-8 items-center rounded-full border border-black/[0.07] bg-white/92 px-2.5 text-[9px] font-semibold text-muted shadow-sm backdrop-blur sm:flex md:text-[10px]">
+            Exact text
+          </span>
+          {selectedConcept ? (
+            <span className="hidden min-h-8 min-w-0 items-center truncate rounded-full border border-black/[0.07] bg-white/92 px-2.5 text-[9px] font-semibold text-muted shadow-sm backdrop-blur md:flex md:text-[10px]">
+              {selectedConcept.label}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {artwork ? (
         <div className="absolute right-3 top-3 z-10 flex rounded-full border border-black/[0.08] bg-white/92 p-1 shadow-sm backdrop-blur md:right-4 md:top-4">
           {(["front", "back"] as const).map((view) => (
             <button
@@ -187,7 +205,7 @@ export function GarmentCanvas() {
               <p className="m-0 text-[13px] font-semibold tracking-[-0.01em]">
                 {stage || (kind === "refine" ? "Updating uniform…" : "Generating uniform…")}
               </p>
-              <p className="m-0 text-[11px] text-muted">Using the selected design as the visual reference.</p>
+              <p className="m-0 max-w-[260px] text-center text-[11px] text-muted">{kind === "refine" ? "Editing the selected master while preserving its design language." : "Rendering a synchronized front/back master with GPT Image 2."}</p>
             </div>
           </motion.div>
         ) : null}

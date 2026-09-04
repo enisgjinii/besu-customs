@@ -42,6 +42,8 @@ const load = createLoader({
 const { useDesignerStore } = load("lib/designer/store.ts");
 const { useGenerationSession } = load("lib/designer/generation-session.ts");
 const hook = load("hooks/use-designer-generation.ts");
+const generationClient = load("lib/designer/generation-client.ts");
+const { DESIGNER_IMAGE_MODEL, getOpenAiConfig } = load("lib/designer/config.ts");
 const { STEP_INDEX } = load("components/designer/designer-steps.ts");
 const { buildArtworkPrompt } = load("lib/designer/openai-service.ts");
 const shopify = load("lib/designer/shopify-service.ts");
@@ -77,6 +79,54 @@ function seedBrief() {
   toasts.length = 0;
   useDesignerStore.getState().patch({ teamName: "GALACTIC", prompt: BRIEF, conceptCount: 4 });
 }
+
+
+await test("designer is hard-pinned to GPT Image 2 with no model fallback or env override", () => {
+  const previous = process.env.OPENAI_IMAGE_MODEL;
+  process.env.OPENAI_IMAGE_MODEL = "gpt-image-1";
+  try {
+    assert.equal(DESIGNER_IMAGE_MODEL, "gpt-image-2");
+    assert.equal(getOpenAiConfig().imageModel, "gpt-image-2");
+    const configSource = fs.readFileSync(path.join(ROOT, "lib/designer/config.ts"), "utf8");
+    const envSource = fs.readFileSync(path.join(ROOT, ".env.example"), "utf8");
+    assert.doesNotMatch(configSource, /process\.env\.OPENAI_IMAGE_MODEL/);
+    assert.doesNotMatch(envSource, /^OPENAI_IMAGE_MODEL=/m);
+    assert.doesNotMatch(configSource, /gpt-image-1|dall-e|chatgpt-image-latest/i);
+  } finally {
+    if (previous === undefined) delete process.env.OPENAI_IMAGE_MODEL;
+    else process.env.OPENAI_IMAGE_MODEL = previous;
+  }
+});
+
+await test("four-concept generation uses bounded two-at-a-time GPT Image requests", async () => {
+  seedBrief();
+  let active = 0;
+  let maxActive = 0;
+  let callNumber = 0;
+  globalThis.fetch = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    const current = ++callNumber;
+    active += 1;
+    maxActive = Math.max(maxActive, active);
+    await new Promise((resolve) => setTimeout(resolve, 8));
+    active -= 1;
+    return {
+      ok: true,
+      json: async () => ({
+        id: `parallel-${current}`,
+        assetUrl: `http://localhost:3000/api/designer/mock?variant=${body.conceptIndex}&call=${current}`,
+        createdAt: new Date().toISOString(),
+        mock: true,
+        colors: body.colors || null,
+      }),
+    };
+  };
+
+  await hook.generateConcepts(BRIEF, 4);
+  assert.equal(generationClient.CONCEPT_GENERATION_CONCURRENCY, 2);
+  assert.equal(maxActive, 2, `expected bounded concurrency of 2, saw ${maxActive}`);
+  assert.equal(callNumber, 4);
+});
 
 await test("four concepts use four requests and remain unselected until Choose", async () => {
   seedBrief();

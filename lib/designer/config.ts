@@ -3,13 +3,18 @@
  * Never import this module from client components.
  */
 
+/**
+ * BESU intentionally uses one image model only.
+ * Keeping this as a code constant prevents a stale Vercel/local env override from silently
+ * downgrading generation or edit quality.
+ */
+export const DESIGNER_IMAGE_MODEL = "gpt-image-2" as const;
+
 export function getOpenAiConfig() {
   // Strip accidental wrapping quotes from .env / .env.local values.
   const apiKey = (process.env.OPENAI_API_KEY || "").trim().replace(/^["']|["']$/g, "");
-  // GPT-Image-2 is the current API image model. Keep an env override for controlled rollouts/snapshots.
-  const imageModel = (process.env.OPENAI_IMAGE_MODEL || "gpt-image-2").trim().replace(/^["']|["']$/g, "");
   const mockAi = process.env.DESIGNER_MOCK_AI === "true";
-  return { apiKey, imageModel, mockAi };
+  return { apiKey, imageModel: DESIGNER_IMAGE_MODEL, mockAi };
 }
 
 export function assertOpenAiConfigured() {

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Button, Modal } from "@heroui/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 import { GarmentCanvas } from "./garment-canvas";
 import { ProductPanel } from "./product-panel";
 import { PromptPanel } from "./prompt-panel";
@@ -105,6 +106,21 @@ export function DesignerPage() {
             aria-label="Designer sections"
             className="sticky top-0 z-40 bg-[#fcfcfa]/95 px-3 py-2 backdrop-blur-md md:static md:shrink-0"
           >
+            <div className="mb-2 flex items-center justify-between gap-3 px-1">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#181816] text-white shadow-sm">
+                  <Sparkles className="size-3.5" aria-hidden />
+                </span>
+                <div className="min-w-0 leading-none">
+                  <p className="m-0 text-[11px] font-bold tracking-[0.12em]">BESU</p>
+                  <p className="mt-1 truncate text-[9.5px] font-medium text-muted">AI Uniform Studio</p>
+                </div>
+              </div>
+              <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/[0.07] bg-white px-2.5 py-1.5 text-[9px] font-semibold text-foreground/70 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+                GPT Image 2
+              </span>
+            </div>
             <div className="overflow-x-auto rounded-xl bg-black/[0.035] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max gap-0.5 md:min-w-0">
               {DESIGNER_STEPS.map((item) => {
@@ -135,7 +151,7 @@ export function DesignerPage() {
                         transition={{ duration: reduceMotion ? 0 : 0.22, ease }}
                       />
                     ) : null}
-                    <span className="relative z-10">{item.label}</span>
+                    <span className="relative z-10 flex items-center justify-center gap-1"><span className="text-[8px] opacity-60">{String(DESIGNER_STEPS.indexOf(item) + 1).padStart(2, "0")}</span><span>{item.label}</span></span>
                   </motion.button>
                 );
               })}

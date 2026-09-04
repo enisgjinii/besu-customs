@@ -40,7 +40,7 @@ export function PromptPanel() {
     const team = teamMatch?.[1]?.trim().replace(/\s+(uniform|kit|jersey|shorts).*$/i, "");
     s.patch({
       prompt,
-      ...(team ? { teamName: team.toUpperCase().slice(0, 60) } : {}),
+      ...(team ? { teamName: team.slice(0, 60) } : {}),
     });
   }
 
@@ -48,10 +48,17 @@ export function PromptPanel() {
     <section className="flex w-full min-w-0 flex-col gap-3">
       {mockMode ? <p className="m-0 text-[10px] font-medium text-muted">Preview mode</p> : null}
 
-      <TextField fullWidth name="team" value={s.teamName} onChange={(value) => s.patch({ teamName: value.toUpperCase().slice(0, 60) })}>
+      <TextField fullWidth name="team" value={s.teamName} onChange={(value) => s.patch({ teamName: value.slice(0, 60) })}>
         <Label>Team</Label>
         <Input placeholder="GALACTIC" maxLength={60} className="min-h-11" autoComplete="organization" />
       </TextField>
+      <div className="-mt-1 flex items-center justify-between gap-3 rounded-xl border border-black/[0.06] bg-white/70 px-3 py-2.5">
+        <div className="min-w-0">
+          <p className="m-0 text-[10.5px] font-semibold">Exact typography</p>
+          <p className="m-0 mt-0.5 text-[9.5px] leading-snug text-muted">Team wording is rendered by BESU, never painted by AI.</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-700">100% exact</span>
+      </div>
 
       <TextField fullWidth name="design" value={s.prompt} onChange={(value) => s.patch({ prompt: value })}>
         <Label>Design</Label>
@@ -229,8 +236,8 @@ export function PromptPanel() {
               {isPending
                 ? stage || "Generating…"
                 : s.conceptCount === 1
-                  ? "Generate 1 design"
-                  : `Generate ${s.conceptCount} concepts`}
+                  ? "Generate with GPT Image 2"
+                  : `Generate ${s.conceptCount} with GPT Image 2`}
             </span>
           </>
         )}
