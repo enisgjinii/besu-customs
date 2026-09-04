@@ -1,6 +1,6 @@
 # BESU Hybrid AI Uniform Designer
 
-Production customer flow for Besu Customs: AI creates the garment artwork/design system, while BESU renders exact customer typography and approved logos deterministically in SVG. Four distinct master concepts are generated, one is selected, then that same master render can be refined or recolored before roster, export, and Shopify checkout.
+Production customer flow for Besu Customs: GPT Image 2 creates the garment artwork and integrates the team wordmark directly into the FRONT jersey. Approved uploaded logos remain app-composited, while player name/number stay as structured roster data instead of being baked into the master image. Four distinct master concepts are generated, one is selected, then that same master render can be refined or recolored before roster, export, and Shopify checkout.
 
 ## Customer journey
 
@@ -22,10 +22,11 @@ Refine, Roster, and Order are locked until `selectedConceptId` exists. Selecting
 - basketball uses sleeveless jersey + matching shorts;
 - the render is a professional ecommerce/product presentation, not a flat texture, UV map, sketch or random sample;
 - the image model renders **no team name, player name, player number, labels, pseudo-text, fake letters, sponsors or invented logos**;
-- calm typography-safe regions are reserved on the front chest and back name/number areas;
+- the FRONT chest contains one AI-integrated team wordmark with no floating app text layer;
+- the BACK stays free of player name/number so roster personalization remains separate;
 - an uploaded approved logo is composited by BESU, not hallucinated by the image model.
 
-The exact team-name literal is removed from the visual prompt before it reaches the image model. `components/designer/uniform-typography-overlay.tsx` then renders customer wording as deterministic SVG using fixed front/back placement rules from `lib/designer/typography.ts`.
+The free-form brief is sanitized so the team name is not repeated unpredictably, then the exact literal is supplied once through a dedicated GPT Image 2 front-wordmark rule. The prompt explicitly forbids floating labels, plaques, duplicate text, pseudo-letters and any extra wording. Uploaded logos are still composited by `components/designer/approved-logo-overlay.tsx`.
 
 ## Front/back presentation
 
@@ -36,7 +37,7 @@ The exact team-name literal is removed from the visual prompt before it reaches 
 - `generate` — create a new master concept from the visual brief.
 - `refine` — edit the selected master render and keep every unmentioned element stable.
 - `color_variation` — edit the selected master render with a geometry lock; only the palette should change.
-- team-name-only edits — update the deterministic SVG instantly without another AI image call.
+- team-name-only edits — run one tightly scoped GPT Image 2 reference-image edit that updates only the front chest wordmark.
 
 ## Architecture
 
@@ -44,7 +45,7 @@ The exact team-name literal is removed from the visual prompt before it reaches 
 | --- | --- |
 | UI shell | `components/designer/` |
 | Master preview + front/back crop | `components/designer/garment-canvas.tsx` |
-| Deterministic typography/logo layer | `components/designer/uniform-typography-overlay.tsx` |
+| Approved logo overlay | `components/designer/approved-logo-overlay.tsx` |
 | Typography placement | `lib/designer/typography.ts` |
 | Concept selection | `components/designer/concept-panel.tsx` |
 | State | `lib/designer/store.ts` |
@@ -59,7 +60,7 @@ The exact team-name literal is removed from the visual prompt before it reaches 
 
 The existing checkout handoff remains `{ type: "besu:checkout", payload }`. Team name, player name and player number continue to be separate structured order properties; AI artwork URLs remain the master image references.
 
-PNG/SVG/PDF/ZIP remain available. Production capture now exports true front/back crops and includes deterministic SVG typography. The base AI art is still raster content inside the SVG wrapper.
+PNG/SVG/PDF/ZIP remain available. Production capture exports fitted true front/back crops from the selected master image. The compact jsPDF production report includes both views, design metadata, palette, pricing, roster, contact details and notes.
 
 ## Environment
 
@@ -90,10 +91,10 @@ The repository also keeps `scripts/qa-designer-flow.mjs` for browser-level deskt
 2. Describe the visual theme without relying on AI to spell customer text.
 3. Generate four concepts and confirm all four use the same professional presentation, proportions and front-left/back-right layout.
 4. Confirm no concept contains AI-generated fake words, numbers, sponsor marks or invented logos.
-5. Confirm the team name is crisp and exact on the front chest because it is SVG, not AI pixels.
+5. Confirm the generated team wordmark is visually correct and integrated directly into the front chest artwork with no floating label or plate.
 6. Select a concept and switch Front/Back without dragging or zooming.
 7. Add a roster player and confirm player name/number render only on the back.
 8. Apply a new palette and confirm the edit uses the selected master render as reference and preserves design geometry.
 9. Apply a targeted visual refinement and confirm front/back remain one synchronized design system.
-10. Export front/back and confirm exact typography is present in the production SVG/PNG/PDF/ZIP.
+10. Export front/back and confirm the generated team wordmark is integrated on the FRONT, no floating text plate appears, and the compact PDF contains the full production/order summary.
 11. Confirm Shopify retains the selected design ID, master artwork URL, team name, player name and player number as separate structured data.

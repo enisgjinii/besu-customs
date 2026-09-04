@@ -5,7 +5,7 @@ import { Button } from "@heroui/react";
 import { Check, Layers3 } from "lucide-react";
 import { useDesignerStore } from "@/lib/designer/store";
 import { AI_MASTER_BOARD } from "@/lib/designer/typography";
-import { UniformTypographyOverlay } from "./uniform-typography-overlay";
+import { ApprovedLogoOverlay } from "./approved-logo-overlay";
 import { cn } from "@/lib/utils";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -33,7 +33,7 @@ export function ConceptPanel() {
             {s.selectedConceptId ? "Direction selected" : "Choose a direction"}
           </p>
           <p className="m-0 mt-0.5 text-[9.5px] leading-snug text-muted">
-            Every option uses the same GPT Image 2 render standard and one synchronized front/back master.
+            Every option uses the same GPT Image 2 render standard with exactly one front kit and one matching back kit.
           </p>
         </div>
         <span className="flex shrink-0 items-center gap-1 rounded-full bg-black/[0.04] px-2 py-1 text-[9px] font-semibold text-muted">
@@ -81,14 +81,7 @@ export function ConceptPanel() {
                     height={AI_MASTER_BOARD.height}
                     preserveAspectRatio="none"
                   />
-                  <UniformTypographyOverlay
-                    view="board"
-                    garmentType={s.garmentType}
-                    teamName={s.teamName}
-                    fontFamily={s.font}
-                    colors={concept.colors}
-                    logoUrl={s.logoUrl}
-                  />
+                  <ApprovedLogoOverlay view="board" logoUrl={s.logoUrl} />
                 </svg>
                 <span className="absolute left-2 top-2 rounded-full border border-black/[0.06] bg-white/90 px-2 py-1 text-[8.5px] font-bold backdrop-blur">
                   FRONT + BACK
@@ -106,7 +99,7 @@ export function ConceptPanel() {
                   <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold tracking-[-0.01em]">{concept.label}</span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between gap-2">
-                  <span className="truncate text-[8.5px] font-medium text-muted">Same master · exact text</span>
+                  <span className="truncate text-[8.5px] font-medium text-muted">Same master · AI wordmark</span>
                   <span className="flex shrink-0 -space-x-0.5" aria-label="Concept palette">
                     {Object.values(concept.colors).map((color) => (
                       <span

@@ -142,14 +142,14 @@ export async function generateConcepts(prompt: string, countOverride?: ConceptCo
   }
 }
 
-export async function refineCurrent(correction: string, colors?: DesignerColors) {
+export async function refineCurrent(correction: string, colors?: DesignerColors): Promise<boolean> {
   const session = useGenerationSession.getState();
-  if (session.busy || isGenerationInFlight()) return;
+  if (session.busy || isGenerationInFlight()) return false;
   const store = useDesignerStore.getState();
   const hasArtwork = Boolean(store.artwork.front || store.artwork.back);
   if (!store.selectedConceptId || !hasArtwork) {
     toast.error("Choose one of the concepts first, then describe what to change.");
-    return;
+    return false;
   }
 
   session.start(colors ? "color_variation" : "refine", "Updating uniform…");
@@ -175,12 +175,14 @@ export async function refineCurrent(correction: string, colors?: DesignerColors)
     for (const version of result.versions) latest.addVersion(version);
     latest.patch({ colors: result.colors, colorsEnabled: true, layout: store.layout });
     session.succeed(result.mock);
+    return true;
   } catch (generationError) {
-    if (generationError instanceof Error && generationError.name === "AbortError") return;
+    if (generationError instanceof Error && generationError.name === "AbortError") return false;
     useDesignerStore.getState().patch({ artwork: previousArtwork, colors: previousColors });
     const message = generationError instanceof Error ? generationError.message : "Update failed.";
     session.fail(message);
     toast.error(message);
+    return false;
   }
 }
 
@@ -195,11 +197,18 @@ export async function submitStudioPrompt(raw: string) {
 
   let store = useDesignerStore.getState();
   const explicitTeam = extractExplicitTeamName(prompt);
+  let previousTeamName: string | undefined;
   if (explicitTeam && explicitTeam !== store.teamName) {
+    previousTeamName = store.teamName;
     store.patch({ teamName: explicitTeam });
     store = useDesignerStore.getState();
     if (store.selectedConceptId && isTeamNameOnlyEdit(prompt)) {
-      toast.success("Team name updated — no AI regeneration needed.");
+      const updated = await refineCurrent(
+        "Update only the FRONT chest team wordmark to the current exact team name. Keep the garment artwork, colors, front/back composition, trims, motifs and geometry unchanged.",
+      );
+      if (!updated && previousTeamName !== undefined) {
+        useDesignerStore.getState().patch({ teamName: previousTeamName });
+      }
       return;
     }
   }
@@ -211,7 +220,10 @@ export async function submitStudioPrompt(raw: string) {
     await generateConcepts(prompt);
     return;
   }
-  await refineCurrent(prompt);
+  const updated = await refineCurrent(prompt);
+  if (!updated && previousTeamName !== undefined) {
+    useDesignerStore.getState().patch({ teamName: previousTeamName });
+  }
 }
 
 export function useDesignerGeneration() {

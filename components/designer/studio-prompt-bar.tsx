@@ -195,7 +195,7 @@ export function StudioPromptBar() {
               busy
                 ? stage || "Generating…"
                 : hasArtwork
-                  ? "Edit artwork… or rename the team instantly"
+                  ? "Edit artwork… or rename the team wordmark"
                   : "Describe a uniform… team, colors, theme"
             }
             onChange={(event) => {
@@ -229,7 +229,7 @@ export function StudioPromptBar() {
         <div className="mt-1.5 flex items-center justify-center gap-2 text-[9px] font-semibold tracking-wide text-foreground/35 sm:mt-2 sm:text-[10px] md:text-[11px]">
           <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />GPT Image 2 artwork</span>
           <span aria-hidden>·</span>
-          <span>Exact text by BESU</span>
+          <span>Team text in artwork</span>
         </div>
       </div>
     </div>

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Spinner } from "@heroui/react";
-import { getPreviewPlayer, useDesignerStore } from "@/lib/designer/store";
+import { useDesignerStore } from "@/lib/designer/store";
 import { useGenerationSession } from "@/lib/designer/generation-session";
 import { AI_MASTER_BOARD } from "@/lib/designer/typography";
-import { UniformTypographyOverlay } from "./uniform-typography-overlay";
+import { ApprovedLogoOverlay } from "./approved-logo-overlay";
 import { cn } from "@/lib/utils";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -36,13 +36,14 @@ const PLACEHOLDERS = [
 export function GarmentCanvas() {
   const s = useDesignerStore();
   const artwork = s.artwork[s.view] || s.artwork.front || s.artwork.back;
-  const player = getPreviewPlayer(s);
   const awaitingChoice = s.concepts.length > 0 && !s.selectedConceptId;
   const { busy, stage, kind } = useGenerationSession();
   const reduceMotion = useReducedMotion();
   const [activePlaceholder, setActivePlaceholder] = useState(0);
   const current = PLACEHOLDERS[activePlaceholder] || PLACEHOLDERS[0];
-  const sourceX = s.view === "front" ? 0 : -AI_MASTER_BOARD.viewWidth;
+  const boardViewBox = s.view === "front"
+    ? `0 0 ${AI_MASTER_BOARD.viewWidth} ${AI_MASTER_BOARD.height}`
+    : `${AI_MASTER_BOARD.viewWidth} 0 ${AI_MASTER_BOARD.viewWidth} ${AI_MASTER_BOARD.height}`;
   const selectedConcept = s.concepts.find((concept) => concept.id === s.selectedConceptId);
 
   return (
@@ -59,29 +60,32 @@ export function GarmentCanvas() {
             viewBox={`0 0 ${AI_MASTER_BOARD.viewWidth} ${AI_MASTER_BOARD.height}`}
             preserveAspectRatio="xMidYMid meet"
             role="img"
-            aria-label={`${s.view === "front" ? "Front" : "Back"} uniform preview with deterministic customer typography`}
+            aria-label={`${s.view === "front" ? "Front" : "Back"} uniform preview`}
             className="h-full w-full"
             data-production-view={s.view}
+            data-master-crop={s.view}
           >
             <rect x="0" y="0" width={AI_MASTER_BOARD.viewWidth} height={AI_MASTER_BOARD.height} fill="#f8f8f5" />
-            <image
-              href={artwork}
-              x={sourceX}
-              y="0"
-              width={AI_MASTER_BOARD.width}
-              height={AI_MASTER_BOARD.height}
-              preserveAspectRatio="none"
-            />
-            <UniformTypographyOverlay
-              view={s.view}
-              garmentType={s.garmentType}
-              teamName={s.teamName}
-              playerName={player?.name}
-              playerNumber={player?.number}
-              fontFamily={s.font}
-              colors={s.colors}
-              logoUrl={s.logoUrl}
-            />
+            <svg
+              x="56"
+              y="54"
+              width="656"
+              height="876"
+              viewBox={boardViewBox}
+              preserveAspectRatio="xMidYMid meet"
+              overflow="hidden"
+              data-fitted-uniform-view="true"
+            >
+              <image
+                href={artwork}
+                x="0"
+                y="0"
+                width={AI_MASTER_BOARD.width}
+                height={AI_MASTER_BOARD.height}
+                preserveAspectRatio="none"
+              />
+              <ApprovedLogoOverlay view={s.view} logoUrl={s.logoUrl} />
+            </svg>
           </svg>
         ) : awaitingChoice ? (
           // Concepts exist but none is chosen yet. Showing the inspiration gallery here would read as
@@ -161,7 +165,7 @@ export function GarmentCanvas() {
             GPT IMAGE 2
           </span>
           <span className="hidden min-h-8 items-center rounded-full border border-black/[0.07] bg-white/92 px-2.5 text-[9px] font-semibold text-muted shadow-sm backdrop-blur sm:flex md:text-[10px]">
-            Exact text
+            Text in artwork
           </span>
           {selectedConcept ? (
             <span className="hidden min-h-8 min-w-0 items-center truncate rounded-full border border-black/[0.07] bg-white/92 px-2.5 text-[9px] font-semibold text-muted shadow-sm backdrop-blur md:flex md:text-[10px]">
@@ -205,7 +209,7 @@ export function GarmentCanvas() {
               <p className="m-0 text-[13px] font-semibold tracking-[-0.01em]">
                 {stage || (kind === "refine" ? "Updating uniform…" : "Generating uniform…")}
               </p>
-              <p className="m-0 max-w-[260px] text-center text-[11px] text-muted">{kind === "refine" ? "Editing the selected master while preserving its design language." : "Rendering a synchronized front/back master with GPT Image 2."}</p>
+              <p className="m-0 max-w-[260px] text-center text-[11px] text-muted">{kind === "refine" ? "Editing the selected master while preserving its design language." : "Rendering exactly one front kit and one matching back kit with GPT Image 2."}</p>
             </div>
           </motion.div>
         ) : null}

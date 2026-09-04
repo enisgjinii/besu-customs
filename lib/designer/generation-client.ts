@@ -93,8 +93,8 @@ async function generateOne(
     body: JSON.stringify({
       garmentType: state.garmentType,
       designDescription: state.prompt,
-      // The server uses teamName only to remove the literal from visual instructions. It is never
-      // painted by the image model; the deterministic SVG renderer owns customer typography.
+      // The server uses teamName to request one integrated FRONT chest wordmark from GPT Image 2.
+      // Player name/number remain separate roster data and are not generated into the master artwork.
       teamName: state.teamName,
       colors: state.colorsEnabled || mode === "color_variation" ? colors || state.colors : undefined,
       style: state.style,

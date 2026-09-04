@@ -62,7 +62,7 @@ export function extractTeamName(prompt: string, existing?: string): string {
   return "CUSTOM";
 }
 
-/** A pure wording change is handled instantly by the SVG layer and should not spend an AI edit. */
+/** Detect a pure team-name change so the selected master can run one tightly scoped GPT Image edit. */
 export function isTeamNameOnlyEdit(prompt: string): boolean {
   const trimmed = prompt.trim();
   // Do not accidentally classify a combined visual request as a free typography-only update.

@@ -41,7 +41,6 @@ function test(name, fn) {
 
 const openai = loadTypeScriptModule("lib/designer/openai-service.ts");
 const parser = loadTypeScriptModule("lib/designer/brief-parser.ts");
-const typography = loadTypeScriptModule("lib/designer/typography.ts");
 const pathMock = Object.assign(path, { default: path });
 const storage = loadTypeScriptModule("lib/designer/storage-service.ts", {
   path: pathMock,
@@ -76,15 +75,17 @@ test("AI prompt creates one standardized front-left/back-right master concept", 
     mode: "generate",
   });
   assert.match(prompt, /1536x1024 landscape master board/i);
-  assert.match(prompt, /LEFT half is the FRONT/i);
-  assert.match(prompt, /RIGHT half is the BACK/i);
+  assert.match(prompt, /EXACTLY TWO coordinated uniform presentations total/i);
+  assert.match(prompt, /one FRONT kit in the LEFT half/i);
+  assert.match(prompt, /one BACK kit in the RIGHT half/i);
+  assert.match(prompt, /Do NOT create extra jerseys, duplicate kits, alternate colorways/i);
+  assert.match(prompt, /68–72% of the canvas height/i);
+  assert.match(prompt, /FRONT kit near x=384/i);
+  assert.match(prompt, /BACK kit near x=1152/i);
   assert.match(prompt, /same physical uniform/i);
-  assert.match(prompt, /same scale, camera height, lighting, cut/i);
-  assert.match(prompt, /front centered near x=384/i);
-  assert.match(prompt, /back centered near x=1152/i);
 });
 
-test("AI prompt never asks the image model to paint customer wording", () => {
+test("AI prompt integrates one exact front wordmark and forbids every other text element", () => {
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
     designDescription: "GALACTIC basketball uniform with GALACTIC on the chest, black blue white",
@@ -96,20 +97,19 @@ test("AI prompt never asks the image model to paint customer wording", () => {
     mode: "generate",
     hasLogo: true,
   });
-  assert.doesNotMatch(prompt, /GALACTIC/i, "the literal customer wordmark must not reach the image prompt");
-  assert.match(prompt, /draw NO customer typography/i);
-  assert.match(prompt, /NO.*team name/i);
+  assert.match(prompt, /FRONT TEAM WORDMARK/i);
+  assert.match(prompt, /exactly once as "GALACTIC"/i);
+  assert.match(prompt, /professional sublimated sportswear lettering/i);
+  assert.match(prompt, /never a floating UI label, black rectangle, plaque, banner/i);
+  assert.match(prompt, /leave the back jersey free of player name, player number and all text/i);
   assert.match(prompt, /pseudo-letters/i);
   assert.match(prompt, /fake writing/i);
-  assert.match(prompt, /reserve a calm, low-detail chest area/i);
-  assert.match(prompt, /reserve a calm player-name zone/i);
   assert.match(prompt, /approved uploaded logo is composited by the application/i);
   assert.match(prompt, /NO manufacturer, sponsor or third-party brand mark/i);
-  assert.match(prompt, /Do not invent a team crest/i);
-  assert.match(prompt, /zero rendered typography/i);
+  assert.match(prompt, /only lettering allowed is the single exact team wordmark/i);
 });
 
-test("color variation is an edit with geometry lock, not a redesign", () => {
+test("color variation is an edit with geometry and generated-wordmark lock", () => {
   const colors = { primary: "#0A0A0A", secondary: "#00A3FF", accent: "#FFFFFF" };
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
@@ -125,12 +125,12 @@ test("color variation is an edit with geometry lock, not a redesign", () => {
   assert.match(prompt, /LOCK THE DESIGN GEOMETRY/i);
   assert.match(prompt, /Only remap the existing design/i);
   assert.match(prompt, /Do not add, remove, move, rotate, resize or reinterpret/i);
-  assert.match(prompt, /Preserve the blank front chest typography zone/i);
+  assert.match(prompt, /Keep the FRONT chest wordmark readable and exactly spelled "GALACTIC"/i);
+  assert.match(prompt, /BACK player-name and player-number areas clean/i);
   assert.match(prompt, /#00A3FF/);
-  assert.doesNotMatch(prompt, /GALACTIC/i);
 });
 
-test("refinement keeps front/back synchronized and typography zones blank", () => {
+test("refinement keeps front/back synchronized and preserves the single generated wordmark", () => {
   const prompt = openai.buildArtworkPrompt({
     garmentType: "uniform",
     designDescription: "GALACTIC space kit",
@@ -144,41 +144,46 @@ test("refinement keeps front/back synchronized and typography zones blank", () =
   assert.match(prompt, /supplied master uniform board/i);
   assert.match(prompt, /Change only what this instruction requires/i);
   assert.match(prompt, /Keep front and back synchronized/i);
-  assert.match(prompt, /blank back player-name\/number zones/i);
-  assert.doesNotMatch(prompt, /GALACTIC/i);
+  assert.match(prompt, /exactly spelled "GALACTIC"/i);
+  assert.match(prompt, /BACK player-name and player-number areas clean/i);
 });
 
-test("deterministic typography preserves literal text and separates front/back roles", () => {
-  assert.equal(typography.normalizeExactOverlayText("St. Agnes & Co.", 60), "St. Agnes & Co.");
-  assert.equal(typography.normalizeExactOverlayText("Müller 24", 60), "Müller 24");
-  assert.deepEqual(typography.allowedTypographyRoles("front"), ["teamName"]);
-  assert.deepEqual(typography.allowedTypographyRoles("back"), ["playerName", "number"]);
-
-  const front = typography.getTypographyPlacement("teamName", "St. Agnes", "board");
-  const backName = typography.getTypographyPlacement("playerName", "Bryant", "board");
-  const backNumber = typography.getTypographyPlacement("number", "24", "board");
-  assert.equal(front.text, "St. Agnes");
-  assert.equal(backName.text, "Bryant");
-  assert.equal(backNumber.text, "24");
-  assert.ok(front.x < typography.AI_MASTER_BOARD.viewWidth, "team name must stay in front/left half");
-  assert.ok(backName.x > typography.AI_MASTER_BOARD.viewWidth, "player name must stay in back/right half");
-  assert.ok(backNumber.x > typography.AI_MASTER_BOARD.viewWidth, "number must stay in back/right half");
+test("floating app typography is removed while approved logo compositing remains", () => {
+  const overlayPath = path.join(root, "components/designer/uniform-typography-overlay.tsx");
+  const logoOverlay = fs.readFileSync(path.join(root, "components/designer/approved-logo-overlay.tsx"), "utf8");
+  assert.equal(fs.existsSync(overlayPath), false, "the floating typography overlay should be removed");
+  assert.match(logoOverlay, /data-approved-logo="true"/);
+  assert.match(logoOverlay, /view === "back"/);
+  assert.doesNotMatch(logoOverlay, /<text|<rect/i, "logo overlay must not draw team wording or plates");
 });
 
-test("production canvas uses deterministic SVG typography and true front/back crops", () => {
+test("production canvas uses fitted true front/back crops with no floating text layer", () => {
   const canvas = fs.readFileSync(path.join(root, "components/designer/garment-canvas.tsx"), "utf8");
-  const overlay = fs.readFileSync(path.join(root, "components/designer/uniform-typography-overlay.tsx"), "utf8");
   const concepts = fs.readFileSync(path.join(root, "components/designer/concept-panel.tsx"), "utf8");
-  assert.match(canvas, /AI_MASTER_BOARD\.viewWidth/);
-  assert.match(canvas, /sourceX = s\.view === "front" \? 0 : -AI_MASTER_BOARD\.viewWidth/);
-  assert.match(canvas, /UniformTypographyOverlay/);
+  assert.match(canvas, /data-master-crop=\{s\.view\}/);
+  assert.match(canvas, /data-fitted-uniform-view="true"/);
+  assert.match(canvas, /boardViewBox/);
+  assert.match(canvas, /x="56"/);
+  assert.match(canvas, /width="656"/);
+  assert.match(canvas, /ApprovedLogoOverlay/);
+  assert.doesNotMatch(canvas, /UniformTypographyOverlay/);
   assert.match(canvas, /\["front", "back"\]/);
-  assert.match(overlay, /data-deterministic-typography="true"/);
-  assert.match(overlay, /role="teamName"/);
-  assert.match(overlay, /role="playerName"/);
-  assert.match(overlay, /role="number"/);
-  assert.match(concepts, /view="board"/);
+  assert.doesNotMatch(concepts, /UniformTypographyOverlay/);
+  assert.match(concepts, /ApprovedLogoOverlay/);
   assert.doesNotMatch(canvas, /onWheel|onPointerMove|dragBoundFunc|zoom/i, "preview should not require manual zoom/drag");
+});
+
+test("jsPDF export is compact, landscape, and includes views plus production/order details", () => {
+  const source = fs.readFileSync(path.join(root, "lib/designer/export-service.ts"), "utf8");
+  assert.match(source, /new jsPDF\(\{ orientation: "landscape", unit: "mm", format: "a4", compress: true \}\)/);
+  assert.match(source, /drawPreviewCard\(doc, "Front"/);
+  assert.match(source, /drawPreviewCard\(doc, "Back"/);
+  assert.match(source, /DESIGN SUMMARY/);
+  assert.match(source, /ROSTER & ORDER/);
+  assert.match(source, /buildOrderBreakdown\(state, "sublimated"\)/);
+  assert.match(source, /Estimated total/);
+  assert.match(source, /PRODUCTION NOTES/);
+  assert.match(source, /Verify the AI-integrated front team wordmark visually/);
 });
 
 test("Shopify payload still carries exact team/player data separately from AI artwork", () => {

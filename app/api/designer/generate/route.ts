@@ -164,7 +164,7 @@ async function requestOpenAiImage(
     model: imageModel,
     prompt,
     size,
-    quality: "medium",
+    quality: "high",
     background: "transparent",
     output_format: "png",
   };
