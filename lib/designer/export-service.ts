@@ -69,7 +69,7 @@ export async function serializeDesignerSvg(options: { embedImages?: boolean } = 
 }
 
 function downloadSvg(xml: string, state: DesignerState, view = state.view) {
-  const note = "<!-- AI base artwork may be embedded raster content; team wordmark is integrated in the AI artwork; approved logo may be app-composited. -->\n";
+  const note = "<!-- GPT Image 2 base artwork may be embedded raster content; exact customer typography and approved logos are app-composited. -->\n";
   const url = URL.createObjectURL(new Blob([note, xml], { type: "image/svg+xml" }));
   clickDownload(url, `${filePrefix(state, view)}.svg`);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -354,7 +354,7 @@ function productionPdf(state: DesignerState, previewData?: { front: string; back
   doc.text(conciseNote, 18, 192.3, { maxWidth: 210 });
   doc.setFont("helvetica", "bold");
   doc.setTextColor(90, 90, 86);
-  doc.text("Verify the AI-integrated front team wordmark visually before final print approval.", 279, 192.3, { align: "right" });
+  doc.text("Customer typography is app-rendered exactly; confirm final placement and roster before print approval.", 279, 192.3, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.4);
@@ -427,7 +427,7 @@ export async function downloadProductionBundle(state: DesignerState, captures: P
   const { frontPng, backPng, pdf } = await createProductionFiles(state, captures);
   const zip = new JSZip();
   const prefix = designPrefix(state);
-  const note = "<!-- AI base artwork may be embedded raster content; team wordmark is integrated in the AI artwork; approved logo may be app-composited. -->\n";
+  const note = "<!-- GPT Image 2 base artwork may be embedded raster content; exact customer typography and approved logos are app-composited. -->\n";
   zip.file(`${prefix}-FRONT.svg`, note + captures.front);
   zip.file(`${prefix}-BACK.svg`, note + captures.back);
   zip.file(`${prefix}-FRONT.png`, frontPng);
