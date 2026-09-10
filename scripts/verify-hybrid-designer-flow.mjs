@@ -80,7 +80,6 @@ function seedBrief() {
   useDesignerStore.getState().patch({ teamName: "GALACTIC", prompt: BRIEF, conceptCount: 4 });
 }
 
-
 await test("designer is hard-pinned to GPT Image 2 with no model fallback or env override", () => {
   const previous = process.env.OPENAI_IMAGE_MODEL;
   process.env.OPENAI_IMAGE_MODEL = "gpt-image-1";
@@ -195,7 +194,7 @@ await test("color variation is one reference-image edit and preserves concept id
   assert.equal(useDesignerStore.getState().selectedConceptId, selected.id);
 });
 
-await test("team-name-only changes run one scoped GPT Image edit on the selected master", async () => {
+await test("team-name-only changes are instant and never call GPT Image", async () => {
   seedBrief();
   const calls = installFetchRecorder();
   await hook.generateConcepts(BRIEF, 4);
@@ -204,10 +203,8 @@ await test("team-name-only changes run one scoped GPT Image edit on the selected
   const before = calls.length;
 
   await hook.submitStudioPrompt("Change team name to Besu Elite");
-  assert.equal(calls.length, before + 1, "wordmark change must update the selected image once");
-  assert.equal(calls.at(-1).mode, "refine");
-  assert.equal(calls.at(-1).previousAssetUrl, baseline);
-  assert.match(calls.at(-1).correction, /Update only the FRONT chest team wordmark/i);
+  assert.equal(calls.length, before, "exact app typography must not regenerate the image");
+  assert.equal(useDesignerStore.getState().artwork.front, baseline, "renaming must preserve artwork byte-for-byte");
   assert.equal(useDesignerStore.getState().teamName, "Besu Elite");
 });
 
@@ -226,7 +223,7 @@ await test("combined team-name and visual edits keep exact name while refining a
   assert.equal(useDesignerStore.getState().teamName, "Besu Elite");
 });
 
-await test("AI prompt renders only the exact front team wordmark and no extra text", () => {
+await test("AI prompt produces artwork-only masters with typography safe zones", () => {
   const prompt = buildArtworkPrompt({
     garmentType: "uniform",
     designDescription: BRIEF,
@@ -243,11 +240,10 @@ await test("AI prompt renders only the exact front team wordmark and no extra te
   assert.match(prompt, /one FRONT kit in the LEFT half/i);
   assert.match(prompt, /one BACK kit in the RIGHT half/i);
   assert.match(prompt, /same physical uniform/i);
-  assert.match(prompt, /exactly once as "GALACTIC"/i);
-  assert.match(prompt, /never a floating UI label, black rectangle, plaque, banner/i);
-  assert.match(prompt, /leave the back jersey free of player name, player number and all text/i);
-  assert.match(prompt, /pseudo-letters/i);
+  assert.match(prompt, /APP TYPOGRAPHY SAFE ZONES/i);
+  assert.match(prompt, /render NO readable text, letters, numbers, pseudo-text/i);
   assert.match(prompt, /no duplicate garments/i);
+  assert.doesNotMatch(prompt, /exactly once as "GALACTIC"/i);
 });
 
 await test("roster and checkout keep exact player data separate from master artwork", async () => {
@@ -270,13 +266,14 @@ await test("roster and checkout keep exact player data separate from master artw
   assert.equal(payload.context.artwork.front, payload.context.artwork.back);
 });
 
-await test("desktop/mobile presentation uses responsive fixed-view UI without pan/zoom dependency", () => {
+await test("desktop/mobile presentation uses responsive fixed-view UI with exact typography", () => {
   const canvas = fs.readFileSync(path.join(ROOT, "components/designer/garment-canvas.tsx"), "utf8");
   const concepts = fs.readFileSync(path.join(ROOT, "components/designer/concept-panel.tsx"), "utf8");
   assert.match(canvas, /md:/, "canvas must retain responsive desktop breakpoints");
   assert.match(canvas, /\["front", "back"\]/, "front/back must be one-click controls");
   assert.match(canvas, /data-fitted-uniform-view="true"/, "main preview must use the fitted half-board crop");
-  assert.doesNotMatch(canvas, /UniformTypographyOverlay/, "floating team text overlay must be removed");
+  assert.match(canvas, /UniformTypographyOverlay/, "main preview must render exact app-owned text");
+  assert.match(concepts, /UniformTypographyOverlay/, "concept previews must use the same exact text layer");
   assert.doesNotMatch(canvas, /onWheel|onPointerMove|dragBoundFunc|zoom/i);
   assert.match(concepts, /grid-cols-2/, "concept choices must stay compact on mobile and desktop");
   assert.match(concepts, /aspect-\[3\/2\]/, "concept cards must preserve the standardized master-board aspect ratio");
