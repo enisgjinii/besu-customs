@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Spinner } from "@heroui/react";
-import { useDesignerStore } from "@/lib/designer/store";
+import { getPreviewPlayer, useDesignerStore } from "@/lib/designer/store";
 import { useGenerationSession } from "@/lib/designer/generation-session";
 import { AI_MASTER_BOARD } from "@/lib/designer/typography";
 import { ApprovedLogoOverlay } from "./approved-logo-overlay";
+import { UniformTypographyOverlay } from "./uniform-typography-overlay";
 import { cn } from "@/lib/utils";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -36,6 +37,7 @@ const PLACEHOLDERS = [
 export function GarmentCanvas() {
   const s = useDesignerStore();
   const artwork = s.artwork[s.view] || s.artwork.front || s.artwork.back;
+  const player = getPreviewPlayer(s);
   const awaitingChoice = s.concepts.length > 0 && !s.selectedConceptId;
   const { busy, stage, kind } = useGenerationSession();
   const reduceMotion = useReducedMotion();
@@ -60,7 +62,7 @@ export function GarmentCanvas() {
             viewBox={`0 0 ${AI_MASTER_BOARD.viewWidth} ${AI_MASTER_BOARD.height}`}
             preserveAspectRatio="xMidYMid meet"
             role="img"
-            aria-label={`${s.view === "front" ? "Front" : "Back"} uniform preview`}
+            aria-label={`${s.view === "front" ? "Front" : "Back"} uniform preview with exact customer typography`}
             className="h-full w-full"
             data-production-view={s.view}
             data-master-crop={s.view}
@@ -85,11 +87,19 @@ export function GarmentCanvas() {
                 preserveAspectRatio="none"
               />
               <ApprovedLogoOverlay view={s.view} logoUrl={s.logoUrl} />
+              <UniformTypographyOverlay
+                view={s.view}
+                garmentType={s.garmentType}
+                teamName={s.teamName}
+                playerName={player?.name}
+                playerNumber={player?.number}
+                fontFamily={s.font}
+                colors={s.colors}
+                coordinateSpace="board"
+              />
             </svg>
           </svg>
         ) : awaitingChoice ? (
-          // Concepts exist but none is chosen yet. Showing the inspiration gallery here would read as
-          // the customer's own result, so the canvas asks for the choice instead.
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white px-6 text-center">
             <p className="m-0 text-[13px] font-semibold tracking-[-0.01em] md:text-[15px]">
               {s.concepts.length} concepts ready
@@ -165,7 +175,7 @@ export function GarmentCanvas() {
             GPT IMAGE 2
           </span>
           <span className="hidden min-h-8 items-center rounded-full border border-black/[0.07] bg-white/92 px-2.5 text-[9px] font-semibold text-muted shadow-sm backdrop-blur sm:flex md:text-[10px]">
-            Text in artwork
+            Exact app typography
           </span>
           {selectedConcept ? (
             <span className="hidden min-h-8 min-w-0 items-center truncate rounded-full border border-black/[0.07] bg-white/92 px-2.5 text-[9px] font-semibold text-muted shadow-sm backdrop-blur md:flex md:text-[10px]">
