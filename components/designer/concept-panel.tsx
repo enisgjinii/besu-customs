@@ -3,15 +3,17 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@heroui/react";
 import { Check, Layers3 } from "lucide-react";
-import { useDesignerStore } from "@/lib/designer/store";
+import { getPreviewPlayer, useDesignerStore } from "@/lib/designer/store";
 import { AI_MASTER_BOARD } from "@/lib/designer/typography";
 import { ApprovedLogoOverlay } from "./approved-logo-overlay";
+import { UniformTypographyOverlay } from "./uniform-typography-overlay";
 import { cn } from "@/lib/utils";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
 export function ConceptPanel() {
   const s = useDesignerStore();
+  const player = getPreviewPlayer(s);
   const reduceMotion = useReducedMotion();
 
   if (!s.concepts.length) {
@@ -82,6 +84,16 @@ export function ConceptPanel() {
                     preserveAspectRatio="none"
                   />
                   <ApprovedLogoOverlay view="board" logoUrl={s.logoUrl} />
+                  <UniformTypographyOverlay
+                    view="board"
+                    garmentType={s.garmentType}
+                    teamName={s.teamName}
+                    playerName={player?.name}
+                    playerNumber={player?.number}
+                    fontFamily={s.font}
+                    colors={concept.colors}
+                    coordinateSpace="board"
+                  />
                 </svg>
                 <span className="absolute left-2 top-2 rounded-full border border-black/[0.06] bg-white/90 px-2 py-1 text-[8.5px] font-bold backdrop-blur">
                   FRONT + BACK
@@ -99,7 +111,7 @@ export function ConceptPanel() {
                   <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold tracking-[-0.01em]">{concept.label}</span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between gap-2">
-                  <span className="truncate text-[8.5px] font-medium text-muted">Same master · AI wordmark</span>
+                  <span className="truncate text-[8.5px] font-medium text-muted">Same master · Exact app text</span>
                   <span className="flex shrink-0 -space-x-0.5" aria-label="Concept palette">
                     {Object.values(concept.colors).map((color) => (
                       <span
