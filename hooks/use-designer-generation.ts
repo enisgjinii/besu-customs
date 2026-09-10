@@ -202,13 +202,10 @@ export async function submitStudioPrompt(raw: string) {
     previousTeamName = store.teamName;
     store.patch({ teamName: explicitTeam });
     store = useDesignerStore.getState();
+
+    // Team wording is an app-owned SVG layer. Renaming it must be instant, exact and free: no
+    // image-model edit is needed, and the selected garment artwork stays byte-for-byte unchanged.
     if (store.selectedConceptId && isTeamNameOnlyEdit(prompt)) {
-      const updated = await refineCurrent(
-        "Update only the FRONT chest team wordmark to the current exact team name. Keep the garment artwork, colors, front/back composition, trims, motifs and geometry unchanged.",
-      );
-      if (!updated && previousTeamName !== undefined) {
-        useDesignerStore.getState().patch({ teamName: previousTeamName });
-      }
       return;
     }
   }
