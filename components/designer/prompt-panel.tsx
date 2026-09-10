@@ -54,10 +54,10 @@ export function PromptPanel() {
       </TextField>
       <div className="-mt-1 flex items-center justify-between gap-3 rounded-xl border border-black/[0.06] bg-white/70 px-3 py-2.5">
         <div className="min-w-0">
-          <p className="m-0 text-[10.5px] font-semibold">AI-integrated wordmark</p>
-          <p className="m-0 mt-0.5 text-[9.5px] leading-snug text-muted">GPT Image 2 places the team name directly on the front chest — no floating text layer.</p>
+          <p className="m-0 text-[10.5px] font-semibold">Exact team typography</p>
+          <p className="m-0 mt-0.5 text-[9.5px] leading-snug text-muted">GPT Image 2 creates the uniform art; BESU adds the team name exactly as typed for reliable preview and export.</p>
         </div>
-        <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-700">IN ARTWORK</span>
+        <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-700">EXACT TEXT</span>
       </div>
 
       <TextField fullWidth name="design" value={s.prompt} onChange={(value) => s.patch({ prompt: value })}>
