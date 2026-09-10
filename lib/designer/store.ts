@@ -182,23 +182,42 @@ export const useDesignerStore = create<DesignerState & Actions>()(
       reset: () => set(createInitialState()),
     }),
     {
-      // Deliberately new key: direct AI renders are incompatible with legacy flat-2D persisted artwork.
       name: "besu-direct-ai-designer-v1",
-      // v4 adds selectable conceptCount (1–4) for faster single-design or multi-concept runs.
-      version: 4,
-      migrate: (persisted) => {
+      // v5 moves all customer wording out of AI pixels and into deterministic SVG typography.
+      version: 5,
+      migrate: (persisted, persistedVersion) => {
         const source = (persisted || {}) as Partial<DesignerState>;
         const fresh = createInitialState();
         const legacyBoard = (source.concepts || []).some((concept) => concept?.id === "studio-board");
-        if (legacyBoard) {
+
+        // Old generated boards can contain an AI-rendered team wordmark. Clear only generated assets
+        // during the v5 migration so the next render uses the no-text artwork contract without
+        // duplicating the exact app typography layer. Preserve the customer's inputs and roster.
+        if (legacyBoard || persistedVersion < 5) {
           return {
             ...fresh,
-            roster: Array.isArray(source.roster) ? source.roster : [],
-            customer: { ...fresh.customer, ...(source.customer || {}) },
-            teamName: source.teamName || "",
+            activeStep: source.productId ? 1 : 0,
+            productId: source.productId || fresh.productId,
+            style: source.style || fresh.style,
+            sport: source.sport || fresh.sport,
+            garmentType: source.garmentType || fresh.garmentType,
+            activePiece: source.activePiece || fresh.activePiece,
             prompt: source.prompt || "",
+            inspiration: source.inspiration || "",
+            teamName: source.teamName || "",
+            colors: { ...fresh.colors, ...(source.colors || {}) },
+            colorsEnabled: Boolean(source.colorsEnabled),
+            conceptCount: ([1, 2, 3, 4] as const).includes(Number(source.conceptCount) as 1 | 2 | 3 | 4)
+              ? (Number(source.conceptCount) as 1 | 2 | 3 | 4)
+              : 4,
+            logoUrl: stripInlineAssetUrl(source.logoUrl),
+            logoTransform: { ...fresh.logoTransform, ...(source.logoTransform || {}) },
+            roster: Array.isArray(source.roster) ? source.roster : [],
+            previewPlayerId: source.previewPlayerId,
+            customer: { ...fresh.customer, ...(source.customer || {}) },
           } as DesignerState;
         }
+
         return {
           ...fresh,
           ...source,
