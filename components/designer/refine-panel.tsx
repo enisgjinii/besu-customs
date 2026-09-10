@@ -46,10 +46,10 @@ export function RefinePanel() {
             </span>
             <div>
               <p className="m-0 text-[10.5px] font-semibold">Team wordmark</p>
-              <p className="m-0 mt-0.5 text-[9px] text-muted">Integrated into the front artwork by GPT Image 2</p>
+              <p className="m-0 mt-0.5 text-[9px] text-muted">Exact app typography · never AI-spelled</p>
             </div>
           </div>
-          <span className="rounded-full bg-violet-500/10 px-2 py-1 text-[8.5px] font-bold text-violet-700">AI ARTWORK</span>
+          <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[8.5px] font-bold text-emerald-700">EXACT TEXT</span>
         </div>
         <TextField fullWidth name="refine-team-name" value={visibleTeamName} onChange={(value) => setTeamDraft(value.slice(0, 60))}>
           <Label>Team name</Label>
@@ -60,24 +60,16 @@ export function RefinePanel() {
           size="sm"
           variant="outline"
           className="mt-2 min-h-10 rounded-xl font-semibold"
-          isDisabled={busy || visibleTeamName.trim().length < 2 || visibleTeamName.trim() === s.teamName.trim()}
-          isPending={busy}
+          isDisabled={visibleTeamName.trim().length < 2 || visibleTeamName.trim() === s.teamName.trim()}
           onPress={() => {
             const next = visibleTeamName.trim().slice(0, 60);
-            const previous = s.teamName;
             s.patch({ teamName: next });
             setTeamDraft(null);
-            void refineCurrent(
-              "Update only the FRONT chest team wordmark to the current exact team name. Keep every other visual element unchanged.",
-            ).then((updated) => {
-              if (!updated) s.patch({ teamName: previous });
-            });
           }}
         >
-          {busy ? <Spinner size="sm" /> : null}
           Update wordmark
         </Button>
-        <p className="mb-0 mt-2 text-[9px] leading-snug text-muted">The wordmark is part of the generated image. Review spelling visually before production approval.</p>
+        <p className="mb-0 mt-2 text-[9px] leading-snug text-muted">Updates instantly without regenerating the uniform. The same exact wording is carried into SVG, PNG and PDF exports.</p>
       </div>
 
       <div>
