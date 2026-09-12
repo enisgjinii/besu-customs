@@ -76,6 +76,11 @@ function cleanup(now: number) {
   }
 }
 
+function clearPendingRequest(requestId: string) {
+  const entry = requests.get(requestId);
+  if (entry && !entry.response) requests.delete(requestId);
+}
+
 function isAllowedAssetUrl(value: string, origin?: string) {
   return isAllowedDesignerAssetUrl(value, origin);
 }
@@ -211,25 +216,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "The design request is too large.", code: "body_too_large" }, { status: 413 });
   }
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "local";
+  let rawInput: unknown;
+  try {
+    rawInput = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Please check the design details.", code: "invalid_input" },
+      { status: 400 },
+    );
+  }
+
+  const parsed = schema.safeParse(rawInput);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Please check the design details.", fields: parsed.error.flatten().fieldErrors, code: "invalid_input" },
+      { status: 400 },
+    );
+  }
+
+  const input = parsed.data;
   const now = Date.now();
   cleanup(now);
+
+  // Idempotency is checked before rate limiting so a retry can reuse a completed response and a
+  // duplicate in-flight request does not consume another generation slot.
+  const duplicate = requests.get(input.requestId);
+  if (duplicate?.response) return NextResponse.json(duplicate.response);
+  if (duplicate) {
+    return NextResponse.json({ error: "This design is already generating.", code: "duplicate" }, { status: 409 });
+  }
+
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   const recent = usage.get(ip) || [];
   // One concept set uses four requests. Keep a bounded budget for regeneration + refinement.
   if (recent.length >= MAX_GENERATIONS_PER_MINUTE) {
     return NextResponse.json({ error: "Too many generations. Try again in one minute.", code: "rate_limited" }, { status: 429 });
   }
   usage.set(ip, [...recent, now]);
+  requests.set(input.requestId, { at: now });
 
   try {
-    const input = schema.parse(await req.json());
-    const duplicate = requests.get(input.requestId);
-    if (duplicate?.response) return NextResponse.json(duplicate.response);
-    if (duplicate) {
-      return NextResponse.json({ error: "This design is already generating.", code: "duplicate" }, { status: 409 });
-    }
-    requests.set(input.requestId, { at: now });
-
     const id = crypto.randomUUID();
     const { mockAi } = assertOpenAiConfigured();
 
@@ -301,6 +327,7 @@ export async function POST(req: NextRequest) {
             : invalidKey
               ? 401
               : 502;
+      clearPendingRequest(input.requestId);
       return NextResponse.json({ error: message, code }, { status });
     }
 
@@ -325,12 +352,10 @@ export async function POST(req: NextRequest) {
     requests.set(input.requestId, { at: now, response });
     return NextResponse.json(response);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Please check the design details.", fields: error.flatten().fieldErrors, code: "invalid_input" },
-        { status: 400 },
-      );
-    }
+    // Failed attempts must not poison idempotency. A retry with the same requestId should be allowed
+    // immediately instead of being reported as "already generating" until the 15-minute TTL expires.
+    clearPendingRequest(input.requestId);
+
     if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json(
         { error: "Generation timed out. Please try a simpler request.", code: "generation_timeout" },
