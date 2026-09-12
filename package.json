@@ -8,7 +8,7 @@
     "dev": "next dev",
     "lint": "eslint app/page.tsx components/designer lib/designer app/api/designer --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test:designer": "node scripts/verify-designer-2d.mjs && node scripts/verify-designer-checkout-payload.mjs && node scripts/verify-hybrid-designer-flow.mjs",
+    "test:designer": "node scripts/verify-designer-2d.mjs && node scripts/verify-designer-checkout-payload.mjs && node scripts/verify-hybrid-designer-flow.mjs && node scripts/verify-designer-generation-route.mjs",
     "start": "next start"
   },
   "dependencies": {
@@ -72,7 +72,7 @@
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.182.0",
-    "three-stdlib": "^2.36.1",
+    "three-stdlib": "^0.36.1",
     "uuid": "^13.0.2",
     "zod": "3.25.76",
     "zustand": "^5.0.14"
