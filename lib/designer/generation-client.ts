@@ -5,7 +5,10 @@ import type { ArtworkLayout, DesignConcept, DesignerColors, DesignerState, Garme
 
 export const LOADING_STAGES = ["Preparing AI reference…", "Rendering uniform…", "Saving AI render…"] as const;
 const MAX_CONCEPT_BASE_BRIEF = 460;
-export const CONCEPT_GENERATION_CONCURRENCY = 2 as const;
+// High-quality 1536x1024 renders are intentionally serialized. Running multiple GPT Image calls
+// at once can queue one behind another upstream until it hits the route timeout; worse, one failed
+// request rejects the whole concept set and discards the successful siblings from the client.
+export const CONCEPT_GENERATION_CONCURRENCY = 1 as const;
 
 /**
  * The four options change composition language only. Render quality, product cut, proportions,
@@ -192,8 +195,8 @@ export async function generateConceptSet(options: {
 
   try {
     const baseBrief = options.state.prompt.trim().slice(0, MAX_CONCEPT_BASE_BRIEF);
-    // Render at most two directions at once. This noticeably reduces a four-concept wait while
-    // staying conservative with GPT Image rate limits and preserving deterministic concept order.
+    // Render one direction at a time. This avoids upstream contention for multi-concept requests
+    // and keeps progress/order deterministic without changing single-concept behaviour.
     for (let offset = 0; offset < directions.length; offset += CONCEPT_GENERATION_CONCURRENCY) {
       const batch = directions.slice(offset, offset + CONCEPT_GENERATION_CONCURRENCY);
       await Promise.all(

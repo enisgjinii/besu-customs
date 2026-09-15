@@ -4,7 +4,11 @@ import { assertOpenAiConfigured, getOpenAiConfig } from "@/lib/designer/config";
 import { buildArtworkPrompt, type GenerationMode } from "@/lib/designer/openai-service";
 import { isAllowedDesignerAssetUrl, decodeInlineDesignerAsset, isInlineDesignerAssetUrl, storeGeneratedAsset } from "@/lib/designer/storage-service";
 
-export const maxDuration = 120;
+// GPT Image can legitimately take close to two minutes for complex, high-quality renders.
+// Leave enough headroom for the upstream response, PNG validation and storage without letting an
+// individual request occupy the full Vercel Hobby/Fluid Compute ceiling.
+export const maxDuration = 300;
+const OPENAI_IMAGE_TIMEOUT_MS = 240_000;
 const MAX_BODY_BYTES = 12_000_000;
 const MAX_GENERATIONS_PER_MINUTE = 12;
 
@@ -289,7 +293,7 @@ export async function POST(req: NextRequest) {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 110_000);
+    const timeout = setTimeout(() => controller.abort(), OPENAI_IMAGE_TIMEOUT_MS);
     let upstream: Response;
     try {
       upstream = await requestOpenAiImage(input, controller.signal, req.nextUrl.origin);

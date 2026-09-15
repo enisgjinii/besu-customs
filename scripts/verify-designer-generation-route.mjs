@@ -5,6 +5,17 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = fs.readFileSync(path.join(root, "app/api/designer/generate/route.ts"), "utf8");
+const vercelConfig = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
+
+assert.match(source, /export const maxDuration = 300;/,
+  "the generation route must allow complex GPT Image renders to finish");
+assert.match(source, /const OPENAI_IMAGE_TIMEOUT_MS = 240_000;/,
+  "the OpenAI timeout must leave storage headroom inside the function budget");
+assert.equal(
+  vercelConfig.functions["app/api/designer/generate/route.ts"].maxDuration,
+  300,
+  "Vercel must not override the generation route with the old 120-second ceiling",
+);
 
 const parsedAt = source.indexOf("const parsed = schema.safeParse(rawInput)");
 const duplicateAt = source.indexOf("const duplicate = requests.get(input.requestId)");
@@ -36,7 +47,7 @@ const catchClear = source.indexOf("clearPendingRequest(input.requestId);", catch
 assert.ok(catchAt >= 0 && catchClear > catchAt, "exceptions/timeouts/storage failures must release request id");
 
 console.log(JSON.stringify({
-  passed: 7,
+  passed: 10,
   failed: 0,
   checks: [
     "schema validation precedes request accounting",
@@ -46,5 +57,8 @@ console.log(JSON.stringify({
     "failed paths clear pending request ids",
     "OpenAI non-2xx responses are retryable",
     "exceptions/timeouts/storage failures are retryable",
+    "route budget supports complex image renders",
+    "upstream timeout leaves storage headroom",
+    "Vercel duration matches the route budget",
   ],
 }, null, 2));

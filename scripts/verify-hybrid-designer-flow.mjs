@@ -97,7 +97,7 @@ await test("designer is hard-pinned to GPT Image 2 with no model fallback or env
   }
 });
 
-await test("four-concept generation uses bounded two-at-a-time GPT Image requests", async () => {
+await test("four-concept generation serializes GPT Image requests to avoid timeout contention", async () => {
   seedBrief();
   let active = 0;
   let maxActive = 0;
@@ -122,8 +122,8 @@ await test("four-concept generation uses bounded two-at-a-time GPT Image request
   };
 
   await hook.generateConcepts(BRIEF, 4);
-  assert.equal(generationClient.CONCEPT_GENERATION_CONCURRENCY, 2);
-  assert.equal(maxActive, 2, `expected bounded concurrency of 2, saw ${maxActive}`);
+  assert.equal(generationClient.CONCEPT_GENERATION_CONCURRENCY, 1);
+  assert.equal(maxActive, 1, `expected serialized generation, saw ${maxActive} active requests`);
   assert.equal(callNumber, 4);
 });
 
