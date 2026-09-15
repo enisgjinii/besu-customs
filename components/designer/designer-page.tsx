@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Button, Modal } from "@heroui/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { RotateCcw, Sparkles } from "lucide-react";
 import { GarmentCanvas } from "./garment-canvas";
 import { ProductPanel } from "./product-panel";
 import { PromptPanel } from "./prompt-panel";
@@ -236,9 +236,12 @@ export function DesignerPage() {
           onClick={() => setResetOpen(true)}
           whileHover={reduceMotion ? undefined : { y: -1 }}
           whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-          className="absolute right-7 top-7 hidden min-h-8 rounded-full border border-black/[0.08] bg-white px-3 text-[10px] font-medium text-muted md:block"
+          aria-label="Reset design"
+          title="Reset design"
+          className="absolute right-5 top-[4.25rem] z-30 flex min-h-8 items-center gap-1.5 rounded-full border border-black/[0.08] bg-white/92 px-2.5 text-[9px] font-semibold text-foreground/70 shadow-sm backdrop-blur transition-colors hover:text-foreground md:right-7 md:top-[4.75rem] md:px-3 md:text-[10px]"
         >
-          New
+          <RotateCcw className="size-3" aria-hidden />
+          <span>Reset</span>
         </motion.button>
       </motion.section>
 
